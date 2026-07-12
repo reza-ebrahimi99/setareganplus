@@ -7,8 +7,8 @@ type ContentCardProps = {
 };
 
 const variantStyles: Record<ContentCardVariant, string> = {
-  default: "border-border bg-surface",
-  notice: "border-dashed border-border bg-background",
+  default: "premium-card",
+  notice: "rounded-xl border border-dashed border-border bg-background p-6 shadow-sm",
 };
 
 export function ContentCard({
@@ -16,10 +16,11 @@ export function ContentCard({
   body,
   variant = "default",
 }: ContentCardProps) {
+  const baseClassName =
+    variant === "default" ? "premium-card p-6" : `${variantStyles.notice}`;
+
   return (
-    <article
-      className={`rounded-xl border p-6 shadow-sm ${variantStyles[variant]}`}
-    >
+    <article className={baseClassName}>
       <h2 className="text-xl font-semibold text-primary">{heading}</h2>
       <p className="mt-3 text-base leading-8 text-muted">{body}</p>
     </article>

@@ -1,11 +1,6 @@
 import type { Metadata } from "next";
-import { SiteShell } from "@/components/layout/SiteShell";
-import { Button } from "@/components/ui/Button";
-import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { Container } from "@/components/ui/Container";
+import { InnerPageLayout } from "@/components/layout/InnerPageLayout";
 import { ContentCard } from "@/components/ui/ContentCard";
-import { PageHeading } from "@/components/ui/PageHeading";
-import { Section } from "@/components/ui/Section";
 import { registrationNotice } from "@/content/site";
 import { preRegistrationContent } from "@/content/pre-registration";
 
@@ -16,38 +11,34 @@ export const metadata: Metadata = {
 
 export default function PreRegistrationPage() {
   return (
-    <SiteShell activePath="/pre-registration">
-      <Section ariaLabelledby="page-heading">
-        <Container>
-          <Breadcrumbs items={preRegistrationContent.breadcrumbs} />
-          <PageHeading
-            title={preRegistrationContent.title}
-            subtitle={preRegistrationContent.subtitle}
+    <InnerPageLayout
+      activePath="/pre-registration"
+      breadcrumbs={preRegistrationContent.breadcrumbs}
+      title={preRegistrationContent.title}
+      subtitle={preRegistrationContent.subtitle}
+      eyebrow="مسیر ثبت‌نام"
+      cta={{
+        heading: "فرم آنلاین هنوز فعال نیست",
+        description:
+          "تا زمان آماده‌سازی زیرساخت، برای پرسش یا پیگیری از صفحه تماس استفاده کنید.",
+        primary: { label: "تماس", href: "/contact" },
+        secondary: { label: "سوالات متداول", href: "/faq" },
+      }}
+    >
+      <div className="space-y-6">
+        {preRegistrationContent.sections.map((section) => (
+          <ContentCard
+            key={section.heading}
+            heading={section.heading}
+            body={section.body}
           />
-          <div className="space-y-6">
-            {preRegistrationContent.sections.map((section) => (
-              <ContentCard
-                key={section.heading}
-                heading={section.heading}
-                body={section.body}
-              />
-            ))}
-            <ContentCard
-              heading={registrationNotice.heading}
-              body={registrationNotice.body}
-              variant="notice"
-            />
-          </div>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button href="/contact" variant="primary">
-              تماس
-            </Button>
-            <Button href="/faq" variant="outline">
-              سوالات متداول
-            </Button>
-          </div>
-        </Container>
-      </Section>
-    </SiteShell>
+        ))}
+        <ContentCard
+          heading={registrationNotice.heading}
+          body={registrationNotice.body}
+          variant="notice"
+        />
+      </div>
+    </InnerPageLayout>
   );
 }

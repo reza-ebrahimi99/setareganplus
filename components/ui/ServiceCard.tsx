@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 type ServiceCardProps = {
   title: string;
   description: string;
   href: string;
   statusLabel?: string;
+  statusTone?: "default" | "development" | "enrollment";
 };
 
 export function ServiceCard({
@@ -12,22 +14,23 @@ export function ServiceCard({
   description,
   href,
   statusLabel,
+  statusTone = "default",
 }: ServiceCardProps) {
   return (
     <li>
       <Link
         href={href}
-        className="flex h-full flex-col rounded-xl border border-border bg-background p-5 shadow-sm transition-colors hover:border-secondary/60 hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+        className="premium-card group flex h-full flex-col p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
       >
         {statusLabel ? (
-          <span className="mb-3 inline-block w-fit rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-muted">
-            {statusLabel}
-          </span>
+          <StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>
         ) : null}
-        <h3 className="text-base font-semibold text-primary">{title}</h3>
+        <h3 className="mt-4 text-base font-semibold text-primary transition-colors group-hover:text-primary/85">
+          {title}
+        </h3>
         <p className="mt-2 flex-1 text-sm leading-7 text-muted">{description}</p>
-        <span className="mt-4 text-sm font-medium text-secondary">
-          اطلاعات بیشتر
+        <span className="mt-5 text-sm font-medium text-secondary">
+          مشاهده اطلاعات
         </span>
       </Link>
     </li>
