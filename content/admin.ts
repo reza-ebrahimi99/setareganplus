@@ -1,43 +1,211 @@
 export const adminNotice =
   "این بخش در حال اتصال به سامانه احراز هویت و پایگاه داده است." as const;
 
-export const adminNavItems = [
-  { href: "/admin", label: "نمای کلی", enabled: true },
-  { href: "/admin/leads", label: "متقاضیان و CRM", enabled: true },
-  { label: "ثبت‌نام‌ها", enabled: false },
-  { label: "دانش‌آموزان", enabled: false },
-  { label: "کلاس‌ها و دوره‌ها", enabled: false },
-  { label: "آزمون‌ها", enabled: false },
-  { label: "امور مالی", enabled: false },
-  { label: "گزارش‌ها", enabled: false },
-  { label: "تنظیمات", enabled: false },
-] as const;
+export type AdminNavIcon =
+  | "overview"
+  | "leads"
+  | "enrollments"
+  | "students"
+  | "courses"
+  | "exams"
+  | "finance"
+  | "reports"
+  | "settings";
 
-export const dashboardStats = [
-  { label: "متقاضیان جدید" },
-  { label: "در انتظار پیگیری" },
-  { label: "جلسات مشاوره" },
-  { label: "ثبت‌نام‌های تکمیل‌شده" },
-] as const;
+type AdminNavItemEnabled = {
+  href: string;
+  label: string;
+  icon: AdminNavIcon;
+  enabled: true;
+};
 
-export const platformReadiness = [
-  { label: "زیرساخت چندمجموعه‌ای", status: "آماده", tone: "ready" as const },
-  { label: "مدل نقش‌ها و دسترسی‌ها", status: "آماده", tone: "ready" as const },
+type AdminNavItemDisabled = {
+  label: string;
+  icon: AdminNavIcon;
+  enabled: false;
+};
+
+export type AdminNavItem = AdminNavItemEnabled | AdminNavItemDisabled;
+
+export const adminNavGroups: ReadonlyArray<{
+  label: string;
+  items: readonly AdminNavItem[];
+}> = [
   {
-    label: "اتصال PostgreSQL",
-    status: "در انتظار راه‌اندازی سرور",
-    tone: "pending" as const,
+    label: "مدیریت",
+    items: [
+      { href: "/admin", label: "نمای کلی", icon: "overview", enabled: true },
+      {
+        href: "/admin/leads",
+        label: "متقاضیان و CRM",
+        icon: "leads",
+        enabled: true,
+      },
+      { label: "ثبت‌نام‌ها", icon: "enrollments", enabled: false },
+    ],
   },
   {
-    label: "احراز هویت مدیر",
+    label: "آموزش",
+    items: [
+      { label: "دانش‌آموزان", icon: "students", enabled: false },
+      { label: "کلاس‌ها و دوره‌ها", icon: "courses", enabled: false },
+      { label: "آزمون‌ها", icon: "exams", enabled: false },
+    ],
+  },
+  {
+    label: "مالی و گزارش‌ها",
+    items: [
+      { label: "امور مالی", icon: "finance", enabled: false },
+      { label: "گزارش‌ها", icon: "reports", enabled: false },
+    ],
+  },
+  {
+    label: "سامانه",
+    items: [{ label: "تنظیمات", icon: "settings", enabled: false }],
+  },
+];
+
+export type AdminBreadcrumbItem = {
+  label: string;
+  href?: string;
+};
+
+export const adminBreadcrumbs = {
+  dashboard: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "نمای کلی" },
+  ],
+  leads: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "متقاضیان و CRM" },
+  ],
+  leadDetail: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "متقاضیان و CRM", href: "/admin/leads" },
+    { label: "پرونده متقاضی" },
+  ],
+} as const satisfies Record<string, readonly AdminBreadcrumbItem[]>;
+
+export type AdminStatIcon = "users" | "clock" | "message" | "clipboard";
+
+export const dashboardStats: ReadonlyArray<{
+  label: string;
+  icon: AdminStatIcon;
+}> = [
+  { label: "متقاضیان جدید", icon: "users" },
+  { label: "در انتظار پیگیری", icon: "clock" },
+  { label: "جلسات مشاوره", icon: "message" },
+  { label: "ثبت‌نام‌های تکمیل‌شده", icon: "clipboard" },
+];
+
+export type AdminQuickActionItem =
+  | { label: string; description: string; href: string; enabled: true }
+  | { label: string; description: string; enabled: false };
+
+export const dashboardQuickActions: readonly AdminQuickActionItem[] = [
+  {
+    label: "مشاهده متقاضیان و CRM",
+    description: "فهرست متقاضیان و پرونده‌های پیگیری",
+    href: "/admin/leads",
+    enabled: true,
+  },
+  {
+    label: "مشاهده صفحه پیش‌ثبت‌نام",
+    description: "فرم عمومی پیش‌ثبت‌نام وب‌سایت",
+    href: "/pre-registration",
+    enabled: true,
+  },
+  {
+    label: "ثبت متقاضی از پنل",
+    description: "پس از اتصال CRM و احراز هویت فعال می‌شود",
+    enabled: false,
+  },
+  {
+    label: "برنامه پیگیری مشاوره",
+    description: "در نقشه توسعه — پس از فعال‌سازی گردش‌کار CRM",
+    enabled: false,
+  },
+  {
+    label: "مدیریت ثبت‌نام‌ها",
+    description: "در نقشه توسعه — پس از اتصال ماژول ثبت‌نام",
+    enabled: false,
+  },
+];
+
+export type ReadinessTone = "ready" | "pending" | "planned";
+
+export const platformReadiness: ReadonlyArray<{
+  label: string;
+  status: string;
+  tone: ReadinessTone;
+}> = [
+  {
+    label: "زیرساخت چندمجموعه‌ای",
+    status: "آماده",
+    tone: "ready",
+  },
+  {
+    label: "مدل نقش‌ها و دسترسی‌ها",
+    status: "آماده",
+    tone: "ready",
+  },
+  {
+    label: "رابط مدیریت",
+    status: "آماده برای اتصال",
+    tone: "ready",
+  },
+  {
+    label: "PostgreSQL",
+    status: "در انتظار تکمیل اتصال سرور",
+    tone: "pending",
+  },
+  {
+    label: "احراز هویت",
     status: "در نقشه توسعه",
-    tone: "planned" as const,
+    tone: "planned",
   },
   {
-    label: "فرم پیش‌ثبت‌نام",
+    label: "فرم پیش‌ثبت‌نام واقعی",
     status: "در نقشه توسعه",
-    tone: "planned" as const,
+    tone: "planned",
   },
+  {
+    label: "CRM داده‌محور",
+    status: "در نقشه توسعه",
+    tone: "planned",
+  },
+];
+
+export const recentActivityEmpty = {
+  title: "آخرین فعالیت‌ها",
+  message: "هنوز فعالیت عملیاتی ثبت نشده است.",
+  description:
+    "پس از فعال شدن ورود مدیر و اتصال CRM، تغییر وضعیت‌ها و پیگیری‌ها در این بخش ثبت خواهند شد.",
+} as const;
+
+export const todayTasksEmpty = {
+  title: "پیگیری‌های امروز",
+  message: "موردی برای پیگیری امروز وجود ندارد.",
+  description:
+    "پس از فعال‌سازی گردش‌کار CRM، وظایف روزانه بر اساس وضعیت متقاضیان و جلسات مشاوره در این بخش نمایش داده می‌شوند.",
+} as const;
+
+export const systemEnvironment = {
+  title: "وضعیت سامانه",
+  items: [
+    { label: "محیط فعلی", value: "پیش‌نمایش توسعه" },
+    { label: "رابط عمومی", value: "آماده" },
+    { label: "رابط مدیریت", value: "آماده برای اتصال" },
+    { label: "پایگاه داده عملیاتی", value: "متصل نیست" },
+    { label: "نسخه", value: "نسخه توسعه" },
+  ],
+} as const;
+
+export const crmSummaryStats = [
+  { label: "جدید" },
+  { label: "بدون پاسخ" },
+  { label: "جلسه مشاوره" },
+  { label: "در انتظار تصمیم" },
 ] as const;
 
 export const leadTableColumns = [
@@ -65,15 +233,60 @@ export const leadStatusFilterPreview = [
 export const leadsEmptyState = {
   title: "هنوز متقاضی‌ای در سامانه ثبت نشده است.",
   description:
-    "پس از راه‌اندازی پایگاه داده، مهاجرت، احراز هویت و اتصال فرم عمومی پیش‌ثبت‌نام، فهرست متقاضیان در این بخش نمایش داده می‌شود.",
+    "پس از فعال شدن فرم پیش‌ثبت‌نام، درخواست‌های جدید در این جدول نمایش داده می‌شوند.",
   ctaLabel: "صفحه پیش‌ثبت‌نام عمومی",
   ctaHref: "/pre-registration",
+  secondaryCtaLabel: "تماس با مرکز",
+  secondaryCtaHref: "/contact",
 } as const;
 
 export const leadDetailUnavailable = {
   title: "پرونده متقاضی در دسترس نیست",
   description:
-    "نمایش جزئیات متقاضی پس از راه‌اندازی PostgreSQL، اجرای مهاجرت، فعال‌سازی فرم عمومی پیش‌ثبت‌نام و احراز هویت مدیران امکان‌پذیر خواهد شد.",
+    "اطلاعات پرونده پس از اتصال سامانه بارگذاری می‌شوند. نمایش جزئیات متقاضی به تکمیل زیرساخت‌های زیر وابسته است.",
   backLabel: "بازگشت به فهرست متقاضیان",
   backHref: "/admin/leads",
+  preRegistrationLabel: "مشاهده صفحه پیش‌ثبت‌نام",
+  preRegistrationHref: "/pre-registration",
+  dependencies: [
+    "راه‌اندازی PostgreSQL",
+    "اجرای مهاجرت پایگاه داده",
+    "فعال‌سازی فرم عمومی پیش‌ثبت‌نام",
+    "پیاده‌سازی احراز هویت",
+    "تعریف سطح دسترسی مدیران",
+  ],
 } as const;
+
+export const adminHeaderCopy = {
+  panelLabel: "پنل مدیریت",
+  previewLabel: "پیش‌نمایش توسعه",
+  systemStatus:
+    "اتصال عملیاتی پس از راه‌اندازی PostgreSQL و احراز هویت",
+  searchLabel: "جستجوی سامانه",
+  searchPlaceholder: "جستجو در سامانه — پیش‌نمایش (غیرفعال)",
+  userPlaceholder: "کاربر مدیر پس از ورود نمایش داده می‌شود",
+} as const;
+
+export function getAdminPageContext(pathname: string): {
+  title: string;
+  breadcrumbs: readonly AdminBreadcrumbItem[];
+} {
+  if (pathname.startsWith("/admin/leads/") && pathname !== "/admin/leads") {
+    return {
+      title: "پرونده متقاضی",
+      breadcrumbs: adminBreadcrumbs.leadDetail,
+    };
+  }
+
+  if (pathname === "/admin/leads") {
+    return {
+      title: "متقاضیان و CRM",
+      breadcrumbs: adminBreadcrumbs.leads,
+    };
+  }
+
+  return {
+    title: "نمای کلی",
+    breadcrumbs: adminBreadcrumbs.dashboard,
+  };
+}
