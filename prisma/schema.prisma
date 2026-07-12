@@ -1,0 +1,189 @@
+// SetareganPlus — Sprint 3.1 multi-tenant foundation
+//
+// Tenancy rules:
+// - Every tenant-owned row carries organizationId.
+// - Branch-scoped rows also carry branchId.
+// - Composite relations tie branchId to the parent organization.
+// - Application queries must always filter by organizationId (never unscoped reads).
+//
+// Future access control (not in Sprint 3.1):
+// - User accounts will authenticate separately.
+// - OrganizationMembership will map users to organizations with a role.
+// - Branch permissions will scope CRM operations within a membership.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  NO_ANSWER
+  CONSULTATION_SCHEDULED
+  WAITING_FOR_DECISION
+  WAITING_FOR_PAYMENT
+  ENROLLED
+  LOST
+}
+
+enum LeadActivityType {
+  NOTE
+  CALL
+  STATUS_CHANGE
+  ASSIGNMENT
+  SYSTEM
+}
+
+enum ConsentType {
+  PRE_REGISTRATION
+  DATA_PROCESSING
+  MARKETING_CONTACT
+}
+
+enum ServiceInterest {
+  COURSES
+  CLASSES
+  EXAMS
+  CONSULTATION
+  UNDECIDED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  UNSPECIFIED
+}
+
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  legalName String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  branches Branch[]
+  leads    Lead[]
+
+  @@map("organizations")
+}
+
+model Branch {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  slug           String
+  city           String?
+  province       String?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  // Restrict: hard-deleting an organization is blocked while branches exist.
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  leads        Lead[]
+  activities   LeadActivity[]
+  consents     ConsentRecord[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, isActive])
+  @@index([organizationId, deletedAt])
+  @@map("branches")
+}
+
+model Lead {
+  id              String          @id @default(cuid())
+  organizationId  String
+  branchId        String
+  status          LeadStatus      @default(NEW)
+  firstName       String
+  lastName        String
+  fatherName      String?
+  mobile          String
+  mobileRaw       String
+  school          String?
+  gradeLevel      String?
+  studyField      String?
+  city            String?
+  province        String?
+  gender          Gender?
+  birthDate       DateTime?       @db.Date
+  nationalCode    String?
+  serviceInterest ServiceInterest @default(UNDECIDED)
+  description     String?
+  source          String          @default("WEB_PRE_REGISTRATION")
+  isDuplicate     Boolean         @default(false)
+  duplicateOfId   String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
+
+  // Restrict: preserves historical leads when org/branch are soft-deleted (deletedAt).
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  // Composite FK: branchId must belong to the same organizationId.
+  branch       Branch          @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  // SetNull: removing the original lead does not delete duplicate records.
+  duplicateOf  Lead?           @relation("LeadDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates   Lead[]          @relation("LeadDuplicates")
+  activities   LeadActivity[]
+  consents     ConsentRecord[]
+
+  @@unique([organizationId, branchId, id])
+  @@index([organizationId, branchId])
+  @@index([organizationId, status])
+  @@index([organizationId, mobile])
+  @@index([organizationId, createdAt])
+  @@index([organizationId, deletedAt])
+  @@map("leads")
+}
+
+model LeadActivity {
+  id             String           @id @default(cuid())
+  organizationId String
+  branchId       String
+  leadId         String
+  type           LeadActivityType
+  content        String
+  previousStatus LeadStatus?
+  newStatus      LeadStatus?
+  createdAt      DateTime         @default(now())
+
+  // Cascade: activity rows are dependent history; only applies on hard delete.
+  // Soft-deleted leads keep activities via deletedAt on Lead.
+  lead   Lead   @relation(fields: [organizationId, branchId, leadId], references: [organizationId, branchId, id], onDelete: Cascade)
+  branch Branch @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([organizationId, branchId])
+  @@index([organizationId, leadId, createdAt])
+  @@map("lead_activities")
+}
+
+model ConsentRecord {
+  id             String      @id @default(cuid())
+  organizationId String
+  branchId       String
+  leadId         String
+  consentType    ConsentType
+  consentText    String
+  consentVersion String
+  ipAddress      String?
+  userAgent      String?
+  grantedAt      DateTime    @default(now())
+
+  // Cascade: consent evidence is tied to a lead record (hard delete only).
+  lead   Lead   @relation(fields: [organizationId, branchId, leadId], references: [organizationId, branchId, id], onDelete: Cascade)
+  branch Branch @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([organizationId, branchId])
+  @@index([organizationId, leadId])
+  @@map("consent_records")
+}
