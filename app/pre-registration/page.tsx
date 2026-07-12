@@ -6,25 +6,26 @@ import { Container } from "@/components/ui/Container";
 import { ContentCard } from "@/components/ui/ContentCard";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { Section } from "@/components/ui/Section";
-import { contactContent, registrationNotice } from "@/content/site";
+import { registrationNotice } from "@/content/site";
+import { preRegistrationContent } from "@/content/pre-registration";
 
 export const metadata: Metadata = {
-  title: contactContent.title,
-  description: contactContent.subtitle,
+  title: preRegistrationContent.title,
+  description: preRegistrationContent.subtitle,
 };
 
-export default function ContactPage() {
+export default function PreRegistrationPage() {
   return (
-    <SiteShell activePath="/contact">
+    <SiteShell activePath="/pre-registration">
       <Section ariaLabelledby="page-heading">
         <Container>
-          <Breadcrumbs items={contactContent.breadcrumbs} />
+          <Breadcrumbs items={preRegistrationContent.breadcrumbs} />
           <PageHeading
-            title={contactContent.title}
-            subtitle={contactContent.subtitle}
+            title={preRegistrationContent.title}
+            subtitle={preRegistrationContent.subtitle}
           />
           <div className="space-y-6">
-            {contactContent.sections.map((section) => (
+            {preRegistrationContent.sections.map((section) => (
               <ContentCard
                 key={section.heading}
                 heading={section.heading}
@@ -38,8 +39,8 @@ export default function ContactPage() {
             />
           </div>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button href="/pre-registration" variant="primary">
-              راهنمای پیش‌ثبت‌نام
+            <Button href="/contact" variant="primary">
+              تماس
             </Button>
             <Button href="/faq" variant="outline">
               سوالات متداول

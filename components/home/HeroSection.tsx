@@ -26,11 +26,11 @@ export function HeroSection() {
             {heroContent.description}
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button href="/contact" variant="primary">
-              تماس و پیش‌ثبت‌نام
+            <Button href="/pre-registration" variant="primary">
+              پیش‌ثبت‌نام
             </Button>
-            <Button href="/about" variant="outline">
-              بیشتر بدانید
+            <Button href="/faq" variant="outline">
+              سوالات متداول
             </Button>
           </div>
         </div>

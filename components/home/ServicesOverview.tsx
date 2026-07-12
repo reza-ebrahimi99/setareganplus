@@ -1,6 +1,8 @@
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
-import { introductionContent, serviceCategories } from "@/content/home";
+import { ServiceCard } from "@/components/ui/ServiceCard";
+import { introductionContent } from "@/content/home";
+import { services } from "@/content/services";
 
 export function ServicesOverview() {
   return (
@@ -35,22 +37,18 @@ export function ServicesOverview() {
             حوزه‌های خدماتی
           </h2>
           <p className="mt-3 max-w-3xl text-base leading-8 text-muted">
-            موارد زیر حوزه‌های برنامه‌ریزی‌شده برای سکو هستند و به‌تدریج در
-            نسخه‌های آینده پیاده‌سازی می‌شوند.
+            موارد زیر حوزه‌های برنامه‌ریزی‌شده برای سکو هستند. ثبت‌نام آنلاین
+            در نسخه‌های آینده فعال خواهد شد.
           </p>
           <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {serviceCategories.map((service) => (
-              <li
-                key={service.title}
-                className="rounded-xl border border-border bg-background p-5 shadow-sm"
-              >
-                <h3 className="text-base font-semibold text-primary">
-                  {service.title}
-                </h3>
-                <p className="mt-2 text-sm leading-7 text-muted">
-                  {service.description}
-                </p>
-              </li>
+            {services.map((service) => (
+              <ServiceCard
+                key={service.href}
+                title={service.title}
+                description={service.description}
+                href={service.href}
+                statusLabel={service.statusLabel}
+              />
             ))}
           </ul>
         </Container>

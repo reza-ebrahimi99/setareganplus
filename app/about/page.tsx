@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { SiteShell } from "@/components/layout/SiteShell";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { Container } from "@/components/ui/Container";
+import { ContentCard } from "@/components/ui/ContentCard";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { Section } from "@/components/ui/Section";
 import { aboutContent } from "@/content/site";
@@ -12,26 +14,21 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <SiteShell>
+    <SiteShell activePath="/about">
       <Section ariaLabelledby="page-heading">
         <Container>
+          <Breadcrumbs items={aboutContent.breadcrumbs} />
           <PageHeading
             title={aboutContent.title}
             subtitle={aboutContent.subtitle}
           />
-          <div className="space-y-10">
+          <div className="space-y-6">
             {aboutContent.sections.map((section) => (
-              <article
+              <ContentCard
                 key={section.heading}
-                className="rounded-xl border border-border bg-surface p-6 shadow-sm"
-              >
-                <h2 className="text-xl font-semibold text-primary">
-                  {section.heading}
-                </h2>
-                <p className="mt-3 text-base leading-8 text-muted">
-                  {section.body}
-                </p>
-              </article>
+                heading={section.heading}
+                body={section.body}
+              />
             ))}
           </div>
         </Container>

@@ -1,11 +1,16 @@
 import Link from "next/link";
+import { Container } from "@/components/ui/Container";
 import { siteConfig } from "@/content/site";
 import { MainNav } from "./MainNav";
 
-export function SiteHeader() {
+type SiteHeaderProps = {
+  activePath?: string;
+};
+
+export function SiteHeader({ activePath }: SiteHeaderProps) {
   return (
     <header className="border-b border-border bg-surface shadow-sm">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+      <Container className="flex items-center justify-between gap-4 py-4">
         <Link
           href="/"
           className="group flex min-w-0 flex-col rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
@@ -17,8 +22,8 @@ export function SiteHeader() {
             {siteConfig.tagline}
           </span>
         </Link>
-        <MainNav />
-      </div>
+        <MainNav activePath={activePath} />
+      </Container>
     </header>
   );
 }

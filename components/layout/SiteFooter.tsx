@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { footerContent, navLinks, siteConfig } from "@/content/site";
 import { Container } from "@/components/ui/Container";
+import { footerContent, footerLinks, siteConfig } from "@/content/site";
+import { services } from "@/content/services";
 
 export function SiteFooter() {
   const currentYear = new Date().getFullYear();
@@ -8,7 +9,7 @@ export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-border bg-surface">
       <Container className="py-10">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2 lg:col-span-1">
             <p className="text-lg font-bold text-primary">{siteConfig.name}</p>
             <p className="mt-2 text-sm leading-7 text-muted">
@@ -16,10 +17,26 @@ export function SiteFooter() {
             </p>
           </div>
 
+          <nav aria-label="خدمات">
+            <h2 className="text-sm font-semibold text-primary">خدمات</h2>
+            <ul className="mt-3 space-y-2">
+              {services.map((service) => (
+                <li key={service.href}>
+                  <Link
+                    href={service.href}
+                    className="text-sm text-muted transition-colors hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                  >
+                    {service.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
           <nav aria-label="پیوندهای پاورقی">
             <h2 className="text-sm font-semibold text-primary">دسترسی سریع</h2>
             <ul className="mt-3 space-y-2">
-              {navLinks.map((link) => (
+              {footerLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}

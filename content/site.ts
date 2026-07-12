@@ -8,9 +8,23 @@ export const siteConfig = {
 
 export const navLinks = [
   { href: "/", label: "صفحه اصلی" },
+  { href: "/courses", label: "دوره‌ها" },
+  { href: "/classes", label: "کلاس‌ها" },
+  { href: "/exams", label: "آزمون‌ها" },
+  { href: "/consultation", label: "مشاوره" },
+  { href: "/pre-registration", label: "پیش‌ثبت‌نام" },
+] as const;
+
+export const footerLinks = [
   { href: "/about", label: "درباره ما" },
   { href: "/contact", label: "تماس" },
+  { href: "/faq", label: "سوالات متداول" },
 ] as const;
+
+export const registrationNotice = {
+  heading: "ثبت‌نام آنلاین",
+  body: "ثبت‌نام و پیش‌ثبت‌نام آنلاین در نسخه‌های آینده سکو فعال خواهد شد. اطلاعات این صفحه صرفاً راهنمای خدمات است.",
+} as const;
 
 export const footerContent = {
   description:
@@ -21,6 +35,10 @@ export const footerContent = {
 export const aboutContent = {
   title: "درباره ستارگان پلاس",
   subtitle: "سکوی آموزشی دیجیتال مرکز آموزشی نسیم‌شهر",
+  breadcrumbs: [
+    { label: "صفحه اصلی", href: "/" },
+    { label: "درباره ما" },
+  ],
   sections: [
     {
       heading: "هدف سکو",
@@ -32,7 +50,7 @@ export const aboutContent = {
     },
     {
       heading: "دامنه خدمات",
-      body: "تمرکز سکو بر حوزه‌هایی مانند آزمون‌های آموزشی، کلاس‌های تقویتی، مشاوره تحصیلی، برنامه‌ریزی درسی، پیش‌ثبت‌نام و خدمات آنلاین است. هر یک از این حوزه‌ها در زمان مناسب و با طراحی دقیق به سکو اضافه خواهد شد.",
+      body: "تمرکز سکو بر حوزه‌هایی مانند آزمون‌های آموزشی، دوره‌ها، کلاس‌های تقویتی، مشاوره تحصیلی و پیش‌ثبت‌نام است. هر یک از این حوزه‌ها در زمان مناسب و با طراحی دقیق به سکو اضافه خواهد شد.",
     },
     {
       heading: "محدوده مسئولیت",
@@ -44,6 +62,10 @@ export const aboutContent = {
 export const contactContent = {
   title: "تماس با ما",
   subtitle: "اطلاعات تماس و پیش‌ثبت‌نام",
+  breadcrumbs: [
+    { label: "صفحه اصلی", href: "/" },
+    { label: "تماس" },
+  ],
   sections: [
     {
       heading: "اطلاعات تماس",
@@ -55,7 +77,7 @@ export const contactContent = {
     },
     {
       heading: "پرسش‌ها",
-      body: "اگر سؤالی درباره خدمات آموزشی مرکز یا برنامه توسعه سکو دارید، پس از انتشار اطلاعات تماس رسمی می‌توانید با ما در ارتباط باشید.",
+      body: "اگر سؤالی درباره خدمات آموزشی مرکز یا برنامه توسعه سکو دارید، صفحه سوالات متداول را ببینید یا پس از انتشار اطلاعات تماس رسمی با ما در ارتباط باشید.",
     },
   ],
 } as const;
