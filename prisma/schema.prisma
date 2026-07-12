@@ -1,4 +1,4 @@
-// SetareganPlus — Sprint 3.1 multi-tenant foundation
+// SetareganPlus — Multi-tenant data + identity foundation
 //
 // Tenancy rules:
 // - Every tenant-owned row carries organizationId.
@@ -6,10 +6,28 @@
 // - Composite relations tie branchId to the parent organization.
 // - Application queries must always filter by organizationId (never unscoped reads).
 //
-// Future access control (not in Sprint 3.1):
-// - User accounts will authenticate separately.
-// - OrganizationMembership will map users to organizations with a role.
-// - Branch permissions will scope CRM operations within a membership.
+// Identity & access (Sprint 3.2A):
+// - User accounts authenticate independently of tenant membership.
+// - OrganizationMembership grants a SystemRole within one organization.
+// - BranchMembership optionally limits a membership to specific branches.
+// - No BranchMembership rows for an active membership = organization-wide branch access.
+// - User.isPlatformAdmin is independent of tenant membership (never derived from it).
+// - PLATFORM_ADMIN in SystemRole is reserved; platform operators use isPlatformAdmin.
+//
+// Authorization resolution (application layer, future):
+//   authenticated User
+//   → active OrganizationMembership (status ACTIVE, deletedAt null)
+//   → SystemRole
+//   → optional BranchMembership scope (empty = all branches in org)
+//
+// Defense in depth:
+// - PostgreSQL Row Level Security (RLS) may be added in a future migration.
+// - Do not create unscoped repository helpers; always pass organizationId.
+//
+// Partial unique indexes (future raw SQL migration):
+// - normalizedMobile and email are @unique in Prisma; PostgreSQL allows multiple NULLs.
+// - If stricter partial uniqueness is required later, add:
+//   CREATE UNIQUE INDEX ... ON users (normalized_mobile) WHERE normalized_mobile IS NOT NULL;
 
 generator client {
   provider = "prisma-client"
@@ -59,6 +77,50 @@ enum Gender {
   UNSPECIFIED
 }
 
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+  DISABLED
+}
+
+enum SystemRole {
+  PLATFORM_ADMIN
+  ORGANIZATION_OWNER
+  ORGANIZATION_ADMIN
+  BRANCH_MANAGER
+  ADVISOR
+  TEACHER
+  FINANCE
+  REGISTRATION_STAFF
+  SUPPORT
+  CONTENT_MANAGER
+  STUDENT
+  PARENT
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+  REVOKED
+}
+
+enum AuditAction {
+  USER_CREATED
+  USER_UPDATED
+  MEMBERSHIP_CREATED
+  MEMBERSHIP_UPDATED
+  ROLE_CHANGED
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  LOGOUT
+  LEAD_VIEWED
+  LEAD_UPDATED
+  DATA_EXPORTED
+  SECURITY_EVENT
+}
+
 model Organization {
   id        String    @id @default(cuid())
   name      String
@@ -69,8 +131,10 @@ model Organization {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  branches Branch[]
-  leads    Lead[]
+  branches    Branch[]
+  leads       Lead[]
+  memberships OrganizationMembership[]
+  auditLogs   AuditLog[]
 
   @@map("organizations")
 }
@@ -88,16 +152,119 @@ model Branch {
   deletedAt      DateTime?
 
   // Restrict: hard-deleting an organization is blocked while branches exist.
-  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  leads        Lead[]
-  activities   LeadActivity[]
-  consents     ConsentRecord[]
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  leads             Lead[]
+  activities        LeadActivity[]
+  consents          ConsentRecord[]
+  branchMemberships BranchMembership[]
+  auditLogs         AuditLog[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
   @@index([organizationId, isActive])
   @@index([organizationId, deletedAt])
   @@map("branches")
+}
+
+model User {
+  id               String     @id @default(cuid())
+  email            String?    @unique
+  mobile           String?
+  normalizedMobile String?    @unique
+  passwordHash     String?
+  firstName        String
+  lastName         String
+  status           UserStatus @default(INVITED)
+  isPlatformAdmin  Boolean    @default(false)
+  emailVerifiedAt  DateTime?
+  mobileVerifiedAt DateTime?
+  lastLoginAt      DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  deletedAt        DateTime?
+
+  memberships OrganizationMembership[]
+  auditLogs   AuditLog[]               @relation("AuditLogActor")
+
+  @@index([status])
+  @@index([deletedAt])
+  @@index([isPlatformAdmin])
+  @@map("users")
+}
+
+model OrganizationMembership {
+  id             String           @id @default(cuid())
+  organizationId String
+  userId         String
+  role           SystemRole
+  status         MembershipStatus @default(INVITED)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  deletedAt      DateTime?
+
+  // Restrict: preserve membership history; soft-delete via deletedAt instead of hard delete.
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  branchMemberships BranchMembership[]
+
+  // One membership row per user per organization. Reactivation after soft-delete must
+  // UPDATE this row (clear deletedAt, adjust status) — not INSERT a duplicate.
+  @@unique([organizationId, userId])
+  @@unique([organizationId, id])
+  @@index([organizationId, status])
+  @@index([organizationId, role])
+  @@index([organizationId, deletedAt])
+  @@index([userId, status])
+  @@map("organization_memberships")
+}
+
+model BranchMembership {
+  id                       String    @id @default(cuid())
+  organizationMembershipId String
+  organizationId           String
+  branchId                 String
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  deletedAt                DateTime?
+
+  // Restrict: branch scope rows are historical access records, not cascade-deleted.
+  // Composite FK: branchId must belong to the same organizationId.
+  organizationMembership OrganizationMembership @relation(fields: [organizationId, organizationMembershipId], references: [organizationId, id], onDelete: Restrict)
+  branch                 Branch                 @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+
+  // One active scope row per branch per organization membership.
+  @@unique([organizationMembershipId, branchId])
+  @@index([organizationId, branchId])
+  @@index([organizationId, organizationMembershipId])
+  @@index([organizationId, deletedAt])
+  @@map("branch_memberships")
+}
+
+model AuditLog {
+  id             String      @id @default(cuid())
+  organizationId String?
+  branchId       String?
+  actorUserId    String?
+  action         AuditAction
+  entityType     String
+  entityId       String?
+  metadata       Json?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime    @default(now())
+
+  // Restrict: audit evidence must survive entity lifecycle; block hard deletes instead.
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch?       @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  // SetNull: retain audit rows if a user account is hard-deleted; actor becomes anonymous.
+  actor        User?         @relation("AuditLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([branchId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+  @@map("audit_logs")
 }
 
 model Lead {
