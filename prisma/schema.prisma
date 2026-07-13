@@ -28,6 +28,32 @@
 // - normalizedMobile and email are @unique in Prisma; PostgreSQL allows multiple NULLs.
 // - If stricter partial uniqueness is required later, add:
 //   CREATE UNIQUE INDEX ... ON users (normalized_mobile) WHERE normalized_mobile IS NOT NULL;
+//
+// Form builder (Sprint 3.4A):
+// - Form = stable parent identity + public slug (/forms/[slug]).
+// - FormVersion = versioned definition; edits after publish create a new draft version.
+// - FormField.fieldKey = stable machine key for reporting, CRM mapping, and conditions.
+// - FormSubmission always references the exact FormVersion used at submit time.
+// - Duplicate policy defaults to FLAG_AND_ACCEPT (same-form scope; CRM exposure only).
+// - DomainEventOutbox + AutomationRule = automation-ready foundation (no execution yet).
+// - FormAnalyticsEvent (raw) + FormAnalyticsDaily (rollups) — not stored in Form.settings.
+// - Tag / FormTag / FormSubmissionTag = normalized tagging (no CSV text fields).
+//
+// FormVersion lifecycle (enforced by application layer; documented here):
+// - DRAFT: editable fields/settings; not public; does not accept submissions.
+// - PUBLISHED: immutable definition; accepts new submissions; ONLY status eligible for
+//   Form.publishedVersionId. Public /forms/[slug] resolves exclusively to this pointer.
+// - PAUSED: immutable definition; does NOT accept new submissions; must NOT remain
+//   referenced by Form.publishedVersionId (clear pointer before or when pausing).
+// - SUPERSEDED: replaced by a newer published version; immutable; no submissions.
+// - ARCHIVED: retired; immutable; no submissions.
+//
+// Referential actions (Sprint 3.4A review):
+// - Composite FKs with a required tenant component (organizationId, branchId) never use
+//   onDelete: SetNull on the composite relation. Use Restrict and soft-delete via deletedAt.
+// - Form.publishedVersionId is cleared in application code before pausing/archiving/deleting.
+//
+// New enums added in Sprint 3.4A: 12 total (see enum block below; AuditAction extended in place).
 
 generator client {
   provider = "prisma-client"
@@ -119,6 +145,136 @@ enum AuditAction {
   LEAD_UPDATED
   DATA_EXPORTED
   SECURITY_EVENT
+  FORM_CREATED
+  FORM_UPDATED
+  FORM_VERSION_PUBLISHED
+  FORM_VERSION_PAUSED
+  FORM_VERSION_ARCHIVED
+  FORM_SUBMISSION_RECEIVED
+  FORM_EXPORTED
+  FORM_TEMPLATE_INSTANTIATED
+}
+
+// ─── Form builder (Sprint 3.4A) ─────────────────────────────────────────────
+
+enum FormPurpose {
+  FREE_CLASS
+  EDUCATIONAL_EVENT
+  SEMINAR
+  GIFTED_EXAM
+  CONSULTATION
+  ADMISSION
+  SURVEY
+  EMPLOYMENT
+  FESTIVAL
+  PARENT_MEETING
+}
+
+enum FormVersionStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+  SUPERSEDED
+}
+
+enum FormFieldType {
+  SHORT_TEXT
+  LONG_TEXT
+  MOBILE
+  EMAIL
+  NUMBER
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  DROPDOWN
+  DATE
+  GRADE
+  ACADEMIC_TRACK
+  SCHOOL_NAME
+  CONSENT
+  INFORMATIONAL
+}
+
+enum FormFieldSemantic {
+  NONE
+  FIRST_NAME
+  LAST_NAME
+  FATHER_NAME
+  MOBILE
+  EMAIL
+  SCHOOL
+  GRADE
+  ACADEMIC_TRACK
+  BIRTH_DATE
+  GENDER
+  BRANCH
+  CONSENT
+  CUSTOM
+}
+
+enum DuplicatePolicy {
+  FLAG_AND_ACCEPT
+  BLOCK
+  ALLOW_SILENT
+}
+
+enum FormSubmissionStatus {
+  RECEIVED
+  DUPLICATE
+  WAITING_LIST
+  REJECTED
+}
+
+enum FormTemplateScope {
+  SYSTEM
+  ORGANIZATION
+}
+
+enum FormTemplateCategory {
+  FREE_CLASS
+  EXAM
+  CONSULTATION
+  SEMINAR
+  SURVEY
+  EMPLOYMENT
+  ELEMENTARY_ADMISSION
+  FESTIVAL
+  PARENT_MEETING
+}
+
+enum DomainEventType {
+  FORM_SUBMISSION_RECEIVED
+  FORM_DUPLICATE_DETECTED
+  FORM_LEAD_CREATED
+  FORM_CAPACITY_REACHED
+}
+
+enum DomainEventStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+  DEAD_LETTER
+}
+
+enum FormAnalyticsEventType {
+  FORM_VIEW
+  FORM_START
+  FORM_SUBMIT_SUCCESS
+  FORM_SUBMIT_FAILURE
+}
+
+// Non-null rollup dimensions for FormAnalyticsDaily (avoids nullable unique constraints).
+// dimensionKey is always required. Encoding rules (application layer):
+//   FORM_TOTAL       → "_"
+//   VERSION          → "{formVersionId}"
+//   BRANCH           → "{branchId}"
+//   VERSION_BRANCH   → "{formVersionId}:{branchId}"
+enum FormAnalyticsDailyDimension {
+  FORM_TOTAL
+  VERSION
+  BRANCH
+  VERSION_BRANCH
 }
 
 model Organization {
@@ -131,10 +287,24 @@ model Organization {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  branches    Branch[]
-  leads       Lead[]
-  memberships OrganizationMembership[]
-  auditLogs   AuditLog[]
+  branches            Branch[]
+  leads               Lead[]
+  memberships         OrganizationMembership[]
+  auditLogs           AuditLog[]
+  forms               Form[]
+  formVersions        FormVersion[]
+  formFields          FormField[]
+  formSubmissions     FormSubmission[]
+  formAnswers         FormAnswer[]
+  formTemplates       FormTemplate[]
+  formTemplateFields  FormTemplateField[]
+  tags                Tag[]
+  formTags            FormTag[]
+  formSubmissionTags  FormSubmissionTag[]
+  automationRules     AutomationRule[]
+  domainEvents        DomainEventOutbox[]
+  formAnalyticsEvents FormAnalyticsEvent[]
+  formAnalyticsDaily  FormAnalyticsDaily[]
 
   @@map("organizations")
 }
@@ -152,12 +322,16 @@ model Branch {
   deletedAt      DateTime?
 
   // Restrict: hard-deleting an organization is blocked while branches exist.
-  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  leads             Lead[]
-  activities        LeadActivity[]
-  consents          ConsentRecord[]
-  branchMemberships BranchMembership[]
-  auditLogs         AuditLog[]
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  leads               Lead[]
+  activities          LeadActivity[]
+  consents            ConsentRecord[]
+  branchMemberships   BranchMembership[]
+  auditLogs           AuditLog[]
+  forms               Form[]
+  formSubmissions     FormSubmission[]
+  domainEvents        DomainEventOutbox[]
+  formAnalyticsEvents FormAnalyticsEvent[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -295,14 +469,15 @@ model Lead {
   deletedAt       DateTime?
 
   // Restrict: preserves historical leads when org/branch are soft-deleted (deletedAt).
-  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   // Composite FK: branchId must belong to the same organizationId.
-  branch       Branch          @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  branch          Branch           @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
   // SetNull: removing the original lead does not delete duplicate records.
-  duplicateOf  Lead?           @relation("LeadDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
-  duplicates   Lead[]          @relation("LeadDuplicates")
-  activities   LeadActivity[]
-  consents     ConsentRecord[]
+  duplicateOf     Lead?            @relation("LeadDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates      Lead[]           @relation("LeadDuplicates")
+  activities      LeadActivity[]
+  consents        ConsentRecord[]
+  formSubmissions FormSubmission[]
 
   @@unique([organizationId, branchId, id])
   @@index([organizationId, branchId])
@@ -353,4 +528,396 @@ model ConsentRecord {
   @@index([organizationId, branchId])
   @@index([organizationId, leadId])
   @@map("consent_records")
+}
+
+// ─── Form template library ───────────────────────────────────────────────────
+// System-owned templates have organizationId = null and scope = SYSTEM.
+// Instantiating a template creates an independent Form + draft FormVersion.
+
+model FormTemplate {
+  id              String               @id @default(cuid())
+  scope           FormTemplateScope
+  organizationId  String?
+  category        FormTemplateCategory
+  name            String
+  description     String?
+  purpose         FormPurpose
+  defaultSettings Json                 @default("{}")
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  deletedAt       DateTime?
+
+  organization Organization?       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  fields       FormTemplateField[]
+  versions     FormVersion[]
+
+  @@index([scope, category, isActive])
+  @@index([organizationId, category])
+  @@index([organizationId, deletedAt])
+  @@map("form_templates")
+}
+
+model FormTemplateField {
+  id                   String            @id @default(cuid())
+  organizationId       String?
+  templateId           String
+  fieldKey             String
+  sortOrder            Int
+  type                 FormFieldType
+  semantic             FormFieldSemantic @default(NONE)
+  label                String
+  helpText             String?
+  placeholder          String?
+  required             Boolean           @default(false)
+  config               Json              @default("{}")
+  visibilityConditions Json?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  template     FormTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, fieldKey])
+  @@unique([templateId, sortOrder])
+  @@index([templateId, sortOrder])
+  @@map("form_template_fields")
+}
+
+// ─── Form parent identity (stable slug) ──────────────────────────────────────
+
+model Form {
+  id                 String      @id @default(cuid())
+  organizationId     String
+  branchId           String?
+  slug               String
+  purpose            FormPurpose
+  isAdmissionForm    Boolean     @default(false)
+  publishedVersionId String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  deletedAt          DateTime?
+
+  organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch           Branch?              @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  versions         FormVersion[]        @relation("FormVersions")
+  publishedVersion FormVersion?         @relation("FormPublishedVersion", fields: [organizationId, publishedVersionId], references: [organizationId, id], onDelete: Restrict)
+  submissions      FormSubmission[]
+  tags             FormTag[]
+  automationRules  AutomationRule[]
+  analyticsEvents  FormAnalyticsEvent[]
+  analyticsDaily   FormAnalyticsDaily[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, purpose])
+  @@index([organizationId, isAdmissionForm])
+  @@index([organizationId, deletedAt])
+  @@map("forms")
+}
+
+// ─── Versioned form definition ───────────────────────────────────────────────
+//
+// Status rules:
+//   DRAFT      — editable; not linked from Form.publishedVersionId; no submissions.
+//   PUBLISHED  — frozen; accepts submissions; only status allowed on publishedVersionId.
+//   PAUSED     — frozen; rejects submissions; must not be on publishedVersionId.
+//   SUPERSEDED — frozen; replaced by a newer publish; no submissions.
+//   ARCHIVED   — frozen; retired; no submissions.
+//
+// Partial unique index (future raw SQL — Prisma cannot express):
+//   CREATE UNIQUE INDEX form_versions_one_published_per_form
+//     ON form_versions (organization_id, form_id) WHERE status = 'PUBLISHED';
+//   Enforces at most one PUBLISHED version per form at the database level.
+
+model FormVersion {
+  id                   String            @id @default(cuid())
+  organizationId       String
+  formId               String
+  versionNumber        Int
+  status               FormVersionStatus @default(DRAFT)
+  title                String
+  description          String?
+  registrationDeadline DateTime?
+  capacity             Int?
+  confirmationMessage  String
+  duplicatePolicy      DuplicatePolicy   @default(FLAG_AND_ACCEPT)
+  createLeadOnSubmit   Boolean           @default(false)
+  leadSource           String?
+  showBranchPicker     Boolean           @default(false)
+  settings             Json              @default("{}")
+  sourceTemplateId     String?
+  publishedAt          DateTime?
+  pausedAt             DateTime?
+  archivedAt           DateTime?
+  createdByUserId      String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  form             Form                 @relation("FormVersions", fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
+  sourceTemplate   FormTemplate?        @relation(fields: [sourceTemplateId], references: [id], onDelete: Restrict)
+  fields           FormField[]
+  submissions      FormSubmission[]
+  formsAsPublished Form[]               @relation("FormPublishedVersion")
+  analyticsEvents  FormAnalyticsEvent[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, formId, versionNumber])
+  @@index([organizationId, formId, status])
+  @@index([organizationId, status])
+  @@map("form_versions")
+}
+
+model FormField {
+  id                   String            @id @default(cuid())
+  organizationId       String
+  formVersionId        String
+  fieldKey             String
+  sortOrder            Int
+  type                 FormFieldType
+  semantic             FormFieldSemantic @default(NONE)
+  label                String
+  helpText             String?
+  placeholder          String?
+  required             Boolean           @default(false)
+  config               Json              @default("{}")
+  visibilityConditions Json?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  formVersion  FormVersion  @relation(fields: [organizationId, formVersionId], references: [organizationId, id], onDelete: Cascade)
+  answers      FormAnswer[]
+
+  @@unique([organizationId, formVersionId, fieldKey])
+  @@unique([organizationId, formVersionId, sortOrder])
+  @@unique([organizationId, id])
+  @@index([organizationId, formVersionId, sortOrder])
+  @@map("form_fields")
+}
+
+// ─── Submissions (pinned to exact version) ───────────────────────────────────
+
+model FormSubmission {
+  id                      String               @id @default(cuid())
+  organizationId          String
+  branchId                String
+  formId                  String
+  formVersionId           String
+  status                  FormSubmissionStatus @default(RECEIVED)
+  submittedAt             DateTime             @default(now())
+  mobile                  String?
+  mobileRaw               String?
+  normalizedMobile        String?
+  email                   String?
+  leadId                  String?
+  matchedCrmLeadId        String?
+  isDuplicateInForm       Boolean              @default(false)
+  existsInCrm             Boolean              @default(false)
+  duplicateOfSubmissionId String?
+  ipAddress               String?
+  userAgent               String?
+  metadata                Json?
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+  deletedAt               DateTime?
+
+  organization          Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch                Branch              @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  form                  Form                @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
+  formVersion           FormVersion         @relation(fields: [organizationId, formVersionId], references: [organizationId, id], onDelete: Restrict)
+  lead                  Lead?               @relation(fields: [organizationId, branchId, leadId], references: [organizationId, branchId, id], onDelete: Restrict)
+  duplicateOfSubmission FormSubmission?     @relation("SubmissionDuplicates", fields: [duplicateOfSubmissionId], references: [id], onDelete: Restrict)
+  duplicates            FormSubmission[]    @relation("SubmissionDuplicates")
+  answers               FormAnswer[]
+  tags                  FormSubmissionTag[]
+
+  @@unique([organizationId, branchId, id])
+  @@unique([organizationId, id])
+  @@index([organizationId, formId, submittedAt])
+  @@index([organizationId, formVersionId, submittedAt])
+  @@index([organizationId, formId, normalizedMobile])
+  @@index([organizationId, normalizedMobile])
+  @@index([organizationId, status])
+  @@index([organizationId, existsInCrm])
+  @@index([organizationId, isDuplicateInForm])
+  @@index([organizationId, leadId])
+  @@index([organizationId, deletedAt])
+  @@map("form_submissions")
+}
+
+model FormAnswer {
+  id             String    @id @default(cuid())
+  organizationId String
+  submissionId   String
+  fieldId        String
+  fieldKey       String
+  valueText      String?
+  valueLongText  String?
+  valueNumber    Decimal?  @db.Decimal(18, 4)
+  valueDate      DateTime? @db.Date
+  valueJson      Json?
+  createdAt      DateTime  @default(now())
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  submission   FormSubmission @relation(fields: [organizationId, submissionId], references: [organizationId, id], onDelete: Cascade)
+  field        FormField      @relation(fields: [organizationId, fieldId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, submissionId, fieldId])
+  @@index([organizationId, fieldId])
+  @@index([organizationId, fieldKey])
+  @@index([organizationId, submissionId])
+  @@map("form_answers")
+}
+
+// ─── Normalized tags ─────────────────────────────────────────────────────────
+
+model Tag {
+  id             String    @id @default(cuid())
+  organizationId String
+  slug           String
+  name           String
+  color          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  forms        FormTag[]
+  submissions  FormSubmissionTag[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, deletedAt])
+  @@map("tags")
+}
+
+model FormTag {
+  id             String   @id @default(cuid())
+  organizationId String
+  formId         String
+  tagId          String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  form         Form         @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Cascade)
+  tag          Tag          @relation(fields: [organizationId, tagId], references: [organizationId, id], onDelete: Cascade)
+
+  @@unique([organizationId, formId, tagId])
+  @@index([organizationId, tagId])
+  @@map("form_tags")
+}
+
+model FormSubmissionTag {
+  id             String   @id @default(cuid())
+  organizationId String
+  submissionId   String
+  tagId          String
+  createdAt      DateTime @default(now())
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  submission   FormSubmission @relation(fields: [organizationId, submissionId], references: [organizationId, id], onDelete: Cascade)
+  tag          Tag            @relation(fields: [organizationId, tagId], references: [organizationId, id], onDelete: Cascade)
+
+  @@unique([organizationId, submissionId, tagId])
+  @@index([organizationId, tagId])
+  @@map("form_submission_tags")
+}
+
+// ─── Automation-ready foundation (no execution in 3.4A) ────────────────────────
+
+model AutomationRule {
+  id             String          @id @default(cuid())
+  organizationId String
+  formId         String?
+  name           String
+  trigger        DomainEventType
+  isEnabled      Boolean         @default(false)
+  actionConfig   Json            @default("{}")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  form         Form?        @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Cascade)
+
+  @@index([organizationId, trigger, isEnabled])
+  @@index([organizationId, formId])
+  @@index([organizationId, deletedAt])
+  @@map("automation_rules")
+}
+
+model DomainEventOutbox {
+  id             String            @id @default(cuid())
+  organizationId String
+  branchId       String?
+  eventType      DomainEventType
+  aggregateType  String
+  aggregateId    String
+  payload        Json
+  status         DomainEventStatus @default(PENDING)
+  attemptCount   Int               @default(0)
+  availableAt    DateTime          @default(now())
+  processedAt    DateTime?
+  lastError      String?
+  createdAt      DateTime          @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch?      @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([status, availableAt])
+  @@index([organizationId, eventType, createdAt])
+  @@index([organizationId, aggregateType, aggregateId])
+  @@map("domain_event_outbox")
+}
+
+// ─── Analytics (not stored in Form.settings) ─────────────────────────────────
+// FormAnalyticsEvent: raw events for funnels and conversion.
+// FormAnalyticsDaily: materialized daily rollups using non-null dimension + dimensionKey.
+
+model FormAnalyticsEvent {
+  id             String                 @id @default(cuid())
+  organizationId String
+  formId         String
+  formVersionId  String?
+  branchId       String?
+  eventType      FormAnalyticsEventType
+  sessionId      String?
+  occurredAt     DateTime               @default(now())
+  metadata       Json?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  form         Form         @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Cascade)
+  formVersion  FormVersion? @relation(fields: [organizationId, formVersionId], references: [organizationId, id], onDelete: Restrict)
+  branch       Branch?      @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([organizationId, formId, occurredAt])
+  @@index([organizationId, formVersionId, occurredAt])
+  @@index([organizationId, branchId, occurredAt])
+  @@index([organizationId, eventType, occurredAt])
+  @@map("form_analytics_events")
+}
+
+model FormAnalyticsDaily {
+  id                 String                      @id @default(cuid())
+  organizationId     String
+  formId             String
+  dimension          FormAnalyticsDailyDimension
+  dimensionKey       String
+  date               DateTime                    @db.Date
+  viewCount          Int                         @default(0)
+  startCount         Int                         @default(0)
+  submitSuccessCount Int                         @default(0)
+  submitFailureCount Int                         @default(0)
+  updatedAt          DateTime                    @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  form         Form         @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Cascade)
+
+  @@unique([organizationId, formId, dimension, dimensionKey, date])
+  @@index([organizationId, date])
+  @@index([organizationId, formId, date])
+  @@index([organizationId, formId, dimension, date])
+  @@map("form_analytics_daily")
 }
