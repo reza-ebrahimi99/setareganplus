@@ -96,7 +96,7 @@ export const heroContent = {
 /** StarOS media slots — assign url from media library when available */
 export const heroMedia = {
   logo: {
-    url: null,
+    url: "/images/brand/logo.jpg",
     alt: "لوگوی ستارگان پلاس",
   } satisfies MediaAsset,
   ghalamchiLogo: {
@@ -104,7 +104,7 @@ export const heroMedia = {
     alt: "لوگوی نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر",
   } satisfies MediaAsset,
   background: {
-    url: null,
+    url: "/images/hero/hero.jpg",
     alt: "نمای کلی مرکز آموزشی ستارگان پلاس در نسیم‌شهر",
   } satisfies MediaAsset,
 } as const;
@@ -128,7 +128,7 @@ export const founderContent = {
   ],
   bio: "رضا ابراهیمی، مؤسس و مدیرعامل مؤسسه آموزشی ستارگان، مدیر نمایندگی رسمی قلم‌چی نسیم‌شهر و مدیر دبستان غیردولتی ستارگان آینده است. ایشان به‌عنوان مدرس و مؤلف ریاضیات، راهبری آموزشی مجموعه ستارگان را بر عهده دارند.",
   portrait: {
-    url: null,
+    url: "/images/founder/portrait.jpg",
     alt: "پرتره رضا ابراهیمی، مؤسس و مدیرعامل مؤسسه آموزشی ستارگان",
   } satisfies MediaAsset,
 } as const;
@@ -201,7 +201,7 @@ export const aboutContent = {
   description:
     "مجموعه آموزشی ستارگان از سه بخش متمایز تشکیل شده است. آمار و ارقام هر بخش جداگانه گزارش می‌شود.",
   cover: {
-    url: null,
+    url: "/images/about/about.jpg" as string | null,
     alt: "فضای آموزشی مرکز آموزشی ستارگان پلاس",
   } satisfies MediaAsset,
   entities: [
@@ -344,7 +344,7 @@ export const partnershipContent = {
       alt: "لوگوی ستارگان پلاس",
     } satisfies MediaAsset,
     ghalamchi: {
-      url: null,
+      url: "/images/brand/ghalamchi.jpg",
       alt: "لوگوی نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر",
     } satisfies MediaAsset,
   },
@@ -411,7 +411,7 @@ export const galleryImages = [
     title: "آزمون هدیه تشریحی",
     category: "آزمون",
     media: {
-      url: null,
+      url: "/images/gallery/gallery-1.jpg",
       alt: "آزمون هدیه تشریحی ویژه دانش‌آموزان پایه یازدهم — ۱۹ تیر ۱۴۰۵",
     } satisfies MediaAsset,
   },
@@ -420,7 +420,7 @@ export const galleryImages = [
     title: "جشن پیشرفت تحصیلی دی ۱۴۰۴",
     category: "مراسم",
     media: {
-      url: null,
+      url: "/images/gallery/gallery-2.jpg",
       alt: "جشن پیشرفت تحصیلی قلم‌چی نسیم‌شهر — دی ۱۴۰۴",
     } satisfies MediaAsset,
   },
@@ -429,7 +429,7 @@ export const galleryImages = [
     title: "همایش‌های جمع‌بندی",
     category: "همایش",
     media: {
-      url: null,
+      url: "/images/gallery/gallery-3.jpg",
       alt: "همایش جمع‌بندی مجموعه آموزشی ستارگان",
     } satisfies MediaAsset,
   },
@@ -438,7 +438,7 @@ export const galleryImages = [
     title: "تیم مدیران",
     category: "تیم",
     media: {
-      url: null,
+      url: "/images/gallery/gallery-4.jpg",
       alt: "تیم مدیران نمایندگی قلم‌چی نسیم‌شهر",
     } satisfies MediaAsset,
   },
@@ -447,7 +447,7 @@ export const galleryImages = [
     title: "مشاوران و پشتیبانان",
     category: "تیم",
     media: {
-      url: null,
+      url: "/images/gallery/gallery-5.jpg",
       alt: "مشاوران و پشتیبانان آموزشی مجموعه ستارگان",
     } satisfies MediaAsset,
   },
@@ -456,7 +456,7 @@ export const galleryImages = [
     title: "نمایندگی پسران",
     category: "شعبه",
     media: {
-      url: null,
+      url: "/images/gallery/gallery-6.jpg",
       alt: "نمایندگی پسران قلم‌چی نسیم‌شهر — شعبه خیابان امام خمینی",
     } satisfies MediaAsset,
   },
