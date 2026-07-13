@@ -1,38 +1,550 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Homepage content — ستارگان پلاس / مرکز آموزشی نسیم‌شهر
+// Verified facts only. Items marked isPlaceholder must NOT render as real data.
+// Media: url is null until resolved from StarOS media library (admin uploads).
+// ─────────────────────────────────────────────────────────────────────────────
+
+import type { MediaAsset } from "@/lib/media";
+
+/** Official branding hierarchy (top → bottom) */
+export const branding = {
+  primary: "ستارگان پلاس",
+  secondary: "مرکز آموزشی نسیم‌شهر",
+  tertiary: "نمایندگی کانون فرهنگی آموزش (قلم‌چی)",
+} as const;
+
+export const officialSlogan = "چون تو لایق بهترینی..." as const;
+
+// ─── Statistics (institution vs school — never mix) ──────────────────────────
+
+/**
+ * مرکز آموزشی ستارگان پلاس / نمایندگی قلم‌چی نسیم‌شهر
+ * Primary homepage statistics — hero and institution achievements.
+ */
+export const institutionStats = [
+  { value: "۸۷", label: "دبیر و مشاور آموزشی" },
+  { value: "۱۵۶۰+", label: "فارغ‌التحصیل" },
+  { value: "۷۳", label: "رتبه زیر ۱۰۰۰" },
+  { value: "۵۹", label: "قبولی تیزهوشان و نمونه دولتی" },
+] as const;
+
+export const institutionStatsDetail = {
+  teachersAndConsultants: 87,
+  graduates: "1560+",
+  ranksUnder1000: 73,
+  ranksUnder1000Note: "در سه رشته تحصیلی",
+  giftedAndNemuneAdmissions: 59,
+} as const;
+
+/**
+ * دبستان غیردولتی ستارگان آینده only — school-specific section in About.
+ * Must NOT appear in hero or institution achievement blocks.
+ */
+export const schoolStats = {
+  foundedYear: "۱۴۰۱",
+  classrooms: 9,
+  teachers: 23,
+  graduates: 255,
+  giftedAdmissions: 9,
+  facilities: [
+    { title: "کلاس‌های هوشمند", description: "فضای آموزشی مجهز به فناوری روز" },
+    { title: "آزمایشگاه", description: "آموزش عملی علوم با تجهیزات آزمایشگاهی" },
+    { title: "حیاط مدرسه", description: "فضای باز مناسب برای فعالیت و بازی دانش‌آموزان" },
+  ],
+} as const;
+
+/** @deprecated Use institutionStats — kept for components not yet updated */
+export const heroStats = institutionStats;
+
+/**
+ * Distinct institution entities — do not merge in copy or UI.
+ * دبستان ستارگان آینده ≠ مرکز ستارگان پلاس ≠ نمایندگی قلم‌چی
+ */
+export const institutionEntities = {
+  setareganAyandeh: {
+    name: "دبستان غیردولتی ستارگان آینده",
+    role: "مؤسسه آموزشی پایه ابتدایی",
+    description:
+      "دبستان غیردولتی ستارگان آینده، مؤسسه آموزشی مجزا در مقطع ابتدایی است. این مدرسه در سال ۱۴۰۱ تأسیس شده و امکاناتی شامل کلاس‌های هوشمند، آزمایشگاه و حیاط مدرسه دارد.",
+  },
+  setareganPlus: {
+    name: "مرکز آموزشی ستارگان پلاس",
+    role: "مرکز آموزشی تکمیلی و آمادگی تحصیلی",
+    description:
+      "مرکز آموزشی ستارگان پلاس، بخش آموزشی تکمیلی مجموعه ستارگان است و خدمات دوره‌ای، کلاس‌های تقویتی، آزمون و مشاوره را با تیمی از ۸۷ دبیر و مشاور آموزشی ارائه می‌دهد.",
+  },
+  ghalamchiBranch: {
+    name: "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر",
+    role: "نمایندگی رسمی کانون قلم‌چی",
+    description:
+      "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر، برنامه آموزشی، آزمون‌ها و خدمات مشاوره مطابق استانداردهای کانون قلم‌چی را در نسیم‌شهر ارائه می‌دهد.",
+  },
+} as const;
+
+// ─── Hero ────────────────────────────────────────────────────────────────────
+
 export const heroContent = {
-  title: "ستارگان پلاس",
-  subtitle: "سکوی دیجیتال مرکز آموزشی نسیم‌شهر",
+  title: branding.primary,
+  subtitle: branding.secondary,
+  affiliation: branding.tertiary,
+  slogan: officialSlogan,
   description:
-    "بستری یکپارچه برای معرفی خدمات آموزشی، راهنمایی مسیر ثبت‌نام و آماده‌سازی تجربه دیجیتال مرکز. سکو در حال توسعه است و خدمات به‌تدریج فعال می‌شوند.",
-  eyebrow: "سکوی آموزشی در حال توسعه",
+    "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر با ۸۷ دبیر و مشاور آموزشی، بیش از ۱۵۶۰ فارغ‌التحصیل و سوابق درخشان در کنکور و مدارس تیزهوشان.",
+  eyebrow: branding.tertiary,
+} as const;
+
+/** StarOS media slots — assign url from media library when available */
+export const heroMedia = {
+  logo: {
+    url: null,
+    alt: "لوگوی ستارگان پلاس",
+  } satisfies MediaAsset,
+  ghalamchiLogo: {
+    url: null,
+    alt: "لوگوی نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر",
+  } satisfies MediaAsset,
+  background: {
+    url: null,
+    alt: "نمای کلی مرکز آموزشی ستارگان پلاس در نسیم‌شهر",
+  } satisfies MediaAsset,
+} as const;
+
+/** @deprecated Use heroMedia — kept for gradual migration */
+export const heroImages = {
+  logo: heroMedia.logo.url,
+  ghalamchiLogo: heroMedia.ghalamchiLogo.url,
+  background: heroMedia.background.url,
+  founder: null,
+  campus: null,
+} as const;
+
+export const founderContent = {
+  name: "رضا ابراهیمی",
+  roles: [
+    "مؤسس و مدیرعامل مؤسسه آموزشی ستارگان",
+    "مدیر نمایندگی رسمی قلم‌چی نسیم‌شهر",
+    "مدیر دبستان غیردولتی ستارگان آینده",
+    "مدرس و مؤلف ریاضیات",
+  ],
+  bio: "رضا ابراهیمی، مؤسس و مدیرعامل مؤسسه آموزشی ستارگان، مدیر نمایندگی رسمی قلم‌چی نسیم‌شهر و مدیر دبستان غیردولتی ستارگان آینده است. ایشان به‌عنوان مدرس و مؤلف ریاضیات، راهبری آموزشی مجموعه ستارگان را بر عهده دارند.",
+  portrait: {
+    url: null,
+    alt: "پرتره رضا ابراهیمی، مؤسس و مدیرعامل مؤسسه آموزشی ستارگان",
+  } satisfies MediaAsset,
+} as const;
+
+export const heroCtas = {
+  primary: { label: "پیش‌ثبت‌نام", href: "/pre-registration" },
+  secondary: [
+    { label: "دوره‌ها", href: "/courses" },
+    { label: "مشاوره", href: "/consultation" },
+  ],
+} as const;
+
+// ─── Contact (verified — shared by FinalCta and Contact sections) ────────────
+
+export const contactContent = {
+  phones: [
+    { value: "۰۲۱۵۶۷۶۶۷۷۲", href: "tel:02156766772" },
+    { value: "۰۲۱۵۶۷۶۶۸۷۴", href: "tel:02156766874" },
+    { value: "۰۹۳۸۰۱۹۰۵۸۶", href: "tel:09380190586" },
+    { value: "۰۹۳۸۴۵۶۷۰۵۴", href: "tel:09384567054" },
+  ],
+  hours: {
+    daily: "هر روز: ۱۲:۰۰ تا ۲۰:۳۰",
+    thursday: "پنج‌شنبه: ۱۰:۰۰ تا ۲۰:۳۰",
+  },
+  branches: [
+    {
+      name: "شعبه پسران",
+      address:
+        "نسیم‌شهر، خیابان امام خمینی، بین بانک مسکن و کلانتری، کوچه مدرسه، پلاک ۵",
+      mapUrl: "https://maps.app.goo.gl/jKQLs65S6Jv8MfKv8?g_st=ac",
+    },
+    {
+      name: "شعبه دختران",
+      address:
+        "نسیم‌شهر، خیابان امام خمینی، نرسیده به خیابان سوم، کوچه پاییزان، پلاک ۱۸۸",
+      mapUrl: "https://maps.app.goo.gl/b8b8v3bMTGksEUhMA?g_st=ac",
+    },
+    {
+      name: "دبستان غیردولتی ستارگان آینده",
+      address:
+        "نسیم‌شهر، خیابان امام خمینی، بین خیابان اول و دوم، روبروی پلیس ۱۰+",
+      mapUrl: "https://maps.app.goo.gl/EBx391TsJ8jv3UsY9",
+    },
+  ],
+  social: [
+    {
+      platform: "اینستاگرام",
+      label: "Ghalamchinasimshahr",
+      href: "https://instagram.com/Ghalamchinasimshahr",
+    },
+    {
+      platform: "بله",
+      label: "کانال بله",
+      href: "https://ble.ir/join/ANGRKipzkv",
+    },
+    {
+      platform: "تلگرام",
+      label: "کانال تلگرام",
+      href: "https://t.me/setareganinstitute1",
+    },
+  ],
+} as const;
+
+// ─── About ───────────────────────────────────────────────────────────────────
+
+export const aboutContent = {
+  eyebrow: "آشنایی با مجموعه",
+  heading: "درباره ستارگان پلاس",
+  description:
+    "مجموعه آموزشی ستارگان از سه بخش متمایز تشکیل شده است. آمار و ارقام هر بخش جداگانه گزارش می‌شود.",
+  cover: {
+    url: null,
+    alt: "فضای آموزشی مرکز آموزشی ستارگان پلاس",
+  } satisfies MediaAsset,
+  entities: [
+    institutionEntities.setareganAyandeh,
+    institutionEntities.setareganPlus,
+    institutionEntities.ghalamchiBranch,
+  ],
+  schoolSection: {
+    heading: "دبستان غیردولتی ستارگان آینده",
+    description:
+      "آمار زیر مختص دبستان غیردولتی ستارگان آینده است و با آمار مرکز آموزشی ستارگان پلاس متفاوت است.",
+    stats: schoolStats,
+  },
+  cta: { label: "بیشتر بدانید", href: "/about" },
+} as const;
+
+// ─── Why choose us (consumed by TrustSection until renamed) ─────────────────
+
+export const trustSectionContent = {
+  eyebrow: "مزیت‌های ما",
+  heading: "چرا ستارگان پلاس",
+  description:
+    "نمایندگی رسمی قلم‌چی نسیم‌شهر با تیم آموزشی گسترده و سوابق تأییدشده در کنکور و مدارس برتر.",
 } as const;
 
 export const trustItems = [
   {
-    title: "تجربه فارسی‌محور",
+    title: "نمایندگی رسمی قلم‌چی نسیم‌شهر",
     description:
-      "طراحی رابط کاربری با زبان فارسی، راست‌به‌چپ و نیازهای خانواده‌های آموزشی در مرکز.",
+      "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر با برنامه آموزشی و آزمون‌های استاندارد کانون.",
   },
   {
-    title: "طراحی حریم‌خصوصی‌محور",
+    title: "۸۷ دبیر و مشاور آموزشی",
     description:
-      "تمرکز بر شفافیت اطلاعات، رضایت کاربر و انتشار داده‌ها فقط پس از تأیید رسمی.",
+      "تیم آموزشی مرکز متشکل از ۸۷ دبیر و مشاور است که برنامه درسی، آزمون‌ها و مشاوره تحصیلی را پوشش می‌دهند.",
   },
   {
-    title: "مسیر ثبت‌نام منسجم",
+    title: "بیش از ۱۵۶۰ فارغ‌التحصیل",
     description:
-      "راهنمای مرحله‌به‌مرحله برای آشنایی با خدمات، پیش‌ثبت‌نام و ارتباط با مرکز.",
+      "بیش از ۱۵۶۰ دانش‌آموز از مجموعه آموزشی ستارگان فارغ‌التحصیل شده‌اند.",
   },
   {
-    title: "زیرساخت چندشعبه‌ای",
+    title: "۷۳ رتبه زیر ۱۰۰۰",
     description:
-      "معماری آماده برای توسعه در مقیاس مراکز و شعب آموزشی مستقل در آینده.",
+      "۷۳ رتبه زیر ۱۰۰۰ کنکور سراسری در سه رشته تحصیلی توسط دانش‌آموزان مجموعه کسب شده است.",
   },
   {
-    title: "راه‌اندازی تدریجی خدمات",
+    title: "۵۹ قبولی مدارس برتر",
     description:
-      "هر بخش پس از آماده‌سازی فنی و تأیید محتوا به‌صورت مرحله‌ای در دسترس قرار می‌گیرد.",
+      "۵۹ قبولی در مدارس تیزهوشان و نمونه دولتی توسط دانش‌آموزان مجموعه آموزشی ستارگان.",
   },
 ] as const;
+
+export const whyChooseContent = trustSectionContent;
+export const whyChooseItems = trustItems;
+
+// ─── Educational services (consumed by PremiumServices) ──────────────────────
+
+export const servicesSectionContent = {
+  eyebrow: "خدمات ما",
+  heading: "خدمات آموزشی",
+  description:
+    "مرکز آموزشی ستارگان پلاس طیف خدمات آموزشی کانون قلم‌چی را در نسیم‌شهر ارائه می‌دهد.",
+} as const;
+
+// ─── Achievements (institution only) ─────────────────────────────────────────
+
+export const achievementsContent = {
+  eyebrow: "افتخارات",
+  heading: "دستاوردهای مجموعه",
+  description:
+    "دستاوردهای تأییدشده مرکز آموزشی ستارگان پلاس و نمایندگی قلم‌چی نسیم‌شهر.",
+} as const;
+
+export const achievementItems = [
+  {
+    metric: "۸۷",
+    title: "دبیر و مشاور آموزشی",
+    description: "تیم آموزشی و مشاوره‌ای مرکز متشکل از ۸۷ نفر",
+  },
+  {
+    metric: "۱۵۶۰+",
+    title: "فارغ‌التحصیل",
+    description: "بیش از ۱۵۶۰ دانش‌آموز از مجموعه آموزشی ستارگان فارغ‌التحصیل شده‌اند",
+  },
+  {
+    metric: "۷۳",
+    title: "رتبه زیر ۱۰۰۰ کنکور",
+    description: "۷۳ رتبه زیر ۱۰۰۰ در سه رشته تحصیلی",
+  },
+  {
+    metric: "۵۹",
+    title: "قبولی مدارس برتر",
+    description: "۵۹ قبولی در مدارس تیزهوشان و نمونه دولتی",
+  },
+] as const;
+
+/** School-only achievements — for About section, not homepage hero */
+export const schoolAchievementItems = [
+  {
+    metric: "۱۴۰۱",
+    title: "سال تأسیس دبستان",
+    description: "آغاز فعالیت دبستان غیردولتی ستارگان آینده",
+  },
+  {
+    metric: "۹",
+    title: "کلاس درس",
+    description: "۹ کلاس درس مجهز در دبستان ستارگان آینده",
+  },
+  {
+    metric: "۲۳",
+    title: "دبیر",
+    description: "تیم آموزشی دبستان متشکل از ۲۳ دبیر",
+  },
+  {
+    metric: "۲۵۵",
+    title: "فارغ‌التحصیل",
+    description: "۲۵۵ دانش‌آموز از دبستان ستارگان آینده فارغ‌التحصیل شده‌اند",
+  },
+  {
+    metric: "۹",
+    title: "قبولی تیزهوشان",
+    description: "۹ قبولی در آزمون ورود به مدارس تیزهوشان",
+  },
+] as const;
+
+// ─── Ghalamchi partnership ───────────────────────────────────────────────────
+
+export const partnershipContent = {
+  eyebrow: "همکاری رسمی",
+  heading: "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر",
+  description:
+    "مرکز آموزشی ستارگان پلاس به‌عنوان نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر فعالیت می‌کند.",
+  statement:
+    "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر برنامه آموزشی، آزمون‌های منظم و محتوای آموزشی مطابق استانداردهای کانون قلم‌چی را در اختیار دانش‌آموزان نسیم‌شهر قرار می‌دهد.",
+  slogan: officialSlogan,
+  logos: {
+    institution: {
+      url: null,
+      alt: "لوگوی ستارگان پلاس",
+    } satisfies MediaAsset,
+    ghalamchi: {
+      url: null,
+      alt: "لوگوی نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر",
+    } satisfies MediaAsset,
+  },
+  benefits: [
+    {
+      title: "برنامه استاندارد کانون",
+      description: "اجرای برنامه آموزشی یکپارچه مطابق کانون فرهنگی آموزش قلم‌چی",
+      badge: "قلم‌چی",
+    },
+    {
+      title: "آزمون‌های منظم",
+      description: "برگزاری آزمون‌های آموزشی در چارچوب نظام ارزیابی کانون قلم‌چی",
+      badge: "قلم‌چی",
+    },
+    {
+      title: "محتوای آموزشی کانون",
+      description: "دسترسی به منابع و محتوای آموزشی کانون قلم‌چی",
+      badge: "قلم‌چی",
+    },
+    {
+      title: "مشاوره تحصیلی",
+      description: "راهنمایی تحصیلی در مسیر کنکور و انتخاب رشته",
+      badge: "ستارگان پلاس",
+    },
+  ],
+  externalLink: {
+    label: "وب‌سایت کانون قلم‌چی",
+    href: "https://www.kanoon.ir",
+  },
+} as const;
+
+// ─── Student success stories ───────────────────────────────────────────────────
+// Empty until names and exact results are structured — not fabricated.
+
+export type SuccessStory = {
+  quote: string;
+  author: string;
+  detail?: string;
+};
+
+export const successStoriesContent = {
+  eyebrow: "داستان موفقیت",
+  heading: "دانش‌آموزان موفق",
+  description:
+    "داستان‌های موفقیت دانش‌آموزان پس از ساختاردهی نام‌ها و نتایج دقیق منتشر خواهد شد.",
+  isPlaceholder: true,
+} as const;
+
+export const successStories: readonly SuccessStory[] = [];
+
+// ─── Gallery ─────────────────────────────────────────────────────────────────
+// Semantic entries with image paths — files added in a later asset step.
+
+export const galleryContent = {
+  eyebrow: "گالری",
+  heading: "تصاویر مجموعه",
+  description: "گوشه‌ای از فعالیت‌ها، رویدادها و فضای آموزشی مجموعه ستارگان.",
+} as const;
+
+/** mediaKey maps to future StarOS media library records */
+export const galleryImages = [
+  {
+    mediaKey: "ghalamchi-events/azmon-hediye-tashrihi-1405-tir",
+    title: "آزمون هدیه تشریحی",
+    category: "آزمون",
+    media: {
+      url: null,
+      alt: "آزمون هدیه تشریحی ویژه دانش‌آموزان پایه یازدهم — ۱۹ تیر ۱۴۰۵",
+    } satisfies MediaAsset,
+  },
+  {
+    mediaKey: "ghalamchi-events/jashn-pishraft-dey-1404",
+    title: "جشن پیشرفت تحصیلی دی ۱۴۰۴",
+    category: "مراسم",
+    media: {
+      url: null,
+      alt: "جشن پیشرفت تحصیلی قلم‌چی نسیم‌شهر — دی ۱۴۰۴",
+    } satisfies MediaAsset,
+  },
+  {
+    mediaKey: "ghalamchi-events/hamayesh-jam-bandi",
+    title: "همایش‌های جمع‌بندی",
+    category: "همایش",
+    media: {
+      url: null,
+      alt: "همایش جمع‌بندی مجموعه آموزشی ستارگان",
+    } satisfies MediaAsset,
+  },
+  {
+    mediaKey: "team/modiran-namayandegi",
+    title: "تیم مدیران",
+    category: "تیم",
+    media: {
+      url: null,
+      alt: "تیم مدیران نمایندگی قلم‌چی نسیم‌شهر",
+    } satisfies MediaAsset,
+  },
+  {
+    mediaKey: "team/moshaveran-pashtibanan",
+    title: "مشاوران و پشتیبانان",
+    category: "تیم",
+    media: {
+      url: null,
+      alt: "مشاوران و پشتیبانان آموزشی مجموعه ستارگان",
+    } satisfies MediaAsset,
+  },
+  {
+    mediaKey: "gallery/namayandegi-pesarane-shobe",
+    title: "نمایندگی پسران",
+    category: "شعبه",
+    media: {
+      url: null,
+      alt: "نمایندگی پسران قلم‌چی نسیم‌شهر — شعبه خیابان امام خمینی",
+    } satisfies MediaAsset,
+  },
+] as const;
+
+// ─── Latest news ─────────────────────────────────────────────────────────────
+
+export const newsContent = {
+  eyebrow: "اخبار",
+  heading: "آخرین اخبار",
+  description: "اطلاعیه‌ها و رویدادهای رسمی مجموعه آموزشی ستارگان.",
+} as const;
+
+export const newsItems = [
+  {
+    title: "آزمون هدیه تشریحی ویژه دانش‌آموزان پایه یازدهم",
+    date: "۱۹ تیر ۱۴۰۵",
+    description:
+      "برگزارشده با استقبال دانش‌آموزان از سراسر نسیم‌شهر برای آمادگی امتحانات نهایی.",
+  },
+  {
+    title: "جشن پیشرفت تحصیلی قلم‌چی نسیم‌شهر",
+    date: "دی ۱۴۰۴",
+    description:
+      "مراسم آموزشی و انگیزشی همراه با بررسی کارنامه، اهدای مجلات آموزشی و تقدیر از دانش‌آموزان.",
+  },
+  {
+    title: "جلسه مدیران نمایندگی قلم‌چی نسیم‌شهر",
+    date: undefined,
+    description:
+      "نشست هماهنگی مدیران برای برنامه‌ریزی و ارتقای خدمات آموزشی.",
+  },
+] as const;
+
+// ─── FAQ preview (consumed by FaqPreview until switched to content/faq.ts) ───
+
+export const faqPreviewContent = {
+  eyebrow: "پرسش و پاسخ",
+  heading: "پرسش‌های رایج",
+  description:
+    "پاسخ کوتاه به برخی سؤالات پرتکرار. فهرست کامل در صفحه سوالات متداول موجود است.",
+} as const;
+
+export const faqPreviewItems = [
+  {
+    question: "ستارگان پلاس چیست؟",
+    answer:
+      "ستارگان پلاس نام مرکز آموزشی نسیم‌شهر است که به‌عنوان نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر فعالیت می‌کند.",
+  },
+  {
+    question: "تفاوت دبستان ستارگان آینده با مرکز ستارگان پلاس چیست؟",
+    answer:
+      "دبستان غیردولتی ستارگان آینده مقطع ابتدایی را پوشش می‌دهد. مرکز آموزشی ستارگان پلاس خدمات تکمیلی، کلاس‌های تقویتی، آزمون و مشاوره را ارائه می‌دهد. هر دو بخش مجموعه آموزشی ستارگان هستند اما مؤسسه مجزا با آمار و نقش متفاوت.",
+  },
+  {
+    question: "آیا این مرکز نمایندگی رسمی قلم‌چی است؟",
+    answer:
+      "بله. مرکز آموزشی ستارگان پلاس نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر است.",
+  },
+  {
+    question: "آیا ثبت‌نام آنلاین فعال است؟",
+    answer:
+      "ثبت‌نام آنلاین از طریق این وب‌سایت به‌زودی فعال می‌شود. تا آن زمان برای پیش‌ثبت‌نام با شماره‌های ۰۲۱۵۶۷۶۶۷۷۲ یا ۰۹۳۸۰۱۹۰۵۸۶ تماس بگیرید.",
+  },
+] as const;
+
+// ─── Contact CTA (consumed by FinalCta) ──────────────────────────────────────
+
+export const finalCtaContent = {
+  eyebrow: "ارتباط با ما",
+  heading: "آماده‌اید با ما در ارتباط باشید؟",
+  description:
+    "برای پیش‌ثبت‌نام، مشاوره تحصیلی یا اطلاع از خدمات مرکز، با ما تماس بگیرید یا به یکی از شعب مراجعه کنید.",
+  slogan: officialSlogan,
+  contact: contactContent,
+  primaryLabel: "تماس با ما",
+  primaryHref: "/contact",
+  secondaryLabel: "پیش‌ثبت‌نام",
+  secondaryHref: "/pre-registration",
+} as const;
+
+// ─── Legacy exports (components not yet on homepage — kept to avoid build breaks) ─
+
+export const platformVisionContent = {
+  heading: "چشم‌انداز سکو",
+  description:
+    "موارد زیر بخش‌های برنامه‌ریزی‌شده برای آینده هستند و اکنون به‌صورت عملیاتی در دسترس نیستند.",
+} as const;
 
 export const platformVisionItems = [
   {
@@ -77,6 +589,12 @@ export const platformVisionItems = [
   },
 ] as const;
 
+export const enrollmentJourneyContent = {
+  heading: "مسیر ثبت‌نام",
+  description:
+    "مسیر پیشنهادی برای آشنایی با خدمات و آماده‌سازی پیش‌ثبت‌نام.",
+} as const;
+
 export const enrollmentSteps = [
   {
     title: "انتخاب خدمت",
@@ -88,71 +606,14 @@ export const enrollmentSteps = [
   },
   {
     title: "پیش‌ثبت‌نام",
-    description: "آماده‌سازی برای ثبت درخواست اولیه؛ فرم آنلاین به‌زودی فعال می‌شود.",
+    description: "ثبت درخواست اولیه از طریق مرکز یا وب‌سایت.",
   },
   {
     title: "ارتباط با مرکز",
-    description: "پیگیری از مسیرهای رسمی مرکز تا زمان فعال‌سازی ثبت آنلاین.",
+    description: "پیگیری از مسیرهای رسمی مرکز آموزشی نسیم‌شهر.",
   },
   {
     title: "تکمیل ثبت‌نام",
-    description: "مرحله نهایی پس از تأیید مرکز و آماده‌سازی زیرساخت‌های لازم.",
+    description: "مرحله نهایی پس از تأیید مرکز.",
   },
 ] as const;
-
-export const faqPreviewItems = [
-  {
-    question: "ستارگان پلاس چیست؟",
-    answer:
-      "ستارگان پلاس سکوی آموزشی دیجیتال مرکز آموزشی نسیم‌شهر است و برای یکپارچه‌سازی خدمات آموزشی این مرکز در حال توسعه است.",
-  },
-  {
-    question: "آیا ثبت‌نام آنلاین فعال است؟",
-    answer:
-      "خیر. ثبت‌نام و پیش‌ثبت‌نام آنلاین هنوز فعال نشده است و در نسخه‌های آینده سکو راه‌اندازی خواهد شد.",
-  },
-  {
-    question: "چگونه می‌توانم در دوره‌ها یا کلاس‌ها پیش‌ثبت‌نام کنم؟",
-    answer:
-      "تا زمان فعال‌سازی ثبت‌نام آنلاین، پیگیری از مسیرهای رسمی مرکز آموزشی نسیم‌شهر امکان‌پذیر است.",
-  },
-] as const;
-
-export const finalCtaContent = {
-  heading: "آماده‌اید مسیر ثبت‌نام را بشناسید؟",
-  description:
-    "صفحه پیش‌ثبت‌نام راهنمای فعلی مرکز را ارائه می‌دهد. برای پرسش‌های بیشتر می‌توانید به صفحه تماس مراجعه کنید.",
-  primaryLabel: "پیش‌ثبت‌نام",
-  primaryHref: "/pre-registration",
-  secondaryLabel: "تماس",
-  secondaryHref: "/contact",
-} as const;
-
-export const servicesSectionContent = {
-  heading: "خدمات آموزشی",
-  description:
-    "صفحات زیر مسیر اطلاع‌رسانی فعلی مرکز هستند. ثبت‌نام آنلاین پس از تکمیل زیرساخت فعال خواهد شد.",
-} as const;
-
-export const platformVisionContent = {
-  heading: "چشم‌انداز سکو",
-  description:
-    "موارد زیر بخش‌های برنامه‌ریزی‌شده برای آینده هستند و اکنون به‌صورت عملیاتی در دسترس نیستند.",
-} as const;
-
-export const enrollmentJourneyContent = {
-  heading: "مسیر ثبت‌نام",
-  description:
-    "مسیر پیشنهادی برای آشنایی با خدمات و آماده‌سازی پیش‌ثبت‌نام. ارسال فرم آنلاین هنوز فعال نیست.",
-} as const;
-
-export const faqPreviewContent = {
-  heading: "پرسش‌های رایج",
-  description: "پاسخ کوتاه به برخی سؤالات پرتکرار. فهرست کامل در صفحه سوالات متداول موجود است.",
-} as const;
-
-export const trustSectionContent = {
-  heading: "چرا ستارگان پلاس",
-  description:
-    "ویژگی‌هایی که در طراحی و توسعه سکو مبنای قرار گرفته‌اند؛ بدون ادعای آماده بودن همه قابلیت‌ها.",
-} as const;

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { toPersianDigits } from "@/lib/persian";
 
 type CtaAction = {
   label: string;
@@ -36,8 +37,12 @@ export function CtaPanel({
 }: CtaPanelProps) {
   return (
     <div className="cta-panel rounded-2xl border border-primary/20 p-6 shadow-sm sm:p-8">
-      <h2 className="text-2xl font-bold sm:text-3xl">{heading}</h2>
-      <p className="mt-3 max-w-2xl text-base leading-8">{description}</p>
+      <h2 className="text-2xl font-bold sm:text-3xl">
+        {toPersianDigits(heading)}
+      </h2>
+      <p className="mt-3 max-w-2xl text-base leading-8">
+        {toPersianDigits(description)}
+      </p>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Link
           href={primary.href}
