@@ -216,7 +216,8 @@ export const aboutContent = {
     alt: "نمای تابلوی نمایندگی قلم‌چی شعبه پسران",
   } satisfies MediaAsset,
   branches: {
-    heading: "نمایندگی‌های رسمی قلم‌چی",
+    eyebrow: "کانون فرهنگی آموزش",
+    heading: "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی)",
     description: "دو شعبه فعال برای دانش‌آموزان دختر و پسر",
     items: [
       {

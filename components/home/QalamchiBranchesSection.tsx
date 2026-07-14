@@ -11,7 +11,7 @@ function BranchImageFallback({ label }: { label: string }) {
   return (
     <div
       aria-hidden="true"
-      className="flex h-full min-h-[14rem] flex-col items-center justify-center bg-primary/[0.04] px-6 text-center"
+      className="flex h-full min-h-[14rem] flex-col items-center justify-center bg-amber-50 px-6 text-center"
     >
       <p className="text-xs font-medium tracking-wide text-secondary">
         نمایندگی قلم‌چی
@@ -33,8 +33,8 @@ function BranchCard({
   media: MediaAsset;
 }) {
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
-      <div className="relative aspect-[16/11] overflow-hidden bg-slate-50">
+    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-amber-200/70 bg-white shadow-sm">
+      <div className="relative aspect-[16/11] overflow-hidden bg-amber-50/60">
         {hasMediaUrl(media) ? (
           <MediaImage
             media={media}
@@ -67,13 +67,13 @@ export function QalamchiBranchesSection() {
   return (
     <section
       aria-labelledby={headingId}
-      className="relative w-full overflow-hidden border-y border-[#E8C768]/40 bg-[#FFF7DF] py-14 sm:py-20 before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.14),transparent_42%)]"
+      className="relative w-full overflow-hidden border-y border-amber-300/70 border-t-4 border-t-[#D4AF37] bg-[#FEF3C7] py-16 sm:py-24 before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.16),transparent_42%)]"
     >
       <div className="relative z-10">
         <Container>
           <header className="max-w-3xl">
-            <p className="inline-flex items-center rounded-full border border-[#E8C768]/55 bg-white/70 px-3 py-1 text-xs font-medium tracking-wide text-secondary shadow-sm">
-              قلم‌چی
+            <p className="inline-flex items-center rounded-full border border-[#D4AF37]/55 bg-white/80 px-3 py-1 text-xs font-medium tracking-wide text-secondary shadow-sm">
+              {toPersianDigits(branches.eyebrow)}
             </p>
             <h2
               id={headingId}
@@ -83,7 +83,7 @@ export function QalamchiBranchesSection() {
             </h2>
             <div
               aria-hidden="true"
-              className="mt-4 h-1 w-14 rounded-full bg-secondary"
+              className="mt-4 h-1 w-14 rounded-full bg-[#D4AF37]"
             />
             <p className="mt-4 text-base leading-8 text-muted">
               {toPersianDigits(branches.description)}
