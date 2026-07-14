@@ -1,4 +1,5 @@
 import {
+  BookingSlotStatus,
   BookingStatus,
   DomainEventType,
 } from "@/generated/prisma/enums";
@@ -13,6 +14,18 @@ import {
 import { prisma } from "@/lib/prisma";
 
 const CONSUMING = new Set<string>(CAPACITY_CONSUMING_BOOKING_STATUSES);
+
+const RESCHEDULE_SAFE_MESSAGE = "جابه‌جایی نوبت ممکن نشد.";
+
+function logRescheduleDiagnostic(stage: string, error: unknown): void {
+  const code =
+    error && typeof error === "object" && "code" in error
+      ? String((error as { code: unknown }).code)
+      : error instanceof Error
+        ? error.name
+        : "UNKNOWN";
+  console.error("[booking.reschedule]", { stage, code });
+}
 
 export async function cancelReservation(params: {
   organizationId: string;
@@ -113,7 +126,11 @@ export async function updateReservationStatus(params: {
 }
 
 /**
- * Reschedule: claim new slot first, then release old, mark old RESCHEDULED.
+ * Reschedule: claim new slot first, then mark old RESCHEDULED, create
+ * replacement, release old capacity — all in one transaction.
+ *
+ * Tracking-code uniqueness: retire the original row's code before creating
+ * the replacement that keeps the guest-facing trackingCode.
  */
 export async function rescheduleReservation(params: {
   organizationId: string;
@@ -139,7 +156,8 @@ export async function rescheduleReservation(params: {
       if (
         current.status === BookingStatus.CANCELLED ||
         current.status === BookingStatus.RESCHEDULED ||
-        current.status === BookingStatus.COMPLETED
+        current.status === BookingStatus.COMPLETED ||
+        current.status === BookingStatus.NO_SHOW
       ) {
         return {
           ok: false as const,
@@ -147,20 +165,54 @@ export async function rescheduleReservation(params: {
         };
       }
 
+      if (params.newSlotId === current.slotId) {
+        return {
+          ok: false as const,
+          error: "نوبت مقصد باید با نوبت فعلی متفاوت باشد.",
+        };
+      }
+
+      const target = await tx.bookingSlot.findFirst({
+        where: {
+          id: params.newSlotId,
+          organizationId: params.organizationId,
+        },
+        select: {
+          id: true,
+          serviceId: true,
+          status: true,
+          branchId: true,
+        },
+      });
+      if (!target) {
+        return { ok: false as const, error: "نوبت مقصد معتبر نیست." };
+      }
+      if (target.serviceId !== current.slot.serviceId) {
+        return {
+          ok: false as const,
+          error: "نوبت مقصد باید مربوط به همان خدمت باشد.",
+        };
+      }
+      if (target.status !== BookingSlotStatus.OPEN) {
+        return { ok: false as const, error: SLOT_FULL_MESSAGE };
+      }
+
       const claimed = await claimSlotSeat(tx, params.newSlotId);
       if (!claimed) {
         return { ok: false as const, error: SLOT_FULL_MESSAGE };
       }
 
-      if (CONSUMING.has(current.status)) {
-        await releaseSlotSeat(tx, current.slotId);
-      } else if (current.status === BookingStatus.WAITING_LIST) {
-        await releaseWaitingListSeat(tx, current.slotId);
-      }
+      const retainedTrackingCode = current.trackingCode;
 
+      // Free @@unique([organizationId, trackingCode]) before insert.
       await tx.bookingReservation.update({
         where: { id: current.id },
-        data: { status: BookingStatus.RESCHEDULED },
+        data: {
+          status: BookingStatus.RESCHEDULED,
+          trackingCode: `R-${current.id}`,
+          cancelTokenHash: null,
+          checkInTokenHash: null,
+        },
       });
 
       const created = await tx.bookingReservation.create({
@@ -175,7 +227,7 @@ export async function rescheduleReservation(params: {
           normalizedMobile: current.normalizedMobile,
           normalizedEmail: current.normalizedEmail,
           normalizedNationalId: current.normalizedNationalId,
-          trackingCode: current.trackingCode,
+          trackingCode: retainedTrackingCode,
           cancelTokenHash: current.cancelTokenHash,
           checkInTokenHash: current.checkInTokenHash,
           rescheduledFromId: current.id,
@@ -183,14 +235,15 @@ export async function rescheduleReservation(params: {
         },
       });
 
-      const newSlot = await tx.bookingSlot.findFirst({
-        where: { id: params.newSlotId, organizationId: params.organizationId },
-        select: { branchId: true },
-      });
+      if (CONSUMING.has(current.status)) {
+        await releaseSlotSeat(tx, current.slotId);
+      } else if (current.status === BookingStatus.WAITING_LIST) {
+        await releaseWaitingListSeat(tx, current.slotId);
+      }
 
       await enqueueBookingEvent({
         organizationId: params.organizationId,
-        branchId: newSlot?.branchId ?? current.slot.branchId,
+        branchId: target.branchId ?? current.slot.branchId,
         eventType: DomainEventType.BOOKING_RESCHEDULED,
         reservationId: created.id,
         payload: { fromReservationId: current.id },
@@ -203,8 +256,9 @@ export async function rescheduleReservation(params: {
         trackingCode: created.trackingCode,
       };
     });
-  } catch {
-    return { ok: false, error: "جابه‌جایی نوبت ممکن نشد." };
+  } catch (error) {
+    logRescheduleDiagnostic("transaction", error);
+    return { ok: false, error: RESCHEDULE_SAFE_MESSAGE };
   }
 }
 
