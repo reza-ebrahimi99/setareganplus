@@ -7,6 +7,7 @@ import { NewsSection } from "@/components/home/NewsSection";
 import { PartnershipSection } from "@/components/home/PartnershipSection";
 import { PremiumHero } from "@/components/home/PremiumHero";
 import { PremiumServices } from "@/components/home/PremiumServices";
+import { QalamchiBranchesSection } from "@/components/home/QalamchiBranchesSection";
 import { SuccessStoriesSection } from "@/components/home/SuccessStoriesSection";
 import { TrustSection } from "@/components/home/TrustSection";
 import { SiteShell } from "@/components/layout/SiteShell";
@@ -15,6 +16,7 @@ export default function Home() {
   return (
     <SiteShell activePath="/">
       <PremiumHero />
+      <QalamchiBranchesSection />
       <AboutSection />
       <TrustSection />
       <PremiumServices />

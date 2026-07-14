@@ -1,73 +1,14 @@
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { MediaImage } from "@/components/ui/MediaImage";
-import { Section } from "@/components/ui/Section";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { hasMediaUrl } from "@/lib/media";
-import type { MediaAsset } from "@/lib/media";
 import { aboutContent, institutionEntities } from "@/content/home";
 import { toPersianDigits } from "@/lib/persian";
 
 const headingId = "about-heading";
-const branchesHeadingId = "qalamchi-branches-heading";
-
-function BranchImageFallback({ label }: { label: string }) {
-  return (
-    <div
-      aria-hidden="true"
-      className="flex h-full min-h-[14rem] flex-col items-center justify-center bg-primary/[0.04] px-6 text-center"
-    >
-      <p className="text-xs font-medium tracking-wide text-secondary">
-        نمایندگی قلم‌چی
-      </p>
-      <p className="mt-3 text-sm font-medium leading-7 text-primary">
-        {toPersianDigits(label)}
-      </p>
-    </div>
-  );
-}
-
-function BranchCard({
-  title,
-  description,
-  media,
-}: {
-  title: string;
-  description: string;
-  media: MediaAsset;
-}) {
-  return (
-    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-primary/10 bg-white shadow-[0_1px_2px_rgb(15_23_42_/_0.04),0_12px_28px_rgb(15_23_42_/_0.06)]">
-      <div className="relative aspect-[16/11] overflow-hidden bg-primary/[0.03]">
-        {hasMediaUrl(media) ? (
-          <MediaImage
-            media={media}
-            fill
-            className="object-cover object-center"
-            sizes="(max-width: 640px) 100vw, 50vw"
-          />
-        ) : (
-          <BranchImageFallback label={media.alt} />
-        )}
-      </div>
-      <div className="flex flex-1 flex-col border-t border-border px-5 py-4 sm:px-6 sm:py-5">
-        <p className="text-[0.7rem] font-medium tracking-wide text-secondary sm:text-xs">
-          نمایندگی رسمی
-        </p>
-        <h4 className="mt-1.5 text-lg font-bold text-primary sm:text-xl">
-          {toPersianDigits(title)}
-        </h4>
-        <p className="mt-2 text-sm leading-7 text-muted">
-          {toPersianDigits(description)}
-        </p>
-      </div>
-    </article>
-  );
-}
 
 export function AboutSection() {
   const { setareganAyandeh } = institutionEntities;
-  const { schoolSection, branches } = aboutContent;
+  const { schoolSection } = aboutContent;
   const { stats } = schoolSection;
 
   const highlightFacts = [
@@ -85,41 +26,19 @@ export function AboutSection() {
   ] as const;
 
   return (
-    <Section ariaLabelledby={headingId}>
+    <section
+      aria-labelledby={headingId}
+      className="relative w-full border-y border-slate-200 bg-[#F8FAFC] py-14 sm:py-20"
+    >
       <Container>
         <SectionHeader
           eyebrow={aboutContent.eyebrow}
-          heading={aboutContent.heading}
+          heading="دبستان غیردولتی ستارگان آینده"
           description={aboutContent.description}
           headingId={headingId}
         />
 
-        <section aria-labelledby={branchesHeadingId} className="mt-10">
-          <header className="max-w-2xl">
-            <h3
-              id={branchesHeadingId}
-              className="text-xl font-bold text-primary sm:text-2xl"
-            >
-              {toPersianDigits(branches.heading)}
-            </h3>
-            <p className="mt-2 text-sm leading-7 text-muted sm:text-base sm:leading-8">
-              {toPersianDigits(branches.description)}
-            </p>
-          </header>
-
-          <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6">
-            {branches.items.map((branch) => (
-              <BranchCard
-                key={branch.title}
-                title={branch.title}
-                description={branch.description}
-                media={branch.media}
-              />
-            ))}
-          </div>
-        </section>
-
-        <div className="mt-12 grid items-start gap-8 lg:grid-cols-12 lg:gap-10">
+        <div className="mt-10 grid items-start gap-8 lg:grid-cols-12 lg:gap-10">
           <div className="lg:col-span-7">
             <p className="text-xs font-medium tracking-wide text-secondary">
               {setareganAyandeh.role}
@@ -167,7 +86,7 @@ export function AboutSection() {
           </div>
 
           <div className="lg:col-span-5">
-            <div className="rounded-2xl border border-border bg-surface px-5 py-5 sm:px-6">
+            <div className="rounded-2xl border border-border bg-slate-50 px-5 py-5 sm:px-6">
               <p className="text-xs font-medium tracking-wide text-secondary">
                 {schoolSection.heading}
               </p>
@@ -199,6 +118,6 @@ export function AboutSection() {
           </div>
         </div>
       </Container>
-    </Section>
+    </section>
   );
 }
