@@ -78,11 +78,13 @@ export async function createPublicReservationAction(input: {
   notes?: string;
   meetingType: string;
   company_url?: string;
+  formSubmissionId?: string | null;
 }): Promise<
   | {
       ok: true;
       trackingCode: string;
       checkInToken: string;
+      bookingProof: string;
       reservationId: string;
     }
   | { ok: false; error: string }
@@ -110,6 +112,22 @@ export async function createPublicReservationAction(input: {
       return { ok: false, error: "نوبت انتخاب‌شده معتبر نیست." };
     }
 
+    let formSubmissionId: string | null = null;
+    if (input.formSubmissionId?.trim()) {
+      const submission = await prisma.formSubmission.findFirst({
+        where: {
+          id: input.formSubmissionId.trim(),
+          organizationId: organization.id,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (!submission) {
+        return { ok: false, error: "پاسخ فرم برای اتصال به رزرو معتبر نیست." };
+      }
+      formSubmissionId = submission.id;
+    }
+
     const meetingType = (
       ["IN_PERSON", "ONLINE", "PHONE"] as const
     ).includes(input.meetingType as BookingMeetingType)
@@ -126,6 +144,7 @@ export async function createPublicReservationAction(input: {
       nationalId: input.nationalId,
       notes: input.notes,
       meetingType,
+      formSubmissionId,
     });
 
     if (!result.ok) {
@@ -136,6 +155,7 @@ export async function createPublicReservationAction(input: {
       ok: true,
       trackingCode: result.trackingCode,
       checkInToken: result.checkInToken,
+      bookingProof: result.cancelToken,
       reservationId: result.reservationId,
     };
   } catch {

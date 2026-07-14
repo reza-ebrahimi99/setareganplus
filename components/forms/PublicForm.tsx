@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState, useMemo } from "react";
+import { Suspense, useActionState, useMemo } from "react";
 import {
   submitPublicFormAction,
   type SubmitPublicFormState,
 } from "@/app/forms/[slug]/actions";
+import { FormBookingGate } from "@/components/forms/FormBookingGate";
 import { PublicFormField } from "@/components/forms/PublicFormField";
 import type { PublicFormData } from "@/lib/forms/load-public-form";
 import { toPersianDigits } from "@/lib/persian";
@@ -49,6 +50,15 @@ export function PublicForm({ data }: PublicFormProps) {
         />
       </div>
       <input type="hidden" name="_formLoadedAt" value={loadedAt} />
+
+      <Suspense fallback={null}>
+        <FormBookingGate
+          formSlug={data.form.slug}
+          settings={data.booking.settings}
+          serviceSlug={data.booking.serviceSlug}
+          serviceTitle={data.booking.serviceTitle}
+        />
+      </Suspense>
 
       {showRemaining ? (
         <p
@@ -101,10 +111,7 @@ export function PublicForm({ data }: PublicFormProps) {
         >
           {pending ? (
             <>
-              <span
-                className="public-form-spinner"
-                aria-hidden="true"
-              />
+              <span className="public-form-spinner" aria-hidden="true" />
               <span>در حال ثبت…</span>
             </>
           ) : (

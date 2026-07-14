@@ -1,13 +1,5 @@
 /**
  * Materialize BookingSlot rows from availability rules for a Jalali date range.
- *
- * Strategy:
- * - Iterate each Jalali day in range.
- * - Match Persian weekday (Saturday-first) to BookingAvailabilityRule.weekday.
- * - Apply date exceptions (full-day closed or override window/capacity).
- * - Slice working hours by duration + buffers.
- * - Upsert by unique (organizationId, serviceId, advisorId, startsAt).
- * - Skip times before now + minimumLeadTimeMinutes.
  */
 
 import { BookingSlotStatus } from "@/generated/prisma/enums";
@@ -22,7 +14,10 @@ import {
   parseLocalTimeHm,
   tehranLocalToUtc,
 } from "@/lib/datetime/tehran-zone";
+import { MAX_SLOT_GENERATION_DAYS } from "@/lib/booking/constants";
 import { prisma } from "@/lib/prisma";
+
+export { MAX_SLOT_GENERATION_DAYS };
 
 export type GenerateSlotsInput = {
   organizationId: string;
@@ -30,6 +25,16 @@ export type GenerateSlotsInput = {
   advisorId: string;
   from: JalaliDate;
   to: JalaliDate;
+  /** When true, count only — no writes. */
+  dryRun?: boolean;
+};
+
+export type GenerateSlotsResult = {
+  created: number;
+  existing: number;
+  skipped: number;
+  dayCount: number;
+  error?: string;
 };
 
 function nextJalaliDay(date: JalaliDate): JalaliDate {
@@ -62,11 +67,33 @@ function eachJalaliDay(from: JalaliDate, to: JalaliDate): JalaliDate[] {
   return days;
 }
 
+export function countJalaliDaysInclusive(from: JalaliDate, to: JalaliDate): number {
+  if (compareJalali(from, to) > 0) return 0;
+  return eachJalaliDay(from, to).length;
+}
+
 export async function generateSlotsForRange(
   input: GenerateSlotsInput,
-): Promise<{ created: number; skipped: number }> {
+): Promise<GenerateSlotsResult> {
   if (compareJalali(input.from, input.to) > 0) {
-    return { created: 0, skipped: 0 };
+    return {
+      created: 0,
+      existing: 0,
+      skipped: 0,
+      dayCount: 0,
+      error: "بازه تاریخ نامعتبر است.",
+    };
+  }
+
+  const dayCount = countJalaliDaysInclusive(input.from, input.to);
+  if (dayCount > MAX_SLOT_GENERATION_DAYS) {
+    return {
+      created: 0,
+      existing: 0,
+      skipped: 0,
+      dayCount,
+      error: `حداکثر بازه تولید نوبت ${MAX_SLOT_GENERATION_DAYS} روز است.`,
+    };
   }
 
   const service = await prisma.bookingService.findFirst({
@@ -78,7 +105,13 @@ export async function generateSlotsForRange(
     },
   });
   if (!service) {
-    return { created: 0, skipped: 0 };
+    return {
+      created: 0,
+      existing: 0,
+      skipped: 0,
+      dayCount,
+      error: "خدمت فعال یافت نشد.",
+    };
   }
 
   const advisor = await prisma.bookingAdvisor.findFirst({
@@ -90,7 +123,13 @@ export async function generateSlotsForRange(
     },
   });
   if (!advisor) {
-    return { created: 0, skipped: 0 };
+    return {
+      created: 0,
+      existing: 0,
+      skipped: 0,
+      dayCount,
+      error: "مشاور فعال یافت نشد.",
+    };
   }
 
   const rules = await prisma.bookingAvailabilityRule.findMany({
@@ -125,11 +164,19 @@ export async function generateSlotsForRange(
     service.bufferBeforeMinutes +
     service.bufferAfterMinutes;
   if (stepMinutes <= 0) {
-    return { created: 0, skipped: 0 };
+    return {
+      created: 0,
+      existing: 0,
+      skipped: 0,
+      dayCount,
+      error: "مدت جلسه و بافر نامعتبر است.",
+    };
   }
 
   let created = 0;
+  let existing = 0;
   let skipped = 0;
+  const dryRun = input.dryRun === true;
 
   for (const day of eachJalaliDay(input.from, input.to)) {
     const { gy, gm, gd } = jalaliToGregorian(day.jy, day.jm, day.jd);
@@ -143,7 +190,16 @@ export async function generateSlotsForRange(
       continue;
     }
 
-    const dayRules = rules.filter((rule) => rule.weekday === weekday);
+    const dayRules = rules.filter((rule) => {
+      if (rule.weekday !== weekday) return false;
+      if (rule.validFrom && noon.getTime() < rule.validFrom.getTime()) {
+        return false;
+      }
+      if (rule.validUntil && noon.getTime() > rule.validUntil.getTime()) {
+        return false;
+      }
+      return true;
+    });
 
     type Window = { start: string; end: string; capacity: number };
     const windows: Window[] = [];
@@ -160,6 +216,7 @@ export async function generateSlotsForRange(
         capacity: exception.slotCapacity ?? 1,
       });
     } else if (exception?.isClosed) {
+      skipped += 1;
       continue;
     } else {
       for (const rule of dayRules) {
@@ -175,6 +232,7 @@ export async function generateSlotsForRange(
       const startHm = parseLocalTimeHm(window.start);
       const endHm = parseLocalTimeHm(window.end);
       if (!startHm || !endHm) {
+        skipped += 1;
         continue;
       }
 
@@ -201,7 +259,7 @@ export async function generateSlotsForRange(
           continue;
         }
 
-        const existing = await prisma.bookingSlot.findUnique({
+        const found = await prisma.bookingSlot.findUnique({
           where: {
             organizationId_serviceId_advisorId_startsAt: {
               organizationId: input.organizationId,
@@ -213,10 +271,11 @@ export async function generateSlotsForRange(
           select: { id: true, status: true },
         });
 
-        if (existing) {
-          if (existing.status !== BookingSlotStatus.CANCELLED) {
+        if (found) {
+          existing += 1;
+          if (!dryRun && found.status !== BookingSlotStatus.CANCELLED) {
             await prisma.bookingSlot.update({
-              where: { id: existing.id },
+              where: { id: found.id },
               data: {
                 endsAt,
                 capacity: window.capacity,
@@ -224,7 +283,8 @@ export async function generateSlotsForRange(
               },
             });
           }
-          skipped += 1;
+        } else if (dryRun) {
+          created += 1;
         } else {
           await prisma.bookingSlot.create({
             data: {
@@ -248,5 +308,5 @@ export async function generateSlotsForRange(
     }
   }
 
-  return { created, skipped };
+  return { created, existing, skipped, dayCount };
 }

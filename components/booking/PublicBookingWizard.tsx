@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { JalaliDatePicker } from "@/components/booking/JalaliDatePicker";
 import type { JalaliDate } from "@/lib/datetime/jalali";
 import {
-  formatJalaliDateLong,
   formatPersianTimeRange,
   todayJalaliInTehran,
 } from "@/lib/datetime/jalali";
@@ -50,9 +49,12 @@ export function PublicBookingWizard({
   recommendationMessage,
 }: PublicBookingWizardProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
+  const formSubmissionId = searchParams.get("submissionId");
   const [pending, startTransition] = useTransition();
   const today = todayJalaliInTehran();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(allowAdvisorSelection ? 3 : 4);
   const [advisorId, setAdvisorId] = useState<string>(
     allowAdvisorSelection ? "" : (advisors[0]?.id ?? ""),
   );
@@ -61,6 +63,7 @@ export function PublicBookingWizard({
   const [slotId, setSlotId] = useState("");
   const [meetingType, setMeetingType] = useState(meetingTypes[0] ?? "IN_PERSON");
   const [error, setError] = useState<string | null>(null);
+  const [honeypot, setHoneypot] = useState("");
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -98,15 +101,28 @@ export function PublicBookingWizard({
 
   function submit() {
     setError(null);
+    if (!form.firstName.trim() || !form.lastName.trim() || !form.mobile.trim()) {
+      setError("نام، نام خانوادگی و موبایل الزامی است.");
+      return;
+    }
     startTransition(async () => {
       const result = await createPublicReservationAction({
         serviceSlug,
         slotId,
         meetingType,
+        company_url: honeypot,
+        formSubmissionId,
         ...form,
       });
       if (!result.ok) {
         setError(result.error);
+        return;
+      }
+      if (returnTo && returnTo.startsWith("/forms/")) {
+        const sep = returnTo.includes("?") ? "&" : "?";
+        router.push(
+          `${returnTo}${sep}bookingProof=${encodeURIComponent(result.bookingProof)}`,
+        );
         return;
       }
       router.push(
@@ -121,7 +137,7 @@ export function PublicBookingWizard({
         <p className="text-xs font-medium text-muted">رزرو نوبت</p>
         <h1 className="text-2xl font-bold text-primary">{serviceTitle}</h1>
         <p className="text-sm text-muted">
-          مرحله {toPersianDigits(step)} از {toPersianDigits(7)}
+          جریان رزرو · مرحله {toPersianDigits(Math.min(step, 7))}
         </p>
         {recommendationMessage ? (
           <p className="rounded-xl border border-secondary/30 bg-secondary/10 px-4 py-3 text-sm leading-7 text-primary">
@@ -194,16 +210,6 @@ export function PublicBookingWizard({
       {step >= 5 ? (
         <section className="space-y-3 rounded-2xl border border-border bg-surface p-4">
           <h2 className="text-sm font-semibold text-primary">۵. انتخاب ساعت</h2>
-          {day ? (
-            <p className="text-sm text-muted">
-              {formatJalaliDateLong(
-                // display helper needs Date — reconstruct noon for label via slots or fake
-                selectedSlot
-                  ? new Date(selectedSlot.startsAt)
-                  : new Date(),
-              )}
-            </p>
-          ) : null}
           {pending && slots.length === 0 ? (
             <p className="text-sm text-muted">در حال بارگذاری نوبت‌ها…</p>
           ) : null}
@@ -334,7 +340,14 @@ export function PublicBookingWizard({
           {/* Honeypot */}
           <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden" aria-hidden>
             <label htmlFor="company_url">شرکت</label>
-            <input id="company_url" name="company_url" tabIndex={-1} autoComplete="off" />
+            <input
+              id="company_url"
+              name="company_url"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypot}
+              onChange={(event) => setHoneypot(event.target.value)}
+            />
           </div>
           <button
             type="button"
@@ -347,15 +360,6 @@ export function PublicBookingWizard({
         </section>
       ) : null}
 
-      {step === 1 ? (
-        <button
-          type="button"
-          className="rounded-xl bg-primary px-4 py-2.5 text-sm text-white"
-          onClick={() => setStep(allowAdvisorSelection ? 3 : 4)}
-        >
-          شروع رزرو
-        </button>
-      ) : null}
     </div>
   );
 }

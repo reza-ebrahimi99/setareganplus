@@ -7,6 +7,11 @@ import {
   FormVersionStatus,
 } from "@/generated/prisma/enums";
 import {
+  linkReservationToSubmission,
+  readFormBookingSettings,
+  validateBookingProof,
+} from "@/lib/booking/form-gate";
+import {
   assertCapacityAvailable,
   lockFormVersionCapacity,
 } from "@/lib/forms/capacity";
@@ -118,6 +123,7 @@ export async function submitPublicFormAction(
       opensAt: true,
       registrationDeadline: true,
       capacity: true,
+      settings: true,
       fields: {
         orderBy: { sortOrder: "asc" },
         select: {
@@ -155,6 +161,41 @@ export async function submitPublicFormAction(
     return {
       formError: preAvailability.message ?? AVAILABILITY_MESSAGES.UNPUBLISHED_OR_PAUSED,
     };
+  }
+
+  const bookingSettings = readFormBookingSettings(version.settings);
+  let bookingProofReservationId: string | null = null;
+  let bookingServiceSlug: string | null = null;
+
+  if (bookingSettings.enabled && bookingSettings.serviceId) {
+    const bookingService = await prisma.bookingService.findFirst({
+      where: {
+        id: bookingSettings.serviceId,
+        organizationId: organization.id,
+        deletedAt: null,
+        isActive: true,
+      },
+      select: { id: true, slug: true },
+    });
+    bookingServiceSlug = bookingService?.slug ?? null;
+
+    if (
+      bookingSettings.requireTiming === "before_submit" &&
+      bookingService
+    ) {
+      const proof = readString(formData, "bookingProof").trim();
+      const validatedProof = await validateBookingProof({
+        organizationId: organization.id,
+        serviceId: bookingService.id,
+        proofToken: proof,
+      });
+      if (!validatedProof.ok) {
+        return {
+          formError: validatedProof.error,
+        };
+      }
+      bookingProofReservationId = validatedProof.reservation.reservationId;
+    }
   }
 
   const validated = validatePublicSubmission(version.fields, formData);
@@ -223,8 +264,10 @@ export async function submitPublicFormAction(
     }
   }
 
+  let createdSubmissionId: string | null = null;
+
   try {
-    await prisma.$transaction(async (tx) => {
+    createdSubmissionId = await prisma.$transaction(async (tx) => {
       await lockFormVersionCapacity(tx, version.id);
 
       const liveForm = await tx.form.findFirst({
@@ -318,7 +361,17 @@ export async function submitPublicFormAction(
           })),
         });
       }
+
+      return submission.id;
     });
+
+    if (bookingProofReservationId && createdSubmissionId) {
+      await linkReservationToSubmission({
+        organizationId: organization.id,
+        reservationId: bookingProofReservationId,
+        formSubmissionId: createdSubmissionId,
+      });
+    }
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "FORM_NO_LONGER_PUBLISHED") {
@@ -351,6 +404,17 @@ export async function submitPublicFormAction(
       formError: "ثبت پاسخ با خطا مواجه شد. لطفاً دوباره تلاش کنید.",
       values: validated.values,
     };
+  }
+
+  if (
+    bookingSettings.enabled &&
+    bookingSettings.requireTiming === "after_submit" &&
+    bookingServiceSlug &&
+    createdSubmissionId
+  ) {
+    redirect(
+      `/book/${bookingServiceSlug}?afterForm=1&submissionId=${encodeURIComponent(createdSubmissionId)}&form=${encodeURIComponent(form.slug)}`,
+    );
   }
 
   redirect(`/forms/${form.slug}/success`);

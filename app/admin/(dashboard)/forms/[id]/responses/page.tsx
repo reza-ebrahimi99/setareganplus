@@ -73,12 +73,15 @@ export default async function AdminFormResponsesPage({
   const exportHref = exportQuery
     ? `/admin/forms/${form.id}/responses/export?${exportQuery}`
     : `/admin/forms/${form.id}/responses/export`;
+  const exportXlsxHref = exportQuery
+    ? `/admin/forms/${form.id}/responses/export.xlsx?${exportQuery}`
+    : `/admin/forms/${form.id}/responses/export.xlsx`;
 
   return (
     <>
       <AdminPageHeader
         title={`پاسخ‌ها · ${form.title}`}
-        description="فهرست پاسخ‌های ثبت‌شده، آمار خلاصه و خروجی CSV"
+        description="فهرست پاسخ‌های ثبت‌شده، آمار خلاصه و خروجی CSV / Excel"
         breadcrumbs={[
           { label: "مدیریت", href: "/admin" },
           { label: "فرم‌ساز", href: "/admin/forms" },
@@ -98,8 +101,14 @@ export default async function AdminFormResponsesPage({
         </p>
         <div className="flex flex-wrap gap-2">
           <a
-            href={exportHref}
+            href={exportXlsxHref}
             className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary/92"
+          >
+            دانلود Excel
+          </a>
+          <a
+            href={exportHref}
+            className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-background"
           >
             دانلود CSV
           </a>

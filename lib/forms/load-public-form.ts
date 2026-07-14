@@ -5,6 +5,10 @@ import {
 } from "@/generated/prisma/enums";
 import { countCapacityUsed } from "@/lib/forms/capacity";
 import {
+  parseFormBookingSettings,
+  type FormBookingSettings,
+} from "@/lib/booking/form-booking-settings";
+import {
   evaluateFormAvailability,
   type FormAvailabilityStatus,
 } from "@/lib/forms/evaluate-form-availability";
@@ -53,6 +57,11 @@ export type PublicFormData = {
     remainingCapacity: number | null;
     showRemainingCapacity: boolean;
     message: string | null;
+  };
+  booking: {
+    settings: FormBookingSettings;
+    serviceSlug: string | null;
+    serviceTitle: string | null;
   };
 };
 
@@ -225,6 +234,23 @@ export async function loadPublicFormBySlug(
       return { ok: false, reason: "unavailable", message: availability.message ?? undefined };
     }
 
+    const bookingSettings = parseFormBookingSettings(version.settings);
+    let serviceSlug: string | null = null;
+    let serviceTitle: string | null = null;
+    if (bookingSettings.enabled && bookingSettings.serviceId) {
+      const bookingService = await prisma.bookingService.findFirst({
+        where: {
+          id: bookingSettings.serviceId,
+          organizationId: organization.id,
+          deletedAt: null,
+          isActive: true,
+        },
+        select: { slug: true, title: true },
+      });
+      serviceSlug = bookingService?.slug ?? null;
+      serviceTitle = bookingService?.title ?? null;
+    }
+
     return {
       ok: true,
       data: {
@@ -260,6 +286,11 @@ export async function loadPublicFormBySlug(
           remainingCapacity: availability.remainingCapacity,
           showRemainingCapacity: settings.showRemainingCapacity,
           message: availability.message,
+        },
+        booking: {
+          settings: bookingSettings,
+          serviceSlug,
+          serviceTitle,
         },
       },
     };

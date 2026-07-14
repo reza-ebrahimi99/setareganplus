@@ -14,11 +14,14 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "auth:bootstrap-admin": "tsx scripts/bootstrap-admin.ts"
+    "auth:bootstrap-admin": "tsx scripts/bootstrap-admin.ts",
+    "test:booking": "tsx --env-file=.env scripts/booking-integration-tests.ts",
+    "test:jalali": "tsx --env-file=.env lib/booking/jalali-smoke.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "exceljs": "^4.4.0",
     "jalaali-js": "^2.0.0",
     "next": "16.2.10",
     "pg": "^8.22.0",

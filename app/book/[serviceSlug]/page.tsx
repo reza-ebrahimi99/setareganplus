@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { PublicBookingWizard } from "@/components/booking/PublicBookingWizard";
 import { PublicFormShell } from "@/components/forms/PublicFormShell";
 import { suggestBookingTimes } from "@/lib/ai/booking-assistant";
@@ -61,16 +62,18 @@ export default async function PublicBookingPage({ params }: PageProps) {
 
   return (
     <PublicFormShell>
-      <PublicBookingWizard
-        serviceSlug={service.slug}
-        serviceTitle={service.title}
-        serviceId={service.id}
-        advisors={advisors}
-        allowAdvisorSelection={service.settings.allowAdvisorSelection}
-        showRemainingCapacity={service.settings.showRemainingCapacity}
-        meetingTypes={service.meetingTypes}
-        recommendationMessage={suggestion.message}
-      />
+      <Suspense fallback={<p className="text-sm text-muted">در حال بارگذاری…</p>}>
+        <PublicBookingWizard
+          serviceSlug={service.slug}
+          serviceTitle={service.title}
+          serviceId={service.id}
+          advisors={advisors}
+          allowAdvisorSelection={service.settings.allowAdvisorSelection}
+          showRemainingCapacity={service.settings.showRemainingCapacity}
+          meetingTypes={service.meetingTypes}
+          recommendationMessage={suggestion.message}
+        />
+      </Suspense>
     </PublicFormShell>
   );
 }
