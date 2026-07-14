@@ -4,6 +4,7 @@ export const adminNotice =
 export type AdminNavIcon =
   | "overview"
   | "leads"
+  | "forms"
   | "enrollments"
   | "students"
   | "courses"
@@ -39,6 +40,12 @@ export const adminNavGroups: ReadonlyArray<{
         href: "/admin/leads",
         label: "متقاضیان و CRM",
         icon: "leads",
+        enabled: true,
+      },
+      {
+        href: "/admin/forms",
+        label: "فرم‌ساز",
+        icon: "forms",
         enabled: true,
       },
       { label: "ثبت‌نام‌ها", icon: "enrollments", enabled: false },
@@ -83,6 +90,15 @@ export const adminBreadcrumbs = {
     { label: "مدیریت", href: "/admin" },
     { label: "متقاضیان و CRM", href: "/admin/leads" },
     { label: "پرونده متقاضی" },
+  ],
+  forms: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فرم‌ساز" },
+  ],
+  formsNew: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فرم‌ساز", href: "/admin/forms" },
+    { label: "ساخت فرم جدید" },
   ],
 } as const satisfies Record<string, readonly AdminBreadcrumbItem[]>;
 
