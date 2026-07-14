@@ -9,7 +9,7 @@ type MainNavProps = {
 
 function getLinkClassName(href: string, activePath?: string) {
   const baseClassName =
-    "rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary";
+    "rounded-lg px-2 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary xl:px-3";
   const isActive = activePath === href;
 
   if (isActive) {
@@ -25,12 +25,12 @@ export function MainNav({ activePath, mobileExtra }: MainNavProps) {
   return (
     <>
       <nav
-        className="hidden items-center gap-1 xl:flex"
+        className="hidden items-center gap-0.5 lg:flex xl:gap-1"
         aria-label="ناوبری اصلی"
       >
-        <ul className="flex flex-wrap items-center justify-end gap-1">
+        <ul className="flex flex-nowrap items-center justify-end gap-0.5 xl:gap-1">
           {desktopLinks.map((link) => (
-            <li key={link.href}>
+            <li key={link.href} className="shrink-0">
               <Link
                 href={link.href}
                 className={getLinkClassName(link.href, activePath)}
@@ -43,7 +43,7 @@ export function MainNav({ activePath, mobileExtra }: MainNavProps) {
         </ul>
       </nav>
 
-      <details className="relative xl:hidden">
+      <details className="relative lg:hidden">
         <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary [&::-webkit-details-marker]:hidden">
           <span aria-hidden="true" className="flex flex-col gap-1">
             <span className="block h-0.5 w-4 rounded bg-primary" />

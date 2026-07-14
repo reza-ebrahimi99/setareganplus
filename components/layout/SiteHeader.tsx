@@ -40,13 +40,13 @@ function HeaderLogo({
 
 function GhalamchiAffiliation({ compact = false }: { compact?: boolean }) {
   return (
-    <div className={compact ? "flex items-center gap-2" : "flex items-center gap-2.5"}>
+    <div className={compact ? "flex items-center gap-2" : "flex min-w-0 items-center gap-2.5"}>
       <HeaderLogo media={heroMedia.ghalamchiLogo} />
       <p
         className={
           compact
             ? "min-w-0 text-[0.7rem] font-medium leading-5 text-muted"
-            : "min-w-0 text-[0.7rem] font-medium leading-5 text-muted sm:text-xs"
+            : "hidden min-w-0 text-[0.7rem] font-medium leading-5 text-muted xl:block xl:max-w-[8.5rem] xl:text-xs"
         }
       >
         {ghalamchiLabel}
@@ -58,18 +58,18 @@ function GhalamchiAffiliation({ compact = false }: { compact?: boolean }) {
 export function SiteHeader({ activePath }: SiteHeaderProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-surface/95 shadow-sm backdrop-blur-sm">
-      <Container className="flex items-center justify-between gap-3 py-2 sm:gap-4 sm:py-2.5">
-        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+      <Container className="flex min-w-0 items-center justify-between gap-2 py-2 sm:gap-3 sm:py-2.5 lg:gap-4">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3 lg:gap-3 xl:gap-4">
           <Link
             href="/"
-            className="group flex min-w-0 items-center gap-2.5 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:gap-3"
+            className="group flex min-w-0 items-center gap-2 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:gap-2.5"
           >
             <HeaderLogo media={heroMedia.logo} priority />
             <span className="flex min-w-0 flex-col justify-center">
               <span className="truncate text-base font-bold leading-tight text-primary transition-colors group-hover:text-primary/80 sm:text-lg">
                 {siteConfig.name}
               </span>
-              <span className="truncate text-[0.7rem] leading-snug text-muted sm:text-xs">
+              <span className="hidden truncate text-[0.7rem] leading-snug text-muted sm:block sm:text-xs xl:max-w-[11rem]">
                 {headerTagline}
               </span>
             </span>
@@ -80,12 +80,12 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
             className="hidden h-9 w-px shrink-0 bg-border lg:block"
           />
 
-          <div className="hidden lg:block">
+          <div className="hidden shrink-0 lg:block">
             <GhalamchiAffiliation />
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <MainNav activePath={activePath} />
           <Button
             href="/pre-registration"

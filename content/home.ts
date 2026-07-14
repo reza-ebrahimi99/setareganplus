@@ -419,74 +419,95 @@ export const galleryContent = {
   description: "گوشه‌ای از فعالیت‌ها، رویدادها و فضای آموزشی مجموعه ستارگان.",
 } as const;
 
-export type GalleryFrame = "feature" | "portrait" | "landscape";
+export type GallerySlot = "feature" | "secondary" | "tile";
+export type GalleryFit = "cover" | "contain";
 
-/** mediaKey maps to future StarOS media library records */
+/**
+ * Gallery mapping (visual audit):
+ * gallery-5 → همایش ادبیات یازدهم (flyer/instructor visible) — featured
+ * gallery-1 → کارگاه / کلاس آموزشی گروهی
+ * gallery-4 → نشست آموزشی حضوری در کلاس پرجمعیت
+ * gallery-6 → نشست آموزشی با استاد پای تخته
+ * gallery-3 → آزمون حضوری یا مطالعه انفرادی دانش‌آموزان پسر
+ * gallery-2 → گردهمایی دانش‌آموزان در فضای مرکز
+ */
 export const galleryImages = [
   {
-    mediaKey: "ghalamchi-events/azmon-hediye-tashrihi-1405-tir",
-    title: "آزمون هدیه تشریحی",
-    category: "آزمون",
-    caption: "پایه یازدهم — ۱۹ تیر ۱۴۰۵",
-    frame: "feature" as const satisfies GalleryFrame,
-    media: {
-      url: "/images/gallery/gallery-1.jpg",
-      alt: "کلاس آزمون هدیه تشریحی ویژه دانش‌آموزان پایه یازدهم در نسیم‌شهر",
-    } satisfies MediaAsset,
-  },
-  {
-    mediaKey: "ghalamchi-events/jashn-pishraft-dey-1404",
-    title: "جشن پیشرفت تحصیلی",
-    category: "مراسم",
-    caption: "قلم‌چی نسیم‌شهر — دی ۱۴۰۴",
-    frame: "portrait" as const satisfies GalleryFrame,
-    media: {
-      url: "/images/gallery/gallery-2.jpg",
-      alt: "مراسم جشن پیشرفت تحصیلی در نمایندگی قلم‌چی نسیم‌شهر",
-    } satisfies MediaAsset,
-  },
-  {
-    mediaKey: "ghalamchi-events/hamayesh-jam-bandi",
-    title: "همایش جمع‌بندی",
+    mediaKey: "ghalamchi-events/hamayesh-adabiat-yazdahom",
+    title: "همایش ادبیات یازدهم",
     category: "همایش",
-    caption: "آمادگی تحصیلی مجموعه ستارگان",
-    frame: "portrait" as const satisfies GalleryFrame,
-    media: {
-      url: "/images/gallery/gallery-3.jpg",
-      alt: "همایش جمع‌بندی آموزشی مجموعه ستارگان",
-    } satisfies MediaAsset,
-  },
-  {
-    mediaKey: "team/modiran-namayandegi",
-    title: "تیم مدیران",
-    category: "تیم",
-    caption: "هماهنگی نمایندگی نسیم‌شهر",
-    frame: "portrait" as const satisfies GalleryFrame,
-    media: {
-      url: "/images/gallery/gallery-4.jpg",
-      alt: "جلسه و فضای کاری مدیران نمایندگی قلم‌چی نسیم‌شهر",
-    } satisfies MediaAsset,
-  },
-  {
-    mediaKey: "team/moshaveran-pashtibanan",
-    title: "مشاوران و پشتیبانان",
-    category: "تیم",
-    caption: "پشتیبانی آموزشی دانش‌آموزان",
-    frame: "landscape" as const satisfies GalleryFrame,
+    caption: "با حضور استاد مسیح آراسته",
+    slot: "feature" as const satisfies GallerySlot,
+    fit: "cover" as const satisfies GalleryFit,
+    objectPosition: "object-[center_26%]",
     media: {
       url: "/images/gallery/gallery-5.jpg",
-      alt: "مشاوران و پشتیبانان آموزشی در فضای کلاس مجموعه ستارگان",
+      alt: "همایش ادبیات پایه یازدهم با بروشور رویداد و حضور استاد در نمایندگی قلم‌چی",
     } satisfies MediaAsset,
   },
   {
-    mediaKey: "gallery/namayandegi-pesarane-shobe",
-    title: "نمایندگی پسران",
-    category: "شعبه",
-    caption: "خیابان امام خمینی، نسیم‌شهر",
-    frame: "landscape" as const satisfies GalleryFrame,
+    mediaKey: "ghalamchi-events/kargah-amoozeshi",
+    title: "کارگاه آموزشی",
+    category: "آموزش",
+    caption: "تدریس گروهی با جزوه و تمرین",
+    slot: "secondary" as const satisfies GallerySlot,
+    fit: "cover" as const satisfies GalleryFit,
+    objectPosition: "object-[center_30%]",
+    media: {
+      url: "/images/gallery/gallery-1.jpg",
+      alt: "استاد در حال تدریس برای جمعی از دانش‌آموزان در کارگاه آموزشی",
+    } satisfies MediaAsset,
+  },
+  {
+    mediaKey: "ghalamchi-events/neshast-amoozeshi-kelas",
+    title: "نشست آموزشی",
+    category: "کلاس",
+    caption: "کلاس حضوری پرجمعیت",
+    slot: "tile" as const satisfies GallerySlot,
+    fit: "cover" as const satisfies GalleryFit,
+    objectPosition: "object-[center_35%]",
+    media: {
+      url: "/images/gallery/gallery-4.jpg",
+      alt: "نمای کلاس آموزشی شلوغ با حضور استاد پای تخته و دانش‌آموزان",
+    } satisfies MediaAsset,
+  },
+  {
+    mediaKey: "ghalamchi-events/neshast-amoozeshi-ostad",
+    title: "کلاس و برنامه آموزشی",
+    category: "آموزش",
+    caption: "جلسه تدریس حضوری",
+    slot: "tile" as const satisfies GallerySlot,
+    fit: "cover" as const satisfies GalleryFit,
+    objectPosition: "object-center",
     media: {
       url: "/images/gallery/gallery-6.jpg",
-      alt: "فضای نمایندگی پسران قلم‌چی نسیم‌شهر در خیابان امام خمینی",
+      alt: "استاد در حال آموزش کنار تخته سفید برای جمعی از دانش‌آموزان",
+    } satisfies MediaAsset,
+  },
+  {
+    mediaKey: "ghalamchi-events/azmoon-hozouri",
+    title: "آزمون حضوری",
+    category: "آزمون",
+    caption: "فعالیت انفرادی دانش‌آموزان",
+    slot: "tile" as const satisfies GallerySlot,
+    fit: "cover" as const satisfies GalleryFit,
+    objectPosition: "object-[center_42%]",
+    media: {
+      url: "/images/gallery/gallery-3.jpg",
+      alt: "دانش‌آموزان در حال پاسخ‌گویی به آزمون یا تمرین حضوری در کلاس",
+    } satisfies MediaAsset,
+  },
+  {
+    mediaKey: "ghalamchi-events/gerdhamaei-daneshjooyan",
+    title: "گردهمایی دانش‌آموزان",
+    category: "فضای مرکز",
+    caption: "تعامل در فضای آموزشی",
+    slot: "tile" as const satisfies GallerySlot,
+    fit: "cover" as const satisfies GalleryFit,
+    objectPosition: "object-[center_60%]",
+    media: {
+      url: "/images/gallery/gallery-2.jpg",
+      alt: "جمعی از دانش‌آموزان در فضای داخلی مرکز آموزشی در حال گفت‌وگو",
     } satisfies MediaAsset,
   },
 ] as const;
