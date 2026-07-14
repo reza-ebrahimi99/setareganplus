@@ -15,34 +15,6 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
-  icons: {
-    icon: [
-      { url: "/images/brand/setaregan-icon.png", type: "image/png" },
-      {
-        url: "/images/brand/setaregan-icon.png",
-        sizes: "32x32",
-        type: "image/png",
-      },
-      {
-        url: "/images/brand/setaregan-icon.png",
-        sizes: "192x192",
-        type: "image/png",
-      },
-      {
-        url: "/images/brand/setaregan-icon.png",
-        sizes: "512x512",
-        type: "image/png",
-      },
-    ],
-    shortcut: ["/images/brand/setaregan-icon.png"],
-    apple: [
-      {
-        url: "/images/brand/setaregan-icon.png",
-        sizes: "180x180",
-        type: "image/png",
-      },
-    ],
-  },
   appleWebApp: {
     capable: true,
     title: siteConfig.name,
