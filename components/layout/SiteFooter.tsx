@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
+import { SocialIconLinks } from "@/components/ui/ContactIcons";
+import { contactContent } from "@/content/home";
 import {
   footerContent,
   footerLinks,
@@ -32,6 +34,16 @@ export function SiteFooter() {
             <p className="mt-4 text-sm leading-7 text-slate-400">
               {footerContent.note}
             </p>
+            <div className="mt-5">
+              <p className="text-xs font-medium tracking-wide text-secondary">
+                شبکه‌های اجتماعی
+              </p>
+              <SocialIconLinks
+                items={contactContent.social}
+                tone="dark"
+                className="mt-3 flex flex-wrap items-center gap-2.5"
+              />
+            </div>
           </div>
 
           <nav aria-label="خدمات" className="lg:col-span-2">

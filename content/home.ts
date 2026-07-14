@@ -97,15 +97,15 @@ export const heroContent = {
 export const heroMedia = {
   logo: {
     url: "/images/brand/logo.jpg",
-    alt: "لوگوی ستارگان پلاس",
+    alt: "لوگوی مؤسسه علمی ستارگان",
   } satisfies MediaAsset,
   ghalamchiLogo: {
-    url: null,
-    alt: "لوگوی نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر",
+    url: "/images/brand/ghalamchi.jpg",
+    alt: "لوگوی کانون فرهنگی آموزش قلم‌چی — نمایندگی نسیم‌شهر",
   } satisfies MediaAsset,
   background: {
     url: "/images/hero/hero.jpg",
-    alt: "نمای کلی مرکز آموزشی ستارگان پلاس در نسیم‌شهر",
+    alt: "دانش‌آموزان و فضای آموزشی نمایندگی قلم‌چی نسیم‌شهر",
   } satisfies MediaAsset,
 } as const;
 
@@ -121,10 +121,12 @@ export const heroImages = {
 export const founderContent = {
   name: "رضا ابراهیمی",
   roles: [
-    "مؤسس و مدیرعامل مؤسسه آموزشی ستارگان",
-    "مدیر نمایندگی رسمی قلم‌چی نسیم‌شهر",
-    "مدیر دبستان غیردولتی ستارگان آینده",
-    "مدرس و مؤلف ریاضیات",
+    "فارغ‌التحصیل دانشگاه صنعتی امیرکبیر (پلی‌تکنیک تهران)",
+    "مؤسس دبستان غیردولتی ستارگان آینده",
+    "مدیرعامل مؤسسه آموزشی ستارگان",
+    "مسئول نمایندگی قلم‌چی نسیم‌شهر",
+    "مؤلف کتاب ریاضی جامع کنکور",
+    "بیش از ۱۳ سال سابقه تدریس، مشاوره و برنامه‌ریزی تحصیلی",
   ],
   bio: "رضا ابراهیمی، مؤسس و مدیرعامل مؤسسه آموزشی ستارگان، مدیر نمایندگی رسمی قلم‌چی نسیم‌شهر و مدیر دبستان غیردولتی ستارگان آینده است. ایشان به‌عنوان مدرس و مؤلف ریاضیات، راهبری آموزشی مجموعه ستارگان را بر عهده دارند.",
   portrait: {
@@ -135,11 +137,20 @@ export const founderContent = {
 
 export const heroCtas = {
   primary: { label: "پیش‌ثبت‌نام", href: "/pre-registration" },
-  secondary: [
-    { label: "دوره‌ها", href: "/courses" },
-    { label: "مشاوره", href: "/consultation" },
-  ],
+  secondary: { label: "دوره‌ها", href: "/courses" },
+  tertiary: { label: "مشاوره", href: "/consultation" },
 } as const;
+
+/**
+ * Hero presentation stats — دبستان ستارگان آینده (presentation Phase 1).
+ * Distinct from institutionStats used in achievements / trust.
+ */
+export const heroDisplayStats = [
+  { value: "۹", label: "کلاس درس" },
+  { value: "۲۳", label: "دبیر" },
+  { value: "۲۵۵", label: "فارغ‌التحصیل" },
+  { value: "۹", label: "قبولی تیزهوشان" },
+] as const;
 
 // ─── Contact (verified — shared by FinalCta and Contact sections) ────────────
 
@@ -196,25 +207,29 @@ export const contactContent = {
 // ─── About ───────────────────────────────────────────────────────────────────
 
 export const aboutContent = {
-  eyebrow: "آشنایی با مجموعه",
-  heading: "درباره ستارگان پلاس",
+  eyebrow: "دبستان ستارگان آینده",
+  heading: "دبستان غیردولتی ستارگان آینده",
   description:
-    "مجموعه آموزشی ستارگان از سه بخش متمایز تشکیل شده است. آمار و ارقام هر بخش جداگانه گزارش می‌شود.",
+    "مقطع ابتدایی مجموعه ستارگان با فضای آموزشی مستقل، امکانات تخصصی و مسیر روشن برای رشد دانش‌آموزان.",
   cover: {
     url: "/images/about/about.jpg" as string | null,
-    alt: "فضای آموزشی مرکز آموزشی ستارگان پلاس",
+    alt: "نمای ورودی نمایندگی قلم‌چی و مجموعه آموزشی ستارگان در نسیم‌شهر",
   } satisfies MediaAsset,
+  lead:
+    "دبستان غیردولتی ستارگان آینده از سال ۱۴۰۱ فعالیت می‌کند و با ۹ کلاس درس، تیم ۲۳ نفرهٔ دبیران و امکاناتی شامل کلاس‌های هوشمند، آزمایشگاه و حیاط مدرسه، مسیر ابتدایی را پوشش می‌دهد.",
   entities: [
     institutionEntities.setareganAyandeh,
     institutionEntities.setareganPlus,
     institutionEntities.ghalamchiBranch,
   ],
   schoolSection: {
-    heading: "دبستان غیردولتی ستارگان آینده",
+    heading: "حقایق رسمی دبستان",
     description:
-      "آمار زیر مختص دبستان غیردولتی ستارگان آینده است و با آمار مرکز آموزشی ستارگان پلاس متفاوت است.",
+      "آمار و امکانات زیر مختص دبستان غیردولتی ستارگان آینده است.",
     stats: schoolStats,
   },
+  relatedNote:
+    "مرکز آموزشی ستارگان پلاس و نمایندگی رسمی قلم‌چی نسیم‌شهر، بخش‌های تکمیلی همان مجموعه هستند و آمار آن‌ها جداگانه گزارش می‌شود.",
   cta: { label: "بیشتر بدانید", href: "/about" },
 } as const;
 
@@ -340,12 +355,12 @@ export const partnershipContent = {
   slogan: officialSlogan,
   logos: {
     institution: {
-      url: null,
-      alt: "لوگوی ستارگان پلاس",
+      url: "/images/brand/logo.jpg",
+      alt: "لوگوی مؤسسه علمی ستارگان",
     } satisfies MediaAsset,
     ghalamchi: {
       url: "/images/brand/ghalamchi.jpg",
-      alt: "لوگوی نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر",
+      alt: "لوگوی کانون فرهنگی آموزش قلم‌چی — نمایندگی نسیم‌شهر",
     } satisfies MediaAsset,
   },
   benefits: [
@@ -404,60 +419,74 @@ export const galleryContent = {
   description: "گوشه‌ای از فعالیت‌ها، رویدادها و فضای آموزشی مجموعه ستارگان.",
 } as const;
 
+export type GalleryFrame = "feature" | "portrait" | "landscape";
+
 /** mediaKey maps to future StarOS media library records */
 export const galleryImages = [
   {
     mediaKey: "ghalamchi-events/azmon-hediye-tashrihi-1405-tir",
     title: "آزمون هدیه تشریحی",
     category: "آزمون",
+    caption: "پایه یازدهم — ۱۹ تیر ۱۴۰۵",
+    frame: "feature" as const satisfies GalleryFrame,
     media: {
       url: "/images/gallery/gallery-1.jpg",
-      alt: "آزمون هدیه تشریحی ویژه دانش‌آموزان پایه یازدهم — ۱۹ تیر ۱۴۰۵",
+      alt: "کلاس آزمون هدیه تشریحی ویژه دانش‌آموزان پایه یازدهم در نسیم‌شهر",
     } satisfies MediaAsset,
   },
   {
     mediaKey: "ghalamchi-events/jashn-pishraft-dey-1404",
-    title: "جشن پیشرفت تحصیلی دی ۱۴۰۴",
+    title: "جشن پیشرفت تحصیلی",
     category: "مراسم",
+    caption: "قلم‌چی نسیم‌شهر — دی ۱۴۰۴",
+    frame: "portrait" as const satisfies GalleryFrame,
     media: {
       url: "/images/gallery/gallery-2.jpg",
-      alt: "جشن پیشرفت تحصیلی قلم‌چی نسیم‌شهر — دی ۱۴۰۴",
+      alt: "مراسم جشن پیشرفت تحصیلی در نمایندگی قلم‌چی نسیم‌شهر",
     } satisfies MediaAsset,
   },
   {
     mediaKey: "ghalamchi-events/hamayesh-jam-bandi",
-    title: "همایش‌های جمع‌بندی",
+    title: "همایش جمع‌بندی",
     category: "همایش",
+    caption: "آمادگی تحصیلی مجموعه ستارگان",
+    frame: "portrait" as const satisfies GalleryFrame,
     media: {
       url: "/images/gallery/gallery-3.jpg",
-      alt: "همایش جمع‌بندی مجموعه آموزشی ستارگان",
+      alt: "همایش جمع‌بندی آموزشی مجموعه ستارگان",
     } satisfies MediaAsset,
   },
   {
     mediaKey: "team/modiran-namayandegi",
     title: "تیم مدیران",
     category: "تیم",
+    caption: "هماهنگی نمایندگی نسیم‌شهر",
+    frame: "portrait" as const satisfies GalleryFrame,
     media: {
       url: "/images/gallery/gallery-4.jpg",
-      alt: "تیم مدیران نمایندگی قلم‌چی نسیم‌شهر",
+      alt: "جلسه و فضای کاری مدیران نمایندگی قلم‌چی نسیم‌شهر",
     } satisfies MediaAsset,
   },
   {
     mediaKey: "team/moshaveran-pashtibanan",
     title: "مشاوران و پشتیبانان",
     category: "تیم",
+    caption: "پشتیبانی آموزشی دانش‌آموزان",
+    frame: "landscape" as const satisfies GalleryFrame,
     media: {
       url: "/images/gallery/gallery-5.jpg",
-      alt: "مشاوران و پشتیبانان آموزشی مجموعه ستارگان",
+      alt: "مشاوران و پشتیبانان آموزشی در فضای کلاس مجموعه ستارگان",
     } satisfies MediaAsset,
   },
   {
     mediaKey: "gallery/namayandegi-pesarane-shobe",
     title: "نمایندگی پسران",
     category: "شعبه",
+    caption: "خیابان امام خمینی، نسیم‌شهر",
+    frame: "landscape" as const satisfies GalleryFrame,
     media: {
       url: "/images/gallery/gallery-6.jpg",
-      alt: "نمایندگی پسران قلم‌چی نسیم‌شهر — شعبه خیابان امام خمینی",
+      alt: "فضای نمایندگی پسران قلم‌چی نسیم‌شهر در خیابان امام خمینی",
     } satisfies MediaAsset,
   },
 ] as const;

@@ -1,54 +1,47 @@
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { ContentCard } from "@/components/ui/ContentCard";
+import { MediaImage } from "@/components/ui/MediaImage";
 import { Section } from "@/components/ui/Section";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { hasMediaUrl } from "@/lib/media";
-import {
-  aboutContent,
-  institutionEntities,
-} from "@/content/home";
+import { aboutContent, institutionEntities } from "@/content/home";
 import { toPersianDigits } from "@/lib/persian";
 
 const headingId = "about-heading";
-
-function formatEntityBody(role: string, description: string) {
-  return `${role}. ${description}`;
-}
 
 function AboutCampusFallback({ label }: { label: string }) {
   return (
     <div
       aria-hidden="true"
-      className="flex h-full flex-col items-center justify-center bg-gradient-to-br from-primary/8 via-background to-secondary/12 px-6 text-center"
+      className="flex h-full min-h-[16rem] flex-col items-center justify-center bg-primary/[0.04] px-6 text-center"
     >
-      <div className="rounded-full border border-secondary/30 bg-surface px-4 py-1 text-xs font-medium text-secondary shadow-sm">
+      <p className="text-xs font-medium tracking-wide text-secondary">
         فضای آموزشی
-      </div>
-      <p className="mt-4 max-w-xs text-sm font-medium leading-7 text-primary">
+      </p>
+      <p className="mt-3 max-w-sm text-sm font-medium leading-7 text-primary">
         {toPersianDigits(label)}
       </p>
-      <div className="mt-6 grid grid-cols-3 gap-2 opacity-80">
-        <span className="h-2 rounded-full bg-secondary/50" />
-        <span className="h-2 rounded-full bg-primary/20" />
-        <span className="h-2 rounded-full bg-secondary/30" />
-      </div>
     </div>
   );
 }
 
 export function AboutSection() {
-  const { setareganPlus, ghalamchiBranch, setareganAyandeh } =
-    institutionEntities;
+  const { setareganAyandeh } = institutionEntities;
   const { schoolSection } = aboutContent;
   const { stats } = schoolSection;
 
-  const schoolStatItems = [
+  const highlightFacts = [
     { label: "سال تأسیس", value: toPersianDigits(stats.foundedYear) },
     { label: "کلاس درس", value: toPersianDigits(stats.classrooms) },
     { label: "دبیر", value: toPersianDigits(stats.teachers) },
+  ] as const;
+
+  const outcomeFacts = [
     { label: "فارغ‌التحصیل", value: toPersianDigits(stats.graduates) },
-    { label: "قبولی تیزهوشان", value: toPersianDigits(stats.giftedAdmissions) },
+    {
+      label: "قبولی تیزهوشان",
+      value: toPersianDigits(stats.giftedAdmissions),
+    },
   ] as const;
 
   return (
@@ -61,79 +54,102 @@ export function AboutSection() {
           headingId={headingId}
         />
 
-        <div className="mt-10 grid gap-6 lg:grid-cols-2">
-          <ContentCard
-            heading={setareganPlus.name}
-            body={formatEntityBody(setareganPlus.role, setareganPlus.description)}
-            media={aboutContent.cover}
-            imageFallback={
-              hasMediaUrl(aboutContent.cover) ? undefined : (
+        <div className="mt-10 grid items-start gap-8 lg:grid-cols-12 lg:gap-10">
+          <figure className="relative overflow-hidden rounded-2xl border border-border bg-primary/[0.03] lg:col-span-7">
+            <div className="relative aspect-[16/11] sm:aspect-[16/10]">
+              {hasMediaUrl(aboutContent.cover) ? (
+                <MediaImage
+                  media={aboutContent.cover}
+                  fill
+                  className="object-cover object-center"
+                  sizes="(max-width: 1024px) 100vw, 640px"
+                />
+              ) : (
                 <AboutCampusFallback label={aboutContent.cover.alt} />
-              )
-            }
-          />
-          <ContentCard
-            heading={ghalamchiBranch.name}
-            body={formatEntityBody(
-              ghalamchiBranch.role,
-              ghalamchiBranch.description,
-            )}
-          />
+              )}
+            </div>
+            <figcaption className="border-t border-border bg-surface px-4 py-3 text-xs leading-6 text-muted sm:px-5">
+              {toPersianDigits(aboutContent.cover.alt)}
+            </figcaption>
+          </figure>
+
+          <div className="lg:col-span-5">
+            <p className="text-xs font-medium tracking-wide text-secondary">
+              {setareganAyandeh.role}
+            </p>
+            <h3 className="mt-2 text-xl font-bold text-primary sm:text-2xl">
+              {toPersianDigits(setareganAyandeh.name)}
+            </h3>
+            <p className="mt-4 text-sm leading-8 text-muted sm:text-base">
+              {toPersianDigits(aboutContent.lead)}
+            </p>
+
+            <dl className="mt-7 grid grid-cols-3 gap-3 border-y border-border py-5">
+              {highlightFacts.map((fact) => (
+                <div key={fact.label}>
+                  <dt className="text-[0.7rem] font-medium text-muted sm:text-xs">
+                    {fact.label}
+                  </dt>
+                  <dd className="mt-1.5 text-xl font-bold text-primary sm:text-2xl">
+                    {fact.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+
+            <div className="mt-6">
+              <p className="text-xs font-medium tracking-wide text-secondary">
+                امکانات دبستان
+              </p>
+              <ul className="mt-3 space-y-3">
+                {stats.facilities.map((facility) => (
+                  <li
+                    key={facility.title}
+                    className="border-s-2 border-secondary/50 ps-3"
+                  >
+                    <p className="text-sm font-semibold text-primary">
+                      {toPersianDigits(facility.title)}
+                    </p>
+                    <p className="mt-1 text-sm leading-7 text-muted">
+                      {toPersianDigits(facility.description)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
 
-        <section
-          aria-labelledby="school-section-heading"
-          className="mt-10 rounded-2xl border border-border bg-background p-6 sm:p-8"
-        >
-          <header className="max-w-3xl">
-            <h3
-              id="school-section-heading"
-              className="text-xl font-bold text-primary sm:text-2xl"
-            >
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-12 lg:items-end">
+          <div className="rounded-2xl border border-border bg-surface px-5 py-5 sm:px-6 lg:col-span-7">
+            <p className="text-xs font-medium tracking-wide text-secondary">
               {schoolSection.heading}
-            </h3>
-            <p className="mt-3 text-base leading-8 text-muted">
+            </p>
+            <p className="mt-2 text-sm leading-7 text-muted">
               {toPersianDigits(schoolSection.description)}
             </p>
-          </header>
-
-          <div className="mt-6">
-            <ContentCard
-              heading={setareganAyandeh.name}
-              body={formatEntityBody(
-                setareganAyandeh.role,
-                setareganAyandeh.description,
-              )}
-            />
+            <dl className="mt-5 flex flex-wrap gap-6 sm:gap-10">
+              {outcomeFacts.map((fact) => (
+                <div key={fact.label}>
+                  <dt className="text-xs font-medium text-muted">{fact.label}</dt>
+                  <dd className="mt-1 text-3xl font-bold text-secondary">
+                    {fact.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
-          <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {schoolStatItems.map((item) => (
-              <div key={item.label} className="premium-card p-4">
-                <dt className="text-xs font-medium text-muted">{item.label}</dt>
-                <dd className="mt-2 text-2xl font-bold text-secondary">
-                  {item.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-
-          <ul className="mt-6 grid gap-4 sm:grid-cols-3">
-            {stats.facilities.map((facility) => (
-              <li key={facility.title}>
-                <ContentCard
-                  heading={facility.title}
-                  body={facility.description}
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <div className="mt-10">
-          <Button href={aboutContent.cta.href} variant="outline">
-            {aboutContent.cta.label}
-          </Button>
+          <div className="lg:col-span-5">
+            <p className="text-sm leading-8 text-muted">
+              {toPersianDigits(aboutContent.relatedNote)}
+            </p>
+            <div className="mt-5">
+              <Button href={aboutContent.cta.href} variant="outline">
+                {aboutContent.cta.label}
+              </Button>
+            </div>
+          </div>
         </div>
       </Container>
     </Section>

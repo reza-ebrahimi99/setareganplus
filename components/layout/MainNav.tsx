@@ -1,8 +1,10 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { navLinks } from "@/content/site";
 
 type MainNavProps = {
   activePath?: string;
+  mobileExtra?: ReactNode;
 };
 
 function getLinkClassName(href: string, activePath?: string) {
@@ -17,7 +19,7 @@ function getLinkClassName(href: string, activePath?: string) {
   return `${baseClassName} text-foreground hover:bg-background hover:text-primary`;
 }
 
-export function MainNav({ activePath }: MainNavProps) {
+export function MainNav({ activePath, mobileExtra }: MainNavProps) {
   const desktopLinks = navLinks.filter((link) => link.href !== "/");
 
   return (
@@ -51,7 +53,7 @@ export function MainNav({ activePath }: MainNavProps) {
           <span>منو</span>
         </summary>
         <nav
-          className="absolute end-0 top-full z-20 mt-2 min-w-52 rounded-xl border border-border bg-surface p-2 shadow-lg"
+          className="absolute end-0 top-full z-20 mt-2 min-w-56 rounded-xl border border-border bg-surface p-2 shadow-lg"
           aria-label="ناوبری موبایل"
         >
           <ul className="flex flex-col gap-1">
@@ -67,6 +69,9 @@ export function MainNav({ activePath }: MainNavProps) {
               </li>
             ))}
           </ul>
+          {mobileExtra ? (
+            <div className="mt-2 border-t border-border pt-3">{mobileExtra}</div>
+          ) : null}
         </nav>
       </details>
     </>
