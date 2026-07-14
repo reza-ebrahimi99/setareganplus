@@ -114,7 +114,7 @@ export function PremiumHero() {
                   key={stat.label}
                   className="rounded-2xl border border-border bg-white px-3 py-3"
                 >
-                  <dt className="text-[0.7rem] font-medium leading-4 text-muted sm:text-xs">
+                  <dt className="text-[0.65rem] font-medium leading-4 text-muted sm:text-[0.7rem] sm:leading-5">
                     {stat.label}
                   </dt>
                   <dd className="mt-1.5 text-xl font-bold text-secondary sm:text-2xl">
@@ -131,11 +131,7 @@ export function PremiumHero() {
               <Button href={heroCtas.secondary.href} variant="outline">
                 {heroCtas.secondary.label}
               </Button>
-              <Button
-                href={heroCtas.tertiary.href}
-                variant="outline"
-                className="border-transparent bg-transparent px-2 text-muted shadow-none hover:border-transparent hover:bg-transparent hover:text-primary"
-              >
+              <Button href={heroCtas.tertiary.href} variant="outline">
                 {heroCtas.tertiary.label}
               </Button>
             </div>

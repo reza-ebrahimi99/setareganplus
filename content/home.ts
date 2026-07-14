@@ -149,7 +149,7 @@ export const heroDisplayStats = [
   { value: "۹", label: "کلاس درس" },
   { value: "۲۳", label: "دبیر" },
   { value: "۲۵۵", label: "فارغ‌التحصیل" },
-  { value: "۹", label: "قبولی تیزهوشان" },
+  { value: "۴۳", label: "قبولی تیزهوشان و نمونه‌دولتی" },
 ] as const;
 
 // ─── Contact (verified — shared by FinalCta and Contact sections) ────────────
