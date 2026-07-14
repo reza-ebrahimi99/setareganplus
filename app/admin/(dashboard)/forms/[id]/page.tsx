@@ -7,7 +7,9 @@ import { FormEditor } from "@/components/admin/forms/FormEditor";
 import { FormPosterManager } from "@/components/admin/forms/FormPosterManager";
 import { FormScheduleSettings } from "@/components/admin/forms/FormScheduleSettings";
 import { FormPublishControls } from "@/components/admin/forms/FormPublishControls";
+import { FormShareCard } from "@/components/admin/forms/FormShareCard";
 import { adminBreadcrumbs } from "@/content/admin";
+import { generateFormQrDataUrl } from "@/lib/forms/generate-form-qr";
 import { getFormPurposeLabel } from "@/lib/forms/form-purpose-labels";
 import { loadFormEditor } from "@/lib/forms/load-form-editor";
 import { toPersianDigits } from "@/lib/persian";
@@ -86,6 +88,17 @@ export default async function AdminFormEditorPage({
         settings: { showRemainingCapacity: false },
       };
 
+  const sharePoster = isPublished
+    ? (publishedVersion?.poster ?? posterForUi)
+    : posterForUi;
+  const shareSchedule = isPublished
+    ? (publishedVersion?.schedule ?? scheduleForUi)
+    : scheduleForUi;
+
+  const qrPreviewDataUrl = isPublished
+    ? await generateFormQrDataUrl(form.slug)
+    : null;
+
   return (
     <>
       <AdminPageHeader
@@ -151,12 +164,28 @@ export default async function AdminFormEditorPage({
 
         <FormPublishControls
           formId={form.id}
-          slug={form.slug}
           displayStatus={displayStatus}
           hasDraft={Boolean(draft)}
           isPublished={isPublished}
           draftVersionNumber={draft?.versionNumber ?? null}
           publishedVersionNumber={publishedVersion?.versionNumber ?? null}
+        />
+      </div>
+
+      <div className="mb-6">
+        <FormShareCard
+          formId={form.id}
+          slug={form.slug}
+          title={headerTitle}
+          displayStatus={displayStatus}
+          isPublished={isPublished}
+          posterUrl={sharePoster?.publicUrl ?? null}
+          posterAlt={sharePoster?.altText ?? null}
+          capacity={shareSchedule.capacity}
+          registrationDeadline={
+            shareSchedule.registrationDeadline?.toISOString() ?? null
+          }
+          qrPreviewDataUrl={qrPreviewDataUrl}
         />
       </div>
 
@@ -177,7 +206,12 @@ export default async function AdminFormEditorPage({
       </div>
 
       {draft ? (
-        <FormEditor formId={form.id} fields={fields} />
+        <FormEditor
+          formId={form.id}
+          slug={form.slug}
+          isPublished={isPublished}
+          fields={fields}
+        />
       ) : (
         <AdminEmptyState
           title={

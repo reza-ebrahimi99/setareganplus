@@ -42,6 +42,9 @@ export type PublicFormData = {
     description: string | null;
     confirmationMessage: string;
     versionNumber: number;
+    opensAt: Date | null;
+    registrationDeadline: Date | null;
+    capacity: number | null;
   };
   poster: PublicFormPoster | null;
   fields: PublicFormField[];
@@ -67,8 +70,14 @@ export type LoadPublicFormResult =
       message?: string;
       meta?: {
         title?: string;
+        description?: string | null;
         purpose?: FormPurpose;
         poster?: PublicFormPoster | null;
+        status?: FormAvailabilityStatus;
+        capacity?: number | null;
+        remainingCapacity?: number | null;
+        showRemainingCapacity?: boolean;
+        registrationDeadline?: Date | null;
       };
     };
 
@@ -175,8 +184,14 @@ export async function loadPublicFormBySlug(
 
     const meta = {
       title: version.title,
+      description: version.description,
       purpose: form.purpose,
       poster,
+      status: availability.status,
+      capacity: version.capacity,
+      remainingCapacity: availability.remainingCapacity,
+      showRemainingCapacity: settings.showRemainingCapacity,
+      registrationDeadline: version.registrationDeadline,
     };
 
     if (availability.status === "NOT_OPEN_YET") {
@@ -224,6 +239,9 @@ export async function loadPublicFormBySlug(
           description: version.description,
           confirmationMessage: version.confirmationMessage,
           versionNumber: version.versionNumber,
+          opensAt: version.opensAt,
+          registrationDeadline: version.registrationDeadline,
+          capacity: version.capacity,
         },
         poster,
         fields: version.fields.map((field) => ({

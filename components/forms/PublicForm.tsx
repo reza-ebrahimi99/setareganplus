@@ -36,7 +36,7 @@ export function PublicForm({ data }: PublicFormProps) {
     data.availability.remainingCapacity != null;
 
   return (
-    <form action={formAction} className="relative space-y-5" noValidate>
+    <form action={formAction} className="relative space-y-6" noValidate>
       {/* Honeypot — leave empty. TODO(abuse): production rate limiting. */}
       <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
         <label htmlFor="company_url">نام شرکت</label>
@@ -76,22 +76,40 @@ export function PublicForm({ data }: PublicFormProps) {
         </div>
       ) : null}
 
-      {data.fields.map((field) => (
-        <PublicFormField
-          key={field.id}
-          field={field}
-          error={state.fieldErrors?.[field.fieldKey]}
-          defaultValue={state.values?.[field.fieldKey]}
-        />
-      ))}
+      <div className="space-y-5">
+        {data.fields.map((field, index) => (
+          <div
+            key={field.id}
+            className="public-form-field"
+            style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
+          >
+            <PublicFormField
+              field={field}
+              error={state.fieldErrors?.[field.fieldKey]}
+              defaultValue={state.values?.[field.fieldKey]}
+              disabled={pending}
+            />
+          </div>
+        ))}
+      </div>
 
-      <div className="border-t border-border pt-5">
+      <div className="public-form-submit-bar border-t border-border pt-5">
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary/92 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary/92 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:py-3"
         >
-          {pending ? "در حال ثبت…" : "ثبت پاسخ"}
+          {pending ? (
+            <>
+              <span
+                className="public-form-spinner"
+                aria-hidden="true"
+              />
+              <span>در حال ثبت…</span>
+            </>
+          ) : (
+            "ثبت پاسخ"
+          )}
         </button>
         <p className="mt-3 text-xs leading-6 text-muted">
           با ارسال فرم، اطلاعات شما مطابق قوانین مرکز آموزشی ثبت می‌شود.

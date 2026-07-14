@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicFormShell } from "@/components/forms/PublicFormShell";
 import { loadPublicFormBySlug } from "@/lib/forms/load-public-form";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/forms/public-form-url";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export async function generateMetadata({
 
   return {
     title: result.ok ? `ثبت موفق · ${result.data.version.title}` : "ثبت موفق",
+    metadataBase: new URL(PUBLIC_SITE_ORIGIN),
     robots: { index: false, follow: false },
   };
 }
@@ -43,14 +45,14 @@ export default async function PublicFormSuccessPage({
 
   return (
     <PublicFormShell>
-      <div className="rounded-2xl border border-border bg-surface px-6 py-12 text-center shadow-[0_8px_24px_rgb(15_23_42_/_0.06)] sm:px-10">
+      <div className="public-form-section rounded-2xl border border-border bg-surface px-6 py-12 text-center shadow-[0_8px_24px_rgb(15_23_42_/_0.06)] sm:px-10">
         <div
           aria-hidden="true"
-          className="mx-auto mb-5 flex size-14 items-center justify-center rounded-full bg-emerald-50 text-2xl text-emerald-700"
+          className="public-form-success-mark mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-emerald-50 text-3xl text-emerald-700"
         >
           ✓
         </div>
-        <h1 className="text-xl font-bold text-primary sm:text-2xl">
+        <h1 className="text-xl font-bold leading-10 tracking-tight text-primary sm:text-2xl">
           ثبت با موفقیت انجام شد
         </h1>
         <p className="mt-2 text-sm text-muted">{title}</p>

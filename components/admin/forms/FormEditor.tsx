@@ -23,6 +23,8 @@ import type { FormFieldType } from "@/generated/prisma/enums";
 
 type FormEditorProps = {
   formId: string;
+  slug: string;
+  isPublished: boolean;
   fields: EditorField[];
 };
 
@@ -430,9 +432,15 @@ function QuestionListItem({
   );
 }
 
-export function FormEditor({ formId, fields }: FormEditorProps) {
+export function FormEditor({
+  formId,
+  slug,
+  isPublished,
+  fields,
+}: FormEditorProps) {
   const [mode, setMode] = useState<"create" | "edit">("create");
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [previewNotice, setPreviewNotice] = useState<string | null>(null);
 
   const selectedField = useMemo(
     () => fields.find((field) => field.id === selectedFieldId) ?? null,
@@ -458,17 +466,44 @@ export function FormEditor({ formId, fields }: FormEditorProps) {
               {toPersianDigits(fields.length)} سؤال در نسخه پیش‌نویس
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setMode("create");
-              setSelectedFieldId(null);
-            }}
-            className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary/92"
-          >
-            افزودن سؤال
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isPublished) {
+                  setPreviewNotice(
+                    "برای پیش‌نمایش عمومی ابتدا فرم را منتشر کنید. پیش‌نمایش پیش‌نویس هنوز فعال نیست.",
+                  );
+                  return;
+                }
+                setPreviewNotice(null);
+                window.open(`/forms/${slug}`, "_blank", "noopener,noreferrer");
+              }}
+              className="inline-flex items-center justify-center rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground hover:bg-background"
+            >
+              پیش‌نمایش
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode("create");
+                setSelectedFieldId(null);
+              }}
+              className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary/92"
+            >
+              افزودن سؤال
+            </button>
+          </div>
         </div>
+
+        {previewNotice ? (
+          <div
+            role="status"
+            className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-7 text-amber-950"
+          >
+            {previewNotice}
+          </div>
+        ) : null}
 
         {fields.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center">

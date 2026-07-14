@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import {
   pausePublishedFormAction,
   publishFormVersionAction,
@@ -25,7 +25,6 @@ const STATUS_STYLES: Record<EditorDisplayStatus, string> = {
 
 type FormPublishControlsProps = {
   formId: string;
-  slug: string;
   displayStatus: EditorDisplayStatus;
   hasDraft: boolean;
   isPublished: boolean;
@@ -33,47 +32,8 @@ type FormPublishControlsProps = {
   publishedVersionNumber: number | null;
 };
 
-function PublicUrlPreview({ slug }: { slug: string }) {
-  const path = `/forms/${slug}`;
-  const [copied, setCopied] = useState(false);
-
-  return (
-    <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-3 text-sm">
-      <p className="font-medium text-emerald-900">
-        آدرس عمومی (پس از راه‌اندازی نمایشگر)
-      </p>
-      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-        <code
-          dir="ltr"
-          className="block min-w-0 flex-1 overflow-x-auto rounded-lg bg-white/80 px-3 py-2 font-mono text-xs text-emerald-950"
-        >
-          {path}
-        </code>
-        <button
-          type="button"
-          className="shrink-0 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-medium text-emerald-900 hover:bg-emerald-50"
-          onClick={async () => {
-            try {
-              await navigator.clipboard.writeText(path);
-              setCopied(true);
-            } catch {
-              setCopied(false);
-            }
-          }}
-        >
-          {copied ? "کپی شد" : "کپی مسیر"}
-        </button>
-      </div>
-      <p className="mt-2 text-xs leading-6 text-emerald-900/80">
-        مسیر عمومی هنوز پیاده‌سازی نشده است؛ فقط پیش‌نمایش است.
-      </p>
-    </div>
-  );
-}
-
 export function FormPublishControls({
   formId,
-  slug,
   displayStatus,
   hasDraft,
   isPublished,
@@ -189,7 +149,12 @@ export function FormPublishControls({
         ) : null}
       </div>
 
-      {isPublished ? <PublicUrlPreview key={slug} slug={slug} /> : null}
+      {isPublished ? (
+        <p className="text-xs leading-6 text-muted">
+          لینک عمومی، QR و اشتراک‌گذاری در کارت اشتراک فرم در پایین همین صفحه
+          قرار دارد.
+        </p>
+      ) : null}
     </div>
   );
 }
