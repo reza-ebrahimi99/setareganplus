@@ -5,6 +5,7 @@ export type AdminNavIcon =
   | "overview"
   | "leads"
   | "forms"
+  | "bookings"
   | "enrollments"
   | "students"
   | "courses"
@@ -46,6 +47,12 @@ export const adminNavGroups: ReadonlyArray<{
         href: "/admin/forms",
         label: "فرم‌ساز",
         icon: "forms",
+        enabled: true,
+      },
+      {
+        href: "/admin/bookings",
+        label: "رزرو نوبت",
+        icon: "bookings",
         enabled: true,
       },
       { label: "ثبت‌نام‌ها", icon: "enrollments", enabled: false },
@@ -99,6 +106,37 @@ export const adminBreadcrumbs = {
     { label: "مدیریت", href: "/admin" },
     { label: "فرم‌ساز", href: "/admin/forms" },
     { label: "ساخت فرم جدید" },
+  ],
+  bookings: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "رزرو نوبت" },
+  ],
+  bookingServices: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "رزرو نوبت", href: "/admin/bookings" },
+    { label: "خدمت‌ها" },
+  ],
+  bookingServicesNew: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "رزرو نوبت", href: "/admin/bookings" },
+    { label: "خدمت‌ها", href: "/admin/bookings/services" },
+    { label: "تعریف خدمت" },
+  ],
+  bookingServiceDetail: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "رزرو نوبت", href: "/admin/bookings" },
+    { label: "خدمت‌ها", href: "/admin/bookings/services" },
+    { label: "تنظیمات خدمت" },
+  ],
+  bookingCalendar: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "رزرو نوبت", href: "/admin/bookings" },
+    { label: "تقویم نوبت‌ها" },
+  ],
+  bookingReservation: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "رزرو نوبت", href: "/admin/bookings" },
+    { label: "جزئیات رزرو" },
   ],
 } as const satisfies Record<string, readonly AdminBreadcrumbItem[]>;
 

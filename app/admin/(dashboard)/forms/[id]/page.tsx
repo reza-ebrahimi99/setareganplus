@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { FormEditor } from "@/components/admin/forms/FormEditor";
+import { FormBookingConnection } from "@/components/admin/forms/FormBookingConnection";
 import { FormPosterManager } from "@/components/admin/forms/FormPosterManager";
 import { FormScheduleSettings } from "@/components/admin/forms/FormScheduleSettings";
 import { FormPublishControls } from "@/components/admin/forms/FormPublishControls";
@@ -12,6 +13,9 @@ import { adminBreadcrumbs } from "@/content/admin";
 import { generateFormQrDataUrl } from "@/lib/forms/generate-form-qr";
 import { getFormPurposeLabel } from "@/lib/forms/form-purpose-labels";
 import { loadFormEditor } from "@/lib/forms/load-form-editor";
+import { parseFormBookingSettings } from "@/lib/booking/form-booking-settings";
+import { requireAdminSession } from "@/lib/auth/require-admin";
+import { prisma } from "@/lib/prisma";
 import { toPersianDigits } from "@/lib/persian";
 
 type AdminFormEditorPageProps = {
@@ -35,6 +39,7 @@ export default async function AdminFormEditorPage({
   params,
 }: AdminFormEditorPageProps) {
   const { id } = await params;
+  const session = await requireAdminSession();
   const result = await loadFormEditor(id);
 
   if (!result.ok && result.reason === "not_found") {
@@ -98,6 +103,26 @@ export default async function AdminFormEditorPage({
   const qrPreviewDataUrl = isPublished
     ? await generateFormQrDataUrl(form.slug)
     : null;
+  const bookingServices = await prisma.bookingService.findMany({
+    where: {
+      organizationId: session.organization.id,
+      deletedAt: null,
+      isActive: true,
+    },
+    orderBy: { title: "asc" },
+    select: { id: true, title: true },
+  });
+  const bookingVersion = await prisma.formVersion.findFirst({
+    where: {
+      organizationId: session.organization.id,
+      formId: form.id,
+      id: draft?.id ?? publishedVersion?.id,
+    },
+    select: { settings: true },
+  });
+  const bookingSettings = parseFormBookingSettings(
+    bookingVersion?.settings,
+  );
 
   return (
     <>
@@ -202,6 +227,15 @@ export default async function AdminFormEditorPage({
           formId={form.id}
           editable={Boolean(draft)}
           poster={posterForUi}
+        />
+      </div>
+
+      <div className="mb-6">
+        <FormBookingConnection
+          formId={form.id}
+          editable={Boolean(draft)}
+          services={bookingServices}
+          settings={bookingSettings}
         />
       </div>
 

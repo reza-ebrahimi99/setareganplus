@@ -145,6 +145,7 @@ const navIconMap: Record<AdminNavIcon, React.ComponentType<IconProps>> = {
   overview: OverviewIcon,
   leads: UsersIcon,
   forms: ClipboardIcon,
+  bookings: BookIcon,
   enrollments: ClipboardIcon,
   students: UsersIcon,
   courses: BookIcon,

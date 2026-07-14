@@ -153,6 +153,10 @@ enum AuditAction {
   FORM_SUBMISSION_RECEIVED
   FORM_EXPORTED
   FORM_TEMPLATE_INSTANTIATED
+  BOOKING_CREATED
+  BOOKING_UPDATED
+  BOOKING_CHECKED_IN
+  AI_ASSISTED_ACTION
 }
 
 // ─── Form builder (Sprint 3.4A) ─────────────────────────────────────────────
@@ -248,6 +252,45 @@ enum DomainEventType {
   FORM_DUPLICATE_DETECTED
   FORM_LEAD_CREATED
   FORM_CAPACITY_REACHED
+  BOOKING_CREATED
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  BOOKING_RESCHEDULED
+  BOOKING_WAITLISTED
+  BOOKING_CHECKED_IN
+  BOOKING_COMPLETED
+  BOOKING_NO_SHOW
+}
+
+// ─── Smart Booking Engine (StarOS v0.5) ─────────────────────────────────────
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  WAITING_LIST
+  CANCELLED
+  RESCHEDULED
+  COMPLETED
+  NO_SHOW
+}
+
+enum BookingSlotStatus {
+  OPEN
+  FULL
+  CLOSED
+  CANCELLED
+}
+
+enum BookingMeetingType {
+  IN_PERSON
+  ONLINE
+  PHONE
+}
+
+enum BookingCheckInMethod {
+  QR
+  MANUAL
+  ADMIN
 }
 
 enum DomainEventStatus {
@@ -307,6 +350,10 @@ model Organization {
   formAnalyticsEvents FormAnalyticsEvent[]
   formAnalyticsDaily  FormAnalyticsDaily[]
   mediaAssets         MediaAsset[]
+  bookingServices     BookingService[]
+  bookingAdvisors     BookingAdvisor[]
+  bookingSlots        BookingSlot[]
+  bookingReservations BookingReservation[]
 
   @@map("organizations")
 }
@@ -334,6 +381,9 @@ model Branch {
   formSubmissions     FormSubmission[]
   domainEvents        DomainEventOutbox[]
   formAnalyticsEvents FormAnalyticsEvent[]
+  bookingServices     BookingService[]
+  bookingAdvisors     BookingAdvisor[]
+  bookingSlots BookingSlot[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -359,10 +409,12 @@ model User {
   updatedAt        DateTime   @updatedAt
   deletedAt        DateTime?
 
-  memberships   OrganizationMembership[]
-  auditLogs     AuditLog[]               @relation("AuditLogActor")
-  adminSessions AdminSession[]
-  mediaAssets   MediaAsset[]             @relation("MediaAssetCreator")
+  memberships      OrganizationMembership[]
+  auditLogs        AuditLog[]               @relation("AuditLogActor")
+  adminSessions    AdminSession[]
+  mediaAssets      MediaAsset[]             @relation("MediaAssetCreator")
+  bookingAdvisors  BookingAdvisor[]
+  bookingCheckIns  BookingCheckIn[]
 
   @@index([status])
   @@index([deletedAt])
@@ -659,6 +711,7 @@ model Form {
   automationRules  AutomationRule[]
   analyticsEvents  FormAnalyticsEvent[]
   analyticsDaily   FormAnalyticsDaily[]
+  bookingServices  BookingService[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -788,6 +841,7 @@ model FormSubmission {
   duplicates            FormSubmission[]    @relation("SubmissionDuplicates")
   answers               FormAnswer[]
   tags                  FormSubmissionTag[]
+  bookingReservations   BookingReservation[]
 
   @@unique([organizationId, branchId, id])
   @@unique([organizationId, id])
@@ -976,4 +1030,223 @@ model FormAnalyticsDaily {
   @@index([organizationId, formId, date])
   @@index([organizationId, formId, dimension, date])
   @@map("form_analytics_daily")
+}
+
+// ─── Smart Booking Engine models (StarOS v0.5) ──────────────────────────────
+// Standalone transactional domain. Optionally linked to Form / FormSubmission.
+// Store all slot/reservation instants in UTC. Convert Asia/Tehran ↔ UTC at boundaries.
+// Never store Jalali strings as authoritative timestamps.
+
+model BookingService {
+  id                     String   @id @default(cuid())
+  organizationId         String
+  branchId               String?
+  formId                 String?
+  slug                   String
+  title                  String
+  description            String?
+  durationMinutes        Int
+  bufferBeforeMinutes    Int      @default(0)
+  bufferAfterMinutes     Int      @default(0)
+  minimumLeadTimeMinutes Int      @default(60)
+  maximumAdvanceDays     Int      @default(30)
+  meetingTypes           Json     @default("[\"IN_PERSON\"]")
+  isActive               Boolean  @default(true)
+  settings               Json     @default("{}")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  deletedAt              DateTime?
+
+  organization      Organization               @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch            Branch?                    @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  form              Form?                      @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
+  advisorLinks      BookingAdvisorService[]
+  availabilityRules BookingAvailabilityRule[]
+  exceptions        BookingAvailabilityException[]
+  slots             BookingSlot[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, isActive])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, formId])
+  @@map("booking_services")
+}
+
+model BookingAdvisor {
+  id             String    @id @default(cuid())
+  organizationId String
+  branchId       String?
+  userId         String?
+  displayName    String
+  description    String?
+  colorKey       String?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization      Organization                   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch            Branch?                        @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  user              User?                          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  serviceLinks      BookingAdvisorService[]
+  availabilityRules BookingAvailabilityRule[]
+  exceptions        BookingAvailabilityException[]
+  slots             BookingSlot[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, isActive])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, userId])
+  @@map("booking_advisors")
+}
+
+model BookingAdvisorService {
+  id             String   @id @default(cuid())
+  organizationId String
+  advisorId      String
+  serviceId      String
+  createdAt      DateTime @default(now())
+
+  advisor BookingAdvisor @relation(fields: [organizationId, advisorId], references: [organizationId, id], onDelete: Cascade)
+  service BookingService @relation(fields: [organizationId, serviceId], references: [organizationId, id], onDelete: Cascade)
+
+  @@unique([organizationId, advisorId, serviceId])
+  @@index([organizationId, serviceId])
+  @@map("booking_advisor_services")
+}
+
+/// Weekday: 0 = Saturday … 6 = Friday (Persian week, Saturday-first).
+model BookingAvailabilityRule {
+  id             String    @id @default(cuid())
+  organizationId String
+  advisorId      String
+  serviceId      String?
+  weekday        Int
+  startLocalTime String
+  endLocalTime   String
+  slotCapacity   Int       @default(1)
+  validFrom      DateTime?
+  validUntil     DateTime?
+  timezone       String    @default("Asia/Tehran")
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  advisor BookingAdvisor  @relation(fields: [organizationId, advisorId], references: [organizationId, id], onDelete: Cascade)
+  service BookingService? @relation(fields: [organizationId, serviceId], references: [organizationId, id], onDelete: Cascade)
+
+  @@index([organizationId, advisorId, weekday, isActive])
+  @@index([organizationId, serviceId])
+  @@map("booking_availability_rules")
+}
+
+model BookingAvailabilityException {
+  id             String    @id @default(cuid())
+  organizationId String
+  advisorId      String
+  serviceId      String?
+  /// Local calendar day in Asia/Tehran (date-only UTC noon sentinel avoided — store as Date @db.Date).
+  localDate      DateTime  @db.Date
+  isClosed       Boolean   @default(true)
+  startLocalTime String?
+  endLocalTime   String?
+  slotCapacity   Int?
+  reason         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  advisor BookingAdvisor  @relation(fields: [organizationId, advisorId], references: [organizationId, id], onDelete: Cascade)
+  service BookingService? @relation(fields: [organizationId, serviceId], references: [organizationId, id], onDelete: Cascade)
+
+  @@index([organizationId, advisorId, localDate])
+  @@index([organizationId, serviceId, localDate])
+  @@map("booking_availability_exceptions")
+}
+
+model BookingSlot {
+  id             String            @id @default(cuid())
+  organizationId String
+  serviceId      String
+  advisorId      String
+  branchId       String?
+  startsAt       DateTime
+  endsAt         DateTime
+  capacity       Int
+  bookedCount    Int               @default(0)
+  waitingCount   Int               @default(0)
+  status         BookingSlotStatus @default(OPEN)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  service      BookingService       @relation(fields: [organizationId, serviceId], references: [organizationId, id], onDelete: Restrict)
+  advisor      BookingAdvisor       @relation(fields: [organizationId, advisorId], references: [organizationId, id], onDelete: Restrict)
+  branch       Branch?              @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  reservations BookingReservation[]
+
+  @@unique([organizationId, serviceId, advisorId, startsAt])
+  @@unique([organizationId, id])
+  @@index([organizationId, serviceId, startsAt, status])
+  @@index([organizationId, advisorId, startsAt, status])
+  @@index([organizationId, branchId, startsAt])
+  @@index([organizationId, status, startsAt])
+  @@map("booking_slots")
+}
+
+model BookingReservation {
+  id                   String             @id @default(cuid())
+  organizationId       String
+  slotId               String
+  formSubmissionId     String?
+  status               BookingStatus      @default(PENDING)
+  meetingType          BookingMeetingType @default(IN_PERSON)
+  firstName            String
+  lastName             String
+  normalizedMobile     String
+  normalizedEmail      String?
+  normalizedNationalId String?
+  trackingCode         String
+  cancelTokenHash      String?
+  checkInTokenHash     String?
+  rescheduledFromId    String?
+  notes                String?
+  checkedInAt          DateTime?
+  riskHint             String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  deletedAt            DateTime?
+
+  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  slot            BookingSlot         @relation(fields: [organizationId, slotId], references: [organizationId, id], onDelete: Restrict)
+  formSubmission  FormSubmission?     @relation(fields: [organizationId, formSubmissionId], references: [organizationId, id], onDelete: Restrict)
+  rescheduledFrom BookingReservation? @relation("BookingRescheduleChain", fields: [rescheduledFromId], references: [id], onDelete: Restrict)
+  rescheduledTo   BookingReservation[] @relation("BookingRescheduleChain")
+  checkIns BookingCheckIn[]
+
+  @@unique([organizationId, trackingCode])
+  @@unique([organizationId, id])
+  @@index([organizationId, slotId, status])
+  @@index([organizationId, normalizedMobile, status])
+  @@index([organizationId, normalizedNationalId, status])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, formSubmissionId])
+  @@index([organizationId, deletedAt])
+  @@map("booking_reservations")
+}
+
+model BookingCheckIn {
+  id                String               @id @default(cuid())
+  organizationId    String
+  reservationId     String
+  checkedInByUserId String
+  method            BookingCheckInMethod @default(QR)
+  createdAt         DateTime             @default(now())
+
+  reservation     BookingReservation @relation(fields: [organizationId, reservationId], references: [organizationId, id], onDelete: Restrict)
+  checkedInByUser User               @relation(fields: [checkedInByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, reservationId])
+  @@index([organizationId, createdAt])
+  @@map("booking_check_ins")
 }
