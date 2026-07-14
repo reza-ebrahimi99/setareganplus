@@ -25,12 +25,18 @@ function LogoFallback({ label }: { label: string }) {
 function EqualPartnerLogo({
   media,
   fallbackLabel,
+  clear = false,
 }: {
   media: (typeof partnershipContent.logos)["institution"] | (typeof partnershipContent.logos)["ghalamchi"];
   fallbackLabel: string;
+  clear?: boolean;
 }) {
   return (
-    <div className="brand-logo-frame brand-logo-frame--section">
+    <div
+      className={`brand-logo-frame brand-logo-frame--section${
+        clear ? " brand-logo-frame--clear" : ""
+      }`}
+    >
       {hasMediaUrl(media) ? (
         <MediaImage
           media={media}
@@ -68,6 +74,7 @@ export function PartnershipSection() {
                 <EqualPartnerLogo
                   media={logos.institution}
                   fallbackLabel="ستارگان پلاس"
+                  clear
                 />
                 <div
                   aria-hidden="true"

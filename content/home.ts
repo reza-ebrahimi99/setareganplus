@@ -96,6 +96,11 @@ export const heroContent = {
 /** StarOS media slots — assign url from media library when available */
 export const heroMedia = {
   logo: {
+    url: "/images/brand/logo.png",
+    alt: "لوگوی مؤسسه علمی ستارگان",
+  } satisfies MediaAsset,
+  /** JPG fallback kept for legacy / emergency use — prefer logo.png */
+  logoFallback: {
     url: "/images/brand/logo.jpg",
     alt: "لوگوی مؤسسه علمی ستارگان",
   } satisfies MediaAsset,
@@ -378,7 +383,7 @@ export const partnershipContent = {
   slogan: officialSlogan,
   logos: {
     institution: {
-      url: "/images/brand/logo.jpg",
+      url: "/images/brand/logo.png",
       alt: "لوگوی مؤسسه علمی ستارگان",
     } satisfies MediaAsset,
     ghalamchi: {

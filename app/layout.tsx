@@ -15,6 +15,20 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
+  icons: {
+    icon: [
+      { url: "/images/brand/logo.png", type: "image/png" },
+      { url: "/images/brand/logo.png", sizes: "32x32", type: "image/png" },
+      { url: "/images/brand/logo.png", sizes: "192x192", type: "image/png" },
+    ],
+    shortcut: ["/images/brand/logo.png"],
+    apple: [{ url: "/images/brand/logo.png", type: "image/png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: siteConfig.name,
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({

@@ -42,13 +42,19 @@ function EqualBrandMark({
   media,
   fallback,
   priority,
+  clear = false,
 }: {
   media: (typeof heroMedia)["logo"] | (typeof heroMedia)["ghalamchiLogo"];
   fallback: ReactNode;
   priority?: boolean;
+  clear?: boolean;
 }) {
   return (
-    <div className="brand-logo-frame brand-logo-frame--hero">
+    <div
+      className={`brand-logo-frame brand-logo-frame--hero${
+        clear ? " brand-logo-frame--clear" : ""
+      }`}
+    >
       {hasMediaUrl(media) ? (
         <MediaImage
           media={media}
@@ -81,6 +87,7 @@ export function PremiumHero() {
               <EqualBrandMark
                 media={heroMedia.logo}
                 priority
+                clear
                 fallback={<HeroLogoFallback label="ستارگان" />}
               />
               <div

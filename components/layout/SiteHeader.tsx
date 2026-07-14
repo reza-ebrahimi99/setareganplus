@@ -17,16 +17,22 @@ const ghalamchiLabel = "نمایندگی رسمی قلم‌چی";
 function HeaderLogo({
   media,
   priority,
+  clear = false,
 }: {
   media: (typeof heroMedia)["logo"] | (typeof heroMedia)["ghalamchiLogo"];
   priority?: boolean;
+  clear?: boolean;
 }) {
   if (!hasMediaUrl(media)) {
     return null;
   }
 
   return (
-    <span className="brand-logo-frame brand-logo-frame--header">
+    <span
+      className={`brand-logo-frame brand-logo-frame--header${
+        clear ? " brand-logo-frame--clear" : ""
+      }`}
+    >
       <MediaImage
         media={media}
         width={72}
@@ -64,7 +70,7 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
             href="/"
             className="group flex min-w-0 items-center gap-2 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:gap-2.5"
           >
-            <HeaderLogo media={heroMedia.logo} priority />
+            <HeaderLogo media={heroMedia.logo} priority clear />
             <span className="flex min-w-0 flex-col justify-center">
               <span className="truncate text-base font-bold leading-tight text-primary transition-colors group-hover:text-primary/80 sm:text-lg">
                 {siteConfig.name}

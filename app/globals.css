@@ -50,6 +50,13 @@ body {
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
 }
 
+/* Transparent PNG Setaregan mark — no white box */
+.brand-logo-frame--clear {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
 .brand-logo-frame--header {
   width: 2.85rem;
   height: 2.85rem;
