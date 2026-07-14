@@ -66,9 +66,14 @@ export function QalamchiBranchesSection() {
 
   return (
     <section
+      id="qalamchi-section"
       aria-labelledby={headingId}
-      className="relative w-full overflow-hidden border-y border-amber-300/70 border-t-4 border-t-[#D4AF37] bg-[#FEF3C7] py-16 sm:py-24 before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.16),transparent_42%)]"
+      className="relative w-full overflow-hidden border-y border-amber-300/70 border-t-4 border-t-[#D4AF37] bg-[#FEF3C7] py-16 sm:py-24"
     >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.16),transparent_42%)]"
+      />
       <div className="relative z-10">
         <Container>
           <header className="max-w-3xl">

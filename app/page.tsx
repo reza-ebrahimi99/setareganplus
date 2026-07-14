@@ -16,7 +16,9 @@ export default function Home() {
   return (
     <SiteShell activePath="/">
       <PremiumHero />
+      {/* 1) Qalamchi first — never place school content above this */}
       <QalamchiBranchesSection />
+      {/* 2) School second — AboutSection must remain school-only */}
       <AboutSection />
       <TrustSection />
       <PremiumServices />

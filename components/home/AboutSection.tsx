@@ -1,12 +1,11 @@
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { aboutContent, institutionEntities } from "@/content/home";
+import { aboutContent } from "@/content/home";
 import { toPersianDigits } from "@/lib/persian";
 
 const headingId = "about-heading";
 
 export function AboutSection() {
-  const { setareganAyandeh } = institutionEntities;
   const { schoolSection } = aboutContent;
   const { stats } = schoolSection;
 
@@ -26,6 +25,7 @@ export function AboutSection() {
 
   return (
     <section
+      id="school-section"
       aria-labelledby={headingId}
       className="relative w-full border-y border-slate-300 bg-[#EAF2F8] py-16 sm:py-24"
     >
@@ -52,13 +52,7 @@ export function AboutSection() {
         <div className="mt-10 grid items-start gap-8 lg:grid-cols-12 lg:gap-10">
           <div className="lg:col-span-7">
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-              <p className="text-xs font-medium tracking-wide text-primary/70">
-                {setareganAyandeh.role}
-              </p>
-              <h3 className="mt-2 text-xl font-bold text-primary sm:text-2xl">
-                {toPersianDigits(setareganAyandeh.name)}
-              </h3>
-              <p className="mt-4 text-sm leading-8 text-muted sm:text-base">
+              <p className="text-sm leading-8 text-muted sm:text-base">
                 {toPersianDigits(aboutContent.lead)}
               </p>
 
