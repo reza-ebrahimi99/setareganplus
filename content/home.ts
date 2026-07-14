@@ -85,7 +85,7 @@ export const institutionEntities = {
 
 export const heroContent = {
   title: branding.primary,
-  subtitle: branding.secondary,
+  subtitle: "سامانه یکپارچه آموزش، مشاوره و برنامه‌ریزی تحصیلی",
   affiliation: "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی)",
   slogan: officialSlogan,
   description:
