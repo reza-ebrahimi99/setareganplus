@@ -4,30 +4,70 @@ import { MediaImage } from "@/components/ui/MediaImage";
 import { Section } from "@/components/ui/Section";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { hasMediaUrl } from "@/lib/media";
+import type { MediaAsset } from "@/lib/media";
 import { aboutContent, institutionEntities } from "@/content/home";
 import { toPersianDigits } from "@/lib/persian";
 
 const headingId = "about-heading";
+const branchesHeadingId = "qalamchi-branches-heading";
 
-function AboutCampusFallback({ label }: { label: string }) {
+function BranchImageFallback({ label }: { label: string }) {
   return (
     <div
       aria-hidden="true"
-      className="flex h-full min-h-[16rem] flex-col items-center justify-center bg-primary/[0.04] px-6 text-center"
+      className="flex h-full min-h-[14rem] flex-col items-center justify-center bg-primary/[0.04] px-6 text-center"
     >
       <p className="text-xs font-medium tracking-wide text-secondary">
-        فضای آموزشی
+        نمایندگی قلم‌چی
       </p>
-      <p className="mt-3 max-w-sm text-sm font-medium leading-7 text-primary">
+      <p className="mt-3 text-sm font-medium leading-7 text-primary">
         {toPersianDigits(label)}
       </p>
     </div>
   );
 }
 
+function BranchCard({
+  title,
+  description,
+  media,
+}: {
+  title: string;
+  description: string;
+  media: MediaAsset;
+}) {
+  return (
+    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-primary/10 bg-white shadow-[0_1px_2px_rgb(15_23_42_/_0.04),0_12px_28px_rgb(15_23_42_/_0.06)]">
+      <div className="relative aspect-[16/11] overflow-hidden bg-primary/[0.03]">
+        {hasMediaUrl(media) ? (
+          <MediaImage
+            media={media}
+            fill
+            className="object-cover object-center"
+            sizes="(max-width: 640px) 100vw, 50vw"
+          />
+        ) : (
+          <BranchImageFallback label={media.alt} />
+        )}
+      </div>
+      <div className="flex flex-1 flex-col border-t border-border px-5 py-4 sm:px-6 sm:py-5">
+        <p className="text-[0.7rem] font-medium tracking-wide text-secondary sm:text-xs">
+          نمایندگی رسمی
+        </p>
+        <h4 className="mt-1.5 text-lg font-bold text-primary sm:text-xl">
+          {toPersianDigits(title)}
+        </h4>
+        <p className="mt-2 text-sm leading-7 text-muted">
+          {toPersianDigits(description)}
+        </p>
+      </div>
+    </article>
+  );
+}
+
 export function AboutSection() {
   const { setareganAyandeh } = institutionEntities;
-  const { schoolSection } = aboutContent;
+  const { schoolSection, branches } = aboutContent;
   const { stats } = schoolSection;
 
   const highlightFacts = [
@@ -54,26 +94,33 @@ export function AboutSection() {
           headingId={headingId}
         />
 
-        <div className="mt-10 grid items-start gap-8 lg:grid-cols-12 lg:gap-10">
-          <figure className="relative overflow-hidden rounded-2xl border border-border bg-primary/[0.03] lg:col-span-7">
-            <div className="relative aspect-[16/11] sm:aspect-[16/10]">
-              {hasMediaUrl(aboutContent.cover) ? (
-                <MediaImage
-                  media={aboutContent.cover}
-                  fill
-                  className="object-cover object-center"
-                  sizes="(max-width: 1024px) 100vw, 640px"
-                />
-              ) : (
-                <AboutCampusFallback label={aboutContent.cover.alt} />
-              )}
-            </div>
-            <figcaption className="border-t border-border bg-surface px-4 py-3 text-xs leading-6 text-muted sm:px-5">
-              {toPersianDigits(aboutContent.cover.alt)}
-            </figcaption>
-          </figure>
+        <section aria-labelledby={branchesHeadingId} className="mt-10">
+          <header className="max-w-2xl">
+            <h3
+              id={branchesHeadingId}
+              className="text-xl font-bold text-primary sm:text-2xl"
+            >
+              {toPersianDigits(branches.heading)}
+            </h3>
+            <p className="mt-2 text-sm leading-7 text-muted sm:text-base sm:leading-8">
+              {toPersianDigits(branches.description)}
+            </p>
+          </header>
 
-          <div className="lg:col-span-5">
+          <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6">
+            {branches.items.map((branch) => (
+              <BranchCard
+                key={branch.title}
+                title={branch.title}
+                description={branch.description}
+                media={branch.media}
+              />
+            ))}
+          </div>
+        </section>
+
+        <div className="mt-12 grid items-start gap-8 lg:grid-cols-12 lg:gap-10">
+          <div className="lg:col-span-7">
             <p className="text-xs font-medium tracking-wide text-secondary">
               {setareganAyandeh.role}
             </p>
@@ -118,30 +165,30 @@ export function AboutSection() {
               </ul>
             </div>
           </div>
-        </div>
-
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-12 lg:items-end">
-          <div className="rounded-2xl border border-border bg-surface px-5 py-5 sm:px-6 lg:col-span-7">
-            <p className="text-xs font-medium tracking-wide text-secondary">
-              {schoolSection.heading}
-            </p>
-            <p className="mt-2 text-sm leading-7 text-muted">
-              {toPersianDigits(schoolSection.description)}
-            </p>
-            <dl className="mt-5 flex flex-wrap gap-6 sm:gap-10">
-              {outcomeFacts.map((fact) => (
-                <div key={fact.label}>
-                  <dt className="text-xs font-medium text-muted">{fact.label}</dt>
-                  <dd className="mt-1 text-3xl font-bold text-secondary">
-                    {fact.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
 
           <div className="lg:col-span-5">
-            <p className="text-sm leading-8 text-muted">
+            <div className="rounded-2xl border border-border bg-surface px-5 py-5 sm:px-6">
+              <p className="text-xs font-medium tracking-wide text-secondary">
+                {schoolSection.heading}
+              </p>
+              <p className="mt-2 text-sm leading-7 text-muted">
+                {toPersianDigits(schoolSection.description)}
+              </p>
+              <dl className="mt-5 flex flex-wrap gap-6 sm:gap-10">
+                {outcomeFacts.map((fact) => (
+                  <div key={fact.label}>
+                    <dt className="text-xs font-medium text-muted">
+                      {fact.label}
+                    </dt>
+                    <dd className="mt-1 text-3xl font-bold text-secondary">
+                      {fact.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            <p className="mt-5 text-sm leading-8 text-muted">
               {toPersianDigits(aboutContent.relatedNote)}
             </p>
             <div className="mt-5">
