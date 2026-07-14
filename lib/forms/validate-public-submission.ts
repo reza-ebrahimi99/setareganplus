@@ -3,6 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { readChoiceConfig } from "@/lib/forms/choice-options";
 import { normalizeEmail } from "@/lib/forms/normalize-email";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
+import { validateIranianNationalId } from "@/lib/forms/validate-national-id";
 
 export type SubmissionFieldDefinition = {
   id: string;
@@ -233,6 +234,20 @@ export function validatePublicSubmission(
           fieldId: field.id,
           fieldKey: field.fieldKey,
           valueText: emailResult.email,
+        });
+        break;
+      }
+      case FormFieldType.NATIONAL_ID: {
+        const nationalIdResult = validateIranianNationalId(raw);
+        if (!nationalIdResult.ok) {
+          fieldErrors[field.fieldKey] = nationalIdResult.error;
+          break;
+        }
+        values[field.fieldKey] = nationalIdResult.normalized;
+        answers.push({
+          fieldId: field.id,
+          fieldKey: field.fieldKey,
+          valueText: nationalIdResult.normalized,
         });
         break;
       }

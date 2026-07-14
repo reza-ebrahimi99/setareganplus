@@ -6,6 +6,14 @@ import {
   FormSubmissionStatus,
   FormVersionStatus,
 } from "@/generated/prisma/enums";
+import {
+  assertCapacityAvailable,
+  lockFormVersionCapacity,
+} from "@/lib/forms/capacity";
+import {
+  AVAILABILITY_MESSAGES,
+  evaluateFormAvailability,
+} from "@/lib/forms/evaluate-form-availability";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { resolveSubmissionBranch } from "@/lib/forms/resolve-submission-branch";
 import {
@@ -26,14 +34,17 @@ const LOADED_AT_FIELD = "_formLoadedAt";
 const MIN_FILL_MS = 1200;
 
 /**
- * DuplicatePolicy mapping (schema-backed, documented for 3.4B-4):
+ * DuplicatePolicy mapping (schema-backed):
  * - BLOCK: reject when a non-deleted same-form submission shares normalizedMobile
  *   (preferred) or email when mobile is absent.
  * - FLAG_AND_ACCEPT: accept, set isDuplicateInForm=true, status=DUPLICATE,
  *   and link duplicateOfSubmissionId when a prior match exists.
  * - ALLOW_SILENT: accept without duplicate flags.
  *
+ * Capacity count: RECEIVED + DUPLICATE only (see lib/forms/capacity.ts).
+ *
  * TODO(abuse): Add server-side rate limiting / CAPTCHA before production exposure.
+ * TODO(auth): OTP / identity verification for national ID + mobile.
  */
 
 function readString(formData: FormData, key: string): string {
@@ -46,8 +57,6 @@ export async function submitPublicFormAction(
   _prevState: SubmitPublicFormState,
   formData: FormData,
 ): Promise<SubmitPublicFormState> {
-  // Public unauthenticated write path — published-version + org-scoped only.
-
   const honeypot = readString(formData, HONEYPOT_FIELD).trim();
   if (honeypot.length > 0) {
     return {
@@ -92,7 +101,7 @@ export async function submitPublicFormAction(
 
   if (!form || !form.publishedVersionId) {
     return {
-      formError: "این فرم هم‌اکنون برای ثبت پاسخ فعال نیست.",
+      formError: AVAILABILITY_MESSAGES.UNPUBLISHED_OR_PAUSED,
     };
   }
 
@@ -106,6 +115,9 @@ export async function submitPublicFormAction(
     select: {
       id: true,
       duplicatePolicy: true,
+      opensAt: true,
+      registrationDeadline: true,
+      capacity: true,
       fields: {
         orderBy: { sortOrder: "asc" },
         select: {
@@ -122,7 +134,26 @@ export async function submitPublicFormAction(
 
   if (!version) {
     return {
-      formError: "نسخه منتشرشده فرم یافت نشد. لطفاً بعداً دوباره تلاش کنید.",
+      formError: AVAILABILITY_MESSAGES.UNPUBLISHED_OR_PAUSED,
+    };
+  }
+
+  // Pre-check schedule (capacity rechecked inside the write transaction).
+  const preAvailability = evaluateFormAvailability({
+    isPublishedLive: true,
+    opensAt: version.opensAt,
+    registrationDeadline: version.registrationDeadline,
+    capacity: version.capacity,
+    // Informational only — final capacity gate uses locked recount.
+    usedCapacity: 0,
+  });
+
+  if (
+    preAvailability.status === "NOT_OPEN_YET" ||
+    preAvailability.status === "CLOSED_BY_DEADLINE"
+  ) {
+    return {
+      formError: preAvailability.message ?? AVAILABILITY_MESSAGES.UNPUBLISHED_OR_PAUSED,
     };
   }
 
@@ -189,13 +220,13 @@ export async function submitPublicFormAction(
         status = FormSubmissionStatus.DUPLICATE;
         duplicateOfId = prior.id;
       }
-      // ALLOW_SILENT: proceed without flags
     }
   }
 
   try {
     await prisma.$transaction(async (tx) => {
-      // Reconfirm live published pointer inside the write transaction.
+      await lockFormVersionCapacity(tx, version.id);
+
       const liveForm = await tx.form.findFirst({
         where: {
           id: form.id,
@@ -217,11 +248,42 @@ export async function submitPublicFormAction(
           formId: form.id,
           status: FormVersionStatus.PUBLISHED,
         },
-        select: { id: true },
+        select: {
+          id: true,
+          opensAt: true,
+          registrationDeadline: true,
+          capacity: true,
+        },
       });
 
       if (!liveVersion) {
         throw new Error("FORM_NO_LONGER_PUBLISHED");
+      }
+
+      const scheduleCheck = evaluateFormAvailability({
+        isPublishedLive: true,
+        opensAt: liveVersion.opensAt,
+        registrationDeadline: liveVersion.registrationDeadline,
+        capacity: null,
+        usedCapacity: 0,
+      });
+
+      if (scheduleCheck.status === "NOT_OPEN_YET") {
+        throw new Error("NOT_OPEN_YET");
+      }
+      if (scheduleCheck.status === "CLOSED_BY_DEADLINE") {
+        throw new Error("CLOSED_BY_DEADLINE");
+      }
+
+      const capacityCheck = await assertCapacityAvailable(tx, {
+        organizationId: organization.id,
+        formId: form.id,
+        formVersionId: version.id,
+        capacity: liveVersion.capacity,
+      });
+
+      if (!capacityCheck.ok) {
+        throw new Error("CAPACITY_FULL");
       }
 
       const submission = await tx.formSubmission.create({
@@ -258,11 +320,31 @@ export async function submitPublicFormAction(
       }
     });
   } catch (error) {
-    if (error instanceof Error && error.message === "FORM_NO_LONGER_PUBLISHED") {
-      return {
-        formError: "این فرم دیگر برای ثبت پاسخ فعال نیست.",
-        values: validated.values,
-      };
+    if (error instanceof Error) {
+      if (error.message === "FORM_NO_LONGER_PUBLISHED") {
+        return {
+          formError: AVAILABILITY_MESSAGES.UNPUBLISHED_OR_PAUSED,
+          values: validated.values,
+        };
+      }
+      if (error.message === "NOT_OPEN_YET") {
+        return {
+          formError: AVAILABILITY_MESSAGES.NOT_OPEN_YET,
+          values: validated.values,
+        };
+      }
+      if (error.message === "CLOSED_BY_DEADLINE") {
+        return {
+          formError: AVAILABILITY_MESSAGES.CLOSED_BY_DEADLINE,
+          values: validated.values,
+        };
+      }
+      if (error.message === "CAPACITY_FULL") {
+        return {
+          formError: AVAILABILITY_MESSAGES.CAPACITY_FULL,
+          values: validated.values,
+        };
+      }
     }
 
     return {

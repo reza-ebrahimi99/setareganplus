@@ -7,6 +7,7 @@ import {
 } from "@/app/forms/[slug]/actions";
 import { PublicFormField } from "@/components/forms/PublicFormField";
 import type { PublicFormData } from "@/lib/forms/load-public-form";
+import { toPersianDigits } from "@/lib/persian";
 
 type PublicFormProps = {
   data: PublicFormData;
@@ -30,6 +31,10 @@ export function PublicForm({ data }: PublicFormProps) {
     ? Object.entries(state.fieldErrors)
     : [];
 
+  const showRemaining =
+    data.availability.showRemainingCapacity &&
+    data.availability.remainingCapacity != null;
+
   return (
     <form action={formAction} className="relative space-y-5" noValidate>
       {/* Honeypot — leave empty. TODO(abuse): production rate limiting. */}
@@ -44,6 +49,16 @@ export function PublicForm({ data }: PublicFormProps) {
         />
       </div>
       <input type="hidden" name="_formLoadedAt" value={loadedAt} />
+
+      {showRemaining ? (
+        <p
+          className="rounded-xl border border-secondary/25 bg-secondary/10 px-4 py-3 text-sm font-medium text-primary"
+          role="status"
+        >
+          ظرفیت باقی‌مانده:{" "}
+          {toPersianDigits(data.availability.remainingCapacity ?? 0)} نفر
+        </p>
+      ) : null}
 
       {state.formError ? (
         <div

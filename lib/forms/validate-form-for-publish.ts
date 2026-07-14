@@ -1,6 +1,11 @@
 import { FormFieldType, type FormFieldType as FormFieldTypeValue } from "@/generated/prisma/enums";
 import { readChoiceConfig } from "@/lib/forms/choice-options";
+import { CAPACITY_MAX } from "@/lib/forms/capacity";
 import { isChoiceFieldType } from "@/lib/forms/form-field-type-labels";
+import {
+  parseFormVersionSettings,
+  validateFormVersionSettings,
+} from "@/lib/forms/form-version-settings";
 import { normalizeFormSlug } from "@/lib/forms/normalize-form-slug";
 
 export type PublishValidationField = {
@@ -16,6 +21,10 @@ export type PublishValidationInput = {
   slug: string;
   title: string;
   confirmationMessage: string;
+  opensAt?: Date | null;
+  registrationDeadline?: Date | null;
+  capacity?: number | null;
+  settings?: unknown;
   fields: PublishValidationField[];
 };
 
@@ -52,6 +61,30 @@ export function validateFormVersionForPublish(
 
   if (!input.confirmationMessage.trim()) {
     errors.push("پیام تأیید پس از ثبت برای انتشار الزامی است.");
+  }
+
+  const opensAt = input.opensAt ?? null;
+  const registrationDeadline = input.registrationDeadline ?? null;
+  const capacity = input.capacity ?? null;
+
+  if (opensAt && registrationDeadline && opensAt.getTime() >= registrationDeadline.getTime()) {
+    errors.push("زمان شروع ثبت‌نام باید قبل از زمان پایان باشد.");
+  }
+
+  if (capacity != null) {
+    if (!Number.isInteger(capacity) || capacity < 1 || capacity > CAPACITY_MAX) {
+      errors.push(
+        `ظرفیت ثبت‌نام باید عدد صحیح بین ۱ تا ${CAPACITY_MAX.toLocaleString("en-US")} باشد.`,
+      );
+    }
+  }
+
+  const settingsError = validateFormVersionSettings(input.settings);
+  if (settingsError) {
+    errors.push(settingsError);
+  } else {
+    // Ensure settings can be parsed (contract check).
+    parseFormVersionSettings(input.settings);
   }
 
   if (input.fields.length === 0) {

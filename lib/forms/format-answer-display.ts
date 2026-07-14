@@ -55,6 +55,9 @@ export function formatAnswerDisplay(
     }
     case FormFieldType.CONSENT:
       return answer.valueJson === true ? "بله" : "خیر";
+    case FormFieldType.NATIONAL_ID:
+      // TODO(privacy): mask national IDs by permission level before wider staff access.
+      return answer.valueText?.trim() || "—";
     case FormFieldType.SINGLE_CHOICE:
     case FormFieldType.DROPDOWN:
     case FormFieldType.GRADE:

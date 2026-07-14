@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { FormEditor } from "@/components/admin/forms/FormEditor";
+import { FormPosterManager } from "@/components/admin/forms/FormPosterManager";
+import { FormScheduleSettings } from "@/components/admin/forms/FormScheduleSettings";
 import { FormPublishControls } from "@/components/admin/forms/FormPublishControls";
 import { adminBreadcrumbs } from "@/content/admin";
 import { getFormPurposeLabel } from "@/lib/forms/form-purpose-labels";
@@ -72,6 +74,17 @@ export default async function AdminFormEditorPage({
   } = result.data;
 
   const isPublished = Boolean(form.publishedVersionId && publishedVersion);
+  const posterForUi = draft
+    ? draft.poster
+    : (publishedVersion?.poster ?? null);
+  const scheduleForUi = draft
+    ? draft.schedule
+    : publishedVersion?.schedule ?? {
+        opensAt: null,
+        registrationDeadline: null,
+        capacity: null,
+        settings: { showRemainingCapacity: false },
+      };
 
   return (
     <>
@@ -144,6 +157,22 @@ export default async function AdminFormEditorPage({
           isPublished={isPublished}
           draftVersionNumber={draft?.versionNumber ?? null}
           publishedVersionNumber={publishedVersion?.versionNumber ?? null}
+        />
+      </div>
+
+      <div className="mb-6">
+        <FormScheduleSettings
+          formId={form.id}
+          editable={Boolean(draft)}
+          schedule={scheduleForUi}
+        />
+      </div>
+
+      <div className="mb-6">
+        <FormPosterManager
+          formId={form.id}
+          editable={Boolean(draft)}
+          poster={posterForUi}
         />
       </div>
 

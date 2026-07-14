@@ -73,6 +73,10 @@ export async function publishFormVersionAction(
       title: true,
       confirmationMessage: true,
       status: true,
+      opensAt: true,
+      registrationDeadline: true,
+      capacity: true,
+      settings: true,
       fields: {
         orderBy: { sortOrder: "asc" },
         select: {
@@ -98,6 +102,10 @@ export async function publishFormVersionAction(
     slug: form.slug,
     title: draft.title,
     confirmationMessage: draft.confirmationMessage,
+    opensAt: draft.opensAt,
+    registrationDeadline: draft.registrationDeadline,
+    capacity: draft.capacity,
+    settings: draft.settings,
     fields: draft.fields,
   });
 

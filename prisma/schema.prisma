@@ -193,6 +193,7 @@ enum FormFieldType {
   SCHOOL_NAME
   CONSENT
   INFORMATIONAL
+  NATIONAL_ID
 }
 
 enum FormFieldSemantic {
@@ -305,6 +306,7 @@ model Organization {
   domainEvents        DomainEventOutbox[]
   formAnalyticsEvents FormAnalyticsEvent[]
   formAnalyticsDaily  FormAnalyticsDaily[]
+  mediaAssets         MediaAsset[]
 
   @@map("organizations")
 }
@@ -360,6 +362,7 @@ model User {
   memberships   OrganizationMembership[]
   auditLogs     AuditLog[]               @relation("AuditLogActor")
   adminSessions AdminSession[]
+  mediaAssets   MediaAsset[]             @relation("MediaAssetCreator")
 
   @@index([status])
   @@index([deletedAt])
@@ -605,6 +608,34 @@ model FormTemplateField {
   @@map("form_template_fields")
 }
 
+// ─── Persistent media assets (outside git / deploy tree) ─────────────────────
+
+model MediaAsset {
+  id              String    @id @default(cuid())
+  organizationId  String
+  storageKey      String    @unique
+  originalName    String
+  mimeType        String
+  byteSize        Int
+  checksum        String
+  width           Int?
+  height          Int?
+  altText         String?
+  createdByUserId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdBy    User?        @relation("MediaAssetCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  formPosters  FormVersion[] @relation("FormVersionPoster")
+
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, createdAt])
+  @@index([createdByUserId])
+  @@map("media_assets")
+}
+
 // ─── Form parent identity (stable slug) ──────────────────────────────────────
 
 model Form {
@@ -659,6 +690,7 @@ model FormVersion {
   status               FormVersionStatus @default(DRAFT)
   title                String
   description          String?
+  opensAt              DateTime?
   registrationDeadline DateTime?
   capacity             Int?
   confirmationMessage  String
@@ -668,6 +700,7 @@ model FormVersion {
   showBranchPicker     Boolean           @default(false)
   settings             Json              @default("{}")
   sourceTemplateId     String?
+  posterMediaId        String?
   publishedAt          DateTime?
   pausedAt             DateTime?
   archivedAt           DateTime?
@@ -678,6 +711,7 @@ model FormVersion {
   organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   form             Form                 @relation("FormVersions", fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
   sourceTemplate   FormTemplate?        @relation(fields: [sourceTemplateId], references: [id], onDelete: Restrict)
+  posterMedia      MediaAsset?          @relation("FormVersionPoster", fields: [posterMediaId], references: [id], onDelete: SetNull)
   fields           FormField[]
   submissions      FormSubmission[]
   formsAsPublished Form[]               @relation("FormPublishedVersion")
@@ -687,6 +721,7 @@ model FormVersion {
   @@unique([organizationId, formId, versionNumber])
   @@index([organizationId, formId, status])
   @@index([organizationId, status])
+  @@index([posterMediaId])
   @@map("form_versions")
 }
 

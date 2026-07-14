@@ -2,59 +2,56 @@
  * Conservative Iranian mobile normalizer for FormSubmission.normalizedMobile.
  */
 
-const PERSIAN_ARABIC_DIGITS: Record<string, string> = {
-  "۰": "0",
-  "۱": "1",
-  "۲": "2",
-  "۳": "3",
-  "۴": "4",
-  "۵": "5",
-  "۶": "6",
-  "۷": "7",
-  "۸": "8",
-  "۹": "9",
-  "٠": "0",
-  "١": "1",
-  "٢": "2",
-  "٣": "3",
-  "٤": "4",
-  "٥": "5",
-  "٦": "6",
-  "٧": "7",
-  "٨": "8",
-  "٩": "9",
-};
+import { toLatinDigits } from "@/lib/forms/latin-digits";
 
 export type NormalizeMobileResult =
   | { ok: true; normalized: string; raw: string }
   | { ok: false; error: string };
 
+const MOBILE_PATTERN = /^09\d{9}$/;
+
+/**
+ * Normalize → validate Iranian mobile.
+ * Accepts Persian/Arabic digits, spaces, hyphens, parentheses, +98 / 0098 / 98 / 9xxxxxxxx.
+ * Does not hard-code operator prefixes (future numbers stay valid).
+ */
 export function normalizeIranianMobile(rawInput: string): NormalizeMobileResult {
   const raw = rawInput.trim();
   if (!raw) {
-    return { ok: false, error: "شماره موبایل الزامی است." };
+    return { ok: false, error: "شماره موبایل واردشده معتبر نیست." };
   }
 
-  let digits = raw
-    .split("")
-    .map((char) => PERSIAN_ARABIC_DIGITS[char] ?? char)
-    .join("")
+  let cleaned = toLatinDigits(raw)
+    .replace(/[\s\-()]/g, "")
     .replace(/[^\d+]/g, "");
 
-  if (digits.startsWith("+98")) {
-    digits = `0${digits.slice(3)}`;
-  } else if (digits.startsWith("0098")) {
-    digits = `0${digits.slice(4)}`;
-  } else if (digits.startsWith("98") && digits.length === 12) {
-    digits = `0${digits.slice(2)}`;
+  if (cleaned.startsWith("+")) {
+    cleaned = cleaned.slice(1);
   }
 
-  if (!/^09\d{9}$/.test(digits)) {
-    return {
-      ok: false,
-      error: "شماره موبایل معتبر نیست (مثال: ۰۹۱۲۱۲۳۴۵۶۷).",
-    };
+  if (cleaned.startsWith("0098")) {
+    cleaned = `0${cleaned.slice(4)}`;
+  } else if (cleaned.startsWith("98") && cleaned.length >= 12) {
+    cleaned = `0${cleaned.slice(2)}`;
+  } else if (cleaned.startsWith("9") && cleaned.length === 10) {
+    cleaned = `0${cleaned}`;
   }
 
-  return { ok: true, normalized: digits, raw };
+  if (!/^\d+$/.test(cleaned)) {
+    return { ok: false, error: "شماره موبایل واردشده معتبر نیست." };
+  }
+
+  if (cleaned.length !== 11) {
+    return { ok: false, error: "شماره موبایل باید ۱۱ رقم باشد." };
+  }
+
+  if (!cleaned.startsWith("09")) {
+    return { ok: false, error: "شماره موبایل باید با ۰۹ شروع شود." };
+  }
+
+  if (!MOBILE_PATTERN.test(cleaned)) {
+    return { ok: false, error: "شماره موبایل واردشده معتبر نیست." };
+  }
+
+  return { ok: true, normalized: cleaned, raw };
 }

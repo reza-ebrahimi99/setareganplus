@@ -24,6 +24,17 @@ function controlClassName(hasError: boolean): string {
     : `${base} border-border`;
 }
 
+function describedBy(field: PublicFormFieldData, error?: string): string | undefined {
+  return (
+    [
+      field.helpText ? `field-help-${field.fieldKey}` : null,
+      error ? `field-error-${field.fieldKey}` : null,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined
+  );
+}
+
 function FieldChrome({
   field,
   error,
@@ -116,12 +127,18 @@ function TextInput({
   inputMode,
   defaultValue,
   error,
+  autoComplete,
+  dir,
+  maxLength,
 }: {
   field: PublicFormFieldData;
   type: string;
   inputMode?: TextInputMode;
   defaultValue?: string;
   error?: string;
+  autoComplete?: string;
+  dir?: "ltr" | "rtl";
+  maxLength?: number;
 }) {
   return (
     <input
@@ -132,14 +149,12 @@ function TextInput({
       required={field.required}
       placeholder={field.placeholder ?? undefined}
       defaultValue={defaultValue}
+      autoComplete={autoComplete ?? "off"}
+      dir={dir}
+      maxLength={maxLength}
       aria-invalid={error ? true : undefined}
-      aria-describedby={
-        [field.helpText ? `field-help-${field.fieldKey}` : null, error ? `field-error-${field.fieldKey}` : null]
-          .filter(Boolean)
-          .join(" ") || undefined
-      }
+      aria-describedby={describedBy(field, error)}
       className={controlClassName(Boolean(error))}
-      autoComplete="off"
     />
   );
 }
@@ -162,11 +177,7 @@ function OptionsSelect({
       required={field.required}
       defaultValue={defaultValue ?? ""}
       aria-invalid={error ? true : undefined}
-      aria-describedby={
-        [field.helpText ? `field-help-${field.fieldKey}` : null, error ? `field-error-${field.fieldKey}` : null]
-          .filter(Boolean)
-          .join(" ") || undefined
-      }
+      aria-describedby={describedBy(field, error)}
       className={controlClassName(Boolean(error))}
     >
       <option value="" disabled>
@@ -346,13 +357,28 @@ export function PublicFormField({
           placeholder={field.placeholder ?? undefined}
           defaultValue={value}
           aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy(field, error)}
           className={controlClassName(Boolean(error))}
         />
       ) : field.type === FormFieldType.MOBILE ? (
         <TextInput
           field={field}
           type="tel"
-          inputMode="tel"
+          inputMode="numeric"
+          autoComplete="tel"
+          dir="ltr"
+          maxLength={16}
+          defaultValue={value}
+          error={error}
+        />
+      ) : field.type === FormFieldType.NATIONAL_ID ? (
+        <TextInput
+          field={field}
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          dir="ltr"
+          maxLength={10}
           defaultValue={value}
           error={error}
         />
@@ -361,6 +387,8 @@ export function PublicFormField({
           field={field}
           type="email"
           inputMode="email"
+          autoComplete="email"
+          dir="ltr"
           defaultValue={value}
           error={error}
         />
@@ -369,6 +397,7 @@ export function PublicFormField({
           field={field}
           type="number"
           inputMode="decimal"
+          dir="ltr"
           defaultValue={value}
           error={error}
         />
@@ -376,6 +405,7 @@ export function PublicFormField({
         <TextInput
           field={field}
           type="date"
+          dir="ltr"
           defaultValue={value}
           error={error}
         />

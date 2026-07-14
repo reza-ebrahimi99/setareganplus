@@ -19,6 +19,7 @@ export const FORM_FIELD_TYPE_LABELS: Record<FormFieldTypeValue, string> = {
   [FormFieldType.SCHOOL_NAME]: "نام مدرسه",
   [FormFieldType.CONSENT]: "رضایت‌نامه",
   [FormFieldType.INFORMATIONAL]: "متن راهنما (بدون پاسخ)",
+  [FormFieldType.NATIONAL_ID]: "کد ملی",
 };
 
 export const FORM_FIELD_TYPE_OPTIONS: ReadonlyArray<{

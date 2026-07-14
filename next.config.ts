@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Poster uploads (JPEG/PNG/WebP up to 8MB) via Server Actions.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "9mb",
+    },
+  },
 };
 
 export default nextConfig;

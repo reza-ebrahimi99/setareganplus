@@ -4,6 +4,11 @@ import {
   type FormFieldType,
 } from "@/generated/prisma/enums";
 import { getAdminSession } from "@/lib/auth/require-admin";
+import {
+  parseFormVersionSettings,
+  type FormVersionSettings,
+} from "@/lib/forms/form-version-settings";
+import { publicUrlForStorageKey } from "@/lib/media/storage";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 
@@ -21,6 +26,18 @@ export type EditorField = {
 
 export type EditorDisplayStatus = "DRAFT" | "PUBLISHED" | "PAUSED";
 
+export type EditorPoster = {
+  publicUrl: string;
+  altText: string | null;
+};
+
+export type EditorScheduleSettings = {
+  opensAt: Date | null;
+  registrationDeadline: Date | null;
+  capacity: number | null;
+  settings: FormVersionSettings;
+};
+
 export type FormEditorData = {
   form: {
     id: string;
@@ -34,12 +51,16 @@ export type FormEditorData = {
     title: string;
     confirmationMessage: string;
     status: typeof FormVersionStatus.DRAFT;
+    poster: EditorPoster | null;
+    schedule: EditorScheduleSettings;
   } | null;
   publishedVersion: {
     id: string;
     versionNumber: number;
     title: string;
     publishedAt: Date | null;
+    poster: EditorPoster | null;
+    schedule: EditorScheduleSettings;
   } | null;
   fields: EditorField[];
   displayStatus: EditorDisplayStatus;
@@ -49,6 +70,39 @@ export type FormEditorData = {
 export type LoadFormEditorResult =
   | { ok: true; data: FormEditorData }
   | { ok: false; reason: "not_found" | "unavailable" };
+
+function mapPoster(
+  media:
+    | {
+        storageKey: string;
+        altText: string | null;
+        deletedAt: Date | null;
+      }
+    | null
+    | undefined,
+): EditorPoster | null {
+  if (!media || media.deletedAt) {
+    return null;
+  }
+  return {
+    publicUrl: publicUrlForStorageKey(media.storageKey),
+    altText: media.altText,
+  };
+}
+
+function mapSchedule(version: {
+  opensAt: Date | null;
+  registrationDeadline: Date | null;
+  capacity: number | null;
+  settings: unknown;
+}): EditorScheduleSettings {
+  return {
+    opensAt: version.opensAt,
+    registrationDeadline: version.registrationDeadline,
+    capacity: version.capacity,
+    settings: parseFormVersionSettings(version.settings),
+  };
+}
 
 /**
  * Loads an org-scoped form for the admin editor.
@@ -98,6 +152,17 @@ export async function loadFormEditor(
         title: true,
         confirmationMessage: true,
         status: true,
+        opensAt: true,
+        registrationDeadline: true,
+        capacity: true,
+        settings: true,
+        posterMedia: {
+          select: {
+            storageKey: true,
+            altText: true,
+            deletedAt: true,
+          },
+        },
         fields: {
           orderBy: { sortOrder: "asc" },
           select: {
@@ -130,11 +195,29 @@ export async function loadFormEditor(
           versionNumber: true,
           title: true,
           publishedAt: true,
+          opensAt: true,
+          registrationDeadline: true,
+          capacity: true,
+          settings: true,
+          posterMedia: {
+            select: {
+              storageKey: true,
+              altText: true,
+              deletedAt: true,
+            },
+          },
         },
       });
 
       if (version) {
-        publishedVersion = version;
+        publishedVersion = {
+          id: version.id,
+          versionNumber: version.versionNumber,
+          title: version.title,
+          publishedAt: version.publishedAt,
+          poster: mapPoster(version.posterMedia),
+          schedule: mapSchedule(version),
+        };
       }
     }
 
@@ -158,9 +241,7 @@ export async function loadFormEditor(
     }
 
     const headerTitle =
-      draft?.title ??
-      publishedVersion?.title ??
-      "فرم بدون عنوان";
+      draft?.title ?? publishedVersion?.title ?? "فرم بدون عنوان";
 
     return {
       ok: true,
@@ -178,6 +259,8 @@ export async function loadFormEditor(
               title: draft.title,
               confirmationMessage: draft.confirmationMessage,
               status: FormVersionStatus.DRAFT,
+              poster: mapPoster(draft.posterMedia),
+              schedule: mapSchedule(draft),
             }
           : null,
         publishedVersion,
