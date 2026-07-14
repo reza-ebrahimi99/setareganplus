@@ -3,8 +3,9 @@ import {
   type FormPurpose,
   type FormFieldType,
 } from "@/generated/prisma/enums";
-import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
+import { getAdminSession } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 
 export type EditorField = {
   id: string;
@@ -57,9 +58,13 @@ export type LoadFormEditorResult =
 export async function loadFormEditor(
   formId: string,
 ): Promise<LoadFormEditorResult> {
-  try {
-    const organization = await getCurrentOrganization();
+  const session = await getAdminSession();
+  if (!session) {
+    redirect("/admin/login");
+  }
+  const organization = session.organization;
 
+  try {
     const form = await prisma.form.findFirst({
       where: {
         id: formId,

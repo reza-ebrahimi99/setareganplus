@@ -30,9 +30,6 @@ export async function generateMetadata({
 export default async function AdminFormEditorPage({
   params,
 }: AdminFormEditorPageProps) {
-  // TODO(auth): This Form Builder editor route is currently unauthenticated.
-  // Add authentication and organization authorization before production exposure.
-
   const { id } = await params;
   const result = await loadFormEditor(id);
 

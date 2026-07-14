@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminSessionOrThrow } from "@/lib/auth/require-admin";
 import { exportFormResponsesCsv } from "@/lib/forms/export-form-responses";
 import { parseResponseFiltersFromSearchParams } from "@/lib/forms/response-filters";
 
@@ -10,9 +11,18 @@ type RouteContext = {
 
 /**
  * CSV export for one form's submissions.
- * TODO(auth): Protect this route with authenticated admin authorization.
+ * Requires an authenticated admin session (cookie + DB verification).
  */
 export async function GET(request: Request, context: RouteContext) {
+  try {
+    await requireAdminSessionOrThrow();
+  } catch {
+    return NextResponse.json(
+      { error: "برای دسترسی به این خروجی باید وارد شوید." },
+      { status: 401 },
+    );
+  }
+
   const { id } = await context.params;
   const url = new URL(request.url);
   const filters = parseResponseFiltersFromSearchParams(

@@ -35,8 +35,6 @@ export default async function AdminFormResponsesPage({
   params,
   searchParams,
 }: ResponsesPageProps) {
-  // TODO(auth): Enforce authenticated admin access before production exposure.
-
   const { id } = await params;
   const raw = await searchParams;
   const filters = parseResponseFiltersFromSearchParams(raw);

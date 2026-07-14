@@ -3,9 +3,15 @@ import { AdminSidebar } from "./AdminSidebar";
 
 type AdminShellProps = {
   children: React.ReactNode;
+  userDisplayName: string;
+  organizationName: string;
 };
 
-export function AdminShell({ children }: AdminShellProps) {
+export function AdminShell({
+  children,
+  userDisplayName,
+  organizationName,
+}: AdminShellProps) {
   return (
     <div className="flex min-h-full flex-col lg:flex-row">
       <a
@@ -16,7 +22,10 @@ export function AdminShell({ children }: AdminShellProps) {
       </a>
       <AdminSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <AdminHeader />
+        <AdminHeader
+          userDisplayName={userDisplayName}
+          organizationName={organizationName}
+        />
         <main
           id="admin-main-content"
           className="admin-main flex-1 px-4 py-6 sm:px-6 lg:py-8"

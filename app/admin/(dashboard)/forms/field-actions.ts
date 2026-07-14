@@ -12,7 +12,7 @@ import {
 } from "@/lib/forms/form-field-type-labels";
 import { parseChoiceOptionsText } from "@/lib/forms/choice-options";
 import { normalizeFieldKey } from "@/lib/forms/normalize-field-key";
-import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
+import { getAdminSession } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/prisma";
 
 export type FieldFormFieldErrors = {
@@ -72,17 +72,15 @@ async function resolveDraftContext(
   | { ok: true; context: DraftContext }
   | { ok: false; formError: string }
 > {
-  // TODO(auth): Enforce authenticated admin session + membership before mutations.
-  let organization;
-  try {
-    organization = await getCurrentOrganization();
-  } catch {
+  // TODO(auth): OTP / multi-org switcher / fine-grained field permissions.
+  const session = await getAdminSession();
+  if (!session) {
     return {
       ok: false,
-      formError:
-        "سازمان پیش‌فرض یافت نشد. ابتدا پایگاه داده را پیکربندی و seed کنید.",
+      formError: "نشست مدیریت معتبر نیست. دوباره وارد شوید.",
     };
   }
+  const organization = session.organization;
 
   const form = await prisma.form.findFirst({
     where: {

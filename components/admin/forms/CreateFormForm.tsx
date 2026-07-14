@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import {
   createFormAction,
   type CreateFormState,
-} from "@/app/admin/forms/actions";
+} from "@/app/admin/(dashboard)/forms/actions";
 import { FORM_PURPOSE_OPTIONS } from "@/lib/forms/form-purpose-labels";
 
 const initialState: CreateFormState = {};

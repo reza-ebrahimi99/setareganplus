@@ -1,10 +1,11 @@
-import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
+import { getAdminSession } from "@/lib/auth/require-admin";
 import {
   buildFormSubmissionWhere,
   getTehranDayStart,
   type ResponseListFilters,
 } from "@/lib/forms/response-filters";
 import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 
 export type FormResponseStats = {
   total: number;
@@ -26,9 +27,13 @@ export async function loadFormResponseStats(
   formId: string,
   filters: ResponseListFilters,
 ): Promise<LoadFormResponseStatsResult> {
-  try {
-    const organization = await getCurrentOrganization();
+  const session = await getAdminSession();
+  if (!session) {
+    redirect("/admin/login");
+  }
+  const organization = session.organization;
 
+  try {
     const form = await prisma.form.findFirst({
       where: {
         id: formId,

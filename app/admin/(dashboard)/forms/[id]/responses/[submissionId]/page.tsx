@@ -40,8 +40,6 @@ export async function generateMetadata({
 export default async function AdminSubmissionDetailPage({
   params,
 }: SubmissionDetailPageProps) {
-  // TODO(auth): Enforce authenticated admin access before production exposure.
-
   const { id, submissionId } = await params;
   const result = await loadSubmissionDetail(id, submissionId);
 

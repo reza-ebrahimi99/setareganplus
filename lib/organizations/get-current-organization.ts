@@ -1,16 +1,15 @@
+/**
+ * Public / presentation organization resolver by slug.
+ * Used ONLY by public form routes — not for admin authorization.
+ *
+ * Admin Form Builder must use getAuthenticatedOrganization() / requireAdminSession().
+ */
 import { prisma } from "@/lib/prisma";
 
-/**
- * Temporary MVP organization resolver for Form Builder (Sprint 3.4B-1a).
- *
- * TODO(auth): Replace this slug-based lookup with authenticated
- * organization/session context (membership + role) before any production
- * exposure of admin Form Builder routes.
- *
- * Server-only: do not import from Client Components.
- */
+export const PUBLIC_ORGANIZATION_SLUG = "setareganplus" as const;
 
-export const MVP_ORGANIZATION_SLUG = "setareganplus" as const;
+/** @deprecated Prefer PUBLIC_ORGANIZATION_SLUG for public routes. */
+export const MVP_ORGANIZATION_SLUG = PUBLIC_ORGANIZATION_SLUG;
 
 export type CurrentOrganization = {
   id: string;
@@ -18,11 +17,14 @@ export type CurrentOrganization = {
   name: string;
 };
 
-export async function getCurrentOrganization(): Promise<CurrentOrganization> {
+export async function getPublicOrganizationBySlug(
+  slug: string = PUBLIC_ORGANIZATION_SLUG,
+): Promise<CurrentOrganization> {
   const organization = await prisma.organization.findFirst({
     where: {
-      slug: MVP_ORGANIZATION_SLUG,
+      slug,
       deletedAt: null,
+      isActive: true,
     },
     select: {
       id: true,
@@ -33,9 +35,17 @@ export async function getCurrentOrganization(): Promise<CurrentOrganization> {
 
   if (!organization) {
     throw new Error(
-      `Organization with slug "${MVP_ORGANIZATION_SLUG}" was not found. Run database seed before using Form Builder.`,
+      `Organization with slug "${slug}" was not found. Run database seed before using public forms.`,
     );
   }
 
   return organization;
+}
+
+/**
+ * @deprecated Admin code must use getAuthenticatedOrganization().
+ * Kept as an alias for public form loaders during the transition.
+ */
+export async function getCurrentOrganization(): Promise<CurrentOrganization> {
+  return getPublicOrganizationBySlug();
 }

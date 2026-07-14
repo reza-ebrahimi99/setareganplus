@@ -7,7 +7,7 @@ import { FormVersionStatus } from "@/generated/prisma/enums";
 import { isFormPurpose } from "@/lib/forms/form-purpose-labels";
 import { mapPrismaFormError } from "@/lib/forms/map-prisma-form-error";
 import { normalizeFormSlug } from "@/lib/forms/normalize-form-slug";
-import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
+import { getAdminSession } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/prisma";
 
 export type CreateFormFieldErrors = {
@@ -39,18 +39,11 @@ export async function createFormAction(
   _prevState: CreateFormState,
   formData: FormData,
 ): Promise<CreateFormState> {
-  // TODO(auth): Enforce authenticated admin session + organization membership
-  // before allowing form creation. This action is currently unauthenticated.
-
-  let organization;
-  try {
-    organization = await getCurrentOrganization();
-  } catch {
-    return {
-      formError:
-        "سازمان پیش‌فرض یافت نشد. ابتدا پایگاه داده را پیکربندی و seed کنید.",
-    };
+  const session = await getAdminSession();
+  if (!session) {
+    return { formError: "نشست مدیریت معتبر نیست. دوباره وارد شوید." };
   }
+  const organization = session.organization;
 
   const title = readString(formData, "title").trim();
   const rawSlug = readString(formData, "slug");

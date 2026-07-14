@@ -8,9 +8,6 @@ export const metadata: Metadata = {
 };
 
 export default function AdminCreateFormPage() {
-  // TODO(auth): This Form Builder admin route is currently unauthenticated.
-  // Add authentication and organization authorization before production exposure.
-
   return (
     <>
       <AdminPageHeader

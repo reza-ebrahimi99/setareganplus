@@ -2,12 +2,13 @@ import {
   FormFieldSemantic,
   type FormSubmissionStatus,
 } from "@/generated/prisma/enums";
-import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
+import { getAdminSession } from "@/lib/auth/require-admin";
 import {
   buildFormSubmissionWhere,
   type ResponseListFilters,
 } from "@/lib/forms/response-filters";
 import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 
 export type { ResponseListFilters } from "@/lib/forms/response-filters";
 
@@ -102,9 +103,13 @@ export async function loadFormResponses(
   formId: string,
   filters: ResponseListFilters,
 ): Promise<LoadFormResponsesResult> {
-  try {
-    const organization = await getCurrentOrganization();
+  const session = await getAdminSession();
+  if (!session) {
+    redirect("/admin/login");
+  }
+  const organization = session.organization;
 
+  try {
     const form = await prisma.form.findFirst({
       where: {
         id: formId,
@@ -256,9 +261,13 @@ export async function loadSubmissionDetail(
   formId: string,
   submissionId: string,
 ): Promise<LoadSubmissionDetailResult> {
-  try {
-    const organization = await getCurrentOrganization();
+  const session = await getAdminSession();
+  if (!session) {
+    redirect("/admin/login");
+  }
+  const organization = session.organization;
 
+  try {
     const form = await prisma.form.findFirst({
       where: {
         id: formId,

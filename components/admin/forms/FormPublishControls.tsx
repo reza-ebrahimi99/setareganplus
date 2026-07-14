@@ -5,7 +5,7 @@ import {
   pausePublishedFormAction,
   publishFormVersionAction,
   type PublishActionState,
-} from "@/app/admin/forms/publish-actions";
+} from "@/app/admin/(dashboard)/forms/publish-actions";
 import type { EditorDisplayStatus } from "@/lib/forms/load-form-editor";
 import { toPersianDigits } from "@/lib/persian";
 

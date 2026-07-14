@@ -10,7 +10,7 @@ import {
   updateFieldAction,
   type FieldActionState,
   type SimpleFieldActionState,
-} from "@/app/admin/forms/field-actions";
+} from "@/app/admin/(dashboard)/forms/field-actions";
 import { choiceOptionsToText } from "@/lib/forms/choice-options";
 import {
   FORM_FIELD_TYPE_OPTIONS,

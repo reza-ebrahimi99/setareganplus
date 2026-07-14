@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminSection } from "@/components/admin/AdminSection";
@@ -8,7 +9,7 @@ import {
   type AdminFormListItem,
 } from "@/components/admin/forms/FormsList";
 import { adminBreadcrumbs } from "@/content/admin";
-import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
+import { getAdminSession } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
@@ -55,18 +56,19 @@ async function loadForms(
 }
 
 export default async function AdminFormsPage() {
-  // TODO(auth): This Form Builder admin route is currently unauthenticated.
-  // Add authentication and organization authorization before production exposure.
+  const session = await getAdminSession();
+  if (!session) {
+    redirect("/admin/login");
+  }
 
   let forms: AdminFormListItem[] = [];
   let loadError: string | null = null;
 
   try {
-    const organization = await getCurrentOrganization();
-    forms = await loadForms(organization.id);
+    forms = await loadForms(session.organization.id);
   } catch {
     loadError =
-      "اتصال به پایگاه داده یا سازمان پیش‌فرض برقرار نشد. پس از پیکربندی PostgreSQL و اجرای seed دوباره تلاش کنید.";
+      "اتصال به پایگاه داده برقرار نشد. پس از پیکربندی PostgreSQL دوباره تلاش کنید.";
   }
 
   const createAction = (

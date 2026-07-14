@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { FormVersionStatus } from "@/generated/prisma/enums";
 import { validateFormVersionForPublish } from "@/lib/forms/validate-form-for-publish";
-import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
+import { getAdminSession } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/prisma";
 
 export type PublishActionState = {
@@ -33,22 +33,16 @@ export async function publishFormVersionAction(
   _prevState: PublishActionState,
   formData: FormData,
 ): Promise<PublishActionState> {
-  // TODO(auth): Enforce authenticated admin session + organization membership.
-
   const formId = readString(formData, "formId").trim();
   if (!formId) {
     return { formError: "شناسه فرم نامعتبر است." };
   }
 
-  let organization;
-  try {
-    organization = await getCurrentOrganization();
-  } catch {
-    return {
-      formError:
-        "سازمان پیش‌فرض یافت نشد. ابتدا پایگاه داده را پیکربندی و seed کنید.",
-    };
+  const session = await getAdminSession();
+  if (!session) {
+    return { formError: "نشست مدیریت معتبر نیست. دوباره وارد شوید." };
   }
+  const organization = session.organization;
 
   const form = await prisma.form.findFirst({
     where: {
@@ -183,22 +177,16 @@ export async function pausePublishedFormAction(
   _prevState: PublishActionState,
   formData: FormData,
 ): Promise<PublishActionState> {
-  // TODO(auth): Enforce authenticated admin session + organization membership.
-
   const formId = readString(formData, "formId").trim();
   if (!formId) {
     return { formError: "شناسه فرم نامعتبر است." };
   }
 
-  let organization;
-  try {
-    organization = await getCurrentOrganization();
-  } catch {
-    return {
-      formError:
-        "سازمان پیش‌فرض یافت نشد. ابتدا پایگاه داده را پیکربندی و seed کنید.",
-    };
+  const session = await getAdminSession();
+  if (!session) {
+    return { formError: "نشست مدیریت معتبر نیست. دوباره وارد شوید." };
   }
+  const organization = session.organization;
 
   const form = await prisma.form.findFirst({
     where: {

@@ -1,5 +1,5 @@
 import { FormFieldType } from "@/generated/prisma/enums";
-import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
+import { getAdminSession } from "@/lib/auth/require-admin";
 import {
   buildFormSubmissionWhere,
   type ResponseListFilters,
@@ -25,10 +25,13 @@ export async function exportFormResponsesCsv(
   formId: string,
   filters: ResponseListFilters,
 ): Promise<ExportFormResponsesResult> {
-  try {
-    // TODO(auth): Require authenticated admin before production export.
-    const organization = await getCurrentOrganization();
+  const session = await getAdminSession();
+  if (!session) {
+    return { ok: false, reason: "unavailable" };
+  }
+  const organization = session.organization;
 
+  try {
     const form = await prisma.form.findFirst({
       where: {
         id: formId,
