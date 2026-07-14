@@ -123,12 +123,20 @@ export default async function AdminFormEditorPage({
             ) : null}
           </div>
 
-          <Link
-            href="/admin/forms"
-            className="inline-flex shrink-0 items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-background"
-          >
-            بازگشت به فرم‌ها
-          </Link>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Link
+              href={`/admin/forms/${form.id}/responses`}
+              className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-background"
+            >
+              پاسخ‌ها
+            </Link>
+            <Link
+              href="/admin/forms"
+              className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-background"
+            >
+              بازگشت به فرم‌ها
+            </Link>
+          </div>
         </div>
 
         <FormPublishControls

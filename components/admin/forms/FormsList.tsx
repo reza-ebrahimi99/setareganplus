@@ -93,12 +93,20 @@ export function FormsList({ forms }: { forms: AdminFormListItem[] }) {
                 </dl>
               </div>
 
-              <Link
-                href={editorHref}
-                className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-secondary/40 hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
-              >
-                ویرایش
-              </Link>
+              <div className="flex shrink-0 flex-wrap gap-2">
+                <Link
+                  href={`/admin/forms/${form.id}/responses`}
+                  className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-secondary/40 hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                >
+                  پاسخ‌ها
+                </Link>
+                <Link
+                  href={editorHref}
+                  className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-secondary/40 hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                >
+                  ویرایش
+                </Link>
+              </div>
             </div>
           </li>
         );
