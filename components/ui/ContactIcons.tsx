@@ -51,17 +51,35 @@ export function TelegramIcon({ className }: IconProps) {
   );
 }
 
+export function MapPinIcon({ className }: IconProps) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 21s6.5-5.2 6.5-10.2A6.5 6.5 0 0 0 5.5 10.8C5.5 15.8 12 21 12 21Z" />
+      <circle cx="12" cy="10.5" r="2.25" />
+    </svg>
+  );
+}
+
 export function BaleMark({ className }: IconProps) {
   return (
     <span
       aria-hidden="true"
       className={
         className
-          ? `flex items-center justify-center font-bold leading-none ${className}`
-          : "flex items-center justify-center font-bold leading-none"
+          ? `inline-flex items-center justify-center rounded-full bg-current/10 px-1.5 text-[0.65rem] font-bold leading-none tracking-tight ${className}`
+          : "inline-flex items-center justify-center rounded-full bg-current/10 px-1.5 text-[0.65rem] font-bold leading-none tracking-tight"
       }
     >
-      ب
+      بله
     </span>
   );
 }
@@ -71,6 +89,12 @@ const socialButtonClassName =
 
 const socialButtonOnDarkClassName =
   "inline-flex size-10 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white transition-colors hover:border-secondary hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary";
+
+const baleButtonClassName =
+  "inline-flex h-10 min-w-10 items-center justify-center rounded-full border border-border bg-surface px-2.5 text-primary shadow-sm transition-colors hover:border-secondary/50 hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary";
+
+const baleButtonOnDarkClassName =
+  "inline-flex h-10 min-w-10 items-center justify-center rounded-full border border-white/20 bg-white/5 px-2.5 text-white transition-colors hover:border-secondary hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary";
 
 type SocialItem = {
   platform: string;
@@ -93,7 +117,7 @@ function SocialGlyph({ platform }: { platform: string }) {
     return <TelegramIcon className="size-4" />;
   }
   if (platform.includes("بله")) {
-    return <BaleMark className="text-sm" />;
+    return <span className="text-[0.72rem] font-bold leading-none">بله</span>;
   }
   return <span className="text-xs font-semibold">{platform.slice(0, 1)}</span>;
 }
@@ -109,25 +133,30 @@ export function SocialIconLinks({
   tone = "light",
   className,
 }: SocialIconLinksProps) {
-  const buttonClass =
+  const defaultButtonClass =
     tone === "dark" ? socialButtonOnDarkClassName : socialButtonClassName;
+  const baleClass =
+    tone === "dark" ? baleButtonOnDarkClassName : baleButtonClassName;
 
   return (
     <ul className={className ?? "flex flex-wrap items-center gap-2.5"}>
-      {items.map((item) => (
-        <li key={item.href}>
-          <a
-            href={item.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={socialAriaLabel(item.platform)}
-            title={item.platform}
-            className={buttonClass}
-          >
-            <SocialGlyph platform={item.platform} />
-          </a>
-        </li>
-      ))}
+      {items.map((item) => {
+        const isBale = item.platform.includes("بله");
+        return (
+          <li key={item.href}>
+            <a
+              href={item.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={socialAriaLabel(item.platform)}
+              title={item.platform}
+              className={isBale ? baleClass : defaultButtonClass}
+            >
+              <SocialGlyph platform={item.platform} />
+            </a>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -160,5 +189,28 @@ export function PhoneIconLinks({ phones, formatValue }: PhoneIconLinksProps) {
         );
       })}
     </ul>
+  );
+}
+
+type MapLinkButtonProps = {
+  href: string;
+  label?: string;
+};
+
+export function MapLinkButton({
+  href,
+  label = "مشاهده نقشه",
+}: MapLinkButtonProps) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={label}
+      className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-primary shadow-sm transition-colors hover:border-secondary/45 hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+    >
+      <MapPinIcon className="size-3.5 shrink-0 text-secondary" />
+      <span>{label}</span>
+    </a>
   );
 }

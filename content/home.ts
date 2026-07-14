@@ -86,11 +86,11 @@ export const institutionEntities = {
 export const heroContent = {
   title: branding.primary,
   subtitle: branding.secondary,
-  affiliation: branding.tertiary,
+  affiliation: "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی)",
   slogan: officialSlogan,
   description:
-    "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر با ۸۷ دبیر و مشاور آموزشی، بیش از ۱۵۶۰ فارغ‌التحصیل و سوابق درخشان در کنکور و مدارس تیزهوشان.",
-  eyebrow: branding.tertiary,
+    "خدمات آموزشی، آزمون و مشاوره با تیمی از ۸۷ دبیر و مشاور آموزشی و سوابق تأییدشده در کنکور و مدارس تیزهوشان.",
+  eyebrow: "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی)",
 } as const;
 
 /** StarOS media slots — assign url from media library when available */

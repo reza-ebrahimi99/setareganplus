@@ -33,9 +33,57 @@ body {
 
 .hero-surface {
   background:
-    radial-gradient(circle at top left, rgb(212 175 55 / 0.08), transparent 28%),
-    radial-gradient(circle at bottom right, rgb(15 23 42 / 0.05), transparent 32%),
-    linear-gradient(180deg, var(--surface) 0%, var(--background) 100%);
+    radial-gradient(ellipse 70% 55% at 88% 8%, rgb(212 175 55 / 0.09), transparent 58%),
+    radial-gradient(ellipse 55% 45% at 8% 92%, rgb(15 23 42 / 0.045), transparent 55%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 72%, #f1f5f9 100%);
+}
+
+.brand-logo-frame {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgb(226 232 240 / 0.95);
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+.brand-logo-frame--header {
+  width: 2.85rem;
+  height: 2.85rem;
+  border-radius: 0.85rem;
+}
+
+@media (min-width: 640px) {
+  .brand-logo-frame--header {
+    width: 3.15rem;
+    height: 3.15rem;
+  }
+}
+
+.brand-logo-frame--hero {
+  width: 6.5rem;
+  height: 6.5rem;
+}
+
+@media (min-width: 640px) {
+  .brand-logo-frame--hero {
+    width: 7.25rem;
+    height: 7.25rem;
+  }
+}
+
+.brand-logo-frame--section {
+  width: 7rem;
+  height: 7rem;
+}
+
+.founder-portrait-frame {
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.04),
+    0 18px 40px rgb(15 23 42 / 0.08);
 }
 
 @keyframes hero-reveal {
@@ -55,10 +103,6 @@ body {
 
 .hero-reveal-delay {
   animation-delay: 120ms;
-}
-
-.hero-media-fade {
-  animation: hero-reveal 700ms ease-out both;
 }
 
 .gallery-reveal {
@@ -180,7 +224,6 @@ body {
 
   .hero-reveal,
   .hero-reveal-delay,
-  .hero-media-fade,
   .gallery-reveal {
     animation: none !important;
     opacity: 1;

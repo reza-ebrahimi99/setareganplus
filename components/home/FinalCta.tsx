@@ -1,5 +1,6 @@
 import { Container } from "@/components/ui/Container";
 import {
+  MapLinkButton,
   PhoneIcon,
   PhoneIconLinks,
   SocialIconLinks,
@@ -46,7 +47,10 @@ export function FinalCta() {
               <p className="text-xs font-medium tracking-wide text-secondary">
                 شبکه‌های اجتماعی
               </p>
-              <SocialIconLinks items={contact.social} className="mt-3 flex flex-wrap items-center gap-2.5" />
+              <SocialIconLinks
+                items={contact.social}
+                className="mt-3 flex flex-wrap items-center gap-2.5"
+              />
             </div>
           </div>
 
@@ -61,14 +65,7 @@ export function FinalCta() {
                   <p className="mt-1 text-sm leading-7 text-muted">
                     {toPersianDigits(branch.address)}
                   </p>
-                  <a
-                    href={branch.mapUrl}
-                    className="mt-2 inline-block text-sm font-medium text-secondary transition-colors hover:text-secondary/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    مشاهده روی نقشه
-                  </a>
+                  <MapLinkButton href={branch.mapUrl} />
                 </li>
               ))}
             </ul>

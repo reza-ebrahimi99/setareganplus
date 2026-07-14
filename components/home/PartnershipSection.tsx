@@ -22,6 +22,29 @@ function LogoFallback({ label }: { label: string }) {
   );
 }
 
+function EqualPartnerLogo({
+  media,
+  fallbackLabel,
+}: {
+  media: (typeof partnershipContent.logos)["institution"] | (typeof partnershipContent.logos)["ghalamchi"];
+  fallbackLabel: string;
+}) {
+  return (
+    <div className="brand-logo-frame brand-logo-frame--section">
+      {hasMediaUrl(media) ? (
+        <MediaImage
+          media={media}
+          width={160}
+          height={160}
+          className="h-full w-full object-contain p-2.5"
+        />
+      ) : (
+        <LogoFallback label={fallbackLabel} />
+      )}
+    </div>
+  );
+}
+
 export function PartnershipSection() {
   const { logos } = partnershipContent;
 
@@ -41,42 +64,19 @@ export function PartnershipSection() {
         <div className="mt-10 grid gap-8 lg:grid-cols-12 lg:items-start">
           <div className="lg:col-span-5">
             <div className="premium-card p-6 sm:p-8">
-              <div className="flex flex-wrap items-end gap-4 sm:gap-5">
-                <div className="flex h-[8.5rem] w-[7rem] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border/80 bg-white shadow-sm">
-                  {hasMediaUrl(logos.institution) ? (
-                    <MediaImage
-                      media={logos.institution}
-                      width={160}
-                      height={200}
-                      className="h-full w-full object-contain p-2.5"
-                    />
-                  ) : (
-                    <LogoFallback label="ستارگان پلاس" />
-                  )}
-                </div>
-
+              <div className="flex flex-wrap items-center gap-4 sm:gap-5">
+                <EqualPartnerLogo
+                  media={logos.institution}
+                  fallbackLabel="ستارگان پلاس"
+                />
                 <div
                   aria-hidden="true"
-                  className="mb-8 hidden h-14 w-px bg-border sm:block"
+                  className="hidden h-14 w-px bg-border sm:block"
                 />
-
-                <div className="flex min-w-0 flex-col gap-2">
-                  <p className="max-w-[12rem] text-[0.7rem] font-medium leading-5 text-muted sm:text-xs sm:leading-6">
-                    با همراهی نمایندگی قلم‌چی نسیم‌شهر
-                  </p>
-                  <div className="flex h-[5.25rem] w-[5.5rem] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border/80 bg-white shadow-sm">
-                    {hasMediaUrl(logos.ghalamchi) ? (
-                      <MediaImage
-                        media={logos.ghalamchi}
-                        width={120}
-                        height={140}
-                        className="h-full w-full object-contain p-2"
-                      />
-                    ) : (
-                      <LogoFallback label="قلم‌چی نسیم‌شهر" />
-                    )}
-                  </div>
-                </div>
+                <EqualPartnerLogo
+                  media={logos.ghalamchi}
+                  fallbackLabel="قلم‌چی"
+                />
               </div>
 
               <p className="mt-6 text-base leading-8 text-muted">
