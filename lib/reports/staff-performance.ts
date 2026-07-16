@@ -144,9 +144,20 @@ export async function loadStaffPerformance(
     }),
     prisma.form.findMany({
       where: { organizationId, deletedAt: null },
-      orderBy: { title: "asc" },
+      orderBy: { slug: "asc" },
       take: 200,
-      select: { id: true, title: true },
+      select: {
+        id: true,
+        slug: true,
+        publishedVersion: {
+          select: { title: true },
+        },
+        versions: {
+          orderBy: { versionNumber: "desc" },
+          take: 1,
+          select: { title: true },
+        },
+      },
     }),
   ]);
 
@@ -189,5 +200,17 @@ export async function loadStaffPerformance(
     };
   });
 
-  return { rows, branches, stages, forms, definitions: STAFF_METRIC_DEFINITIONS };
+  return {
+    rows,
+    branches,
+    stages,
+    forms: forms.map((form) => ({
+      id: form.id,
+      title:
+        form.publishedVersion?.title ??
+        form.versions[0]?.title ??
+        form.slug,
+    })),
+    definitions: STAFF_METRIC_DEFINITIONS,
+  };
 }
