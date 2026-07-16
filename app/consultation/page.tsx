@@ -1,24 +1,31 @@
 import type { Metadata } from "next";
-import { EmbeddedBooking } from "@/components/booking/EmbeddedBooking";
-import { EmbeddedPublicForm } from "@/components/forms/EmbeddedPublicForm";
+import { SitePlacementSection } from "@/components/site/SitePlacementSection";
 import { InnerPageLayout } from "@/components/layout/InnerPageLayout";
 import { ContentCard } from "@/components/ui/ContentCard";
 import { registrationNotice } from "@/content/site";
 import { consultationContent } from "@/content/consultation";
-import {
-  getConsultationBookingServiceSlug,
-  getConsultationFormSlug,
-} from "@/lib/site/page-integrations";
+import { loadResolvedSitePlacement } from "@/lib/site/load-site-placement";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: consultationContent.title,
   description: consultationContent.subtitle,
 };
 
-export default function ConsultationPage() {
-  const formSlug = getConsultationFormSlug();
-  const bookingSlug = getConsultationBookingServiceSlug();
-  const hasIntegration = Boolean(formSlug || bookingSlug);
+export default async function ConsultationPage() {
+  const [formPlacement, bookingPlacement] = await Promise.all([
+    loadResolvedSitePlacement("CONSULTATION_FORM"),
+    loadResolvedSitePlacement("CONSULTATION_BOOKING"),
+  ]);
+
+  const hasForm = formPlacement.kind === "form";
+  const hasBooking = bookingPlacement.kind === "booking";
+  const hasInvalid =
+    (formPlacement.kind === "none" && formPlacement.reason === "invalid") ||
+    (bookingPlacement.kind === "none" &&
+      bookingPlacement.reason === "invalid");
+  const hasIntegration = hasForm || hasBooking || hasInvalid;
 
   return (
     <InnerPageLayout
@@ -32,9 +39,9 @@ export default function ConsultationPage() {
         description: hasIntegration
           ? "از بخش‌های پایین صفحه می‌توانید فرم مشاوره را پر کنید یا نوبت رزرو کنید."
           : "تا زمان فعال‌سازی درخواست آنلاین، صفحات پیش‌ثبت‌نام و تماس راهنمای فعلی شما هستند.",
-        primary: formSlug
+        primary: hasForm
           ? { label: "فرم مشاوره", href: "#consultation-form" }
-          : bookingSlug
+          : hasBooking
             ? { label: "رزرو نوبت", href: "#consultation-booking" }
             : { label: "پیش‌ثبت‌نام", href: "/pre-registration" },
         secondary: { label: "تماس", href: "/contact" },
@@ -49,37 +56,24 @@ export default function ConsultationPage() {
           />
         ))}
 
-        {formSlug ? (
-          <section id="consultation-form" className="scroll-mt-24 space-y-3">
-            <h2 className="text-lg font-semibold text-primary">
-              فرم درخواست مشاوره
-            </h2>
-            <EmbeddedPublicForm
-              slug={formSlug}
-              displayMode="embedded"
-              showPoster={false}
-              instanceId="consultation-form-embed"
-            />
-          </section>
-        ) : null}
+        <SitePlacementSection
+          placement={formPlacement}
+          sectionId="consultation-form"
+          fallbackHeading="فرم درخواست مشاوره"
+          instanceId="consultation-form-embed"
+        />
 
-        {bookingSlug ? (
-          <section id="consultation-booking" className="scroll-mt-24 space-y-3">
-            <h2 className="text-lg font-semibold text-primary">
-              رزرو نوبت مشاوره
-            </h2>
-            <EmbeddedBooking
-              serviceSlug={bookingSlug}
-              displayMode="card"
-              buttonText="رزرو مشاوره"
-            />
-          </section>
-        ) : null}
+        <SitePlacementSection
+          placement={bookingPlacement}
+          sectionId="consultation-booking"
+          fallbackHeading="رزرو نوبت مشاوره"
+          instanceId="consultation-booking-embed"
+        />
 
-        {!formSlug && !bookingSlug ? (
+        {!hasForm && !hasBooking && !hasInvalid ? (
           <ContentCard
             heading="خدمات آنلاین مشاوره"
-            body="فرم یا خدمت نوبت‌دهی مشاوره هنوز در پیکربندی سرور تنظیم نشده است. محتوای راهنما حفظ شده و پس از تنظیم شناسه‌ها، همین صفحه به‌روز می‌شود."
+            body="فرم یا خدمت نوبت‌دهی مشاوره هنوز در پنل مدیریت (جایگاه‌های سایت) تنظیم نشده است. محتوای راهنما حفظ شده است."
             variant="notice"
           />
         ) : null}

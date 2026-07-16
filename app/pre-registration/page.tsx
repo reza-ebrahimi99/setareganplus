@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
-import { EmbeddedPublicForm } from "@/components/forms/EmbeddedPublicForm";
+import { SitePlacementSection } from "@/components/site/SitePlacementSection";
 import { InnerPageLayout } from "@/components/layout/InnerPageLayout";
 import { ContentCard } from "@/components/ui/ContentCard";
 import { registrationNotice } from "@/content/site";
 import { preRegistrationContent } from "@/content/pre-registration";
-import { getPreRegistrationFormSlug } from "@/lib/site/page-integrations";
+import { loadResolvedSitePlacement } from "@/lib/site/load-site-placement";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: preRegistrationContent.title,
   description: preRegistrationContent.subtitle,
 };
 
-export default function PreRegistrationPage() {
-  const formSlug = getPreRegistrationFormSlug();
+export default async function PreRegistrationPage() {
+  const placement = await loadResolvedSitePlacement("PRE_REGISTRATION_FORM");
+  const hasForm = placement.kind === "form";
 
   return (
     <InnerPageLayout
@@ -22,7 +25,7 @@ export default function PreRegistrationPage() {
       subtitle={preRegistrationContent.subtitle}
       eyebrow="مسیر ثبت‌نام"
       cta={
-        formSlug
+        hasForm
           ? {
               heading: "فرم آنلاین پیش‌ثبت‌نام",
               description:
@@ -48,25 +51,14 @@ export default function PreRegistrationPage() {
           />
         ))}
 
-        {formSlug ? (
-          <section id="online-form" className="scroll-mt-24 space-y-3">
-            <h2 className="text-lg font-semibold text-primary">
-              ثبت‌نام آنلاین
-            </h2>
-            <EmbeddedPublicForm
-              slug={formSlug}
-              displayMode="embedded"
-              showPoster={false}
-              instanceId="pre-registration-embed"
-            />
-          </section>
-        ) : (
-          <ContentCard
-            heading="فرم آنلاین"
-            body="شناسه فرم پیش‌ثبت‌نام هنوز در پیکربندی سرور تنظیم نشده است. محتوای فعلی صفحه حفظ شده و به‌محض فعال‌سازی فرم، همین‌جا نمایش داده می‌شود."
-            variant="notice"
-          />
-        )}
+        <SitePlacementSection
+          placement={placement}
+          sectionId="online-form"
+          fallbackHeading="ثبت‌نام آنلاین"
+          instanceId="pre-registration-embed"
+          showUnsetNotice
+          unsetNoticeBody="فرم پیش‌ثبت‌نام هنوز در پنل مدیریت (جایگاه‌های سایت) تنظیم نشده است. محتوای راهنما حفظ شده است."
+        />
 
         <ContentCard
           heading={registrationNotice.heading}

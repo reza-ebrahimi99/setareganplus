@@ -75,7 +75,14 @@ export const adminNavGroups: ReadonlyArray<{
   },
   {
     label: "سامانه",
-    items: [{ label: "تنظیمات", icon: "settings", enabled: false }],
+    items: [
+      {
+        href: "/admin/settings/site-placements",
+        label: "جایگاه‌های سایت",
+        icon: "settings",
+        enabled: true,
+      },
+    ],
   },
 ];
 
@@ -137,6 +144,10 @@ export const adminBreadcrumbs = {
     { label: "مدیریت", href: "/admin" },
     { label: "رزرو نوبت", href: "/admin/bookings" },
     { label: "جزئیات رزرو" },
+  ],
+  sitePlacements: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "جایگاه‌های سایت" },
   ],
 } as const satisfies Record<string, readonly AdminBreadcrumbItem[]>;
 

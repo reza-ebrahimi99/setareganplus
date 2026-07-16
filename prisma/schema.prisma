@@ -157,6 +157,7 @@ enum AuditAction {
   BOOKING_UPDATED
   BOOKING_CHECKED_IN
   AI_ASSISTED_ACTION
+  SITE_PLACEMENT_UPDATED
 }
 
 // ─── Form builder (Sprint 3.4A) ─────────────────────────────────────────────
@@ -354,6 +355,7 @@ model Organization {
   bookingAdvisors     BookingAdvisor[]
   bookingSlots        BookingSlot[]
   bookingReservations BookingReservation[]
+  sitePlacements      SitePlacement[]
 
   @@map("organizations")
 }
@@ -712,6 +714,7 @@ model Form {
   analyticsEvents  FormAnalyticsEvent[]
   analyticsDaily   FormAnalyticsDaily[]
   bookingServices  BookingService[]
+  sitePlacements   SitePlacement[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -1064,6 +1067,7 @@ model BookingService {
   availabilityRules BookingAvailabilityRule[]
   exceptions        BookingAvailabilityException[]
   slots             BookingSlot[]
+  sitePlacements    SitePlacement[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -1250,3 +1254,60 @@ model BookingCheckIn {
   @@index([organizationId, createdAt])
   @@map("booking_check_ins")
 }
+
+// ─── Site placements (StarOS v0.5.2B) ────────────────────────────────────────
+// Admin-managed embeds for fixed public pages. Not a generic page builder.
+// Resolution priority: enabled DB placement → env slug fallback → none.
+// A disabled DB row suppresses env fallback (explicit admin disable).
+
+enum SitePlacementKey {
+  PRE_REGISTRATION_FORM
+  CONSULTATION_FORM
+  CONSULTATION_BOOKING
+}
+
+enum SitePlacementContentType {
+  FORM
+  BOOKING
+  NONE
+}
+
+enum SitePlacementDisplayMode {
+  FULL
+  EMBEDDED
+  COMPACT
+  CARD
+}
+
+model SitePlacement {
+  id               String                   @id @default(cuid())
+  organizationId   String
+  placementKey     SitePlacementKey
+  contentType      SitePlacementContentType @default(NONE)
+  formId           String?
+  bookingServiceId String?
+  displayMode      SitePlacementDisplayMode @default(EMBEDDED)
+  showPoster       Boolean                  @default(false)
+  isEnabled        Boolean                  @default(true)
+  heading          String?
+  description      String?
+  ctaLabel         String?
+  sortOrder        Int                      @default(0)
+  settings         Json                     @default("{}")
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  deletedAt        DateTime?
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  form           Form?           @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
+  bookingService BookingService? @relation(fields: [organizationId, bookingServiceId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, placementKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, isEnabled])
+  @@index([organizationId, formId])
+  @@index([organizationId, bookingServiceId])
+  @@map("site_placements")
+}
+
