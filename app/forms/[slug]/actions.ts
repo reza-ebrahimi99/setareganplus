@@ -133,6 +133,7 @@ export async function submitPublicFormAction(
           label: true,
           required: true,
           config: true,
+          visibilityConditions: true,
         },
       },
     },

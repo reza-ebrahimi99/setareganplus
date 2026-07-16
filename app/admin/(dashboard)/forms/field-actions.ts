@@ -11,6 +11,15 @@ import {
   isFormFieldType,
 } from "@/lib/forms/form-field-type-labels";
 import { parseChoiceOptionsText } from "@/lib/forms/choice-options";
+import {
+  detectVisibilityCycles,
+  operatorNeedsValue,
+  parseVisibilityConditions,
+  serializeVisibilityCondition,
+  validateVisibilityConditionForField,
+  type VisibilityOperator,
+  VISIBILITY_OPERATORS,
+} from "@/lib/forms/field-visibility";
 import { normalizeFieldKey } from "@/lib/forms/normalize-field-key";
 import { getAdminSession } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/prisma";
@@ -22,6 +31,7 @@ export type FieldFormFieldErrors = {
   optionsText?: string;
   helpText?: string;
   placeholder?: string;
+  visibility?: string;
 };
 
 export type FieldFormValues = {
@@ -32,6 +42,10 @@ export type FieldFormValues = {
   helpText: string;
   placeholder: string;
   optionsText: string;
+  visibilityMode: string;
+  visibilitySourceFieldKey: string;
+  visibilityOperator: string;
+  visibilityValue: string;
 };
 
 export type FieldActionState = {
@@ -129,6 +143,7 @@ function parseFieldInputs(formData: FormData): {
   type?: FormFieldType;
   fieldKey?: string;
   config?: Prisma.InputJsonValue;
+  visibilityConditions: Prisma.InputJsonValue | null;
 } {
   const label = readString(formData, "label").trim();
   const rawFieldKey = readString(formData, "fieldKey");
@@ -137,6 +152,13 @@ function parseFieldInputs(formData: FormData): {
   const helpText = readString(formData, "helpText").trim();
   const placeholder = readString(formData, "placeholder").trim();
   const optionsText = readString(formData, "optionsText");
+  const visibilityMode = readString(formData, "visibilityMode").trim() || "always";
+  const visibilitySourceFieldKey = readString(
+    formData,
+    "visibilitySourceFieldKey",
+  ).trim();
+  const visibilityOperator = readString(formData, "visibilityOperator").trim();
+  const visibilityValue = readString(formData, "visibilityValue");
 
   const values: FieldFormValues = {
     label,
@@ -146,6 +168,10 @@ function parseFieldInputs(formData: FormData): {
     helpText,
     placeholder,
     optionsText,
+    visibilityMode,
+    visibilitySourceFieldKey,
+    visibilityOperator,
+    visibilityValue,
   };
 
   const fieldErrors: FieldFormFieldErrors = {};
@@ -189,12 +215,55 @@ function parseFieldInputs(formData: FormData): {
     }
   }
 
+  let visibilityConditions: Prisma.InputJsonValue | null = null;
+
+  if (visibilityMode === "conditional") {
+    const operator = (
+      VISIBILITY_OPERATORS as readonly string[]
+    ).includes(visibilityOperator)
+      ? (visibilityOperator as VisibilityOperator)
+      : null;
+
+    if (!visibilitySourceFieldKey) {
+      fieldErrors.visibility = "سؤال مبنا را انتخاب کنید.";
+    } else if (!operator) {
+      fieldErrors.visibility = "عملگر شرط نمایش را انتخاب کنید.";
+    } else {
+      const draftCondition = operatorNeedsValue(operator)
+        ? {
+            sourceFieldKey: visibilitySourceFieldKey,
+            operator,
+            value:
+              visibilityValue === "true"
+                ? true
+                : visibilityValue === "false"
+                  ? false
+                  : visibilityValue,
+          }
+        : {
+            sourceFieldKey: visibilitySourceFieldKey,
+            operator,
+          };
+
+      const parsed = parseVisibilityConditions(draftCondition);
+      if (!parsed.ok) {
+        fieldErrors.visibility = parsed.error;
+      } else {
+        const serialized = serializeVisibilityCondition(parsed.condition);
+        visibilityConditions = serialized
+          ? (serialized as Prisma.InputJsonValue)
+          : null;
+      }
+    }
+  }
+
   return {
     values,
     fieldErrors,
     type,
     fieldKey: keyResult.ok ? keyResult.fieldKey : undefined,
     config,
+    visibilityConditions,
   };
 }
 
@@ -296,6 +365,22 @@ export async function createFieldAction(
     };
   }
 
+  const siblingFields = await prisma.formField.findMany({
+    where: {
+      organizationId: resolved.context.organizationId,
+      formVersionId: resolved.context.formVersionId,
+    },
+    orderBy: { sortOrder: "asc" },
+    select: {
+      fieldKey: true,
+      sortOrder: true,
+      type: true,
+      label: true,
+      config: true,
+      visibilityConditions: true,
+    },
+  });
+
   const aggregate = await prisma.formField.aggregate({
     where: {
       organizationId: resolved.context.organizationId,
@@ -305,6 +390,50 @@ export async function createFieldAction(
   });
 
   const sortOrder = (aggregate._max.sortOrder ?? 0) + 1;
+
+  const visibilityCheck = validateVisibilityConditionForField({
+    dependentFieldKey: parsed.fieldKey,
+    dependentLabel: parsed.values.label,
+    visibilityConditions: parsed.visibilityConditions,
+    fields: [
+      ...siblingFields,
+      {
+        fieldKey: parsed.fieldKey,
+        sortOrder,
+        type: parsed.type,
+        label: parsed.values.label,
+        config: parsed.config,
+      },
+    ],
+  });
+
+  if (!visibilityCheck.ok) {
+    return {
+      fieldErrors: { visibility: visibilityCheck.error },
+      values: parsed.values,
+    };
+  }
+
+  const cycleError = detectVisibilityCycles([
+    ...siblingFields.map((field) => ({
+      fieldKey: field.fieldKey,
+      label: field.label,
+      visibilityConditions: field.visibilityConditions,
+      config: field.config,
+    })),
+    {
+      fieldKey: parsed.fieldKey,
+      label: parsed.values.label,
+      visibilityConditions: parsed.visibilityConditions,
+    },
+  ]);
+
+  if (cycleError) {
+    return {
+      fieldErrors: { visibility: cycleError },
+      values: parsed.values,
+    };
+  }
 
   try {
     await prisma.formField.create({
@@ -319,6 +448,7 @@ export async function createFieldAction(
         placeholder: parsed.values.placeholder || null,
         required: parsed.values.required,
         config: parsed.config ?? {},
+        visibilityConditions: parsed.visibilityConditions ?? Prisma.DbNull,
       },
     });
 
@@ -406,6 +536,73 @@ export async function updateFieldAction(
     ? (parsed.config ?? {})
     : {};
 
+  const siblingFields = await prisma.formField.findMany({
+    where: {
+      organizationId: resolved.context.organizationId,
+      formVersionId: resolved.context.formVersionId,
+    },
+    orderBy: { sortOrder: "asc" },
+    select: {
+      id: true,
+      fieldKey: true,
+      sortOrder: true,
+      type: true,
+      label: true,
+      config: true,
+      visibilityConditions: true,
+    },
+  });
+
+  const visibilityFields = siblingFields.map((field) =>
+    field.id === fieldId
+      ? {
+          fieldKey: parsed.fieldKey!,
+          sortOrder: field.sortOrder,
+          type: parsed.type!,
+          label: parsed.values.label,
+          config,
+          visibilityConditions: parsed.visibilityConditions,
+        }
+      : {
+          fieldKey: field.fieldKey,
+          sortOrder: field.sortOrder,
+          type: field.type,
+          label: field.label,
+          config: field.config,
+          visibilityConditions: field.visibilityConditions,
+        },
+  );
+
+  const visibilityCheck = validateVisibilityConditionForField({
+    dependentFieldKey: parsed.fieldKey,
+    dependentLabel: parsed.values.label,
+    visibilityConditions: parsed.visibilityConditions,
+    fields: visibilityFields,
+  });
+
+  if (!visibilityCheck.ok) {
+    return {
+      fieldErrors: { visibility: visibilityCheck.error },
+      values: parsed.values,
+    };
+  }
+
+  const cycleError = detectVisibilityCycles(
+    visibilityFields.map((field) => ({
+      fieldKey: field.fieldKey,
+      label: field.label,
+      visibilityConditions: field.visibilityConditions,
+      config: field.config,
+    })),
+  );
+
+  if (cycleError) {
+    return {
+      fieldErrors: { visibility: cycleError },
+      values: parsed.values,
+    };
+  }
+
   try {
     await prisma.formField.update({
       where: {
@@ -422,6 +619,7 @@ export async function updateFieldAction(
         placeholder: parsed.values.placeholder || null,
         required: parsed.values.required,
         config,
+        visibilityConditions: parsed.visibilityConditions ?? Prisma.DbNull,
       },
     });
 

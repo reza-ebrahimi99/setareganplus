@@ -25,15 +25,20 @@ function controlClassName(hasError: boolean): string {
     : `${base} border-border`;
 }
 
+function inputId(idPrefix: string, fieldKey: string): string {
+  return `${idPrefix}-field-input-${fieldKey}`;
+}
+
 function describedBy(
   fieldKey: string,
   helpText: string | null,
-  error?: string,
+  error: string | undefined,
+  idPrefix: string,
 ): string | undefined {
   return (
     [
-      helpText ? `field-help-${fieldKey}` : null,
-      error ? `field-error-${fieldKey}` : null,
+      helpText ? `${idPrefix}-field-help-${fieldKey}` : null,
+      error ? `${idPrefix}-field-error-${fieldKey}` : null,
     ]
       .filter(Boolean)
       .join(" ") || undefined
@@ -45,14 +50,16 @@ function FieldChrome({
   helpText,
   error,
   children,
+  idPrefix,
 }: {
   field: PublicFormFieldData;
   helpText: string | null;
   error?: string;
   children: React.ReactNode;
+  idPrefix: string;
 }) {
-  const helpId = helpText ? `field-help-${field.fieldKey}` : undefined;
-  const errorId = error ? `field-error-${field.fieldKey}` : undefined;
+  const helpId = helpText ? `${idPrefix}-field-help-${field.fieldKey}` : undefined;
+  const errorId = error ? `${idPrefix}-field-error-${field.fieldKey}` : undefined;
 
   return (
     <div className="space-y-1.5">
@@ -63,7 +70,7 @@ function FieldChrome({
             field.type === FormFieldType.MULTIPLE_CHOICE ||
             field.type === FormFieldType.INFORMATIONAL
               ? undefined
-              : `field-input-${field.fieldKey}`
+              : inputId(idPrefix, field.fieldKey)
           }
           className="text-sm font-medium text-primary"
         >
@@ -141,6 +148,7 @@ function TextInput({
   autoComplete,
   dir,
   maxLength,
+  idPrefix,
 }: {
   field: PublicFormFieldData;
   type: string;
@@ -154,6 +162,7 @@ function TextInput({
   autoComplete?: string;
   dir?: "ltr" | "rtl";
   maxLength?: number;
+  idPrefix: string;
 }) {
   if (prefix) {
     return (
@@ -169,7 +178,7 @@ function TextInput({
           {prefix}
         </span>
         <input
-          id={`field-input-${field.fieldKey}`}
+          id={inputId(idPrefix, field.fieldKey)}
           name={field.fieldKey}
           type={type}
           inputMode={inputMode}
@@ -181,7 +190,7 @@ function TextInput({
           dir={dir}
           maxLength={maxLength}
           aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy(field.fieldKey, helpText, error)}
+          aria-describedby={describedBy(field.fieldKey, helpText, error, idPrefix)}
           className="w-full border-0 bg-transparent px-3.5 py-3 text-sm text-foreground outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
         />
       </div>
@@ -190,7 +199,7 @@ function TextInput({
 
   return (
     <input
-      id={`field-input-${field.fieldKey}`}
+      id={inputId(idPrefix, field.fieldKey)}
       name={field.fieldKey}
       type={type}
       inputMode={inputMode}
@@ -202,7 +211,7 @@ function TextInput({
       dir={dir}
       maxLength={maxLength}
       aria-invalid={error ? true : undefined}
-      aria-describedby={describedBy(field.fieldKey, helpText, error)}
+      aria-describedby={describedBy(field.fieldKey, helpText, error, idPrefix)}
       className={controlClassName(Boolean(error))}
     />
   );
@@ -215,6 +224,7 @@ function OptionsSelect({
   error,
   helpText,
   disabled,
+  idPrefix,
 }: {
   field: PublicFormFieldData;
   options: ChoiceOption[];
@@ -222,16 +232,17 @@ function OptionsSelect({
   error?: string;
   helpText: string | null;
   disabled?: boolean;
+  idPrefix: string;
 }) {
   return (
     <select
-      id={`field-input-${field.fieldKey}`}
+      id={inputId(idPrefix, field.fieldKey)}
       name={field.fieldKey}
       required={field.required}
       defaultValue={defaultValue ?? ""}
       disabled={disabled}
       aria-invalid={error ? true : undefined}
-      aria-describedby={describedBy(field.fieldKey, helpText, error)}
+      aria-describedby={describedBy(field.fieldKey, helpText, error, idPrefix)}
       className={controlClassName(Boolean(error))}
     >
       <option value="" disabled>
@@ -251,6 +262,7 @@ type PublicFormFieldProps = {
   error?: string;
   defaultValue?: PreservedFieldValue;
   disabled?: boolean;
+  idPrefix?: string;
 };
 
 export function PublicFormField({
@@ -258,6 +270,7 @@ export function PublicFormField({
   error,
   defaultValue,
   disabled = false,
+  idPrefix = "pf",
 }: PublicFormFieldProps) {
   const display = resolveFieldDisplayHints(field);
   const { helpText, placeholder, prefix } = display;
@@ -281,7 +294,7 @@ export function PublicFormField({
       <div className="rounded-xl border border-border bg-white px-4 py-3">
         <label className="flex items-start gap-3 text-sm leading-7 text-foreground">
           <input
-            id={`field-input-${field.fieldKey}`}
+            id={inputId(idPrefix, field.fieldKey)}
             name={field.fieldKey}
             type="checkbox"
             value="yes"
@@ -322,7 +335,7 @@ export function PublicFormField({
     const multiDefault = asStringArray(defaultValue);
 
     return (
-      <FieldChrome field={field} helpText={helpText} error={error}>
+      <FieldChrome field={field} helpText={helpText} error={error} idPrefix={idPrefix}>
         {!options ? (
           <ChoiceUnavailable label={field.label} />
         ) : field.type === FormFieldType.DROPDOWN ? (
@@ -333,6 +346,7 @@ export function PublicFormField({
             error={error}
             helpText={helpText}
             disabled={disabled}
+            idPrefix={idPrefix}
           />
         ) : field.type === FormFieldType.SINGLE_CHOICE ? (
           <fieldset className="mt-2 space-y-2" disabled={disabled}>
@@ -388,7 +402,7 @@ export function PublicFormField({
     const value = asString(defaultValue);
 
     return (
-      <FieldChrome field={field} helpText={helpText} error={error}>
+      <FieldChrome field={field} helpText={helpText} error={error} idPrefix={idPrefix}>
         {options ? (
           <OptionsSelect
             field={field}
@@ -397,6 +411,7 @@ export function PublicFormField({
             error={error}
             helpText={helpText}
             disabled={disabled}
+            idPrefix={idPrefix}
           />
         ) : (
           <TextInput
@@ -408,6 +423,7 @@ export function PublicFormField({
             placeholder={placeholder}
             prefix={prefix}
             disabled={disabled}
+            idPrefix={idPrefix}
           />
         )}
       </FieldChrome>
@@ -417,10 +433,10 @@ export function PublicFormField({
   const value = asString(defaultValue);
 
   return (
-    <FieldChrome field={field} helpText={helpText} error={error}>
+    <FieldChrome field={field} helpText={helpText} error={error} idPrefix={idPrefix}>
       {field.type === FormFieldType.LONG_TEXT ? (
         <textarea
-          id={`field-input-${field.fieldKey}`}
+          id={inputId(idPrefix, field.fieldKey)}
           name={field.fieldKey}
           required={field.required}
           rows={4}
@@ -428,7 +444,7 @@ export function PublicFormField({
           defaultValue={value}
           disabled={disabled}
           aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy(field.fieldKey, helpText, error)}
+          aria-describedby={describedBy(field.fieldKey, helpText, error, idPrefix)}
           className={controlClassName(Boolean(error))}
         />
       ) : field.type === FormFieldType.MOBILE ? (
@@ -445,6 +461,7 @@ export function PublicFormField({
           placeholder={placeholder}
           prefix={prefix}
           disabled={disabled}
+          idPrefix={idPrefix}
         />
       ) : field.type === FormFieldType.NATIONAL_ID ? (
         <TextInput
@@ -460,6 +477,7 @@ export function PublicFormField({
           placeholder={placeholder}
           prefix={prefix}
           disabled={disabled}
+          idPrefix={idPrefix}
         />
       ) : field.type === FormFieldType.EMAIL ? (
         <TextInput
@@ -474,6 +492,7 @@ export function PublicFormField({
           placeholder={placeholder}
           prefix={prefix}
           disabled={disabled}
+          idPrefix={idPrefix}
         />
       ) : field.type === FormFieldType.NUMBER ? (
         <TextInput
@@ -487,6 +506,7 @@ export function PublicFormField({
           placeholder={placeholder}
           prefix={prefix}
           disabled={disabled}
+          idPrefix={idPrefix}
         />
       ) : field.type === FormFieldType.DATE ? (
         <TextInput
@@ -499,6 +519,7 @@ export function PublicFormField({
           placeholder={placeholder}
           prefix={prefix}
           disabled={disabled}
+          idPrefix={idPrefix}
         />
       ) : (
         <TextInput
@@ -510,6 +531,7 @@ export function PublicFormField({
           placeholder={placeholder}
           prefix={prefix}
           disabled={disabled}
+          idPrefix={idPrefix}
         />
       )}
     </FieldChrome>

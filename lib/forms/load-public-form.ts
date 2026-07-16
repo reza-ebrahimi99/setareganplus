@@ -27,6 +27,7 @@ export type PublicFormField = {
   placeholder: string | null;
   required: boolean;
   config: unknown;
+  visibilityConditions: unknown;
 };
 
 export type PublicFormPoster = {
@@ -158,6 +159,7 @@ export async function loadPublicFormBySlug(
             placeholder: true,
             required: true,
             config: true,
+            visibilityConditions: true,
           },
         },
       },
@@ -280,6 +282,7 @@ export async function loadPublicFormBySlug(
           placeholder: field.placeholder,
           required: field.required,
           config: field.config,
+          visibilityConditions: field.visibilityConditions,
         })),
         availability: {
           status: availability.status,

@@ -1,6 +1,10 @@
 import { FormFieldType, type FormFieldType as FormFieldTypeValue } from "@/generated/prisma/enums";
 import { Prisma } from "@/generated/prisma/client";
 import { readChoiceConfig } from "@/lib/forms/choice-options";
+import {
+  evaluateAllFieldVisibility,
+  type VisibilityAnswerValue,
+} from "@/lib/forms/field-visibility";
 import { normalizeEmail } from "@/lib/forms/normalize-email";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { validateIranianNationalId } from "@/lib/forms/validate-national-id";
@@ -12,6 +16,7 @@ export type SubmissionFieldDefinition = {
   label: string;
   required: boolean;
   config: unknown;
+  visibilityConditions?: unknown;
 };
 
 export type PreservedFieldValue = string | string[] | boolean;
@@ -84,9 +89,30 @@ function gradeOrTrackOptions(config: unknown): Set<string> | null {
   return new Set(parsed.options.map((option) => option.value));
 }
 
+function readRawAnswerForVisibility(
+  field: SubmissionFieldDefinition,
+  formData: FormData,
+): VisibilityAnswerValue {
+  if (field.type === FormFieldType.INFORMATIONAL) {
+    return undefined;
+  }
+  if (field.type === FormFieldType.MULTIPLE_CHOICE) {
+    return Array.from(new Set(readMany(formData, field.fieldKey)));
+  }
+  if (field.type === FormFieldType.CONSENT) {
+    return (
+      formData.get(field.fieldKey) === "yes" ||
+      formData.get(field.fieldKey) === "on" ||
+      formData.get(field.fieldKey) === "true"
+    );
+  }
+  return readSingle(formData, field.fieldKey).trim();
+}
+
 /**
  * Validates FormData against the published FormField definitions only.
  * Unknown keys are ignored. INFORMATIONAL creates no answer row.
+ * Hidden fields (visibilityConditions) are ignored and never stored.
  */
 export function validatePublicSubmission(
   fields: SubmissionFieldDefinition[],
@@ -101,8 +127,36 @@ export function validatePublicSubmission(
   let normalizedMobile: string | null = null;
   let email: string | null = null;
 
+  const rawAnswers: Record<string, VisibilityAnswerValue> = {};
+  for (const field of fields) {
+    rawAnswers[field.fieldKey] = readRawAnswerForVisibility(field, formData);
+  }
+
+  const visibility = evaluateAllFieldVisibility({
+    fields: fields.map((field) => ({
+      fieldKey: field.fieldKey,
+      type: field.type,
+      visibilityConditions: field.visibilityConditions ?? null,
+      config: field.config,
+    })),
+    answers: rawAnswers,
+  });
+
+  if (!visibility.ok) {
+    return {
+      ok: false,
+      fieldErrors: {},
+      formError: visibility.error,
+      values: {},
+    };
+  }
+
   for (const field of fields) {
     if (field.type === FormFieldType.INFORMATIONAL) {
+      continue;
+    }
+
+    if (!visibility.visible[field.fieldKey]) {
       continue;
     }
 

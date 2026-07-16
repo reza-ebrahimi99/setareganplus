@@ -22,6 +22,7 @@ export type EditorField = {
   placeholder: string | null;
   required: boolean;
   config: unknown;
+  visibilityConditions: unknown;
 };
 
 export type EditorDisplayStatus = "DRAFT" | "PUBLISHED" | "PAUSED";
@@ -175,6 +176,7 @@ export async function loadFormEditor(
             placeholder: true,
             required: true,
             config: true,
+            visibilityConditions: true,
           },
         },
       },
@@ -274,6 +276,7 @@ export async function loadFormEditor(
           placeholder: field.placeholder,
           required: field.required,
           config: field.config,
+          visibilityConditions: field.visibilityConditions,
         })),
         displayStatus,
         headerTitle,

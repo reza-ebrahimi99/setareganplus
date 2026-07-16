@@ -11,6 +11,7 @@ import {
   type FieldActionState,
   type SimpleFieldActionState,
 } from "@/app/admin/(dashboard)/forms/field-actions";
+import { VisibilityConditionEditor } from "@/components/admin/forms/VisibilityConditionEditor";
 import { choiceOptionsToText } from "@/lib/forms/choice-options";
 import {
   FORM_FIELD_TYPE_OPTIONS,
@@ -43,11 +44,13 @@ function FieldEditorPanel({
   formId,
   mode,
   field,
+  allFields,
   onCancelEdit,
 }: {
   formId: string;
   mode: "create" | "edit";
   field: EditorField | null;
+  allFields: EditorField[];
   onCancelEdit: () => void;
 }) {
   const action = mode === "create" ? createFieldAction : updateFieldAction;
@@ -276,6 +279,13 @@ function FieldEditorPanel({
       ) : (
         <input type="hidden" name="optionsText" value="" />
       )}
+
+      <VisibilityConditionEditor
+        field={field}
+        allFields={allFields}
+        values={values}
+        error={errors?.visibility}
+      />
 
       <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:justify-between">
         {mode === "edit" ? (
@@ -537,6 +547,7 @@ export function FormEditor({
           formId={formId}
           mode={mode}
           field={mode === "edit" ? selectedField : null}
+          allFields={fields}
           onCancelEdit={() => {
             setMode("create");
             setSelectedFieldId(null);

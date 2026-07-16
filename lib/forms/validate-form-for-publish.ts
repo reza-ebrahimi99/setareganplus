@@ -1,6 +1,10 @@
 import { FormFieldType, type FormFieldType as FormFieldTypeValue } from "@/generated/prisma/enums";
 import { readChoiceConfig } from "@/lib/forms/choice-options";
 import { CAPACITY_MAX } from "@/lib/forms/capacity";
+import {
+  detectVisibilityCycles,
+  validateVisibilityConditionForField,
+} from "@/lib/forms/field-visibility";
 import { isChoiceFieldType } from "@/lib/forms/form-field-type-labels";
 import {
   parseFormVersionSettings,
@@ -15,6 +19,7 @@ export type PublishValidationField = {
   label: string;
   required: boolean;
   config: unknown;
+  visibilityConditions?: unknown;
 };
 
 export type PublishValidationInput = {
@@ -32,6 +37,13 @@ export type PublishValidationResult =
   | { ok: true }
   | { ok: false; errors: string[] };
 
+const ALLOWED_NON_CHOICE_CONFIG_KEYS = new Set([
+  "helpText",
+  "placeholder",
+  "prefix",
+  "visibility", // legacy only — ignored at runtime in favor of visibilityConditions
+]);
+
 function isEmptyConfig(config: unknown): boolean {
   if (config == null) {
     return true;
@@ -39,7 +51,10 @@ function isEmptyConfig(config: unknown): boolean {
   if (typeof config !== "object" || Array.isArray(config)) {
     return false;
   }
-  return Object.keys(config as Record<string, unknown>).length === 0;
+  const keys = Object.keys(config as Record<string, unknown>).filter(
+    (key) => !ALLOWED_NON_CHOICE_CONFIG_KEYS.has(key),
+  );
+  return keys.length === 0;
 }
 
 /**
@@ -147,6 +162,33 @@ export function validateFormVersionForPublish(
         `سؤال «${field.label}» پیکربندی پشتیبانی‌نشده دارد. برای انواع غیراز انتخابی، config باید خالی باشد.`,
       );
     }
+  }
+
+  const visibilityFields = input.fields.map((field) => ({
+    fieldKey: field.fieldKey,
+    sortOrder: field.sortOrder,
+    type: field.type,
+    label: field.label,
+    config: field.config,
+    visibilityConditions: field.visibilityConditions ?? null,
+  }));
+
+  for (const field of visibilityFields) {
+    const result = validateVisibilityConditionForField({
+      dependentFieldKey: field.fieldKey,
+      dependentLabel: field.label,
+      visibilityConditions: field.visibilityConditions,
+      config: field.config,
+      fields: visibilityFields,
+    });
+    if (!result.ok) {
+      errors.push(result.error);
+    }
+  }
+
+  const cycleError = detectVisibilityCycles(visibilityFields);
+  if (cycleError) {
+    errors.push(cycleError);
   }
 
   if (errors.length > 0) {

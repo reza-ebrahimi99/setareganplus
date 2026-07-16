@@ -86,6 +86,7 @@ export async function publishFormVersionAction(
           label: true,
           required: true,
           config: true,
+          visibilityConditions: true,
         },
       },
     },
