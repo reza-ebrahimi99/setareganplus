@@ -2,7 +2,12 @@
  * Communication / OTP runtime config from environment (no secrets in responses).
  */
 
-import { readSmsEnabled, readSmsProviderName, readSmsTimeoutMs } from "@/lib/communication/sms-provider";
+import { getSmsIrConfigurationStatus } from "@/lib/communication/providers/smsir-provider";
+import {
+  readSmsEnabled,
+  readSmsProviderName,
+  readSmsTimeoutMs,
+} from "@/lib/communication/sms-provider";
 import type { CommunicationConfig } from "@/lib/communication/types";
 
 function readPositiveInt(raw: string | undefined, fallback: number, max: number): number {
@@ -42,16 +47,36 @@ export function maskSecret(value: string | undefined | null): string | null {
 export function getSmsSecretStatus(): {
   apiKeyConfigured: boolean;
   apiKeyMasked: string | null;
+  timeoutMs: number;
+  baseUrlConfigured: boolean;
+  baseUrlValid: boolean;
   apiUrlConfigured: boolean;
   senderConfigured: boolean;
+  otpTemplateConfigured: boolean;
+  bookingTemplateConfigured: boolean;
+  formTemplateConfigured: boolean;
+  otpParameterConfigured: boolean;
+  bookingParametersConfigured: boolean;
+  formParametersConfigured: boolean;
+  providerConfigured: boolean;
 } {
-  const apiKey = process.env.STAROS_SMS_API_KEY;
-  const apiUrl = process.env.STAROS_SMS_API_URL?.trim();
-  const sender = process.env.STAROS_SMS_SENDER?.trim();
+  const apiKey = process.env.SMSIR_API_KEY;
+  const status = getSmsIrConfigurationStatus();
   return {
-    apiKeyConfigured: Boolean(apiKey?.trim()),
+    apiKeyConfigured: status.apiKeyConfigured,
     apiKeyMasked: maskSecret(apiKey),
-    apiUrlConfigured: Boolean(apiUrl),
-    senderConfigured: Boolean(sender),
+    timeoutMs: status.timeoutMs,
+    baseUrlConfigured: status.baseUrlConfigured,
+    baseUrlValid: status.baseUrlValid,
+    // Compatibility fields for the existing admin loader/page.
+    apiUrlConfigured: status.baseUrlConfigured,
+    senderConfigured: false,
+    otpTemplateConfigured: status.otpTemplateConfigured,
+    bookingTemplateConfigured: status.bookingTemplateConfigured,
+    formTemplateConfigured: status.formTemplateConfigured,
+    otpParameterConfigured: status.otpParameterConfigured,
+    bookingParametersConfigured: status.bookingParametersConfigured,
+    formParametersConfigured: status.formParametersConfigured,
+    providerConfigured: status.providerConfigured,
   };
 }

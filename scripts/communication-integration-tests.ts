@@ -29,6 +29,8 @@ process.env.STAROS_SMS_MAX_ATTEMPTS = "3";
 
 import {
   BookingSlotStatus,
+  FormFieldSemantic,
+  FormFieldType,
   FormPurpose,
   FormSubmissionStatus,
   FormVersionStatus,
@@ -61,6 +63,7 @@ import {
   verifyOtpCode,
 } from "../lib/communication/otp-crypto";
 import { createReservation } from "../lib/booking/reserve";
+import { enqueueBookingConfirmationSms } from "../lib/communication/booking-sms";
 import { enqueueFormConfirmationSms } from "../lib/communication/form-sms";
 import { prisma } from "../lib/prisma";
 
@@ -124,6 +127,98 @@ async function main() {
     assert(computeSmsBackoffMs(2) === 60_000, "backoff 2");
     assert(computeSmsBackoffMs(10) === 30 * 60_000, "backoff cap");
     ok("template render + backoff");
+  }
+
+  // ─── OTP live-delivery lifecycle (native fetch mocked; no real network) ───
+  {
+    const originalFetch = globalThis.fetch;
+    const smsEnvKeys = [
+      "STAROS_SMS_ENABLED",
+      "STAROS_SMS_PROVIDER",
+      "SMSIR_API_KEY",
+      "SMSIR_API_BASE_URL",
+      "SMSIR_TIMEOUT_MS",
+      "SMSIR_OTP_TEMPLATE_ID",
+      "SMSIR_BOOKING_TEMPLATE_ID",
+      "SMSIR_FORM_TEMPLATE_ID",
+    ] as const;
+    const originalSmsEnv = Object.fromEntries(
+      smsEnvKeys.map((key) => [key, process.env[key]]),
+    ) as Record<(typeof smsEnvKeys)[number], string | undefined>;
+
+    try {
+      process.env.STAROS_SMS_ENABLED = "true";
+      process.env.STAROS_SMS_PROVIDER = "smsir";
+      process.env.SMSIR_API_KEY = "integration-mock-key";
+      process.env.SMSIR_API_BASE_URL = "https://api.sms.ir";
+      process.env.SMSIR_TIMEOUT_MS = "50";
+      process.env.SMSIR_OTP_TEMPLATE_ID = "101";
+      process.env.SMSIR_BOOKING_TEMPLATE_ID = "102";
+      process.env.SMSIR_FORM_TEMPLATE_ID = "103";
+      resetSmsProviderCache();
+
+      const acceptedMobile = `0911${suffix}007`.slice(0, 11).padEnd(11, "0");
+      globalThis.fetch = async () =>
+        new Response(
+          JSON.stringify({ status: 1, data: { messageId: 123456 } }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      const accepted = await requestOtp({
+        organizationId: org.id,
+        mobile: acceptedMobile,
+        purpose: OtpPurpose.GENERIC,
+        _testReturnCode: true,
+      });
+      assert(accepted.ok, "provider-accepted OTP request succeeds");
+      const acceptedRow = await prisma.otpChallenge.findUnique({
+        where: { id: accepted.challengeId },
+        select: { status: true },
+      });
+      assert(
+        acceptedRow?.status === OtpChallengeStatus.PENDING,
+        "accepted OTP remains pending",
+      );
+      ok("OTP provider delivery success");
+
+      const rejectedMobile = `0910${suffix}008`.slice(0, 11).padEnd(11, "0");
+      globalThis.fetch = async () =>
+        new Response(JSON.stringify({ status: 11 }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      const rejected = await requestOtp({
+        organizationId: org.id,
+        mobile: rejectedMobile,
+        purpose: OtpPurpose.GENERIC,
+        _testReturnCode: true,
+      });
+      assert(!rejected.ok, "provider-rejected OTP request fails");
+      const rejectedRow = await prisma.otpChallenge.findFirst({
+        where: {
+          organizationId: org.id,
+          normalizedMobile: rejectedMobile,
+          purpose: OtpPurpose.GENERIC,
+        },
+        orderBy: { createdAt: "desc" },
+        select: { status: true },
+      });
+      assert(
+        rejectedRow?.status === OtpChallengeStatus.EXPIRED,
+        "rejected OTP challenge is invalidated",
+      );
+      ok("OTP provider delivery failure");
+    } finally {
+      globalThis.fetch = originalFetch;
+      for (const key of smsEnvKeys) {
+        const value = originalSmsEnv[key];
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+      // The rest of this integration suite intentionally uses the Null provider.
+      process.env.STAROS_SMS_ENABLED = "true";
+      process.env.STAROS_SMS_PROVIDER = "null";
+      resetSmsProviderCache();
+    }
   }
 
   // ─── OTP success ──────────────────────────────────────────────────────────
@@ -422,15 +517,40 @@ async function main() {
       sms.body.includes("کد پیگیری") || sms.body.length > 0,
       "booking sms body",
     );
-    // Duplicate enqueue path
-    const again = await enqueueSms({
+    const bookingMetadata = sms.metadata as {
+      templateDelivery?: {
+        version?: number;
+        kind?: string;
+        variables?: Record<string, string>;
+      };
+    } | null;
+    assert(
+      bookingMetadata?.templateDelivery?.version === 1 &&
+        bookingMetadata.templateDelivery.kind === "booking",
+      "booking template delivery descriptor",
+    );
+    assert(
+      bookingMetadata.templateDelivery.variables?.name === "آزمون" &&
+        Boolean(bookingMetadata.templateDelivery.variables?.date) &&
+        Boolean(bookingMetadata.templateDelivery.variables?.time) &&
+        bookingMetadata.templateDelivery.variables?.tracking ===
+          reservation.trackingCode.replace(
+            /\d/g,
+            (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)],
+          ),
+      "booking semantic template variables",
+    );
+    await enqueueBookingConfirmationSms({
       organizationId: org.id,
-      toMobile: bookingMobile,
-      body: "dup",
-      purpose: "booking_confirmation",
-      idempotencyKey: `booking_confirmation:${reservation.reservationId}`,
+      reservationId: reservation.reservationId,
     });
-    assert(again.ok && !again.created, "booking sms idempotent");
+    const bookingSmsCount = await prisma.smsMessage.count({
+      where: {
+        organizationId: org.id,
+        idempotencyKey: `booking_confirmation:${reservation.reservationId}`,
+      },
+    });
+    assert(bookingSmsCount === 1, "booking SMS not duplicated");
     ok("booking enqueue");
   } finally {
     if (serviceId) {
@@ -459,14 +579,12 @@ async function main() {
 
   // ─── Form enqueue ─────────────────────────────────────────────────────────
   let formId: string | null = null;
-  let branchId: string | null = null;
   try {
     const branch = await prisma.branch.findFirst({
       where: { organizationId: org.id, deletedAt: null },
       select: { id: true },
     });
     assert(branch, "branch required");
-    branchId = branch.id;
 
     const form = await prisma.form.create({
       data: {
@@ -494,6 +612,18 @@ async function main() {
       where: { id: form.id },
       data: { publishedVersionId: version.id },
     });
+    const firstNameField = await prisma.formField.create({
+      data: {
+        organizationId: org.id,
+        formVersionId: version.id,
+        fieldKey: "first_name",
+        sortOrder: 0,
+        type: FormFieldType.SHORT_TEXT,
+        semantic: FormFieldSemantic.FIRST_NAME,
+        label: "نام",
+        required: true,
+      },
+    });
 
     const formMobile = `0918${suffix}006`.slice(0, 11).padEnd(11, "0");
     const submission = await prisma.formSubmission.create({
@@ -505,6 +635,15 @@ async function main() {
         status: FormSubmissionStatus.RECEIVED,
         normalizedMobile: formMobile,
         mobile: formMobile,
+      },
+    });
+    await prisma.formAnswer.create({
+      data: {
+        organizationId: org.id,
+        submissionId: submission.id,
+        fieldId: firstNameField.id,
+        fieldKey: firstNameField.fieldKey,
+        valueText: "سارا",
       },
     });
 
@@ -520,6 +659,20 @@ async function main() {
       },
     });
     assert(formSms, "form confirmation SMS enqueued");
+    const formMetadata = formSms.metadata as {
+      templateDelivery?: {
+        version?: number;
+        kind?: string;
+        variables?: Record<string, string>;
+      };
+    } | null;
+    assert(
+      formMetadata?.templateDelivery?.version === 1 &&
+        formMetadata.templateDelivery.kind === "form" &&
+        formMetadata.templateDelivery.variables?.name === "سارا" &&
+        formMetadata.templateDelivery.variables?.tracking === submission.id,
+      "form semantic template variables",
+    );
 
     await enqueueFormConfirmationSms({
       organizationId: org.id,

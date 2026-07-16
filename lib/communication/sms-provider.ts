@@ -1,21 +1,22 @@
 /**
  * SMS provider abstraction.
- * Default: NullSmsProvider (safe no-op until a real Iranian adapter is wired).
+ * Disabled/default path: NullSmsProvider.
  *
  * Env (optional, never commit secrets):
  *   STAROS_SMS_ENABLED=true
  *   STAROS_SMS_PROVIDER=null
  *   STAROS_SMS_TIMEOUT_MS=8000
- *   STAROS_SMS_API_KEY=
- *   STAROS_SMS_API_URL=
- *   STAROS_SMS_SENDER=
  */
 
+import { SmsIrProvider, readSmsIrTimeoutMs } from "@/lib/communication/providers/smsir-provider";
 import type {
+  SmsOtpTemplateRequest,
   SmsProvider,
+  SmsSendFailure,
   SmsSendResult,
   SmsSendTemplateRequest,
   SmsSendTextRequest,
+  SmsTemplateMessageRequest,
 } from "@/lib/communication/types";
 
 export function readSmsEnabled(): boolean {
@@ -23,18 +24,22 @@ export function readSmsEnabled(): boolean {
 }
 
 export function readSmsTimeoutMs(fallback = 8000): number {
+  if (readSmsProviderName() === "smsir") {
+    return readSmsIrTimeoutMs(fallback);
+  }
   const raw = Number(process.env.STAROS_SMS_TIMEOUT_MS ?? fallback);
   return Number.isFinite(raw) && raw > 0 ? Math.min(raw, 30_000) : fallback;
 }
 
 export function readSmsProviderName(): string {
   const raw = process.env.STAROS_SMS_PROVIDER?.trim().toLowerCase();
-  return raw && raw.length > 0 ? raw : "null";
+  if (!raw) return "null";
+  return raw === "null" || raw === "smsir" ? raw : "unsupported";
 }
 
 /**
- * No-op provider — records success without contacting any vendor.
- * Used until a real adapter is registered.
+ * No-op provider — records success without contacting any vendor when
+ * explicitly selected. When SMS is globally disabled it returns `disabled`.
  */
 export class NullSmsProvider implements SmsProvider {
   readonly name = "null";
@@ -43,39 +48,120 @@ export class NullSmsProvider implements SmsProvider {
     return readSmsEnabled() && readSmsProviderName() === "null";
   }
 
-  async sendText(_request: SmsSendTextRequest): Promise<SmsSendResult> {
+  async sendText(request: SmsSendTextRequest): Promise<SmsSendResult> {
+    void request;
     if (!readSmsEnabled()) {
-      return {
-        ok: false,
-        code: "disabled",
-        message: "ارسال پیامک غیرفعال است.",
-        retryable: false,
-      };
+      return disabledFailure();
     }
-    return { ok: true, providerMessageId: null };
+    return nullSuccess();
+  }
+
+  async sendOtpTemplate(
+    request: SmsOtpTemplateRequest,
+  ): Promise<SmsSendResult> {
+    void request;
+    if (!readSmsEnabled()) return disabledFailure();
+    return nullSuccess();
+  }
+
+  async sendTemplateMessage(
+    request: SmsTemplateMessageRequest,
+  ): Promise<SmsSendResult> {
+    void request;
+    if (!readSmsEnabled()) return disabledFailure();
+    return nullSuccess();
   }
 
   async sendTemplate(
     request: SmsSendTemplateRequest,
   ): Promise<SmsSendResult> {
-    // Null provider cannot resolve vendor templates; treat as text-unavailable.
-    if (!this.isEnabled() && !readSmsEnabled()) {
-      return {
-        ok: false,
-        code: "disabled",
-        message: "ارسال پیامک غیرفعال است.",
-        retryable: false,
-      };
-    }
+    if (!readSmsEnabled()) return disabledFailure();
     if (!request.templateCode.trim()) {
-      return {
-        ok: false,
-        code: "invalid",
-        message: "کد قالب پیامک نامعتبر است.",
-        retryable: false,
-      };
+      return providerFailure(
+        "invalid",
+        "کد قالب پیامک نامعتبر است.",
+        false,
+      );
     }
-    return { ok: true, providerMessageId: null };
+    return nullSuccess();
+  }
+}
+
+function nullSuccess(): SmsSendResult {
+  return {
+    ok: true,
+    providerMessageId: null,
+    providerStatusCode: null,
+    retryable: false,
+    errorCode: null,
+    safeMessage: null,
+  };
+}
+
+function providerFailure(
+  errorCode: SmsSendFailure["errorCode"],
+  safeMessage: string,
+  retryable: boolean,
+): SmsSendFailure {
+  return {
+    ok: false,
+    providerMessageId: null,
+    providerStatusCode: null,
+    errorCode,
+    safeMessage,
+    retryable,
+    code: errorCode,
+    message: safeMessage,
+  };
+}
+
+function disabledFailure(): SmsSendFailure {
+  return providerFailure(
+    "disabled",
+    "ارسال پیامک غیرفعال است.",
+    false,
+  );
+}
+
+class UnsupportedSmsProvider implements SmsProvider {
+  readonly name = "unsupported";
+
+  isEnabled(): boolean {
+    return false;
+  }
+
+  sendText(request: SmsSendTextRequest): Promise<SmsSendResult> {
+    void request;
+    return Promise.resolve(this.configurationFailure());
+  }
+
+  sendOtpTemplate(
+    request: SmsOtpTemplateRequest,
+  ): Promise<SmsSendResult> {
+    void request;
+    return Promise.resolve(this.configurationFailure());
+  }
+
+  sendTemplateMessage(
+    request: SmsTemplateMessageRequest,
+  ): Promise<SmsSendResult> {
+    void request;
+    return Promise.resolve(this.configurationFailure());
+  }
+
+  sendTemplate(
+    request: SmsSendTemplateRequest,
+  ): Promise<SmsSendResult> {
+    void request;
+    return Promise.resolve(this.configurationFailure());
+  }
+
+  private configurationFailure(): SmsSendFailure {
+    return providerFailure(
+      "configuration",
+      "ارائه‌دهنده پیامک پیکربندی‌شده پشتیبانی نمی‌شود.",
+      false,
+    );
   }
 }
 
@@ -83,8 +169,22 @@ let cached: SmsProvider | null = null;
 
 export function getSmsProvider(): SmsProvider {
   if (cached) return cached;
-  // Future: switch on STAROS_SMS_PROVIDER for real Iranian adapters.
-  cached = new NullSmsProvider();
+  if (!readSmsEnabled()) {
+    cached = new NullSmsProvider();
+    return cached;
+  }
+
+  const providerName = readSmsProviderName();
+  switch (providerName) {
+    case "null":
+      cached = new NullSmsProvider();
+      break;
+    case "smsir":
+      cached = new SmsIrProvider();
+      break;
+    default:
+      cached = new UnsupportedSmsProvider();
+  }
   return cached;
 }
 
@@ -99,29 +199,32 @@ export function resetSmsProviderCache(): void {
 export async function withSmsTimeout<T>(
   timeoutMs: number,
   work: (signal: AbortSignal) => Promise<T>,
+  externalSignal?: AbortSignal,
 ): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const abortFromCaller = () => controller.abort();
+  if (externalSignal?.aborted) controller.abort();
+  else externalSignal?.addEventListener("abort", abortFromCaller, { once: true });
   try {
     return await work(controller.signal);
   } finally {
     clearTimeout(timer);
+    externalSignal?.removeEventListener("abort", abortFromCaller);
   }
 }
 
 export function normalizeProviderError(error: unknown): SmsSendResult {
   if (error instanceof Error && error.name === "AbortError") {
-    return {
-      ok: false,
-      code: "timeout",
-      message: "زمان ارسال پیامک به پایان رسید.",
-      retryable: true,
-    };
+    return providerFailure(
+      "timeout",
+      "زمان ارسال پیامک به پایان رسید.",
+      true,
+    );
   }
-  return {
-    ok: false,
-    code: "unavailable",
-    message: "سرویس پیامک در دسترس نیست.",
-    retryable: true,
-  };
+  return providerFailure(
+    "unavailable",
+    "سرویس پیامک در دسترس نیست.",
+    true,
+  );
 }

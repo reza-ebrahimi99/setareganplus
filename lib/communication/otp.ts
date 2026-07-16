@@ -18,7 +18,7 @@ import {
   OtpPurpose,
 } from "@/generated/prisma/enums";
 import { getCommunicationConfig } from "@/lib/communication/config";
-import { sendTemplate } from "@/lib/communication/send";
+import { sendOtpTemplate } from "@/lib/communication/send";
 import {
   generateSecureOtpDigits,
   hashOtpCode,
@@ -39,8 +39,6 @@ export type RequestOtpInput = {
   mobile: string;
   purpose?: OtpPurpose;
   idempotencyKey?: string | null;
-  /** Vendor template code. OTP is sent from memory and is never queued or persisted. */
-  deliveryTemplateCode?: string;
   /** When true, return the plaintext code for isolated tests only — never in production paths. */
   _testReturnCode?: boolean;
 };
@@ -167,13 +165,28 @@ export async function requestOtp(
       });
     });
 
-    if (config.smsEnabled && input.deliveryTemplateCode?.trim()) {
-      await sendTemplate({
+    if (config.smsEnabled) {
+      const delivery = await sendOtpTemplate({
         toMobile: mobile.normalized,
-        templateCode: input.deliveryTemplateCode,
-        variables: { code },
+        code,
         correlationId: challenge.id,
       });
+      if (!delivery.ok) {
+        // A challenge is usable only after the live provider accepts delivery.
+        // The conditional write also prevents overwriting a concurrent terminal state.
+        await prisma.otpChallenge.updateMany({
+          where: {
+            id: challenge.id,
+            organizationId: input.organizationId,
+            status: OtpChallengeStatus.PENDING,
+          },
+          data: { status: OtpChallengeStatus.EXPIRED },
+        });
+        return {
+          ok: false,
+          error: "درخواست کد تأیید در حال حاضر ممکن نیست. لطفاً دوباره تلاش کنید.",
+        };
+      }
     }
 
     return {

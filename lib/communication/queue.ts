@@ -11,13 +11,40 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { SmsMessageStatus } from "@/generated/prisma/enums";
 import { getCommunicationConfig } from "@/lib/communication/config";
-import { sendText } from "@/lib/communication/send";
+import {
+  sendTemplateMessage,
+  sendText,
+} from "@/lib/communication/send";
 import {
   getSmsProvider,
   readSmsProviderName,
 } from "@/lib/communication/sms-provider";
+import type {
+  SmsSendFailure,
+  SmsSendResult,
+} from "@/lib/communication/types";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { prisma } from "@/lib/prisma";
+
+export type SmsTemplateDeliveryDescriptor =
+  | {
+      version: 1;
+      kind: "booking";
+      variables: {
+        name: string;
+        date: string;
+        time: string;
+        tracking: string;
+      };
+    }
+  | {
+      version: 1;
+      kind: "form";
+      variables: {
+        name: string;
+        tracking: string;
+      };
+    };
 
 export type EnqueueSmsInput = {
   organizationId: string;
@@ -29,6 +56,7 @@ export type EnqueueSmsInput = {
   relatedType?: string | null;
   relatedId?: string | null;
   metadata?: Record<string, string | number | boolean | null>;
+  templateDelivery?: SmsTemplateDeliveryDescriptor;
   maxAttempts?: number;
   availableAt?: Date;
 };
@@ -44,6 +72,93 @@ export function renderSmsTemplate(
   return body.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_match, key: string) => {
     return variables[key] ?? "";
   });
+}
+
+type ParsedTemplateDelivery =
+  | { state: "absent" }
+  | { state: "invalid" }
+  | { state: "valid"; descriptor: SmsTemplateDeliveryDescriptor };
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function parseSmsTemplateDelivery(
+  metadata: unknown,
+): ParsedTemplateDelivery {
+  if (!isObject(metadata) || !("templateDelivery" in metadata)) {
+    return { state: "absent" };
+  }
+
+  const candidate = metadata.templateDelivery;
+  if (
+    !isObject(candidate) ||
+    candidate.version !== 1 ||
+    !isObject(candidate.variables)
+  ) {
+    return { state: "invalid" };
+  }
+
+  const variables = candidate.variables;
+  if (
+    candidate.kind === "booking" &&
+    isNonEmptyString(variables.name) &&
+    isNonEmptyString(variables.date) &&
+    isNonEmptyString(variables.time) &&
+    isNonEmptyString(variables.tracking)
+  ) {
+    return {
+      state: "valid",
+      descriptor: {
+        version: 1,
+        kind: "booking",
+        variables: {
+          name: variables.name,
+          date: variables.date,
+          time: variables.time,
+          tracking: variables.tracking,
+        },
+      },
+    };
+  }
+
+  if (
+    candidate.kind === "form" &&
+    isNonEmptyString(variables.name) &&
+    isNonEmptyString(variables.tracking)
+  ) {
+    return {
+      state: "valid",
+      descriptor: {
+        version: 1,
+        kind: "form",
+        variables: {
+          name: variables.name,
+          tracking: variables.tracking,
+        },
+      },
+    };
+  }
+
+  return { state: "invalid" };
+}
+
+function invalidTemplateDeliveryFailure(): SmsSendFailure {
+  const safeMessage = "مشخصات قالب پیامک معتبر نیست.";
+  return {
+    ok: false,
+    providerMessageId: null,
+    providerStatusCode: null,
+    errorCode: "invalid",
+    safeMessage,
+    retryable: false,
+    code: "invalid",
+    message: safeMessage,
+  };
 }
 
 /**
@@ -71,6 +186,17 @@ export async function enqueueSms(
   const body = input.body.trim();
   if (!body) {
     return { ok: false, error: "متن پیامک خالی است." };
+  }
+
+  let templateDelivery = input.templateDelivery;
+  if (templateDelivery) {
+    const parsed = parseSmsTemplateDelivery({
+      templateDelivery,
+    });
+    if (parsed.state !== "valid") {
+      return { ok: false, error: "مشخصات قالب پیامک معتبر نیست." };
+    }
+    templateDelivery = parsed.descriptor;
   }
 
   const config = getCommunicationConfig();
@@ -103,7 +229,12 @@ export async function enqueueSms(
         maxAttempts,
         availableAt: input.availableAt ?? new Date(),
         idempotencyKey: key,
-        metadata: (input.metadata ?? undefined) as
+        metadata: (templateDelivery
+          ? {
+              ...(input.metadata ?? {}),
+              templateDelivery,
+            }
+          : input.metadata ?? undefined) as
           | Prisma.InputJsonValue
           | undefined,
       },
@@ -183,11 +314,33 @@ export async function processSmsMessage(messageId: string): Promise<{
   }
 
   const provider = getSmsProvider();
-  const result = await sendText({
-    toMobile: message.toMobile,
-    body: message.body,
-    correlationId: message.id,
-  });
+  const templateDelivery = parseSmsTemplateDelivery(message.metadata);
+  let result: SmsSendResult;
+  if (templateDelivery.state === "valid") {
+    if (templateDelivery.descriptor.kind === "booking") {
+      result = await sendTemplateMessage({
+        kind: "booking",
+        toMobile: message.toMobile,
+        variables: templateDelivery.descriptor.variables,
+        correlationId: message.id,
+      });
+    } else {
+      result = await sendTemplateMessage({
+        kind: "form",
+        toMobile: message.toMobile,
+        variables: templateDelivery.descriptor.variables,
+        correlationId: message.id,
+      });
+    }
+  } else if (templateDelivery.state === "invalid") {
+    result = invalidTemplateDeliveryFailure();
+  } else {
+    result = await sendText({
+      toMobile: message.toMobile,
+      body: message.body,
+      correlationId: message.id,
+    });
+  }
 
   if (result.ok) {
     await prisma.smsMessage.update({
@@ -217,7 +370,7 @@ export async function processSmsMessage(messageId: string): Promise<{
     data: {
       status: nextStatus,
       availableAt,
-      lastError: result.message,
+      lastError: result.safeMessage,
       provider: provider.name,
     },
   });

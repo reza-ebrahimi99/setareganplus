@@ -377,8 +377,6 @@ export async function sendStaffInvitationAction(formData: FormData): Promise<voi
     mobile: target.user.mobile,
     purpose: OtpPurpose.STAFF_LOGIN,
     idempotencyKey: `staff-invite:${target.id}:${Math.floor(Date.now() / 60_000)}`,
-    deliveryTemplateCode:
-      process.env.STAROS_STAFF_OTP_TEMPLATE_CODE ?? "staros-staff-login",
   });
   if (requested.ok) {
     await prisma.auditLog.create({

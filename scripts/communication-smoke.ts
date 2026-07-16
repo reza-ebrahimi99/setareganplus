@@ -17,8 +17,10 @@ import {
 } from "../lib/communication/sms-provider";
 import {
   computeSmsBackoffMs,
+  parseSmsTemplateDelivery,
   renderSmsTemplate,
 } from "../lib/communication/queue";
+import { buildBookingSmsTemplateVariables } from "../lib/communication/booking-sms";
 import { maskSecret } from "../lib/communication/config";
 
 let passed = 0;
@@ -61,6 +63,46 @@ async function main() {
     );
     assert.equal(computeSmsBackoffMs(1), 30_000);
     assert.equal(computeSmsBackoffMs(3), 120_000);
+  });
+
+  await test("queue template delivery descriptor validation", () => {
+    const booking = parseSmsTemplateDelivery({
+      templateDelivery: {
+        version: 1,
+        kind: "booking",
+        variables: {
+          name: "سارا",
+          date: "۱۴۰۳/۰۱/۰۱",
+          time: "۱۱:۳۰",
+          tracking: "۱۲۳۴",
+        },
+      },
+    });
+    assert.equal(booking.state, "valid");
+
+    const malformed = parseSmsTemplateDelivery({
+      templateDelivery: {
+        version: 1,
+        kind: "form",
+        variables: { name: "سارا" },
+      },
+    });
+    assert.equal(malformed.state, "invalid");
+    assert.equal(parseSmsTemplateDelivery({ source: "crm" }).state, "absent");
+  });
+
+  await test("booking semantic template values use Jalali/Tehran", () => {
+    const variables = buildBookingSmsTemplateVariables({
+      firstName: "  سارا  ",
+      startsAt: new Date("2024-03-20T08:00:00.000Z"),
+      trackingCode: "1234",
+    });
+    assert.deepEqual(variables, {
+      name: "سارا",
+      date: "۱۴۰۳/۰۱/۰۱",
+      time: "۱۱:۳۰",
+      tracking: "۱۲۳۴",
+    });
   });
 
   await test("NullSmsProvider factory", async () => {

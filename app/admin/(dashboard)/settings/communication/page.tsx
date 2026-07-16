@@ -4,6 +4,7 @@ import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminBreadcrumbs } from "@/content/admin";
 import { loadAdminCommunicationSettings } from "@/lib/communication/load-admin-communication";
 import { toPersianDigits } from "@/lib/persian";
+import { CommunicationTestForms } from "./CommunicationTestForms";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,10 @@ export default async function AdminCommunicationSettingsPage() {
           وضعیت ارائه‌دهنده
         </h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label="نام ارائه‌دهنده" value={provider.name} />
+          <Stat
+            label="ارائه‌دهنده انتخاب‌شده"
+            value={provider.name === "smsir" ? "SMS.ir" : provider.name}
+          />
           <Stat
             label="فعال بودن ارائه‌دهنده"
             value={provider.enabled ? "فعال" : "غیرفعال"}
@@ -72,8 +76,8 @@ export default async function AdminCommunicationSettingsPage() {
             value={provider.smsEnabledEnv ? "true" : "false"}
           />
           <Stat
-            label="مهلت زمانی (میلی‌ثانیه)"
-            value={provider.timeoutMs}
+            label="مهلت SMS.ir (میلی‌ثانیه)"
+            value={provider.secrets.timeoutMs}
           />
         </div>
         <ul className="space-y-1 text-sm leading-7 text-muted">
@@ -84,17 +88,43 @@ export default async function AdminCommunicationSettingsPage() {
               : "پیکربندی نشده"}
           </li>
           <li>
-            آدرس API:{" "}
-            {provider.secrets.apiUrlConfigured ? "پیکربندی شده" : "پیکربندی نشده"}
+            نشانی پایه SMS.ir:{" "}
+            {provider.secrets.baseUrlConfigured
+              ? provider.secrets.baseUrlValid
+                ? "پیکربندی‌شده و معتبر"
+                : "پیکربندی‌شده و نامعتبر"
+              : "پیش‌فرض امن"}
           </li>
           <li>
-            فرستنده:{" "}
-            {provider.secrets.senderConfigured ? "پیکربندی شده" : "پیکربندی نشده"}
+            پیکربندی کامل ارائه‌دهنده:{" "}
+            {provider.secrets.providerConfigured ? "کامل" : "ناقص"}
+          </li>
+          <li>
+            قالب OTP:{" "}
+            {provider.secrets.otpTemplateConfigured ? "شناسه تنظیم شده" : "شناسه تنظیم نشده"}
+            {" · "}
+            {provider.secrets.otpParameterConfigured ? "پارامتر معتبر" : "پارامتر نامعتبر"}
+          </li>
+          <li>
+            قالب رزرو:{" "}
+            {provider.secrets.bookingTemplateConfigured ? "شناسه تنظیم شده" : "شناسه تنظیم نشده"}
+            {" · "}
+            {provider.secrets.bookingParametersConfigured
+              ? "پارامترها معتبر"
+              : "پارامترها ناقص"}
+          </li>
+          <li>
+            قالب فرم:{" "}
+            {provider.secrets.formTemplateConfigured ? "شناسه تنظیم شده" : "شناسه تنظیم نشده"}
+            {" · "}
+            {provider.secrets.formParametersConfigured
+              ? "پارامترها معتبر"
+              : "پارامترها ناقص"}
           </li>
         </ul>
         <p className="text-xs leading-6 text-muted">
-          ارائه‌دهنده واقعی ایرانی هنوز متصل نشده است. ارسال‌ها از طریق NullSmsProvider
-          مدیریت می‌شوند تا زمان اتصال آداپتر واقعی.
+          کلید API فقط به‌صورت ماسک‌شده نمایش داده می‌شود و هیچ پاسخ خامی از
+          ارائه‌دهنده در این صفحه قرار نمی‌گیرد.
         </p>
       </section>
 
@@ -133,11 +163,29 @@ export default async function AdminCommunicationSettingsPage() {
                     {template.isActive ? "" : " · غیرفعال"}
                   </p>
                 </div>
-                <p className="mt-1 text-sm leading-7 text-muted">{template.bodyPreview}</p>
+                <p className="mt-1 text-sm leading-7 text-muted">
+                  هدف: <span dir="ltr">{template.purpose}</span>
+                </p>
               </li>
             ))}
           </ul>
         )}
+      </section>
+
+      <section
+        className="admin-card mb-6 space-y-4 px-5 py-5"
+        aria-labelledby="test-send-heading"
+      >
+        <div>
+          <h2 id="test-send-heading" className="text-base font-bold text-primary">
+            ارسال آزمایشی
+          </h2>
+          <p className="mt-1 text-xs leading-6 text-muted">
+            شماره مقصد در سرور نرمال می‌شود. نتیجه، کد، متن پیام و پاسخ خام
+            نمایش داده یا ثبت نمی‌شوند.
+          </p>
+        </div>
+        <CommunicationTestForms />
       </section>
 
       <section className="admin-card mb-6 space-y-4 px-5 py-5" aria-labelledby="queue-heading">

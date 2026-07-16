@@ -30,7 +30,6 @@ export type AdminCommunicationData = {
     name: string;
     purpose: string;
     isActive: boolean;
-    bodyPreview: string;
   }>;
   queue: {
     pending: number;
@@ -85,23 +84,42 @@ export async function loadAdminCommunicationSettings(): Promise<
           name: true,
           purpose: true,
           isActive: true,
-          body: true,
         },
       }),
       prisma.smsMessage.count({
-        where: { organizationId, status: SmsMessageStatus.PENDING },
+        where: {
+          organizationId,
+          status: SmsMessageStatus.PENDING,
+          NOT: { purpose: { startsWith: "admin_test_guard:" } },
+        },
       }),
       prisma.smsMessage.count({
-        where: { organizationId, status: SmsMessageStatus.PROCESSING },
+        where: {
+          organizationId,
+          status: SmsMessageStatus.PROCESSING,
+          NOT: { purpose: { startsWith: "admin_test_guard:" } },
+        },
       }),
       prisma.smsMessage.count({
-        where: { organizationId, status: SmsMessageStatus.SENT },
+        where: {
+          organizationId,
+          status: SmsMessageStatus.SENT,
+          NOT: { purpose: { startsWith: "admin_test_guard:" } },
+        },
       }),
       prisma.smsMessage.count({
-        where: { organizationId, status: SmsMessageStatus.FAILED },
+        where: {
+          organizationId,
+          status: SmsMessageStatus.FAILED,
+          NOT: { purpose: { startsWith: "admin_test_guard:" } },
+        },
       }),
       prisma.smsMessage.count({
-        where: { organizationId, status: SmsMessageStatus.DEAD_LETTER },
+        where: {
+          organizationId,
+          status: SmsMessageStatus.DEAD_LETTER,
+          NOT: { purpose: { startsWith: "admin_test_guard:" } },
+        },
       }),
       prisma.smsMessage.findMany({
         where: {
@@ -109,6 +127,7 @@ export async function loadAdminCommunicationSettings(): Promise<
           status: {
             in: [SmsMessageStatus.FAILED, SmsMessageStatus.DEAD_LETTER],
           },
+          NOT: { purpose: { startsWith: "admin_test_guard:" } },
         },
         orderBy: { createdAt: "desc" },
         take: 20,
@@ -145,8 +164,6 @@ export async function loadAdminCommunicationSettings(): Promise<
           name: t.name,
           purpose: t.purpose,
           isActive: t.isActive,
-          bodyPreview:
-            t.body.length > 80 ? `${t.body.slice(0, 80)}…` : t.body,
         })),
         queue: {
           pending,

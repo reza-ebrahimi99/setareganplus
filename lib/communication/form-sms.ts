@@ -4,6 +4,7 @@
  */
 
 import { enqueueSms, renderSmsTemplate } from "@/lib/communication/queue";
+import { FormFieldSemantic } from "@/generated/prisma/enums";
 import { parseFormVersionSettings } from "@/lib/forms/form-version-settings";
 import { prisma } from "@/lib/prisma";
 
@@ -38,10 +39,30 @@ export async function enqueueFormConfirmationSms(params: {
         id: true,
         normalizedMobile: true,
         formVersion: { select: { title: true } },
+        answers: {
+          where: {
+            field: { semantic: FormFieldSemantic.FIRST_NAME },
+          },
+          orderBy: { createdAt: "asc" },
+          take: 1,
+          select: {
+            valueText: true,
+            valueLongText: true,
+          },
+        },
       },
     });
 
     if (!submission?.normalizedMobile) return;
+    // Public submission validation never stores hidden-field answers. Restricting
+    // this lookup to the field semantic prevents arbitrary answer values from
+    // becoming template parameters.
+    const firstName = (
+      submission.answers[0]?.valueText ??
+      submission.answers[0]?.valueLongText ??
+      ""
+    ).trim();
+    if (!firstName) return;
 
     const template = await prisma.smsTemplate.findFirst({
       where: {
@@ -66,6 +87,14 @@ export async function enqueueFormConfirmationSms(params: {
       templateId: template?.id ?? null,
       relatedType: "FormSubmission",
       relatedId: submission.id,
+      templateDelivery: {
+        version: 1,
+        kind: "form",
+        variables: {
+          name: firstName,
+          tracking: submission.id,
+        },
+      },
     });
   } catch {
     // SMS must never fail the form submission path.
