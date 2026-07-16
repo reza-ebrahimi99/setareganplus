@@ -65,11 +65,29 @@ export async function ensureDefaultPipeline(organizationId: string): Promise<{
   newStageId: string;
   consultationStageId: string;
 }> {
-  let pipeline = await prisma.crmPipeline.findFirst({
+  // Upsert by the tenant-scoped unique key avoids a find/create race. Use the
+  // checked relation input here: CrmPipelineCreateInput expects `organization`,
+  // while CrmPipelineUncheckedCreateInput is the variant that accepts
+  // `organizationId`.
+  let pipeline = await prisma.crmPipeline.upsert({
     where: {
-      organizationId,
-      code: DEFAULT_PIPELINE_CODE,
+      organizationId_code: {
+        organizationId,
+        code: DEFAULT_PIPELINE_CODE,
+      },
+    },
+    update: {
       deletedAt: null,
+      isActive: true,
+    },
+    create: {
+      organization: {
+        connect: { id: organizationId },
+      },
+      name: "پذیرش و ثبت‌نام",
+      code: DEFAULT_PIPELINE_CODE,
+      isDefault: true,
+      isActive: true,
     },
     include: {
       stages: {
@@ -79,36 +97,8 @@ export async function ensureDefaultPipeline(organizationId: string): Promise<{
     },
   });
 
-  if (!pipeline) {
-    pipeline = await prisma.crmPipeline.create({
-      data: {
-        organizationId,
-        name: "پذیرش و ثبت‌نام",
-        code: DEFAULT_PIPELINE_CODE,
-        isDefault: true,
-        isActive: true,
-        stages: {
-          create: DEFAULT_STAGES.map((s) => ({
-            organizationId,
-            name: s.name,
-            code: s.code,
-            colorKey: s.colorKey,
-            position: s.position,
-            stageType: s.stageType,
-            isTerminal: s.isTerminal,
-            isWon: s.isWon,
-            isLost: s.isLost,
-          })),
-        },
-      },
-      include: {
-        stages: {
-          where: { deletedAt: null },
-          orderBy: { position: "asc" },
-        },
-      },
-    });
-  } else if (pipeline.stages.length === 0) {
+  if (pipeline.stages.length === 0) {
+    // Unchecked createMany requires both organizationId and pipelineId (tenant integrity).
     await prisma.crmPipelineStage.createMany({
       data: DEFAULT_STAGES.map((s) => ({
         organizationId,
@@ -122,9 +112,10 @@ export async function ensureDefaultPipeline(organizationId: string): Promise<{
         isWon: s.isWon,
         isLost: s.isLost,
       })),
+      skipDuplicates: true,
     });
     pipeline = await prisma.crmPipeline.findFirstOrThrow({
-      where: { id: pipeline.id },
+      where: { id: pipeline.id, organizationId },
       include: {
         stages: {
           where: { deletedAt: null },
