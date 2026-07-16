@@ -20,6 +20,7 @@ import {
   evaluateFormAvailability,
 } from "@/lib/forms/evaluate-form-availability";
 import { enqueueFormConfirmationSms } from "@/lib/communication/form-sms";
+import { processFormSubmissionCrm } from "@/lib/crm/form-to-lead";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { resolveSubmissionBranch } from "@/lib/forms/resolve-submission-branch";
 import {
@@ -414,6 +415,13 @@ export async function submitPublicFormAction(
       organizationId: organization.id,
       submissionId: createdSubmissionId,
       formVersionId: version.id,
+    });
+    await processFormSubmissionCrm({
+      organizationId: organization.id,
+      submissionId: createdSubmissionId,
+      formId: form.id,
+      formVersionId: version.id,
+      branchId: branch.id,
     });
   }
 

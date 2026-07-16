@@ -23,6 +23,7 @@ import {
   hashOpaqueToken,
 } from "@/lib/booking/tokens";
 import { enqueueBookingConfirmationSms } from "@/lib/communication/booking-sms";
+import { linkBookingToLead } from "@/lib/crm/booking-to-lead";
 import { normalizeEmail } from "@/lib/forms/normalize-email";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { normalizeNationalId } from "@/lib/forms/normalize-national-id";
@@ -212,6 +213,17 @@ export async function createReservation(
       await enqueueBookingConfirmationSms({
         organizationId: input.organizationId,
         reservationId: result.reservationId,
+      });
+      // CRM link runs outside capacity tx; automation worker also handles BOOKING_* events.
+      await linkBookingToLead({
+        organizationId: input.organizationId,
+        reservationId: result.reservationId,
+        eventType:
+          result.status === BookingStatus.WAITING_LIST
+            ? DomainEventType.BOOKING_WAITLISTED
+            : result.status === BookingStatus.CONFIRMED
+              ? DomainEventType.BOOKING_CONFIRMED
+              : DomainEventType.BOOKING_CREATED,
       });
     }
 

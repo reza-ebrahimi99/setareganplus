@@ -44,6 +44,12 @@
 // - Never store plaintext OTP. Secrets stay in environment variables.
 // - Outbound SMS is processed by CLI worker (communication:worker-once), not Next.js.
 //
+// CRM Automation (StarOS v0.7):
+// - CrmPipeline / CrmPipelineStage — admissions pipeline (LeadStatus kept for compatibility).
+// - CrmTask / CrmActivity / AutomationExecution — tasks, timeline, rule run tracking.
+// - Lead extended with owner, score, pipeline/stage, source links.
+// - Domain events processed by crm:automation-worker-once; due items by crm:scheduled-worker-once.
+//
 // FormVersion lifecycle (enforced by application layer; documented here):
 // - DRAFT: editable fields/settings; not public; does not accept submissions.
 // - PUBLISHED: immutable definition; accepts new submissions; ONLY status eligible for
@@ -100,6 +106,83 @@ enum ServiceInterest {
   EXAMS
   CONSULTATION
   UNDECIDED
+}
+
+/// Operational pipeline stage types (StarOS v0.7). LeadStatus remains for legacy compatibility.
+enum CrmStageType {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONSULTATION
+  ASSESSMENT
+  DECISION
+  WON
+  LOST
+}
+
+enum LeadScoreBand {
+  COLD
+  WARM
+  HOT
+  QUALIFIED
+}
+
+enum LeadSourceType {
+  FORM
+  BOOKING
+  MANUAL
+  IMPORT
+  OTHER
+}
+
+enum CrmTaskType {
+  CALL
+  MESSAGE
+  CONSULTATION
+  FOLLOW_UP
+  DOCUMENT
+  ASSESSMENT
+  CUSTOM
+}
+
+enum CrmTaskStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum CrmTaskPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum CrmActivityType {
+  LEAD_CREATED
+  STAGE_CHANGED
+  OWNER_ASSIGNED
+  TASK_CREATED
+  TASK_COMPLETED
+  FORM_SUBMITTED
+  BOOKING_CREATED
+  BOOKING_CANCELLED
+  BOOKING_RESCHEDULED
+  SMS_QUEUED
+  NOTE_ADDED
+  SCORE_CHANGED
+  CONVERTED
+  LOST
+}
+
+enum AutomationExecutionStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  SKIPPED
+  DEAD_LETTER
 }
 
 enum Gender {
@@ -169,6 +252,11 @@ enum AuditAction {
   OTP_REQUESTED
   OTP_VERIFIED
   OTP_FAILED
+  CRM_LEAD_CREATED
+  CRM_LEAD_UPDATED
+  CRM_STAGE_CHANGED
+  CRM_TASK_CREATED
+  CRM_AUTOMATION_RAN
 }
 
 // ─── Form builder (Sprint 3.4A) ─────────────────────────────────────────────
@@ -370,6 +458,11 @@ model Organization {
   smsTemplates        SmsTemplate[]
   smsMessages         SmsMessage[]
   otpChallenges       OtpChallenge[]
+  crmPipelines        CrmPipeline[]
+  crmPipelineStages   CrmPipelineStage[]
+  crmTasks            CrmTask[]
+  crmActivities       CrmActivity[]
+  automationExecutions AutomationExecution[]
 
   @@map("organizations")
 }
@@ -431,6 +524,10 @@ model User {
   mediaAssets      MediaAsset[]             @relation("MediaAssetCreator")
   bookingAdvisors  BookingAdvisor[]
   bookingCheckIns  BookingCheckIn[]
+  ownedLeads       Lead[]                   @relation("LeadOwner")
+  assignedCrmTasks CrmTask[]                @relation("CrmTaskAssignee")
+  createdCrmTasks  CrmTask[]                @relation("CrmTaskCreator")
+  crmActivities    CrmActivity[]            @relation("CrmActivityActor")
 
   @@index([status])
   @@index([deletedAt])
@@ -534,47 +631,77 @@ model AuditLog {
 }
 
 model Lead {
-  id              String          @id @default(cuid())
-  organizationId  String
-  branchId        String
-  status          LeadStatus      @default(NEW)
-  firstName       String
-  lastName        String
-  fatherName      String?
-  mobile          String
-  mobileRaw       String
-  school          String?
-  gradeLevel      String?
-  studyField      String?
-  city            String?
-  province        String?
-  gender          Gender?
-  birthDate       DateTime?       @db.Date
-  nationalCode    String?
-  serviceInterest ServiceInterest @default(UNDECIDED)
-  description     String?
-  source          String          @default("WEB_PRE_REGISTRATION")
-  isDuplicate     Boolean         @default(false)
-  duplicateOfId   String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  deletedAt       DateTime?
+  id                         String          @id @default(cuid())
+  organizationId             String
+  branchId                   String
+  /// Legacy compatibility status. Pipeline stage (stageId) is the operational source of truth
+  /// when set; status is kept in sync via stageType → LeadStatus mapping.
+  status                     LeadStatus      @default(NEW)
+  firstName                  String
+  lastName                   String
+  fatherName                 String?
+  mobile                     String
+  mobileRaw                  String
+  /// Normalized Iranian mobile for dedupe (09xxxxxxxxx).
+  normalizedMobile           String?
+  school                     String?
+  gradeLevel                 String?
+  studyField                 String?
+  city                       String?
+  province                   String?
+  gender                     Gender?
+  birthDate                  DateTime?       @db.Date
+  nationalCode               String?
+  serviceInterest            ServiceInterest @default(UNDECIDED)
+  description                String?
+  source                     String          @default("WEB_PRE_REGISTRATION")
+  sourceType                 LeadSourceType  @default(OTHER)
+  sourceFormSubmissionId     String?
+  sourceBookingReservationId String?
+  pipelineId                 String?
+  stageId                    String?
+  ownerUserId                String?
+  score                      Int             @default(0)
+  scoreBand                  LeadScoreBand   @default(COLD)
+  scoreBreakdown             Json?
+  nextFollowUpAt             DateTime?
+  lastContactAt              DateTime?
+  convertedAt                DateTime?
+  lostAt                     DateTime?
+  lostReason                 String?
+  metadata                   Json?
+  isDuplicate                Boolean         @default(false)
+  duplicateOfId              String?
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
+  deletedAt                  DateTime?
 
-  // Restrict: preserves historical leads when org/branch are soft-deleted (deletedAt).
   organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  // Composite FK: branchId must belong to the same organizationId.
   branch          Branch           @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  // SetNull: removing the original lead does not delete duplicate records.
   duplicateOf     Lead?            @relation("LeadDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
   duplicates      Lead[]           @relation("LeadDuplicates")
+  pipeline        CrmPipeline?     @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
+  stage           CrmPipelineStage? @relation(fields: [organizationId, stageId], references: [organizationId, id], onDelete: Restrict)
+  owner           User?            @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
   activities      LeadActivity[]
   consents        ConsentRecord[]
   formSubmissions FormSubmission[]
+  crmTasks        CrmTask[]
+  crmActivities   CrmActivity[]
+  bookingReservations BookingReservation[]
 
   @@unique([organizationId, branchId, id])
+  @@unique([organizationId, id])
   @@index([organizationId, branchId])
   @@index([organizationId, status])
   @@index([organizationId, mobile])
+  @@index([organizationId, normalizedMobile])
+  @@index([organizationId, pipelineId, stageId])
+  @@index([organizationId, ownerUserId])
+  @@index([organizationId, scoreBand])
+  @@index([organizationId, nextFollowUpAt])
+  @@index([organizationId, sourceFormSubmissionId])
+  @@index([organizationId, sourceBookingReservationId])
   @@index([organizationId, createdAt])
   @@index([organizationId, deletedAt])
   @@map("leads")
@@ -955,23 +1082,36 @@ model FormSubmissionTag {
 // ─── Automation-ready foundation (no execution in 3.4A) ────────────────────────
 
 model AutomationRule {
-  id             String          @id @default(cuid())
-  organizationId String
-  formId         String?
-  name           String
-  trigger        DomainEventType
-  isEnabled      Boolean         @default(false)
-  actionConfig   Json            @default("{}")
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  deletedAt      DateTime?
+  id               String          @id @default(cuid())
+  organizationId   String
+  formId           String?
+  bookingServiceId String?
+  pipelineId       String?
+  stageId          String?
+  name             String
+  trigger          DomainEventType
+  isEnabled        Boolean         @default(false)
+  /// Safe condition JSON — see lib/crm/automation-contract.ts
+  conditions       Json            @default("{}")
+  /// Safe action list JSON — see lib/crm/automation-contract.ts
+  actionConfig     Json            @default("{}")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  deletedAt        DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  form         Form?        @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Cascade)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  form         Form?         @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Cascade)
+  bookingService BookingService? @relation(fields: [organizationId, bookingServiceId], references: [organizationId, id], onDelete: Restrict)
+  pipeline     CrmPipeline?  @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
+  stage        CrmPipelineStage? @relation(fields: [organizationId, stageId], references: [organizationId, id], onDelete: Restrict)
+  executions   AutomationExecution[]
+  crmTasks     CrmTask[]
 
   @@index([organizationId, trigger, isEnabled])
   @@index([organizationId, formId])
+  @@index([organizationId, bookingServiceId])
   @@index([organizationId, deletedAt])
+  @@unique([organizationId, id])
   @@map("automation_rules")
 }
 
@@ -1082,6 +1222,7 @@ model BookingService {
   exceptions        BookingAvailabilityException[]
   slots             BookingSlot[]
   sitePlacements    SitePlacement[]
+  automationRules   AutomationRule[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -1217,6 +1358,7 @@ model BookingReservation {
   organizationId       String
   slotId               String
   formSubmissionId     String?
+  leadId               String?
   status               BookingStatus      @default(PENDING)
   meetingType          BookingMeetingType @default(IN_PERSON)
   firstName            String
@@ -1238,6 +1380,7 @@ model BookingReservation {
   organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   slot            BookingSlot         @relation(fields: [organizationId, slotId], references: [organizationId, id], onDelete: Restrict)
   formSubmission  FormSubmission?     @relation(fields: [organizationId, formSubmissionId], references: [organizationId, id], onDelete: Restrict)
+  lead            Lead?               @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
   rescheduledFrom BookingReservation? @relation("BookingRescheduleChain", fields: [rescheduledFromId], references: [id], onDelete: Restrict)
   rescheduledTo   BookingReservation[] @relation("BookingRescheduleChain")
   checkIns BookingCheckIn[]
@@ -1249,6 +1392,7 @@ model BookingReservation {
   @@index([organizationId, normalizedNationalId, status])
   @@index([organizationId, status, createdAt])
   @@index([organizationId, formSubmissionId])
+  @@index([organizationId, leadId])
   @@index([organizationId, deletedAt])
   @@map("booking_reservations")
 }
@@ -1451,5 +1595,149 @@ model OtpChallenge {
   @@index([organizationId, status, expiresAt])
   @@index([organizationId, idempotencyKey])
   @@map("otp_challenges")
+}
+
+// ─── CRM Automation Engine (StarOS v0.7) ─────────────────────────────────────
+// LeadStatus remains for legacy compatibility. CrmPipelineStage is the operational
+// source of truth when stageId is set. Mapping: CrmStageType → LeadStatus in lib/crm.
+
+model CrmPipeline {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  code           String
+  isDefault      Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  stages       CrmPipelineStage[]
+  leads        Lead[]
+  automationRules AutomationRule[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, id])
+  @@index([organizationId, isDefault, isActive])
+  @@index([organizationId, deletedAt])
+  @@map("crm_pipelines")
+}
+
+model CrmPipelineStage {
+  id             String       @id @default(cuid())
+  organizationId String
+  pipelineId     String
+  name           String
+  code           String
+  colorKey       String?
+  position       Int
+  stageType      CrmStageType @default(NEW)
+  isTerminal     Boolean      @default(false)
+  isWon          Boolean      @default(false)
+  isLost         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  pipeline     CrmPipeline  @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
+  leads        Lead[]
+  automationRules AutomationRule[]
+
+  @@unique([organizationId, pipelineId, code])
+  @@unique([organizationId, pipelineId, position])
+  @@unique([organizationId, id])
+  @@index([organizationId, pipelineId, position])
+  @@index([organizationId, deletedAt])
+  @@map("crm_pipeline_stages")
+}
+
+model CrmTask {
+  id                String          @id @default(cuid())
+  organizationId    String
+  leadId            String
+  assignedToUserId  String?
+  title             String
+  description       String?
+  taskType          CrmTaskType     @default(FOLLOW_UP)
+  priority          CrmTaskPriority @default(NORMAL)
+  status            CrmTaskStatus   @default(OPEN)
+  dueAt             DateTime?
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  createdByUserId   String?
+  automationRuleId  String?
+  idempotencyKey    String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deletedAt         DateTime?
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lead           Lead            @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  assignedTo     User?           @relation("CrmTaskAssignee", fields: [assignedToUserId], references: [id], onDelete: Restrict)
+  createdBy      User?           @relation("CrmTaskCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  automationRule AutomationRule? @relation(fields: [organizationId, automationRuleId], references: [organizationId, id], onDelete: Restrict)
+  activities     CrmActivity[]
+
+  @@unique([organizationId, idempotencyKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, leadId, status])
+  @@index([organizationId, assignedToUserId, status])
+  @@index([organizationId, dueAt, status])
+  @@index([organizationId, deletedAt])
+  @@map("crm_tasks")
+}
+
+model CrmActivity {
+  id                           String          @id @default(cuid())
+  organizationId               String
+  leadId                       String
+  activityType                 CrmActivityType
+  title                        String
+  summary                      String?
+  actorUserId                  String?
+  relatedTaskId                String?
+  relatedFormSubmissionId      String?
+  relatedBookingReservationId  String?
+  metadata                     Json?
+  occurredAt                   DateTime        @default(now())
+  createdAt                    DateTime        @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lead         Lead         @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  actor        User?        @relation("CrmActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  relatedTask  CrmTask?     @relation(fields: [organizationId, relatedTaskId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([organizationId, leadId, occurredAt])
+  @@index([organizationId, activityType, occurredAt])
+  @@index([organizationId, relatedTaskId])
+  @@map("crm_activities")
+}
+
+model AutomationExecution {
+  id               String                     @id @default(cuid())
+  organizationId   String
+  automationRuleId String
+  domainEventId    String
+  status           AutomationExecutionStatus  @default(PENDING)
+  attempts         Int                        @default(0)
+  startedAt        DateTime?
+  completedAt      DateTime?
+  errorCode        String?
+  lastError        String?
+  idempotencyKey   String
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  automationRule AutomationRule @relation(fields: [organizationId, automationRuleId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, automationRuleId, domainEventId])
+  @@unique([organizationId, idempotencyKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, domainEventId])
+  @@map("automation_executions")
 }
 

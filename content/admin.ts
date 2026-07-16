@@ -44,6 +44,12 @@ export const adminNavGroups: ReadonlyArray<{
         enabled: true,
       },
       {
+        href: "/admin/crm",
+        label: "تابلوی CRM",
+        icon: "leads",
+        enabled: true,
+      },
+      {
         href: "/admin/forms",
         label: "فرم‌ساز",
         icon: "forms",
@@ -85,6 +91,12 @@ export const adminNavGroups: ReadonlyArray<{
       {
         href: "/admin/settings/communication",
         label: "ارتباطات و پیامک",
+        icon: "settings",
+        enabled: true,
+      },
+      {
+        href: "/admin/settings/automations",
+        label: "اتوماسیون CRM",
         icon: "settings",
         enabled: true,
       },
@@ -158,6 +170,14 @@ export const adminBreadcrumbs = {
   communication: [
     { label: "مدیریت", href: "/admin" },
     { label: "ارتباطات و پیامک" },
+  ],
+  crm: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "تابلوی CRM" },
+  ],
+  automations: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "اتوماسیون CRM" },
   ],
 } as const satisfies Record<string, readonly AdminBreadcrumbItem[]>;
 
