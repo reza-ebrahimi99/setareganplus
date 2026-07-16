@@ -1,9 +1,16 @@
 /**
  * Default admissions pipeline + LeadStatus ↔ CrmStageType mapping.
+ *
+ * Runtime enums must come from `@/generated/prisma/enums` (value import, not `import type`).
+ * DEFAULT_STAGES uses string literals so module init does not crash if generate is stale;
+ * values remain assignable to CrmStageType after `prisma generate`.
  */
 
-import { CrmStageType, LeadStatus } from "@/generated/prisma/enums";
-import { MembershipStatus } from "@/generated/prisma/enums";
+import {
+  CrmStageType,
+  LeadStatus,
+  MembershipStatus,
+} from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 
 export const DEFAULT_PIPELINE_CODE = "admissions" as const;
@@ -18,34 +25,34 @@ export const DEFAULT_STAGES: ReadonlyArray<{
   isLost: boolean;
   colorKey: string;
 }> = [
-  { code: "new", name: "جدید", stageType: CrmStageType.NEW, position: 0, isTerminal: false, isWon: false, isLost: false, colorKey: "slate" },
-  { code: "contacted", name: "تماس گرفته‌شده", stageType: CrmStageType.CONTACTED, position: 1, isTerminal: false, isWon: false, isLost: false, colorKey: "blue" },
-  { code: "qualified", name: "واجد شرایط", stageType: CrmStageType.QUALIFIED, position: 2, isTerminal: false, isWon: false, isLost: false, colorKey: "cyan" },
-  { code: "consultation", name: "مشاوره", stageType: CrmStageType.CONSULTATION, position: 3, isTerminal: false, isWon: false, isLost: false, colorKey: "violet" },
-  { code: "assessment", name: "ارزیابی", stageType: CrmStageType.ASSESSMENT, position: 4, isTerminal: false, isWon: false, isLost: false, colorKey: "amber" },
-  { code: "decision", name: "تصمیم", stageType: CrmStageType.DECISION, position: 5, isTerminal: false, isWon: false, isLost: false, colorKey: "orange" },
-  { code: "won", name: "ثبت‌نام‌شده", stageType: CrmStageType.WON, position: 6, isTerminal: true, isWon: true, isLost: false, colorKey: "green" },
-  { code: "lost", name: "از دست‌رفته", stageType: CrmStageType.LOST, position: 7, isTerminal: true, isWon: false, isLost: true, colorKey: "red" },
+  { code: "new", name: "جدید", stageType: "NEW", position: 0, isTerminal: false, isWon: false, isLost: false, colorKey: "slate" },
+  { code: "contacted", name: "تماس گرفته‌شده", stageType: "CONTACTED", position: 1, isTerminal: false, isWon: false, isLost: false, colorKey: "blue" },
+  { code: "qualified", name: "واجد شرایط", stageType: "QUALIFIED", position: 2, isTerminal: false, isWon: false, isLost: false, colorKey: "cyan" },
+  { code: "consultation", name: "مشاوره", stageType: "CONSULTATION", position: 3, isTerminal: false, isWon: false, isLost: false, colorKey: "violet" },
+  { code: "assessment", name: "ارزیابی", stageType: "ASSESSMENT", position: 4, isTerminal: false, isWon: false, isLost: false, colorKey: "amber" },
+  { code: "decision", name: "تصمیم", stageType: "DECISION", position: 5, isTerminal: false, isWon: false, isLost: false, colorKey: "orange" },
+  { code: "won", name: "ثبت‌نام‌شده", stageType: "WON", position: 6, isTerminal: true, isWon: true, isLost: false, colorKey: "green" },
+  { code: "lost", name: "از دست‌رفته", stageType: "LOST", position: 7, isTerminal: true, isWon: false, isLost: true, colorKey: "red" },
 ];
 
 /** Map pipeline stage type → legacy LeadStatus for compatibility. */
 export function stageTypeToLeadStatus(stageType: CrmStageType): LeadStatus {
   switch (stageType) {
-    case CrmStageType.NEW:
+    case "NEW":
       return LeadStatus.NEW;
-    case CrmStageType.CONTACTED:
+    case "CONTACTED":
       return LeadStatus.CONTACTED;
-    case CrmStageType.QUALIFIED:
+    case "QUALIFIED":
       return LeadStatus.WAITING_FOR_DECISION;
-    case CrmStageType.CONSULTATION:
+    case "CONSULTATION":
       return LeadStatus.CONSULTATION_SCHEDULED;
-    case CrmStageType.ASSESSMENT:
+    case "ASSESSMENT":
       return LeadStatus.WAITING_FOR_DECISION;
-    case CrmStageType.DECISION:
+    case "DECISION":
       return LeadStatus.WAITING_FOR_PAYMENT;
-    case CrmStageType.WON:
+    case "WON":
       return LeadStatus.ENROLLED;
-    case CrmStageType.LOST:
+    case "LOST":
       return LeadStatus.LOST;
     default:
       return LeadStatus.NEW;

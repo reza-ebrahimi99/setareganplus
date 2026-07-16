@@ -34,6 +34,14 @@ function test(name: string, fn: () => void) {
   }
 }
 
+test("0. CrmStageType runtime enum from generated/prisma/enums", () => {
+  assert.equal(typeof CrmStageType, "object");
+  assert.notEqual(CrmStageType, null);
+  assert.equal(CrmStageType.NEW, "NEW");
+  assert.equal(CrmStageType.WON, "WON");
+  assert.equal(CrmStageType.LOST, "LOST");
+});
+
 test("1. default pipeline stage ordering", () => {
   const positions = DEFAULT_STAGES.map((s) => s.position);
   assert.deepEqual(positions, [...positions].sort((a, b) => a - b));
