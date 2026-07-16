@@ -46,6 +46,11 @@ export type CrmBoardColumn = {
   leads: CrmBoardLeadCard[];
 };
 
+export type CrmBoardLoadError = {
+  message: string;
+  stack?: string;
+};
+
 function maskMobile(mobile: string): string {
   if (mobile.length < 7) return "••••";
   return `${mobile.slice(0, 4)}•••${mobile.slice(-2)}`;
@@ -62,17 +67,17 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
         totalLeads: number;
       };
     }
-  | { ok: false }
+  | { ok: false; error: CrmBoardLoadError }
 > {
   try {
     const session = await requireAdminSession();
     const organizationId = session.organization.id;
-    await ensureDefaultPipeline(organizationId);
+    const initialized = await ensureDefaultPipeline(organizationId);
 
     const pipeline = await prisma.crmPipeline.findFirst({
       where: {
+        id: initialized.pipelineId,
         organizationId,
-        isDefault: true,
         deletedAt: null,
         isActive: true,
       },
@@ -83,7 +88,16 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
         },
       },
     });
-    if (!pipeline) return { ok: false };
+    if (!pipeline) {
+      throw new Error(
+        `Initialized CRM pipeline ${initialized.pipelineId} could not be loaded.`,
+      );
+    }
+    if (pipeline.stages.length === 0) {
+      throw new Error(
+        `Initialized CRM pipeline ${pipeline.id} has no active stages.`,
+      );
+    }
 
     const now = new Date();
     const leads = await prisma.lead.findMany({
@@ -213,7 +227,26 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
         totalLeads: leads.length,
       },
     };
-  } catch {
-    return { ok: false };
+  } catch (error) {
+    console.error("Failed to load CRM pipeline board:", error);
+
+    if (error instanceof Error) {
+      return {
+        ok: false,
+        error: {
+          message: error.message,
+          ...(process.env.NODE_ENV === "development" && error.stack
+            ? { stack: error.stack }
+            : {}),
+        },
+      };
+    }
+
+    return {
+      ok: false,
+      error: {
+        message: String(error),
+      },
+    };
   }
 }

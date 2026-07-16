@@ -52,7 +52,15 @@ export default async function AdminCrmBoardPage({
           compact
         />
         <div role="alert" className="admin-card border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
-          بارگذاری تابلوی CRM ممکن نشد.
+          <p>بارگذاری تابلوی CRM ممکن نشد.</p>
+          {process.env.NODE_ENV === "development" ? (
+            <pre
+              className="mt-3 overflow-x-auto whitespace-pre-wrap text-left text-xs"
+              dir="ltr"
+            >
+              {result.error.stack ?? result.error.message}
+            </pre>
+          ) : null}
         </div>
       </>
     );

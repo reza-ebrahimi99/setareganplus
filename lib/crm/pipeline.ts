@@ -79,6 +79,7 @@ export async function ensureDefaultPipeline(organizationId: string): Promise<{
     update: {
       deletedAt: null,
       isActive: true,
+      isDefault: true,
     },
     create: {
       organization: {
@@ -97,32 +98,68 @@ export async function ensureDefaultPipeline(organizationId: string): Promise<{
     },
   });
 
-  if (pipeline.stages.length === 0) {
-    // Unchecked createMany requires both organizationId and pipelineId (tenant integrity).
-    await prisma.crmPipelineStage.createMany({
-      data: DEFAULT_STAGES.map((s) => ({
-        organizationId,
-        pipelineId: pipeline!.id,
-        name: s.name,
-        code: s.code,
-        colorKey: s.colorKey,
-        position: s.position,
-        stageType: s.stageType,
-        isTerminal: s.isTerminal,
-        isWon: s.isWon,
-        isLost: s.isLost,
-      })),
-      skipDuplicates: true,
-    });
-    pipeline = await prisma.crmPipeline.findFirstOrThrow({
-      where: { id: pipeline.id, organizationId },
-      include: {
-        stages: {
-          where: { deletedAt: null },
-          orderBy: { position: "asc" },
+  // Fill missing default stages and restore soft-deleted defaults. Nested
+  // `stages.create` cannot accept organizationId for this composite relation,
+  // so each stage uses checked relation connects. Existing stage positions are
+  // intentionally preserved because ordering is admin-managed.
+  await prisma.$transaction(
+    DEFAULT_STAGES.map((stage) =>
+      prisma.crmPipelineStage.upsert({
+        where: {
+          organizationId_pipelineId_code: {
+            organizationId,
+            pipelineId: pipeline.id,
+            code: stage.code,
+          },
         },
+        update: {
+          deletedAt: null,
+          name: stage.name,
+          colorKey: stage.colorKey,
+          stageType: stage.stageType,
+          isTerminal: stage.isTerminal,
+          isWon: stage.isWon,
+          isLost: stage.isLost,
+        },
+        create: {
+          organization: {
+            connect: { id: organizationId },
+          },
+          pipeline: {
+            connect: {
+              organizationId_id: {
+                organizationId,
+                id: pipeline.id,
+              },
+            },
+          },
+          name: stage.name,
+          code: stage.code,
+          colorKey: stage.colorKey,
+          position: stage.position,
+          stageType: stage.stageType,
+          isTerminal: stage.isTerminal,
+          isWon: stage.isWon,
+          isLost: stage.isLost,
+        },
+      }),
+    ),
+  );
+
+  pipeline = await prisma.crmPipeline.findFirstOrThrow({
+    where: { id: pipeline.id, organizationId, deletedAt: null },
+    include: {
+      stages: {
+        where: { deletedAt: null },
+        orderBy: { position: "asc" },
       },
-    });
+    },
+  });
+
+  if (pipeline.stages.length === 0) {
+    throw new Error(
+      `Default CRM pipeline ${pipeline.id} has no active stages after initialization.`,
+    );
   }
 
   const stageByCode: Record<string, string> = {};
