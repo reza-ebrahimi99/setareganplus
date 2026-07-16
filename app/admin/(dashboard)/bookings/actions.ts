@@ -19,6 +19,7 @@ import {
   type BookingDuplicateKey,
 } from "@/lib/booking/service-settings";
 import { getAdminSession } from "@/lib/auth/require-admin";
+import { hasPermission } from "@/lib/auth/permissions";
 import { parseJalaliDateInput } from "@/lib/datetime/jalali";
 import { prisma } from "@/lib/prisma";
 import { toPersianDigits } from "@/lib/persian";
@@ -46,9 +47,9 @@ async function sessionOrError(): Promise<
   { organizationId: string; userId: string } | BookingActionState
 > {
   const session = await getAdminSession();
-  return session
+  return session && hasPermission(session, "settings.manage")
     ? { organizationId: session.organization.id, userId: session.user.id }
-    : { error: "نشست مدیریت معتبر نیست. دوباره وارد شوید." };
+    : { error: "اجازه انجام این عملیات را ندارید." };
 }
 
 function isContext(

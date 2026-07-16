@@ -9,6 +9,7 @@ import {
   SitePlacementKey,
 } from "@/generated/prisma/enums";
 import { getAdminSession } from "@/lib/auth/require-admin";
+import { hasPermission } from "@/lib/auth/permissions";
 import {
   PLACEMENT_TEXT_LIMITS,
   SITE_PLACEMENT_REGISTRY,
@@ -70,7 +71,7 @@ export async function upsertSitePlacementAction(
   formData: FormData,
 ): Promise<PlacementActionState> {
   const session = await getAdminSession();
-  if (!session) {
+  if (!session || !hasPermission(session, "settings.manage")) {
     return { formError: "نشست مدیریت معتبر نیست. دوباره وارد شوید." };
   }
 
@@ -252,7 +253,7 @@ export async function disableSitePlacementAction(
   formData: FormData,
 ): Promise<PlacementActionState> {
   const session = await getAdminSession();
-  if (!session) {
+  if (!session || !hasPermission(session, "settings.manage")) {
     return { formError: "نشست مدیریت معتبر نیست. دوباره وارد شوید." };
   }
 
@@ -314,7 +315,7 @@ export async function resetSitePlacementAction(
   formData: FormData,
 ): Promise<PlacementActionState> {
   const session = await getAdminSession();
-  if (!session) {
+  if (!session || !hasPermission(session, "settings.manage")) {
     return { formError: "نشست مدیریت معتبر نیست. دوباره وارد شوید." };
   }
 

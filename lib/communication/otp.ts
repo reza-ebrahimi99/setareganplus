@@ -18,6 +18,7 @@ import {
   OtpPurpose,
 } from "@/generated/prisma/enums";
 import { getCommunicationConfig } from "@/lib/communication/config";
+import { sendTemplate } from "@/lib/communication/send";
 import {
   generateSecureOtpDigits,
   hashOtpCode,
@@ -38,6 +39,8 @@ export type RequestOtpInput = {
   mobile: string;
   purpose?: OtpPurpose;
   idempotencyKey?: string | null;
+  /** Vendor template code. OTP is sent from memory and is never queued or persisted. */
+  deliveryTemplateCode?: string;
   /** When true, return the plaintext code for isolated tests only — never in production paths. */
   _testReturnCode?: boolean;
 };
@@ -93,23 +96,29 @@ export async function requestOtp(
   const purpose = resolvePurpose(input.purpose);
   const now = new Date();
 
-  const active = await prisma.otpChallenge.findFirst({
+  const latest = await prisma.otpChallenge.findFirst({
     where: {
       organizationId: input.organizationId,
       normalizedMobile: mobile.normalized,
       purpose,
-      status: OtpChallengeStatus.PENDING,
-      expiresAt: { gt: now },
     },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
+      status: true,
       resendAvailableAt: true,
       expiresAt: true,
     },
   });
+  const active =
+    latest?.status === OtpChallengeStatus.PENDING && latest.expiresAt > now
+      ? latest
+      : null;
 
-  if (active?.resendAvailableAt && active.resendAvailableAt > now) {
+  if (
+    (latest?.resendAvailableAt && latest.resendAvailableAt > now) ||
+    (latest?.status === OtpChallengeStatus.LOCKED && latest.expiresAt > now)
+  ) {
     return { ok: false, error: GENERIC_COOLDOWN };
   }
 
@@ -158,12 +167,23 @@ export async function requestOtp(
       });
     });
 
+    if (config.smsEnabled && input.deliveryTemplateCode?.trim()) {
+      await sendTemplate({
+        toMobile: mobile.normalized,
+        templateCode: input.deliveryTemplateCode,
+        variables: { code },
+        correlationId: challenge.id,
+      });
+    }
+
     return {
       ok: true,
       challengeId: challenge.id,
       expiresAt,
       resendAvailableAt,
-      ...(input._testReturnCode ? { _testCode: code } : {}),
+      ...(input._testReturnCode && process.env.NODE_ENV !== "production"
+        ? { _testCode: code }
+        : {}),
     };
   } catch {
     return {
@@ -242,25 +262,46 @@ export async function verifyOtp(
 
   const match = verifyOtpCode(code, challenge.codeHash);
   if (!match) {
-    const nextAttempts = challenge.attemptCount + 1;
-    const locked = nextAttempts >= challenge.maxAttempts;
-    await prisma.otpChallenge.update({
-      where: { id: challenge.id },
-      data: {
-        attemptCount: nextAttempts,
-        status: locked ? OtpChallengeStatus.LOCKED : OtpChallengeStatus.PENDING,
+    const attempted = await prisma.otpChallenge.updateMany({
+      where: {
+        id: challenge.id,
+        status: OtpChallengeStatus.PENDING,
+        expiresAt: { gt: now },
       },
+      data: { attemptCount: { increment: 1 } },
     });
+    if (attempted.count !== 1) return { ok: false, error: GENERIC_INVALID };
+    const current = await prisma.otpChallenge.findUnique({
+      where: { id: challenge.id },
+      select: { attemptCount: true, maxAttempts: true },
+    });
+    const locked = Boolean(current && current.attemptCount >= current.maxAttempts);
+    if (locked) {
+      await prisma.otpChallenge.updateMany({
+        where: {
+          id: challenge.id,
+          status: OtpChallengeStatus.PENDING,
+          attemptCount: { gte: current!.maxAttempts },
+        },
+        data: { status: OtpChallengeStatus.LOCKED },
+      });
+    }
     return {
       ok: false,
       error: locked ? GENERIC_LOCKED : GENERIC_INVALID,
     };
   }
 
-  await prisma.otpChallenge.update({
-    where: { id: challenge.id },
+  const verified = await prisma.otpChallenge.updateMany({
+    where: {
+      id: challenge.id,
+      status: OtpChallengeStatus.PENDING,
+      expiresAt: { gt: now },
+      attemptCount: { lt: challenge.maxAttempts },
+    },
     data: { status: OtpChallengeStatus.VERIFIED },
   });
+  if (verified.count !== 1) return { ok: false, error: GENERIC_INVALID };
 
   return { ok: true, challengeId: challenge.id };
 }
@@ -299,13 +340,19 @@ export async function consumeOtp(
     return { ok: false, error: GENERIC_EXPIRED };
   }
 
-  await prisma.otpChallenge.update({
-    where: { id: challenge.id },
+  const consumed = await prisma.otpChallenge.updateMany({
+    where: {
+      id: challenge.id,
+      organizationId: input.organizationId,
+      status: OtpChallengeStatus.VERIFIED,
+      expiresAt: { gt: now },
+    },
     data: {
       status: OtpChallengeStatus.CONSUMED,
       consumedAt: now,
     },
   });
+  if (consumed.count !== 1) return { ok: false, error: GENERIC_INVALID };
 
   return { ok: true };
 }

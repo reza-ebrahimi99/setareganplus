@@ -2,7 +2,7 @@ import Link from "next/link";
 import { siteConfig } from "@/content/site";
 import { AdminNavigation } from "./AdminNavigation";
 
-export function AdminSidebar() {
+export function AdminSidebar({ permissions }: { permissions: readonly string[] }) {
   return (
     <>
       <aside
@@ -20,7 +20,7 @@ export function AdminSidebar() {
           </Link>
         </div>
         <nav className="flex-1 overflow-y-auto px-2 py-4">
-          <AdminNavigation />
+          <AdminNavigation permissions={permissions} />
         </nav>
         <div className="border-t border-white/10 px-4 py-4">
           <p className="mb-2 text-[11px] leading-5 text-slate-500">
@@ -43,7 +43,7 @@ export function AdminSidebar() {
           </span>
         </summary>
         <nav className="border-t border-white/10 px-2 py-3">
-          <AdminNavigation />
+          <AdminNavigation permissions={permissions} />
         </nav>
       </details>
     </>

@@ -5,12 +5,14 @@ type AdminShellProps = {
   children: React.ReactNode;
   userDisplayName: string;
   organizationName: string;
+  permissions: readonly string[];
 };
 
 export function AdminShell({
   children,
   userDisplayName,
   organizationName,
+  permissions,
 }: AdminShellProps) {
   return (
     <div className="flex min-h-full flex-col lg:flex-row">
@@ -20,7 +22,7 @@ export function AdminShell({
       >
         پرش به محتوای مدیریت
       </a>
-      <AdminSidebar />
+      <AdminSidebar permissions={permissions} />
       <div className="flex min-w-0 flex-1 flex-col">
         <AdminHeader
           userDisplayName={userDisplayName}

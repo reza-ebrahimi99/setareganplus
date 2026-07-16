@@ -1,3 +1,5 @@
+import type { Permission } from "@/lib/auth/permissions";
+
 export const adminNotice =
   "این بخش در حال اتصال به سامانه احراز هویت و پایگاه داده است." as const;
 
@@ -19,6 +21,7 @@ type AdminNavItemEnabled = {
   label: string;
   icon: AdminNavIcon;
   enabled: true;
+  permission?: Permission;
 };
 
 type AdminNavItemDisabled = {
@@ -38,28 +41,39 @@ export const adminNavGroups: ReadonlyArray<{
     items: [
       { href: "/admin", label: "نمای کلی", icon: "overview", enabled: true },
       {
+        href: "/admin/workspace",
+        label: "میز کار من",
+        icon: "overview",
+        enabled: true,
+        permission: "crm.view_assigned",
+      },
+      {
         href: "/admin/leads",
         label: "متقاضیان و CRM",
         icon: "leads",
         enabled: true,
+        permission: "crm.view_assigned",
       },
       {
         href: "/admin/crm",
         label: "تابلوی CRM",
         icon: "leads",
         enabled: true,
+        permission: "crm.view_assigned",
       },
       {
         href: "/admin/forms",
         label: "فرم‌ساز",
         icon: "forms",
         enabled: true,
+        permission: "forms.manage",
       },
       {
         href: "/admin/bookings",
         label: "رزرو نوبت",
         icon: "bookings",
         enabled: true,
+        permission: "booking.view_all",
       },
       { label: "ثبت‌نام‌ها", icon: "enrollments", enabled: false },
     ],
@@ -76,7 +90,13 @@ export const adminNavGroups: ReadonlyArray<{
     label: "مالی و گزارش‌ها",
     items: [
       { label: "امور مالی", icon: "finance", enabled: false },
-      { label: "گزارش‌ها", icon: "reports", enabled: false },
+      {
+        href: "/admin/reports/staff-performance",
+        label: "عملکرد همکاران",
+        icon: "reports",
+        enabled: true,
+        permission: "reports.view",
+      },
     ],
   },
   {
@@ -87,18 +107,28 @@ export const adminNavGroups: ReadonlyArray<{
         label: "جایگاه‌های سایت",
         icon: "settings",
         enabled: true,
+        permission: "settings.manage",
       },
       {
         href: "/admin/settings/communication",
         label: "ارتباطات و پیامک",
         icon: "settings",
         enabled: true,
+        permission: "communication.manage",
       },
       {
         href: "/admin/settings/automations",
         label: "اتوماسیون CRM",
         icon: "settings",
         enabled: true,
+        permission: "automations.manage",
+      },
+      {
+        href: "/admin/settings/staff",
+        label: "همکاران و دسترسی‌ها",
+        icon: "settings",
+        enabled: true,
+        permission: "staff.manage",
       },
     ],
   },

@@ -3,7 +3,8 @@
  */
 
 import { CrmTaskStatus, LeadScoreBand } from "@/generated/prisma/enums";
-import { requireAdminSession } from "@/lib/auth/require-admin";
+import { hasPermission, scopedLeadWhere } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/require-admin";
 import { ensureDefaultPipeline } from "@/lib/crm/pipeline";
 import { SCORE_BAND_LABELS } from "@/lib/crm/scoring";
 import { isTaskOverdue } from "@/lib/crm/tasks";
@@ -69,8 +70,8 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
     }
   | { ok: false; error: CrmBoardLoadError }
 > {
+  const session = await requirePermission("crm.view_assigned");
   try {
-    const session = await requireAdminSession();
     const organizationId = session.organization.id;
     const initialized = await ensureDefaultPipeline(organizationId);
 
@@ -102,17 +103,18 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
     const now = new Date();
     const leads = await prisma.lead.findMany({
       where: {
-        organizationId,
-        deletedAt: null,
-        pipelineId: pipeline.id,
-        ...(filters.ownerUserId ? { ownerUserId: filters.ownerUserId } : {}),
-        ...(filters.stageId ? { stageId: filters.stageId } : {}),
-        ...(filters.sourceType ? { sourceType: filters.sourceType as never } : {}),
-        ...(filters.scoreBand ? { scoreBand: filters.scoreBand } : {}),
-        ...(filters.branchId ? { branchId: filters.branchId } : {}),
-        ...(filters.followUpOverdue
-          ? { nextFollowUpAt: { lt: now } }
-          : {}),
+        AND: [
+          scopedLeadWhere(session),
+          {
+            pipelineId: pipeline.id,
+            ...(filters.ownerUserId ? { ownerUserId: filters.ownerUserId } : {}),
+            ...(filters.stageId ? { stageId: filters.stageId } : {}),
+            ...(filters.sourceType ? { sourceType: filters.sourceType as never } : {}),
+            ...(filters.scoreBand ? { scoreBand: filters.scoreBand } : {}),
+            ...(filters.branchId ? { branchId: filters.branchId } : {}),
+            ...(filters.followUpOverdue ? { nextFollowUpAt: { lt: now } } : {}),
+          },
+        ],
       },
       orderBy: [{ nextFollowUpAt: "asc" }, { updatedAt: "desc" }],
       take: 200,
@@ -188,7 +190,7 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
       }
     }
 
-    const memberships = await prisma.organizationMembership.findMany({
+    const memberships = hasPermission(session, "crm.assign") ? await prisma.organizationMembership.findMany({
       where: {
         organizationId,
         deletedAt: null,
@@ -198,10 +200,16 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
       select: {
         user: { select: { id: true, firstName: true, lastName: true } },
       },
-    });
+    }) : [];
 
     const branches = await prisma.branch.findMany({
-      where: { organizationId, deletedAt: null },
+      where: {
+        organizationId,
+        deletedAt: null,
+        ...(session.membership.allBranches
+          ? {}
+          : { id: { in: session.membership.branchIds } }),
+      },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
       take: 50,

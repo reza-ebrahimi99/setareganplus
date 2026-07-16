@@ -1,5 +1,6 @@
 import { AdminShell } from "@/components/admin/AdminShell";
 import { requireAdminSession } from "@/lib/auth/require-admin";
+import { PERMISSIONS, permissionsForRole } from "@/lib/auth/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,11 @@ export default async function AdminDashboardLayout({
     <AdminShell
       userDisplayName={session.user.displayName}
       organizationName={session.organization.name}
+      permissions={[
+        ...(session.user.isPlatformAdmin
+          ? PERMISSIONS
+          : permissionsForRole(session.membership.role)),
+      ]}
     >
       {children}
     </AdminShell>

@@ -46,6 +46,7 @@ export type SmsProvider = {
 
 export type OtpPurposeValue =
   | "LOGIN"
+  | "STAFF_LOGIN"
   | "VERIFY_MOBILE"
   | "BOOKING"
   | "FORM"

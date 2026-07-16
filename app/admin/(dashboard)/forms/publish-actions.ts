@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { FormVersionStatus } from "@/generated/prisma/enums";
 import { validateFormVersionForPublish } from "@/lib/forms/validate-form-for-publish";
 import { getAdminSession } from "@/lib/auth/require-admin";
+import { hasPermission } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 
 export type PublishActionState = {
@@ -39,7 +40,7 @@ export async function publishFormVersionAction(
   }
 
   const session = await getAdminSession();
-  if (!session) {
+  if (!session || !hasPermission(session, "forms.manage")) {
     return { formError: "نشست مدیریت معتبر نیست. دوباره وارد شوید." };
   }
   const organization = session.organization;
@@ -192,7 +193,7 @@ export async function pausePublishedFormAction(
   }
 
   const session = await getAdminSession();
-  if (!session) {
+  if (!session || !hasPermission(session, "forms.manage")) {
     return { formError: "نشست مدیریت معتبر نیست. دوباره وارد شوید." };
   }
   const organization = session.organization;

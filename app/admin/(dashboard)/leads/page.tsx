@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminBreadcrumbs } from "@/content/admin";
-import { requireAdminSession } from "@/lib/auth/require-admin";
+import { hasPermission, scopedLeadWhere } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/require-admin";
 import { ensureDefaultPipeline } from "@/lib/crm/pipeline";
 import { toPersianDigits } from "@/lib/persian";
 import { prisma } from "@/lib/prisma";
@@ -14,17 +15,17 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminLeadsPage() {
-  const session = await requireAdminSession();
+  const session = await requirePermission("crm.view_assigned");
   await ensureDefaultPipeline(session.organization.id);
+  const leadScope = scopedLeadWhere(session);
 
   const [total, hot, openTasks, recent] = await Promise.all([
     prisma.lead.count({
-      where: { organizationId: session.organization.id, deletedAt: null },
+      where: leadScope,
     }),
     prisma.lead.count({
       where: {
-        organizationId: session.organization.id,
-        deletedAt: null,
+        ...leadScope,
         scoreBand: { in: ["HOT", "QUALIFIED"] },
       },
     }),
@@ -33,10 +34,11 @@ export default async function AdminLeadsPage() {
         organizationId: session.organization.id,
         deletedAt: null,
         status: { in: ["OPEN", "IN_PROGRESS"] },
+        lead: leadScope,
       },
     }),
     prisma.lead.findMany({
-      where: { organizationId: session.organization.id, deletedAt: null },
+      where: leadScope,
       orderBy: { updatedAt: "desc" },
       take: 30,
       select: {
@@ -65,9 +67,7 @@ export default async function AdminLeadsPage() {
         <Link href="/admin/crm" className="rounded-lg bg-primary px-4 py-2 text-sm text-white">
           تابلوی پایپ‌لاین
         </Link>
-        <Link href="/admin/settings/automations" className="rounded-lg border border-border px-4 py-2 text-sm">
-          قوانین اتوماسیون
-        </Link>
+        {hasPermission(session, "automations.manage") && <Link href="/admin/settings/automations" className="rounded-lg border border-border px-4 py-2 text-sm">قوانین اتوماسیون</Link>}
       </div>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">

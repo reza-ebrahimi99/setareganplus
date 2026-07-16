@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminBreadcrumbs } from "@/content/admin";
-import { requireAdminSession } from "@/lib/auth/require-admin";
+import { requirePermission } from "@/lib/auth/require-admin";
 import { jalaliMonthLength, jalaliTehranLocalToUtc, PERSIAN_MONTHS, todayJalaliInTehran, utcToJalaliInTehran } from "@/lib/datetime/jalali";
 import { getPersianWeekdayIndex } from "@/lib/datetime/tehran-zone";
 import { prisma } from "@/lib/prisma";
@@ -11,16 +11,16 @@ type Props = { searchParams: Promise<{ y?: string; m?: string; day?: string; ser
 const statusLabels: Record<string, string> = { PENDING: "در انتظار", CONFIRMED: "تأییدشده", WAITING_LIST: "لیست انتظار", CANCELLED: "لغوشده", COMPLETED: "تکمیل‌شده", NO_SHOW: "عدم مراجعه", RESCHEDULED: "جابجا شده" };
 
 export default async function BookingCalendarPage({ searchParams }: Props) {
-  const query = await searchParams; const session = await requireAdminSession(); const today = todayJalaliInTehran();
+  const query = await searchParams; const session = await requirePermission("booking.view_all"); const today = todayJalaliInTehran();
   const y = Number(query.y) || today.jy; const m = Math.min(12, Math.max(1, Number(query.m) || today.jm));
   const start = jalaliTehranLocalToUtc(y, m, 1, 0, 0); const end = m === 12 ? jalaliTehranLocalToUtc(y + 1, 1, 1, 0, 0) : jalaliTehranLocalToUtc(y, m + 1, 1, 0, 0);
   const slots = await prisma.bookingSlot.findMany({
-    where: { organizationId: session.organization.id, startsAt: { gte: start, lt: end }, ...(query.service ? { serviceId: query.service } : {}), ...(query.advisor ? { advisorId: query.advisor } : {}) },
+    where: { organizationId: session.organization.id, startsAt: { gte: start, lt: end }, ...(session.membership.allBranches ? {} : { branchId: { in: session.membership.branchIds } }), ...(query.service ? { serviceId: query.service } : {}), ...(query.advisor ? { advisorId: query.advisor } : {}) },
     include: { service: { select: { title: true } }, advisor: { select: { displayName: true } }, reservations: { where: query.status ? { status: query.status as never } : { deletedAt: null }, select: { id: true, firstName: true, lastName: true, status: true, trackingCode: true } } },
     orderBy: { startsAt: "asc" },
   });
-  const services = await prisma.bookingService.findMany({ where: { organizationId: session.organization.id, deletedAt: null }, select: { id: true, title: true } });
-  const advisors = await prisma.bookingAdvisor.findMany({ where: { organizationId: session.organization.id, deletedAt: null }, select: { id: true, displayName: true } });
+  const services = await prisma.bookingService.findMany({ where: { organizationId: session.organization.id, deletedAt: null, ...(session.membership.allBranches ? {} : { branchId: { in: session.membership.branchIds } }) }, select: { id: true, title: true } });
+  const advisors = await prisma.bookingAdvisor.findMany({ where: { organizationId: session.organization.id, deletedAt: null, ...(session.membership.allBranches ? {} : { branchId: { in: session.membership.branchIds } }) }, select: { id: true, displayName: true } });
   const selectedDay = Number(query.day); const selected = selectedDay >= 1 && selectedDay <= jalaliMonthLength(y, m) ? selectedDay : null;
   const byDay = new Map<number, typeof slots>(); for (const slot of slots) { const day = utcToJalaliInTehran(slot.startsAt).jd; byDay.set(day, [...(byDay.get(day) ?? []), slot]); }
   const prev = m === 1 ? { y: y - 1, m: 12 } : { y, m: m - 1 }; const next = m === 12 ? { y: y + 1, m: 1 } : { y, m: m + 1 };

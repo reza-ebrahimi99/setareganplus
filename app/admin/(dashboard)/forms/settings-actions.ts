@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@/generated/prisma/client";
 import { FormVersionStatus } from "@/generated/prisma/enums";
 import { getAdminSession } from "@/lib/auth/require-admin";
+import { hasPermission } from "@/lib/auth/permissions";
 import { CAPACITY_MAX } from "@/lib/forms/capacity";
 import {
   parseFormVersionSettings,
@@ -42,7 +43,7 @@ export async function updateDraftFormSettingsAction(
   formData: FormData,
 ): Promise<FormSettingsActionState> {
   const session = await getAdminSession();
-  if (!session) {
+  if (!session || !hasPermission(session, "forms.manage")) {
     return { formError: "نشست مدیریت معتبر نیست. دوباره وارد شوید." };
   }
 
@@ -188,7 +189,7 @@ export async function updateDraftFormBookingAction(
   formData: FormData,
 ): Promise<{ error?: string; success?: string }> {
   const session = await getAdminSession();
-  if (!session) return { error: "نشست مدیریت معتبر نیست. دوباره وارد شوید." };
+  if (!session || !hasPermission(session, "forms.manage")) return { error: "اجازه انجام این عملیات را ندارید." };
   const formId = readString(formData, "formId").trim();
   const serviceId = readString(formData, "serviceId").trim() || null;
   const requireTiming = readString(formData, "requireTiming");

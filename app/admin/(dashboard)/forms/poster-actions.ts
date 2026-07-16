@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { FormVersionStatus } from "@/generated/prisma/enums";
 import { getAdminSession } from "@/lib/auth/require-admin";
+import { hasPermission } from "@/lib/auth/permissions";
 import {
   generateFormsStorageKey,
   publicUrlForStorageKey,
@@ -74,7 +75,7 @@ export async function uploadFormPosterAction(
   formData: FormData,
 ): Promise<PosterActionState> {
   const session = await getAdminSession();
-  if (!session) {
+  if (!session || !hasPermission(session, "forms.manage")) {
     return { formError: "نشست مدیریت معتبر نیست. دوباره وارد شوید." };
   }
 
@@ -178,7 +179,7 @@ export async function removeFormPosterAction(
   formData: FormData,
 ): Promise<PosterActionState> {
   const session = await getAdminSession();
-  if (!session) {
+  if (!session || !hasPermission(session, "forms.manage")) {
     return { formError: "نشست مدیریت معتبر نیست. دوباره وارد شوید." };
   }
 

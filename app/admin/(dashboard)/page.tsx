@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { CrmTaskStatus } from "@/generated/prisma/enums";
 import { AdminMetricGrid } from "@/components/admin/AdminMetricGrid";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminQuickAction } from "@/components/admin/AdminQuickAction";
@@ -13,12 +16,76 @@ import {
   dashboardStats,
   platformReadiness,
 } from "@/content/admin";
+import { hasPermission } from "@/lib/auth/permissions";
+import { requireAdminSession } from "@/lib/auth/require-admin";
+import { getTehranParts, tehranDayBoundsUtc } from "@/lib/datetime/tehran-zone";
+import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
   title: "نمای کلی",
 };
 
-export default function AdminDashboardPage() {
+export default async function AdminDashboardPage() {
+  const session = await requireAdminSession();
+  const canReport = hasPermission(session, "reports.view");
+  if (!canReport) {
+    if (hasPermission(session, "crm.view_assigned")) redirect("/admin/workspace");
+    if (hasPermission(session, "forms.manage")) redirect("/admin/forms");
+    if (hasPermission(session, "communication.manage")) redirect("/admin/settings/communication");
+    if (hasPermission(session, "settings.manage")) redirect("/admin/settings/staff");
+    redirect("/admin/forbidden");
+  }
+  if (!hasPermission(session, "crm.view_all")) redirect("/admin/reports/staff-performance");
+  const organizationId = session.organization.id;
+  const today = getTehranParts(new Date());
+  const { startUtc, endUtc } = tehranDayBoundsUtc(today.year, today.month, today.day);
+  const branchScope = session.membership.allBranches
+    ? {}
+    : { branchId: { in: session.membership.branchIds } };
+  const leadScope = { organizationId, deletedAt: null, ...branchScope };
+  const [callsToday, overdue, unassigned, hotWithoutFollowUp, bookingsToday, won30, leads30, staffCalls] = await Promise.all([
+    prisma.crmCallLog.count({ where: { organizationId, calledAt: { gte: startUtc, lte: endUtc }, lead: leadScope } }),
+    prisma.crmTask.count({ where: { organizationId, deletedAt: null, status: { in: [CrmTaskStatus.OPEN, CrmTaskStatus.IN_PROGRESS] }, dueAt: { lt: new Date() }, lead: leadScope } }),
+    prisma.lead.count({ where: { ...leadScope, ownerUserId: null } }),
+    prisma.lead.count({ where: { ...leadScope, scoreBand: { in: ["HOT", "QUALIFIED"] }, nextFollowUpAt: null } }),
+    prisma.bookingReservation.count({ where: { organizationId, deletedAt: null, slot: { startsAt: { gte: startUtc, lte: endUtc }, ...(session.membership.allBranches ? {} : { branchId: { in: session.membership.branchIds } }) } } }),
+    prisma.lead.count({ where: { ...leadScope, convertedAt: { gte: new Date(Date.now() - 30 * 86_400_000) } } }),
+    prisma.lead.count({ where: { ...leadScope, createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) } } }),
+    prisma.crmCallLog.findMany({
+      where: {
+        organizationId,
+        calledAt: { gte: startUtc, lte: endUtc },
+        lead: leadScope,
+      },
+      orderBy: { calledAt: "desc" },
+      take: 500,
+      select: {
+        membershipId: true,
+        membership: {
+          select: { user: { select: { firstName: true, lastName: true } } },
+        },
+      },
+    }),
+  ]);
+  const managerMetrics = [
+    ["تماس امروز", callsToday],
+    ["پیگیری عقب‌افتاده", overdue],
+    ["لید بدون مسئول", unassigned],
+    ["لید داغ بدون پیگیری", hotWithoutFollowUp],
+    ["رزرو امروز", bookingsToday],
+    ["نرخ تبدیل ۳۰ روز", `${leads30 ? ((won30 / leads30) * 100).toFixed(1) : "0"}٪`],
+  ] as const;
+  const callsByStaff = [...staffCalls.reduce((map, call) => {
+    const current = map.get(call.membershipId);
+    map.set(call.membershipId, {
+      id: call.membershipId,
+      name: `${call.membership.user.firstName} ${call.membership.user.lastName}`.trim(),
+      count: (current?.count ?? 0) + 1,
+    });
+    return map;
+  }, new Map<string, { id: string; name: string; count: number }>()).values()]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
   return (
     <>
       <AdminPageHeader
@@ -27,6 +94,20 @@ export default function AdminDashboardPage() {
         breadcrumbs={adminBreadcrumbs.dashboard}
         showNotice
       />
+
+      <section className="mb-7 grid gap-3 sm:grid-cols-3 xl:grid-cols-6" aria-label="شاخص‌های عملیاتی مدیر">
+        {managerMetrics.map(([label, value]) => <div key={label} className="admin-card p-4"><p className="text-xs text-muted">{label}</p><p className="mt-1 text-xl font-bold text-primary">{value}</p></div>)}
+      </section>
+      <section className="admin-card mb-7 p-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-semibold text-primary">عملکرد تماس همکاران امروز</h2>
+          <Link href="/admin/reports/staff-performance" className="text-sm text-secondary">گزارش کامل</Link>
+        </div>
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+          {callsByStaff.map((item) => <li key={item.id} className="rounded-lg border border-border p-3 text-sm"><span className="font-medium">{item.name}</span><span className="mt-1 block text-xs text-muted">{item.count} تماس</span></li>)}
+          {callsByStaff.length === 0 && <li className="text-sm text-muted">امروز تماسی ثبت نشده است.</li>}
+        </ul>
+      </section>
 
       <AdminMetricGrid
         items={dashboardStats}

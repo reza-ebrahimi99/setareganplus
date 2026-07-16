@@ -22,6 +22,7 @@ import {
 } from "@/lib/forms/field-visibility";
 import { normalizeFieldKey } from "@/lib/forms/normalize-field-key";
 import { getAdminSession } from "@/lib/auth/require-admin";
+import { hasPermission } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 
 export type FieldFormFieldErrors = {
@@ -88,7 +89,7 @@ async function resolveDraftContext(
 > {
   // TODO(auth): OTP / multi-org switcher / fine-grained field permissions.
   const session = await getAdminSession();
-  if (!session) {
+  if (!session || !hasPermission(session, "forms.manage")) {
     return {
       ok: false,
       formError: "نشست مدیریت معتبر نیست. دوباره وارد شوید.",

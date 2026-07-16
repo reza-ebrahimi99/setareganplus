@@ -16,7 +16,7 @@ function getLinkClassName(isActive: boolean) {
   return `${base} text-slate-300 hover:bg-white/5 hover:text-white`;
 }
 
-export function AdminNavigation() {
+export function AdminNavigation({ permissions }: { permissions: readonly string[] }) {
   const pathname = usePathname();
 
   return (
@@ -27,7 +27,9 @@ export function AdminNavigation() {
             {group.label}
           </p>
           <ul className="space-y-0.5">
-            {group.items.map((item) => {
+            {group.items.filter((item) =>
+              !item.enabled || !item.permission || permissions.includes(item.permission),
+            ).map((item) => {
               if (item.enabled) {
                 const isActive =
                   item.href === "/admin"

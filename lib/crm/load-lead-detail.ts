@@ -3,7 +3,8 @@
  */
 
 import { CrmTaskStatus } from "@/generated/prisma/enums";
-import { requireAdminSession } from "@/lib/auth/require-admin";
+import { hasPermission, scopedLeadWhere } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/require-admin";
 import { SCORE_BAND_LABELS } from "@/lib/crm/scoring";
 import { displayTaskStatus } from "@/lib/crm/tasks";
 import { formatJalaliDateShort, formatJalaliDateTimeLabel } from "@/lib/datetime/jalali";
@@ -15,12 +16,11 @@ function maskMobile(mobile: string): string {
 }
 
 export async function loadLeadDetail(leadId: string) {
+  const session = await requirePermission("crm.view_assigned");
+  const organizationId = session.organization.id;
   try {
-    const session = await requireAdminSession();
-    const organizationId = session.organization.id;
-
     const lead = await prisma.lead.findFirst({
-      where: { id: leadId, organizationId, deletedAt: null },
+      where: { ...scopedLeadWhere(session), id: leadId },
       include: {
         stage: true,
         pipeline: true,
@@ -56,6 +56,7 @@ export async function loadLeadDetail(leadId: string) {
             priority: true,
             dueAt: true,
             completedAt: true,
+            assignedToUserId: true,
             assignedTo: { select: { firstName: true, lastName: true } },
           },
         },
@@ -95,13 +96,32 @@ export async function loadLeadDetail(leadId: string) {
         })
       : [];
 
-    const owners = await prisma.organizationMembership.findMany({
-      where: { organizationId, deletedAt: null, status: "ACTIVE" },
+    const owners = hasPermission(session, "crm.assign") ? await prisma.organizationMembership.findMany({
+      where: {
+        organizationId,
+        deletedAt: null,
+        status: "ACTIVE",
+        OR: [
+          { branchMemberships: { none: { deletedAt: null } } },
+          { branchMemberships: { some: { branchId: lead.branchId, deletedAt: null } } },
+        ],
+      },
       take: 100,
       select: {
         user: { select: { id: true, firstName: true, lastName: true } },
       },
-    });
+    }) : [];
+
+    const branches = hasPermission(session, "crm.assign") ? await prisma.branch.findMany({
+      where: {
+        organizationId,
+        isActive: true,
+        deletedAt: null,
+        ...(session.membership.allBranches ? {} : { id: { in: session.membership.branchIds } }),
+      },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }) : [];
 
     const smsCount = await prisma.smsMessage.count({
       where: {
@@ -123,6 +143,7 @@ export async function loadLeadDetail(leadId: string) {
         lastName: lead.lastName,
         fatherName: lead.fatherName,
         mobileMasked: maskMobile(lead.mobile),
+        mobileTel: lead.mobile,
         school: lead.school,
         gradeLevel: lead.gradeLevel,
         source: lead.source,
@@ -140,6 +161,8 @@ export async function loadLeadDetail(leadId: string) {
           ? `${lead.owner.firstName} ${lead.owner.lastName}`.trim()
           : null,
         branchName: lead.branch.name,
+        branchId: lead.branch.id,
+        branches,
         nextFollowUpLabel: lead.nextFollowUpAt
           ? formatJalaliDateShort(lead.nextFollowUpAt)
           : null,
@@ -174,6 +197,7 @@ export async function loadLeadDetail(leadId: string) {
           displayStatus: displayTaskStatus(t.status, t.dueAt),
           priority: t.priority,
           dueLabel: t.dueAt ? formatJalaliDateShort(t.dueAt) : null,
+          assignedToUserId: t.assignedToUserId,
           assignee: t.assignedTo
             ? `${t.assignedTo.firstName} ${t.assignedTo.lastName}`.trim()
             : null,
@@ -194,6 +218,15 @@ export async function loadLeadDetail(leadId: string) {
             t.status === CrmTaskStatus.OPEN ||
             t.status === CrmTaskStatus.IN_PROGRESS,
         ).length,
+        permissions: {
+          assign: hasPermission(session, "crm.assign"),
+          changeStage: hasPermission(session, "crm.change_stage"),
+          terminal: hasPermission(session, "crm.mark_won_lost"),
+          addNote: hasPermission(session, "crm.add_note"),
+          createTask: hasPermission(session, "crm.create_task"),
+          completeTask: hasPermission(session, "crm.complete_task"),
+          call: hasPermission(session, "crm.call"),
+        },
       },
     };
   } catch {

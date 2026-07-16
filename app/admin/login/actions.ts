@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import {
+  AuditAction,
   MembershipStatus,
   UserStatus,
 } from "@/generated/prisma/enums";
@@ -10,6 +11,7 @@ import { verifyPassword } from "@/lib/auth/crypto";
 import { getAdminSession } from "@/lib/auth/require-admin";
 import {
   createAdminSession,
+  readSessionRequestMetadata,
   revokeAdminSessionCookie,
   setAdminSessionCookie,
 } from "@/lib/auth/session";
@@ -97,7 +99,7 @@ export async function loginAdminAction(
           status: MembershipStatus.ACTIVE,
           organization: { deletedAt: null, isActive: true },
         },
-        select: { role: true },
+        select: { id: true, organizationId: true, role: true },
         take: 5,
       },
     },
@@ -117,22 +119,36 @@ export async function loginAdminAction(
     return { formError: GENERIC_LOGIN_ERROR };
   }
 
-  const roleOk =
-    user.isPlatformAdmin ||
-    user.memberships.some((membership) => isAdminPortalRole(membership.role));
+  const selectedMembership =
+    user.memberships.find((membership) => isAdminPortalRole(membership.role)) ??
+    (user.isPlatformAdmin ? user.memberships[0] : undefined);
+  const roleOk = user.isPlatformAdmin || Boolean(selectedMembership);
 
-  if (!roleOk || user.memberships.length === 0) {
+  if (!roleOk || !selectedMembership) {
     return { formError: GENERIC_LOGIN_ERROR };
   }
 
+  const requestMetadata = await readSessionRequestMetadata();
   const { token, expiresAt } = await createAdminSession({
     userId: user.id,
+    organizationMembershipId: selectedMembership.id,
+    ...requestMetadata,
   });
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { lastLoginAt: new Date() },
-  });
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    }),
+    prisma.auditLog.create({
+      data: {
+        organizationId: selectedMembership.organizationId,
+        actorUserId: user.id,
+        action: AuditAction.LOGIN_SUCCESS,
+        entityType: "AdminSession",
+      },
+    }),
+  ]);
 
   await setAdminSessionCookie(token, expiresAt);
 
@@ -145,7 +161,19 @@ export async function loginAdminAction(
 }
 
 export async function logoutAdminAction(): Promise<void> {
+  const session = await getAdminSession();
   await revokeAdminSessionCookie();
+  if (session) {
+    await prisma.auditLog.create({
+      data: {
+        organizationId: session.organization.id,
+        actorUserId: session.user.id,
+        action: AuditAction.LOGOUT,
+        entityType: "AdminSession",
+        entityId: session.session.id,
+      },
+    });
+  }
   redirect("/admin/login");
 }
 

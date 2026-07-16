@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { DomainEventType } from "@/generated/prisma/enums";
 import { getAdminSession } from "@/lib/auth/require-admin";
+import { hasPermission } from "@/lib/auth/permissions";
 import {
   AUTOMATION_PRESETS,
   isKnownDomainEventType,
@@ -14,7 +15,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function toggleAutomationRuleAction(formData: FormData) {
   const session = await getAdminSession();
-  if (!session) return;
+  if (!session || !hasPermission(session, "automations.manage")) return;
   const id = String(formData.get("ruleId") ?? "");
   const enabled = String(formData.get("enabled") ?? "") === "1";
   if (!id) return;
@@ -33,7 +34,7 @@ export async function toggleAutomationRuleAction(formData: FormData) {
 
 export async function createAutomationFromPresetAction(formData: FormData) {
   const session = await getAdminSession();
-  if (!session) return;
+  if (!session || !hasPermission(session, "automations.manage")) return;
   const code = String(formData.get("presetCode") ?? "");
   const preset = AUTOMATION_PRESETS.find((p) => p.code === code);
   if (!preset) return;
@@ -54,7 +55,7 @@ export async function createAutomationFromPresetAction(formData: FormData) {
 
 export async function createAutomationRuleAction(formData: FormData) {
   const session = await getAdminSession();
-  if (!session) return;
+  if (!session || !hasPermission(session, "automations.manage")) return;
 
   const name = String(formData.get("name") ?? "").trim();
   const triggerRaw = String(formData.get("trigger") ?? "").trim();

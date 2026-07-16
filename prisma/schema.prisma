@@ -171,6 +171,7 @@ enum CrmActivityType {
   BOOKING_RESCHEDULED
   SMS_QUEUED
   NOTE_ADDED
+  CALL_LOGGED
   SCORE_CHANGED
   CONVERTED
   LOST
@@ -203,7 +204,11 @@ enum SystemRole {
   ORGANIZATION_OWNER
   ORGANIZATION_ADMIN
   BRANCH_MANAGER
+  ADMISSIONS_MANAGER
+  ADMISSIONS_AGENT
   ADVISOR
+  CALL_OPERATOR
+  REPORT_VIEWER
   TEACHER
   FINANCE
   REGISTRATION_STAFF
@@ -257,6 +262,16 @@ enum AuditAction {
   CRM_STAGE_CHANGED
   CRM_TASK_CREATED
   CRM_AUTOMATION_RAN
+  STAFF_CREATED
+  STAFF_UPDATED
+  STAFF_DEACTIVATED
+  STAFF_BRANCH_CHANGED
+  STAFF_SESSION_REVOKED
+  CRM_LEAD_ASSIGNED
+  CRM_TASK_ASSIGNED
+  CRM_BRANCH_ASSIGNED
+  CRM_CALL_LOGGED
+  CRM_TASK_COMPLETED
 }
 
 // ─── Form builder (Sprint 3.4A) ─────────────────────────────────────────────
@@ -462,6 +477,7 @@ model Organization {
   crmPipelineStages   CrmPipelineStage[]
   crmTasks            CrmTask[]
   crmActivities       CrmActivity[]
+  crmCallLogs         CrmCallLog[]
   automationExecutions AutomationExecution[]
 
   @@map("organizations")
@@ -537,19 +553,22 @@ model User {
 
 // Server-side admin sessions (v0.4.1a). Cookie stores opaque token; DB stores tokenHash only.
 model AdminSession {
-  id        String    @id @default(cuid())
-  userId    String
-  tokenHash String    @unique
-  expiresAt DateTime
-  revokedAt DateTime?
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id                       String    @id @default(cuid())
+  userId                   String
+  organizationMembershipId String?
+  tokenHash                String    @unique
+  expiresAt                DateTime
+  revokedAt                DateTime?
+  ipAddress                String?
+  userAgent                String?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  membership OrganizationMembership? @relation(fields: [organizationMembershipId], references: [id], onDelete: Restrict)
 
   @@index([userId, expiresAt])
+  @@index([organizationMembershipId, expiresAt])
   @@index([expiresAt])
   @@index([revokedAt])
   @@map("admin_sessions")
@@ -569,6 +588,8 @@ model OrganizationMembership {
   organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   user              User               @relation(fields: [userId], references: [id], onDelete: Restrict)
   branchMemberships BranchMembership[]
+  adminSessions     AdminSession[]
+  crmCallLogs       CrmCallLog[]
 
   // One membership row per user per organization. Reactivation after soft-delete must
   // UPDATE this row (clear deletedAt, adjust status) — not INSERT a duplicate.
@@ -688,6 +709,7 @@ model Lead {
   formSubmissions FormSubmission[]
   crmTasks        CrmTask[]
   crmActivities   CrmActivity[]
+  crmCallLogs     CrmCallLog[]
   bookingReservations BookingReservation[]
 
   @@unique([organizationId, branchId, id])
@@ -1459,6 +1481,7 @@ enum SmsTemplatePurpose {
 
 enum OtpPurpose {
   LOGIN
+  STAFF_LOGIN
   VERIFY_MOBILE
   BOOKING
   FORM
@@ -1471,6 +1494,19 @@ enum OtpChallengeStatus {
   CONSUMED
   EXPIRED
   LOCKED
+}
+
+enum CrmCallOutcome {
+  ANSWERED
+  NO_ANSWER
+  BUSY
+  OFF
+  WRONG_NUMBER
+  FOLLOW_UP_REQUIRED
+  CONSULTATION_BOOKED
+  NOT_INTERESTED
+  REGISTERED
+  OTHER
 }
 
 model SitePlacement {
@@ -1679,6 +1715,7 @@ model CrmTask {
   createdBy      User?           @relation("CrmTaskCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
   automationRule AutomationRule? @relation(fields: [organizationId, automationRuleId], references: [organizationId, id], onDelete: Restrict)
   activities     CrmActivity[]
+  callLogs       CrmCallLog[]
 
   @@unique([organizationId, idempotencyKey])
   @@unique([organizationId, id])
@@ -1713,6 +1750,33 @@ model CrmActivity {
   @@index([organizationId, activityType, occurredAt])
   @@index([organizationId, relatedTaskId])
   @@map("crm_activities")
+}
+
+model CrmCallLog {
+  id                 String         @id @default(cuid())
+  organizationId     String
+  leadId             String
+  membershipId       String
+  outcome            CrmCallOutcome
+  note               String?
+  durationSeconds    Int?
+  calledAt           DateTime       @default(now())
+  nextFollowUpAt     DateTime?
+  createdTaskId      String?
+  idempotencyKey     String
+  createdAt          DateTime       @default(now())
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lead         Lead                   @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  membership   OrganizationMembership @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Restrict)
+  createdTask  CrmTask?               @relation(fields: [organizationId, createdTaskId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, idempotencyKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, membershipId, calledAt])
+  @@index([organizationId, leadId, calledAt])
+  @@index([organizationId, outcome, calledAt])
+  @@map("crm_call_logs")
 }
 
 model AutomationExecution {

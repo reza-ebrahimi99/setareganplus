@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CrmCallOutcome } from "@/generated/prisma/enums";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import {
   addLeadNoteAction,
   assignLeadOwnerAction,
+  assignLeadBranchAction,
+  assignLeadTaskAction,
   cancelLeadTaskAction,
   changeLeadStageAction,
   completeLeadTaskAction,
   createLeadTaskAction,
+  logLeadCallAction,
 } from "@/app/admin/(dashboard)/leads/actions";
 import { adminBreadcrumbs } from "@/content/admin";
 import { loadLeadDetail } from "@/lib/crm/load-lead-detail";
@@ -21,6 +25,19 @@ export const metadata: Metadata = {
 };
 
 type PageProps = { params: Promise<{ id: string }> };
+
+const CALL_OUTCOME_LABELS: Record<CrmCallOutcome, string> = {
+  ANSWERED: "پاسخ داده شد",
+  NO_ANSWER: "بدون پاسخ",
+  BUSY: "مشغول",
+  OFF: "خاموش",
+  WRONG_NUMBER: "شماره اشتباه",
+  FOLLOW_UP_REQUIRED: "نیازمند پیگیری",
+  CONSULTATION_BOOKED: "مشاوره رزرو شد",
+  NOT_INTERESTED: "عدم تمایل",
+  REGISTERED: "ثبت‌نام شد",
+  OTHER: "سایر",
+};
 
 export default async function LeadDetailPage({ params }: PageProps) {
   const { id } = await params;
@@ -82,7 +99,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
             </ul>
           </div>
 
-          <form action={changeLeadStageAction} className="space-y-2 border-t border-border pt-3">
+          {lead.permissions.changeStage && <form action={changeLeadStageAction} className="space-y-2 border-t border-border pt-3">
             <input type="hidden" name="leadId" value={lead.id} />
             <label className="block text-sm">
               <span className="mb-1 block text-muted">تغییر مرحله</span>
@@ -96,10 +113,11 @@ export default async function LeadDetailPage({ params }: PageProps) {
               <span className="mb-1 block text-muted">علت از دست رفتن (در صورت نیاز)</span>
               <input name="lostReason" className="w-full rounded-lg border border-border px-3 py-2" />
             </label>
+            {lead.permissions.terminal && <label className="flex items-center gap-2 text-xs text-muted"><input type="checkbox" name="terminalConfirmed" value="true" />تغییر نهایی به برنده/از‌دست‌رفته را تأیید می‌کنم</label>}
             <button type="submit" className="rounded-lg bg-primary px-3 py-2 text-sm text-white">ذخیره مرحله</button>
-          </form>
+          </form>}
 
-          <form action={assignLeadOwnerAction} className="space-y-2 border-t border-border pt-3">
+          {lead.permissions.assign && <form action={assignLeadOwnerAction} className="space-y-2 border-t border-border pt-3">
             <input type="hidden" name="leadId" value={lead.id} />
             <label className="block text-sm">
               <span className="mb-1 block text-muted">مسئول</span>
@@ -111,17 +129,43 @@ export default async function LeadDetailPage({ params }: PageProps) {
               </select>
             </label>
             <button type="submit" className="rounded-lg border border-border px-3 py-2 text-sm">تخصیص</button>
-          </form>
+          </form>}
+          {lead.permissions.assign && <form action={assignLeadBranchAction} className="space-y-2 border-t border-border pt-3">
+            <input type="hidden" name="leadId" value={lead.id} />
+            <label className="block text-sm"><span className="mb-1 block text-muted">شعبه</span><select name="branchId" defaultValue={lead.branchId} className="w-full rounded-lg border border-border px-3 py-2">{lead.branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</select></label>
+            <button type="submit" className="rounded-lg border border-border px-3 py-2 text-sm">تغییر شعبه</button>
+          </form>}
         </section>
 
         <section className="space-y-5 lg:col-span-2">
+          {lead.permissions.call && <div className="admin-card px-5 py-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="font-bold text-primary">ثبت تماس</h2>
+              <a href={`tel:${lead.mobileTel}`} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white">شروع تماس</a>
+            </div>
+            <form action={logLeadCallAction} className="mt-4 grid gap-3 sm:grid-cols-2">
+              <input type="hidden" name="leadId" value={lead.id} />
+              <input type="hidden" name="idempotencyKey" value={crypto.randomUUID()} />
+              <select name="outcome" required className="rounded-lg border border-border px-3 py-2 text-sm">
+                {Object.values(CrmCallOutcome).map((outcome) => <option key={outcome} value={outcome}>{CALL_OUTCOME_LABELS[outcome]}</option>)}
+              </select>
+              <input name="durationSeconds" type="number" min="0" max="86400" placeholder="مدت تماس (ثانیه)" className="rounded-lg border border-border px-3 py-2 text-sm" />
+              <textarea name="note" maxLength={1000} placeholder="یادداشت تماس" className="rounded-lg border border-border px-3 py-2 text-sm sm:col-span-2" />
+              <label className="text-sm"><span className="mb-1 block text-muted">تاریخ پیگیری (شمسی)</span><input name="nextFollowUpDate" dir="ltr" placeholder="۱۴۰۵/۰۱/۳۰" className="w-full rounded-lg border border-border px-3 py-2" /></label>
+              <label className="text-sm"><span className="mb-1 block text-muted">ساعت پیگیری</span><input name="nextFollowUpTime" type="time" defaultValue="09:00" className="w-full rounded-lg border border-border px-3 py-2" /></label>
+              {lead.permissions.changeStage && <label className="text-sm"><span className="mb-1 block text-muted">تغییر مرحله (اختیاری)</span><select name="stageId" defaultValue="" className="w-full rounded-lg border border-border px-3 py-2"><option value="">بدون تغییر</option>{lead.stages.map((stage) => <option key={stage.id} value={stage.id}>{stage.name}</option>)}</select></label>}
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="createTask" value="true" />برای پیگیری وظیفه بساز</label>
+              {lead.permissions.terminal && <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="terminalConfirmed" value="true" />انتقال نهایی را تأیید می‌کنم</label>}
+              <button type="submit" className="rounded-lg bg-primary px-4 py-2 text-sm text-white sm:col-span-2">ثبت نتیجه تماس</button>
+            </form>
+          </div>}
           <div className="admin-card px-5 py-5">
             <h2 className="mb-3 font-bold text-primary">وظایف</h2>
-            <form action={createLeadTaskAction} className="mb-4 grid gap-2 sm:grid-cols-3">
+            {lead.permissions.createTask && <form action={createLeadTaskAction} className="mb-4 grid gap-2 sm:grid-cols-3">
               <input type="hidden" name="leadId" value={lead.id} />
               <input name="title" placeholder="عنوان وظیفه" required className="rounded-lg border border-border px-3 py-2 text-sm sm:col-span-2" />
               <button type="submit" className="rounded-lg bg-primary px-3 py-2 text-sm text-white">افزودن</button>
-            </form>
+            </form>}
             <ul className="divide-y divide-border">
               {lead.tasks.map((task) => (
                 <li key={task.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
@@ -133,7 +177,13 @@ export default async function LeadDetailPage({ params }: PageProps) {
                       {task.assignee ? ` · ${task.assignee}` : ""}
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  {lead.permissions.assign && <form action={assignLeadTaskAction} className="flex gap-1">
+                    <input type="hidden" name="leadId" value={lead.id} />
+                    <input type="hidden" name="taskId" value={task.id} />
+                    <select name="assignedToUserId" defaultValue={task.assignedToUserId ?? ""} className="rounded border border-border px-2 py-1 text-xs"><option value="">بدون مسئول</option>{lead.owners.map((owner) => <option key={owner.id} value={owner.id}>{owner.name}</option>)}</select>
+                    <button className="rounded border border-border px-2 py-1 text-xs">واگذاری</button>
+                  </form>}
+                  {lead.permissions.completeTask && <div className="flex gap-2">
                     <form action={completeLeadTaskAction}>
                       <input type="hidden" name="leadId" value={lead.id} />
                       <input type="hidden" name="taskId" value={task.id} />
@@ -144,7 +194,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
                       <input type="hidden" name="taskId" value={task.id} />
                       <button type="submit" className="rounded border border-border px-2 py-1 text-xs">لغو</button>
                     </form>
-                  </div>
+                  </div>}
                 </li>
               ))}
             </ul>
@@ -170,11 +220,11 @@ export default async function LeadDetailPage({ params }: PageProps) {
 
           <div className="admin-card px-5 py-5">
             <h2 className="mb-3 font-bold text-primary">یادداشت و تایم‌لاین</h2>
-            <form action={addLeadNoteAction} className="mb-4 flex gap-2">
+            {lead.permissions.addNote && <form action={addLeadNoteAction} className="mb-4 flex gap-2">
               <input type="hidden" name="leadId" value={lead.id} />
               <input name="note" required placeholder="یادداشت جدید" className="flex-1 rounded-lg border border-border px-3 py-2 text-sm" />
               <button type="submit" className="rounded-lg bg-primary px-3 py-2 text-sm text-white">ثبت</button>
-            </form>
+            </form>}
             <ol className="space-y-3">
               {lead.timeline.map((item) => (
                 <li key={item.id} className="border-r-2 border-primary/30 pr-3 text-sm">

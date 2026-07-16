@@ -8,6 +8,7 @@ import { isFormPurpose } from "@/lib/forms/form-purpose-labels";
 import { mapPrismaFormError } from "@/lib/forms/map-prisma-form-error";
 import { normalizeFormSlug } from "@/lib/forms/normalize-form-slug";
 import { getAdminSession } from "@/lib/auth/require-admin";
+import { hasPermission } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 
 export type CreateFormFieldErrors = {
@@ -40,7 +41,7 @@ export async function createFormAction(
   formData: FormData,
 ): Promise<CreateFormState> {
   const session = await getAdminSession();
-  if (!session) {
+  if (!session || !hasPermission(session, "forms.manage")) {
     return { formError: "نشست مدیریت معتبر نیست. دوباره وارد شوید." };
   }
   const organization = session.organization;
