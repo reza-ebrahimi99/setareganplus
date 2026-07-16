@@ -19,6 +19,7 @@ import {
   AVAILABILITY_MESSAGES,
   evaluateFormAvailability,
 } from "@/lib/forms/evaluate-form-availability";
+import { enqueueFormConfirmationSms } from "@/lib/communication/form-sms";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { resolveSubmissionBranch } from "@/lib/forms/resolve-submission-branch";
 import {
@@ -405,6 +406,15 @@ export async function submitPublicFormAction(
       formError: "ثبت پاسخ با خطا مواجه شد. لطفاً دوباره تلاش کنید.",
       values: validated.values,
     };
+  }
+
+  // Optional confirmation SMS — outside capacity transaction; never fails submission.
+  if (createdSubmissionId) {
+    await enqueueFormConfirmationSms({
+      organizationId: organization.id,
+      submissionId: createdSubmissionId,
+      formVersionId: version.id,
+    });
   }
 
   if (

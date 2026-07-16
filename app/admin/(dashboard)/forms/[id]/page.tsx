@@ -90,7 +90,7 @@ export default async function AdminFormEditorPage({
         opensAt: null,
         registrationDeadline: null,
         capacity: null,
-        settings: { showRemainingCapacity: false },
+        settings: { showRemainingCapacity: false, confirmationSmsEnabled: false },
       };
 
   const sharePoster = isPublished

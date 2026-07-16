@@ -22,6 +22,7 @@ import {
   generateOpaqueToken,
   hashOpaqueToken,
 } from "@/lib/booking/tokens";
+import { enqueueBookingConfirmationSms } from "@/lib/communication/booking-sms";
 import { normalizeEmail } from "@/lib/forms/normalize-email";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { normalizeNationalId } from "@/lib/forms/normalize-national-id";
@@ -204,6 +205,15 @@ export async function createReservation(
         checkInToken,
       };
     });
+
+    // Confirmation SMS is enqueued after the capacity transaction commits.
+    // Failures must never fail the booking.
+    if (result.ok) {
+      await enqueueBookingConfirmationSms({
+        organizationId: input.organizationId,
+        reservationId: result.reservationId,
+      });
+    }
 
     return result;
   } catch {

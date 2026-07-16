@@ -82,6 +82,12 @@ export const adminNavGroups: ReadonlyArray<{
         icon: "settings",
         enabled: true,
       },
+      {
+        href: "/admin/settings/communication",
+        label: "ارتباطات و پیامک",
+        icon: "settings",
+        enabled: true,
+      },
     ],
   },
 ];
@@ -148,6 +154,10 @@ export const adminBreadcrumbs = {
   sitePlacements: [
     { label: "مدیریت", href: "/admin" },
     { label: "جایگاه‌های سایت" },
+  ],
+  communication: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "ارتباطات و پیامک" },
   ],
 } as const satisfies Record<string, readonly AdminBreadcrumbItem[]>;
 

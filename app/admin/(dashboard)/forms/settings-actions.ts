@@ -6,6 +6,7 @@ import { FormVersionStatus } from "@/generated/prisma/enums";
 import { getAdminSession } from "@/lib/auth/require-admin";
 import { CAPACITY_MAX } from "@/lib/forms/capacity";
 import {
+  parseFormVersionSettings,
   serializeFormVersionSettings,
 } from "@/lib/forms/form-version-settings";
 import {
@@ -150,6 +151,7 @@ export async function updateDraftFormSettingsAction(
   }
 
   try {
+    const existingSettings = parseFormVersionSettings(draft.settings);
     await prisma.formVersion.update({
       where: { id: draft.id },
       data: {
@@ -158,7 +160,10 @@ export async function updateDraftFormSettingsAction(
         capacity,
         settings: {
           ...(draft.settings as Record<string, unknown>),
-          ...serializeFormVersionSettings({ showRemainingCapacity }),
+          ...serializeFormVersionSettings({
+            showRemainingCapacity,
+            confirmationSmsEnabled: existingSettings.confirmationSmsEnabled,
+          }),
         } as Prisma.InputJsonValue,
       },
     });

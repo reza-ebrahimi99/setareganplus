@@ -15,6 +15,8 @@ export type BookingServiceSettings = {
   allowBranchSelection: boolean;
   showRemainingCapacity: boolean;
   autoConfirm: boolean;
+  /** When true, enqueue confirmation SMS after successful reservation (outside capacity tx). */
+  confirmationSmsEnabled: boolean;
   duplicateKeys: BookingDuplicateKey[];
   onlineMeetingInfo: string | null;
   addressInfo: string | null;
@@ -26,6 +28,7 @@ const DEFAULTS: BookingServiceSettings = {
   allowBranchSelection: false,
   showRemainingCapacity: true,
   autoConfirm: true,
+  confirmationSmsEnabled: false,
   duplicateKeys: ["normalizedMobile", "service", "bookingDate"],
   onlineMeetingInfo: null,
   addressInfo: null,
@@ -59,6 +62,7 @@ export function parseBookingServiceSettings(
     allowBranchSelection: raw.allowBranchSelection === true,
     showRemainingCapacity: raw.showRemainingCapacity !== false,
     autoConfirm: raw.autoConfirm !== false,
+    confirmationSmsEnabled: raw.confirmationSmsEnabled === true,
     duplicateKeys: keys.length > 0 ? keys : DEFAULTS.duplicateKeys,
     onlineMeetingInfo:
       typeof raw.onlineMeetingInfo === "string" && raw.onlineMeetingInfo.trim()

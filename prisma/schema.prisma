@@ -39,6 +39,11 @@
 // - FormAnalyticsEvent (raw) + FormAnalyticsDaily (rollups) — not stored in Form.settings.
 // - Tag / FormTag / FormSubmissionTag = normalized tagging (no CSV text fields).
 //
+// Communication (StarOS v0.6A):
+// - SmsTemplate / SmsMessage / OtpChallenge — provider-neutral SMS queue + hashed OTP.
+// - Never store plaintext OTP. Secrets stay in environment variables.
+// - Outbound SMS is processed by CLI worker (communication:worker-once), not Next.js.
+//
 // FormVersion lifecycle (enforced by application layer; documented here):
 // - DRAFT: editable fields/settings; not public; does not accept submissions.
 // - PUBLISHED: immutable definition; accepts new submissions; ONLY status eligible for
@@ -158,6 +163,12 @@ enum AuditAction {
   BOOKING_CHECKED_IN
   AI_ASSISTED_ACTION
   SITE_PLACEMENT_UPDATED
+  SMS_ENQUEUED
+  SMS_SENT
+  SMS_FAILED
+  OTP_REQUESTED
+  OTP_VERIFIED
+  OTP_FAILED
 }
 
 // ─── Form builder (Sprint 3.4A) ─────────────────────────────────────────────
@@ -356,6 +367,9 @@ model Organization {
   bookingSlots        BookingSlot[]
   bookingReservations BookingReservation[]
   sitePlacements      SitePlacement[]
+  smsTemplates        SmsTemplate[]
+  smsMessages         SmsMessage[]
+  otpChallenges       OtpChallenge[]
 
   @@map("organizations")
 }
@@ -1279,6 +1293,42 @@ enum SitePlacementDisplayMode {
   CARD
 }
 
+// ─── Communication / SMS / OTP (StarOS v0.6A) ────────────────────────────────
+// Provider-neutral queue + hashed OTP challenges. Never store plaintext OTP.
+// Secrets (API keys) live only in environment variables.
+
+enum SmsMessageStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  DEAD_LETTER
+  CANCELLED
+}
+
+enum SmsTemplatePurpose {
+  BOOKING_CONFIRMATION
+  FORM_CONFIRMATION
+  OTP
+  CUSTOM
+}
+
+enum OtpPurpose {
+  LOGIN
+  VERIFY_MOBILE
+  BOOKING
+  FORM
+  GENERIC
+}
+
+enum OtpChallengeStatus {
+  PENDING
+  VERIFIED
+  CONSUMED
+  EXPIRED
+  LOCKED
+}
+
 model SitePlacement {
   id               String                   @id @default(cuid())
   organizationId   String
@@ -1309,5 +1359,97 @@ model SitePlacement {
   @@index([organizationId, formId])
   @@index([organizationId, bookingServiceId])
   @@map("site_placements")
+}
+
+// ─── SMS templates, outbound queue, OTP challenges (StarOS v0.6A) ───────────
+
+model SmsTemplate {
+  id             String             @id @default(cuid())
+  organizationId String
+  code           String
+  name           String
+  purpose        SmsTemplatePurpose @default(CUSTOM)
+  body           String
+  /// Declared variable names for rendering (e.g. ["trackingCode","date","time"]).
+  variables      Json               @default("[]")
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  messages     SmsMessage[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, id])
+  @@index([organizationId, purpose, isActive])
+  @@index([organizationId, deletedAt])
+  @@map("sms_templates")
+}
+
+model SmsMessage {
+  id                String           @id @default(cuid())
+  organizationId    String
+  templateId        String?
+  /// Normalized Iranian mobile (09xxxxxxxxx).
+  toMobile          String
+  body              String
+  status            SmsMessageStatus @default(PENDING)
+  provider          String           @default("null")
+  providerMessageId String?
+  /// Semantic purpose key (e.g. booking_confirmation, form_confirmation, otp).
+  purpose           String
+  relatedType       String?
+  relatedId         String?
+  attemptCount      Int              @default(0)
+  maxAttempts       Int              @default(5)
+  availableAt       DateTime         @default(now())
+  sentAt            DateTime?
+  lastError         String?
+  /// Unique per organization — protects against duplicate enqueue.
+  idempotencyKey    String
+  metadata          Json?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  template     SmsTemplate? @relation(fields: [organizationId, templateId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, idempotencyKey])
+  @@unique([organizationId, id])
+  @@index([status, availableAt])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, purpose, createdAt])
+  @@index([organizationId, relatedType, relatedId])
+  @@index([organizationId, toMobile, createdAt])
+  @@map("sms_messages")
+}
+
+model OtpChallenge {
+  id                String             @id @default(cuid())
+  organizationId    String
+  normalizedMobile  String
+  purpose           OtpPurpose         @default(GENERIC)
+  /// sha256$saltHex$hashHex — never plaintext.
+  codeHash          String
+  status            OtpChallengeStatus @default(PENDING)
+  expiresAt         DateTime
+  attemptCount      Int                @default(0)
+  maxAttempts       Int                @default(5)
+  consumedAt        DateTime?
+  lastSentAt        DateTime?
+  resendAvailableAt DateTime?
+  idempotencyKey    String?
+  metadata          Json?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, normalizedMobile, purpose, status])
+  @@index([organizationId, status, expiresAt])
+  @@index([organizationId, idempotencyKey])
+  @@map("otp_challenges")
 }
 
