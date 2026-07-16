@@ -37,12 +37,10 @@ if (!process.env.DATABASE_URL) {
   console.error("DATABASE_URL is not set.");
   process.exit(1);
 }
-if (process.env.NODE_ENV === "production") {
-  console.error("Refusing to run staff integration tests against a production environment.");
+if (process.env.NODE_ENV !== "test") {
+  console.error("Refusing to run staff integration tests unless NODE_ENV=test.");
   process.exit(1);
 }
-process.env.STAROS_SMS_ENABLED = "false";
-process.env.NODE_ENV = "test";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);

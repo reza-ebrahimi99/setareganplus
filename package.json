@@ -27,7 +27,7 @@
     "test:crm-smoke": "prisma generate && tsx scripts/crm-smoke.ts",
     "test:crm": "tsx --env-file=.env scripts/crm-integration-tests.ts",
     "test:staff-smoke": "prisma generate && tsx scripts/staff-rbac-smoke.ts",
-    "test:staff": "tsx --env-file=.env scripts/staff-integration-tests.ts"
+    "test:staff": "tsx --env-file=scripts/staff-test.env --env-file=.env scripts/staff-integration-tests.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

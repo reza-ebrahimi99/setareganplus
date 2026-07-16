@@ -53,6 +53,7 @@ assert(!hasPermission(session(SystemRole.REPORT_VIEWER), "crm.add_note"), "repor
 
 const agentScope = scopedLeadWhere(session(SystemRole.ADMISSIONS_AGENT, ["branch-a"]));
 assert(agentScope.organizationId === "org-test", "tenant scope");
+assert("ownerUserId" in agentScope, "agent scope includes assignment");
 assert(agentScope.ownerUserId === "user-test", "assignment scope");
 assert("branchId" in agentScope, "branch scope");
 const ownerScope = scopedLeadWhere(owner);

@@ -65,7 +65,15 @@ export async function logCrmCall(input: LogCrmCallInput): Promise<{ id: string; 
     }),
     input.stageId
       ? prisma.crmPipelineStage.findFirst({
-          where: { id: input.stageId, organizationId: input.organizationId, deletedAt: null, isActive: true },
+          where: {
+            id: input.stageId,
+            organizationId: input.organizationId,
+            deletedAt: null,
+            pipeline: {
+              isActive: true,
+              deletedAt: null,
+            },
+          },
           select: { id: true, pipelineId: true, name: true, stageType: true, isTerminal: true, isWon: true, isLost: true },
         })
       : null,
