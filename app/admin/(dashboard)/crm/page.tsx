@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { CrmKanbanViewport } from "@/components/admin/crm/CrmKanbanViewport";
 import { LeadStageControl } from "@/components/admin/crm/LeadStageControl";
 import { adminBreadcrumbs } from "@/content/admin";
 import { loadCrmPipelineBoard } from "@/lib/crm/load-crm-board";
@@ -133,17 +134,13 @@ export default async function AdminCrmBoardPage({
       ) : (
         <div className="w-full min-w-0 max-w-full">
           {/* Desktop board */}
-          <div
-            className="hidden w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain pb-4 lg:block"
-            dir="rtl"
-          >
-            <div className="flex w-max min-w-full flex-nowrap gap-3">
-              {columns.map((col) => (
-                <section
-                  key={col.stageId}
-                  className="admin-card flex w-72 min-w-72 flex-none flex-col px-3 py-3"
-                  aria-label={col.stageName}
-                >
+          <CrmKanbanViewport>
+            {columns.map((col) => (
+              <section
+                key={col.stageId}
+                className="admin-card flex w-72 min-w-72 shrink-0 flex-col px-3 py-3"
+                aria-label={col.stageName}
+              >
                 <header className="mb-3 flex items-center justify-between gap-2 border-b border-border pb-2">
                   <h2 className="text-sm font-bold text-primary">{col.stageName}</h2>
                   <span className="text-xs text-muted" dir="ltr">
@@ -184,10 +181,9 @@ export default async function AdminCrmBoardPage({
                     </li>
                   ))}
                 </ul>
-                </section>
-              ))}
-            </div>
-          </div>
+              </section>
+            ))}
+          </CrmKanbanViewport>
 
           {/* Mobile list fallback */}
           <div className="space-y-3 lg:hidden">
