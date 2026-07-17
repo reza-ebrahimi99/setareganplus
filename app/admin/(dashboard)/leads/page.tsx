@@ -67,6 +67,16 @@ export default async function AdminLeadsPage() {
         <Link href="/admin/crm" className="rounded-lg bg-primary px-4 py-2 text-sm text-white">
           تابلوی پایپ‌لاین
         </Link>
+        {hasPermission(session, "crm.create_lead") && (
+          <Link href="/admin/leads/new" className="rounded-lg border border-border px-4 py-2 text-sm">
+            ثبت متقاضی جدید
+          </Link>
+        )}
+        {hasPermission(session, "crm.import_leads") && (
+          <Link href="/admin/crm/import" className="rounded-lg border border-border px-4 py-2 text-sm">
+            ورود Excel و CSV
+          </Link>
+        )}
         {hasPermission(session, "automations.manage") && <Link href="/admin/settings/automations" className="rounded-lg border border-border px-4 py-2 text-sm">قوانین اتوماسیون</Link>}
       </div>
 

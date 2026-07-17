@@ -5,6 +5,8 @@ export const PERMISSIONS = [
   "staff.manage",
   "crm.view_all",
   "crm.view_assigned",
+  "crm.create_lead",
+  "crm.import_leads",
   "crm.assign",
   "crm.change_stage",
   "crm.mark_won_lost",
@@ -27,6 +29,8 @@ const ALL = new Set<Permission>(PERMISSIONS);
 const CRM_MANAGER = new Set<Permission>([
   "crm.view_all",
   "crm.view_assigned",
+  "crm.create_lead",
+  "crm.import_leads",
   "crm.assign",
   "crm.change_stage",
   "crm.mark_won_lost",
@@ -40,6 +44,7 @@ const CRM_MANAGER = new Set<Permission>([
 ]);
 const CRM_AGENT = new Set<Permission>([
   "crm.view_assigned",
+  "crm.create_lead",
   "crm.change_stage",
   "crm.add_note",
   "crm.create_task",

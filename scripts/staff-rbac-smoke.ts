@@ -40,12 +40,18 @@ for (const permission of PERMISSIONS) {
 }
 assert(permissionsForRole(SystemRole.ORGANIZATION_ADMIN).size === PERMISSIONS.length, "super admin must have all permissions");
 assert(hasPermission(session(SystemRole.BRANCH_MANAGER, ["branch-a"]), "crm.view_all"), "branch manager CRM");
+assert(hasPermission(session(SystemRole.BRANCH_MANAGER, ["branch-a"]), "crm.create_lead"), "branch manager lead intake");
+assert(hasPermission(session(SystemRole.BRANCH_MANAGER, ["branch-a"]), "crm.import_leads"), "branch manager bulk import");
 assert(!hasPermission(session(SystemRole.BRANCH_MANAGER), "settings.manage"), "branch manager settings blocked");
 assert(hasPermission(session(SystemRole.ADMISSIONS_MANAGER), "crm.assign"), "admissions manager assignment");
+assert(hasPermission(session(SystemRole.ADMISSIONS_MANAGER), "crm.import_leads"), "admissions manager bulk import");
 assert(hasPermission(session(SystemRole.ADMISSIONS_AGENT), "crm.view_assigned"), "agent assigned view");
+assert(hasPermission(session(SystemRole.ADMISSIONS_AGENT), "crm.create_lead"), "agent lead intake");
+assert(!hasPermission(session(SystemRole.ADMISSIONS_AGENT), "crm.import_leads"), "agent bulk import blocked");
 assert(!hasPermission(session(SystemRole.ADMISSIONS_AGENT), "crm.view_all"), "agent all view blocked");
 assert(!hasPermission(session(SystemRole.ADMISSIONS_AGENT), "crm.mark_won_lost"), "agent terminal transition blocked");
 assert(hasPermission(session(SystemRole.CALL_OPERATOR), "crm.call"), "operator call permission");
+assert(!hasPermission(session(SystemRole.CALL_OPERATOR), "crm.create_lead"), "operator lead intake blocked");
 assert(!hasPermission(session(SystemRole.CALL_OPERATOR), "crm.assign"), "operator assignment blocked");
 assert(hasPermission(session(SystemRole.ADVISOR), "booking.view_assigned"), "advisor booking permission");
 assert(hasPermission(session(SystemRole.REPORT_VIEWER), "reports.view"), "report viewer reports");

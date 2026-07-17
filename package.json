@@ -16,6 +16,7 @@
     "db:studio": "prisma studio",
     "auth:bootstrap-admin": "tsx scripts/bootstrap-admin.ts",
     "test:booking": "tsx --env-file=.env scripts/booking-integration-tests.ts",
+    "test:form-versioning": "tsx --env-file=scripts/staff-test.env --env-file=.env scripts/form-version-lifecycle-tests.ts",
     "test:jalali": "tsx --env-file=.env lib/booking/jalali-smoke.ts",
     "test:visibility": "tsx scripts/visibility-smoke.ts",
     "test:site-placements": "tsx scripts/site-placements-smoke.ts",
@@ -27,6 +28,8 @@
     "crm:scheduled-worker-once": "tsx --env-file=.env scripts/crm-scheduled-worker-once.ts",
     "test:crm-smoke": "prisma generate && tsx scripts/crm-smoke.ts",
     "test:crm": "tsx --env-file=.env scripts/crm-integration-tests.ts",
+    "test:crm-import": "tsx scripts/crm-import-unit-tests.ts",
+    "test:crm-import:integration": "tsx --env-file=.env scripts/crm-import-integration-tests.ts",
     "test:staff-smoke": "prisma generate && tsx scripts/staff-rbac-smoke.ts",
     "test:staff": "tsx --env-file=scripts/staff-test.env --env-file=.env scripts/staff-integration-tests.ts"
   },
