@@ -2,8 +2,10 @@ import { CrmCallOutcome, SystemRole } from "../generated/prisma/enums";
 import {
   PERMISSIONS,
   hasPermission,
+  normalizeLeadScopeFilter,
   permissionsForRole,
   scopedLeadWhere,
+  scopedLeadWhereForFilter,
 } from "../lib/auth/permissions";
 import type { AdminSessionContext } from "../lib/auth/require-admin";
 import { STAFF_METRIC_DEFINITIONS } from "../lib/reports/staff-metric-definitions";
@@ -67,6 +69,28 @@ assert("branchId" in agentScope, "branch scope");
 const ownerScope = scopedLeadWhere(owner);
 assert(!("ownerUserId" in ownerScope), "owner sees org leads");
 assert(!("branchId" in ownerScope), "all-branch owner scope");
+assert(normalizeLeadScopeFilter(owner, "unassigned") === "unassigned", "manager unassigned filter");
+assert(
+  normalizeLeadScopeFilter(session(SystemRole.ADMISSIONS_AGENT), "all") === "mine",
+  "assigned-only users cannot widen lead scope",
+);
+const unassignedScope = scopedLeadWhereForFilter(
+  session(SystemRole.BRANCH_MANAGER, ["branch-a"]),
+  "unassigned",
+);
+assert(
+  "ownerUserId" in unassignedScope && unassignedScope.ownerUserId === null,
+  "unassigned filter",
+);
+const forgedAgentScope = scopedLeadWhereForFilter(
+  session(SystemRole.ADMISSIONS_AGENT, ["branch-a"]),
+  "unassigned",
+);
+assert(
+  "ownerUserId" in forgedAgentScope &&
+    forgedAgentScope.ownerUserId === "user-test",
+  "agent filter remains assigned",
+);
 
 assert(Object.values(CrmCallOutcome).length === 10, "call outcomes contract");
 assert(CrmCallOutcome.REGISTERED === "REGISTERED", "registered outcome");

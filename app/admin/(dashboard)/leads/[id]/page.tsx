@@ -7,6 +7,8 @@ import {
   FailedLeadSmsResendAction,
   LeadSmsAction,
 } from "@/components/admin/crm/LeadSmsAction";
+import { LeadOwnerBadge } from "@/components/admin/crm/LeadOwnerBadge";
+import { LeadOwnerSelect } from "@/components/admin/crm/LeadOwnerSelect";
 import { LeadStageControl } from "@/components/admin/crm/LeadStageControl";
 import {
   addLeadNoteAction,
@@ -84,7 +86,10 @@ export default async function LeadDetailPage({ params }: PageProps) {
             <li>شعبه: {lead.branchName}</li>
             <li>منبع: {lead.source} ({lead.sourceType})</li>
             <li>مرحله: {lead.stageName ?? "—"}</li>
-            <li>مسئول: {lead.ownerName ?? "—"}</li>
+            <li className="flex items-center gap-2">
+              <span>مسئول:</span>
+              <LeadOwnerBadge ownerName={lead.ownerName} />
+            </li>
             <li>پیگیری بعدی: {lead.nextFollowUpLabel ?? "—"}</li>
             <li>آخرین تماس: {lead.lastContactLabel ?? "—"}</li>
             {lead.lostReason ? <li>علت از دست رفتن: {lead.lostReason}</li> : null}
@@ -126,12 +131,12 @@ export default async function LeadDetailPage({ params }: PageProps) {
             <input type="hidden" name="leadId" value={lead.id} />
             <label className="block text-sm">
               <span className="mb-1 block text-muted">مسئول</span>
-              <select name="ownerUserId" defaultValue={lead.ownerId ?? ""} className="w-full rounded-lg border border-border px-3 py-2">
-                <option value="">بدون مسئول</option>
-                {lead.owners.map((o) => (
-                  <option key={o.id} value={o.id}>{o.name}</option>
-                ))}
-              </select>
+              <LeadOwnerSelect
+                name="ownerUserId"
+                defaultValue={lead.ownerId ?? ""}
+                owners={lead.owners}
+                className="w-full"
+              />
             </label>
             <button type="submit" className="rounded-lg border border-border px-3 py-2 text-sm">تخصیص</button>
           </form>}

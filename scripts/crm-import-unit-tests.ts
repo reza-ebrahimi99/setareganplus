@@ -15,6 +15,10 @@ import {
 } from "../lib/crm/import-parser";
 import { toLatinDigits } from "../lib/forms/latin-digits";
 import { normalizeIranianMobile } from "../lib/forms/normalize-mobile";
+import {
+  buildImportAssignmentPlan,
+  parseImportAssignmentConfig,
+} from "../lib/crm/import-assignment";
 
 let passed = 0;
 
@@ -56,7 +60,7 @@ test("invalid mobile returns a Persian row error", () => {
   assert.match(result.invalidRows[0]!.errors.join(" "), /موبایل/);
 });
 
-test("duplicate mobiles inside the file are rejected after first row", () => {
+test("duplicate mobiles remain valid for the duplicate-strategy step", () => {
   const result = validateMappedImportRows([
     {
       excelRowNumber: 2,
@@ -67,9 +71,42 @@ test("duplicate mobiles inside the file are rejected after first row", () => {
       values: { firstName: "مریم", lastName: "احمدی", mobile: "+989121234567" },
     },
   ]);
-  assert.equal(result.validRows.length, 1);
-  assert.equal(result.invalidRows.length, 1);
-  assert.match(result.invalidRows[0]!.errors.join(" "), /همین فایل تکراری/);
+  assert.equal(result.validRows.length, 2);
+  assert.equal(result.invalidRows.length, 0);
+});
+
+test("assignment plans support equal, round-robin and percentage methods", () => {
+  assert.deepEqual(
+    buildImportAssignmentPlan(5, {
+      method: "ROUND_ROBIN",
+      ownerUserIds: ["ali", "sara"],
+    }),
+    { ok: true, ownerUserIds: ["ali", "sara", "ali", "sara", "ali"] },
+  );
+  const percentage = buildImportAssignmentPlan(10, {
+    method: "PERCENTAGE",
+    allocations: [
+      { ownerUserId: "ali", percentage: 50 },
+      { ownerUserId: "sara", percentage: 30 },
+      { ownerUserId: "zahra", percentage: 20 },
+    ],
+  });
+  assert.equal(percentage.ok, true);
+  if (percentage.ok) {
+    assert.equal(percentage.ownerUserIds.filter((id) => id === "ali").length, 5);
+    assert.equal(percentage.ownerUserIds.filter((id) => id === "sara").length, 3);
+    assert.equal(percentage.ownerUserIds.filter((id) => id === "zahra").length, 2);
+  }
+  assert.equal(
+    parseImportAssignmentConfig({
+      method: "PERCENTAGE",
+      allocations: [
+        { ownerUserId: "ali", percentage: 60 },
+        { ownerUserId: "sara", percentage: 30 },
+      ],
+    }),
+    null,
+  );
 });
 
 test("full name splits conservatively", () => {

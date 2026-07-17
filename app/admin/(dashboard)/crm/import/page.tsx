@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { CrmImportWizard } from "@/components/admin/crm/CrmImportWizard";
+import { SystemRole } from "@/generated/prisma/enums";
+import { hasPermission } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-admin";
+import { loadLeadOwnerOptions } from "@/lib/crm/lead-owners";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +15,8 @@ export const metadata: Metadata = {
 
 export default async function CrmImportPage() {
   const session = await requirePermission("crm.import_leads");
-  const branches = await prisma.branch.findMany({
+  const canAssign = hasPermission(session, "crm.assign");
+  const [branches, owners] = await Promise.all([prisma.branch.findMany({
     where: {
       organizationId: session.organization.id,
       isActive: true,
@@ -23,7 +27,19 @@ export default async function CrmImportPage() {
     },
     orderBy: { name: "asc" },
     select: { id: true, name: true },
-  });
+  }), canAssign
+    ? loadLeadOwnerOptions({
+        organizationId: session.organization.id,
+        accessibleBranchIds: session.membership.allBranches
+          ? undefined
+          : session.membership.branchIds,
+      })
+    : Promise.resolve([])]);
+  const canImportDuplicates =
+    session.user.isPlatformAdmin ||
+    session.membership.role === SystemRole.PLATFORM_ADMIN ||
+    session.membership.role === SystemRole.ORGANIZATION_OWNER ||
+    session.membership.role === SystemRole.ORGANIZATION_ADMIN;
 
   return (
     <>
@@ -37,7 +53,12 @@ export default async function CrmImportPage() {
         ]}
         compact
       />
-      <CrmImportWizard branches={branches} />
+      <CrmImportWizard
+        branches={branches}
+        owners={owners}
+        canAssign={canAssign}
+        canImportDuplicates={canImportDuplicates}
+      />
     </>
   );
 }

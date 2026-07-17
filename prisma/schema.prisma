@@ -446,38 +446,39 @@ model Organization {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  branches            Branch[]
-  leads               Lead[]
-  memberships         OrganizationMembership[]
-  auditLogs           AuditLog[]
-  forms               Form[]
-  formVersions        FormVersion[]
-  formFields          FormField[]
-  formSubmissions     FormSubmission[]
-  formAnswers         FormAnswer[]
-  formTemplates       FormTemplate[]
-  formTemplateFields  FormTemplateField[]
-  tags                Tag[]
-  formTags            FormTag[]
-  formSubmissionTags  FormSubmissionTag[]
-  automationRules     AutomationRule[]
-  domainEvents        DomainEventOutbox[]
-  formAnalyticsEvents FormAnalyticsEvent[]
-  formAnalyticsDaily  FormAnalyticsDaily[]
-  mediaAssets         MediaAsset[]
-  bookingServices     BookingService[]
-  bookingAdvisors     BookingAdvisor[]
-  bookingSlots        BookingSlot[]
-  bookingReservations BookingReservation[]
-  sitePlacements      SitePlacement[]
-  smsTemplates        SmsTemplate[]
-  smsMessages         SmsMessage[]
-  otpChallenges       OtpChallenge[]
-  crmPipelines        CrmPipeline[]
-  crmPipelineStages   CrmPipelineStage[]
-  crmTasks            CrmTask[]
-  crmActivities       CrmActivity[]
-  crmCallLogs         CrmCallLog[]
+  branches             Branch[]
+  leads                Lead[]
+  memberships          OrganizationMembership[]
+  auditLogs            AuditLog[]
+  forms                Form[]
+  formVersions         FormVersion[]
+  formFields           FormField[]
+  formSubmissions      FormSubmission[]
+  formAnswers          FormAnswer[]
+  formTemplates        FormTemplate[]
+  formTemplateFields   FormTemplateField[]
+  tags                 Tag[]
+  formTags             FormTag[]
+  formSubmissionTags   FormSubmissionTag[]
+  automationRules      AutomationRule[]
+  domainEvents         DomainEventOutbox[]
+  formAnalyticsEvents  FormAnalyticsEvent[]
+  formAnalyticsDaily   FormAnalyticsDaily[]
+  mediaAssets          MediaAsset[]
+  bookingServices      BookingService[]
+  bookingAdvisors      BookingAdvisor[]
+  bookingSlots         BookingSlot[]
+  bookingReservations  BookingReservation[]
+  sitePlacements       SitePlacement[]
+  smsTemplates         SmsTemplate[]
+  smsMessages          SmsMessage[]
+  otpChallenges        OtpChallenge[]
+  crmPipelines         CrmPipeline[]
+  crmPipelineStages    CrmPipelineStage[]
+  crmTasks             CrmTask[]
+  crmActivities        CrmActivity[]
+  crmCallLogs          CrmCallLog[]
+  crmLeadImportReports CrmLeadImportReport[]
   automationExecutions AutomationExecution[]
 
   @@map("organizations")
@@ -496,19 +497,20 @@ model Branch {
   deletedAt      DateTime?
 
   // Restrict: hard-deleting an organization is blocked while branches exist.
-  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  leads               Lead[]
-  activities          LeadActivity[]
-  consents            ConsentRecord[]
-  branchMemberships   BranchMembership[]
-  auditLogs           AuditLog[]
-  forms               Form[]
-  formSubmissions     FormSubmission[]
-  domainEvents        DomainEventOutbox[]
-  formAnalyticsEvents FormAnalyticsEvent[]
-  bookingServices     BookingService[]
-  bookingAdvisors     BookingAdvisor[]
-  bookingSlots BookingSlot[]
+  organization         Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  leads                Lead[]
+  activities           LeadActivity[]
+  consents             ConsentRecord[]
+  branchMemberships    BranchMembership[]
+  auditLogs            AuditLog[]
+  forms                Form[]
+  formSubmissions      FormSubmission[]
+  domainEvents         DomainEventOutbox[]
+  formAnalyticsEvents  FormAnalyticsEvent[]
+  bookingServices      BookingService[]
+  bookingAdvisors      BookingAdvisor[]
+  bookingSlots         BookingSlot[]
+  crmLeadImportReports CrmLeadImportReport[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -534,16 +536,17 @@ model User {
   updatedAt        DateTime   @updatedAt
   deletedAt        DateTime?
 
-  memberships      OrganizationMembership[]
-  auditLogs        AuditLog[]               @relation("AuditLogActor")
-  adminSessions    AdminSession[]
-  mediaAssets      MediaAsset[]             @relation("MediaAssetCreator")
-  bookingAdvisors  BookingAdvisor[]
-  bookingCheckIns  BookingCheckIn[]
-  ownedLeads       Lead[]                   @relation("LeadOwner")
-  assignedCrmTasks CrmTask[]                @relation("CrmTaskAssignee")
-  createdCrmTasks  CrmTask[]                @relation("CrmTaskCreator")
-  crmActivities    CrmActivity[]            @relation("CrmActivityActor")
+  memberships          OrganizationMembership[]
+  auditLogs            AuditLog[]               @relation("AuditLogActor")
+  adminSessions        AdminSession[]
+  mediaAssets          MediaAsset[]             @relation("MediaAssetCreator")
+  bookingAdvisors      BookingAdvisor[]
+  bookingCheckIns      BookingCheckIn[]
+  ownedLeads           Lead[]                   @relation("LeadOwner")
+  assignedCrmTasks     CrmTask[]                @relation("CrmTaskAssignee")
+  createdCrmTasks      CrmTask[]                @relation("CrmTaskCreator")
+  crmActivities        CrmActivity[]            @relation("CrmActivityActor")
+  crmLeadImportReports CrmLeadImportReport[]    @relation("CrmLeadImportActor")
 
   @@index([status])
   @@index([deletedAt])
@@ -681,6 +684,8 @@ model Lead {
   sourceBookingReservationId String?
   pipelineId                 String?
   stageId                    String?
+  /// Canonical Lead Owner: the sales advisor responsible for this lead.
+  /// Reused by assignment, queueing, reminders, automation, and reporting.
   ownerUserId                String?
   score                      Int             @default(0)
   scoreBand                  LeadScoreBand   @default(COLD)
@@ -697,19 +702,19 @@ model Lead {
   updatedAt                  DateTime        @updatedAt
   deletedAt                  DateTime?
 
-  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch          Branch           @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  duplicateOf     Lead?            @relation("LeadDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
-  duplicates      Lead[]           @relation("LeadDuplicates")
-  pipeline        CrmPipeline?     @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
-  stage           CrmPipelineStage? @relation(fields: [organizationId, stageId], references: [organizationId, id], onDelete: Restrict)
-  owner           User?            @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
-  activities      LeadActivity[]
-  consents        ConsentRecord[]
-  formSubmissions FormSubmission[]
-  crmTasks        CrmTask[]
-  crmActivities   CrmActivity[]
-  crmCallLogs     CrmCallLog[]
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch              Branch               @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  duplicateOf         Lead?                @relation("LeadDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates          Lead[]               @relation("LeadDuplicates")
+  pipeline            CrmPipeline?         @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
+  stage               CrmPipelineStage?    @relation(fields: [organizationId, stageId], references: [organizationId, id], onDelete: Restrict)
+  owner               User?                @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  activities          LeadActivity[]
+  consents            ConsentRecord[]
+  formSubmissions     FormSubmission[]
+  crmTasks            CrmTask[]
+  crmActivities       CrmActivity[]
+  crmCallLogs         CrmCallLog[]
   bookingReservations BookingReservation[]
 
   @@unique([organizationId, branchId, id])
@@ -720,6 +725,7 @@ model Lead {
   @@index([organizationId, normalizedMobile])
   @@index([organizationId, pipelineId, stageId])
   @@index([organizationId, ownerUserId])
+  @@index([organizationId, branchId, ownerUserId, updatedAt])
   @@index([organizationId, scoreBand])
   @@index([organizationId, nextFollowUpAt])
   @@index([organizationId, sourceFormSubmissionId])
@@ -727,6 +733,34 @@ model Lead {
   @@index([organizationId, createdAt])
   @@index([organizationId, deletedAt])
   @@map("leads")
+}
+
+/// CRM-specific import outcome summary. Source files remain ephemeral; only the
+/// existing importer result is retained for dashboard reporting and CSV download.
+model CrmLeadImportReport {
+  id                String   @id @default(cuid())
+  organizationId    String
+  branchId          String
+  importedByUserId  String?
+  sourceFileName    String
+  totalRows         Int
+  createdCount      Int
+  updatedCount      Int
+  skippedCount      Int
+  invalidCount      Int
+  failedCount       Int
+  duplicateCount    Int
+  ownerDistribution Json     @default("[]")
+  resultCsv         String   @db.Text
+  createdAt         DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch       @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  importedBy   User?        @relation("CrmLeadImportActor", fields: [importedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, branchId, createdAt])
+  @@index([organizationId, importedByUserId, createdAt])
+  @@map("crm_lead_import_reports")
 }
 
 model LeadActivity {
@@ -843,8 +877,8 @@ model MediaAsset {
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  createdBy    User?        @relation("MediaAssetCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdBy    User?         @relation("MediaAssetCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   formPosters  FormVersion[] @relation("FormVersionPoster")
 
   @@index([organizationId, deletedAt])
@@ -998,13 +1032,13 @@ model FormSubmission {
   updatedAt               DateTime             @updatedAt
   deletedAt               DateTime?
 
-  organization          Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch                Branch              @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  form                  Form                @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
-  formVersion           FormVersion         @relation(fields: [organizationId, formVersionId], references: [organizationId, id], onDelete: Restrict)
-  lead                  Lead?               @relation(fields: [organizationId, branchId, leadId], references: [organizationId, branchId, id], onDelete: Restrict)
-  duplicateOfSubmission FormSubmission?     @relation("SubmissionDuplicates", fields: [duplicateOfSubmissionId], references: [id], onDelete: Restrict)
-  duplicates            FormSubmission[]    @relation("SubmissionDuplicates")
+  organization          Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch                Branch               @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  form                  Form                 @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
+  formVersion           FormVersion          @relation(fields: [organizationId, formVersionId], references: [organizationId, id], onDelete: Restrict)
+  lead                  Lead?                @relation(fields: [organizationId, branchId, leadId], references: [organizationId, branchId, id], onDelete: Restrict)
+  duplicateOfSubmission FormSubmission?      @relation("SubmissionDuplicates", fields: [duplicateOfSubmissionId], references: [id], onDelete: Restrict)
+  duplicates            FormSubmission[]     @relation("SubmissionDuplicates")
   answers               FormAnswer[]
   tags                  FormSubmissionTag[]
   bookingReservations   BookingReservation[]
@@ -1121,19 +1155,19 @@ model AutomationRule {
   updatedAt        DateTime        @updatedAt
   deletedAt        DateTime?
 
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  form         Form?         @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Cascade)
-  bookingService BookingService? @relation(fields: [organizationId, bookingServiceId], references: [organizationId, id], onDelete: Restrict)
-  pipeline     CrmPipeline?  @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
-  stage        CrmPipelineStage? @relation(fields: [organizationId, stageId], references: [organizationId, id], onDelete: Restrict)
-  executions   AutomationExecution[]
-  crmTasks     CrmTask[]
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  form           Form?                 @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Cascade)
+  bookingService BookingService?       @relation(fields: [organizationId, bookingServiceId], references: [organizationId, id], onDelete: Restrict)
+  pipeline       CrmPipeline?          @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
+  stage          CrmPipelineStage?     @relation(fields: [organizationId, stageId], references: [organizationId, id], onDelete: Restrict)
+  executions     AutomationExecution[]
+  crmTasks       CrmTask[]
 
+  @@unique([organizationId, id])
   @@index([organizationId, trigger, isEnabled])
   @@index([organizationId, formId])
   @@index([organizationId, bookingServiceId])
   @@index([organizationId, deletedAt])
-  @@unique([organizationId, id])
   @@map("automation_rules")
 }
 
@@ -1217,7 +1251,7 @@ model FormAnalyticsDaily {
 // Never store Jalali strings as authoritative timestamps.
 
 model BookingService {
-  id                     String   @id @default(cuid())
+  id                     String    @id @default(cuid())
   organizationId         String
   branchId               String?
   formId                 String?
@@ -1225,20 +1259,20 @@ model BookingService {
   title                  String
   description            String?
   durationMinutes        Int
-  bufferBeforeMinutes    Int      @default(0)
-  bufferAfterMinutes     Int      @default(0)
-  minimumLeadTimeMinutes Int      @default(60)
-  maximumAdvanceDays     Int      @default(30)
-  meetingTypes           Json     @default("[\"IN_PERSON\"]")
-  isActive               Boolean  @default(true)
-  settings               Json     @default("{}")
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  bufferBeforeMinutes    Int       @default(0)
+  bufferAfterMinutes     Int       @default(0)
+  minimumLeadTimeMinutes Int       @default(60)
+  maximumAdvanceDays     Int       @default(30)
+  meetingTypes           Json      @default("[\"IN_PERSON\"]")
+  isActive               Boolean   @default(true)
+  settings               Json      @default("{}")
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
   deletedAt              DateTime?
 
-  organization      Organization               @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch            Branch?                    @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  form              Form?                      @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
+  organization      Organization                   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch            Branch?                        @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  form              Form?                          @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
   advisorLinks      BookingAdvisorService[]
   availabilityRules BookingAvailabilityRule[]
   exceptions        BookingAvailabilityException[]
@@ -1323,19 +1357,19 @@ model BookingAvailabilityRule {
 }
 
 model BookingAvailabilityException {
-  id             String    @id @default(cuid())
+  id             String   @id @default(cuid())
   organizationId String
   advisorId      String
   serviceId      String?
   /// Local calendar day in Asia/Tehran (date-only UTC noon sentinel avoided — store as Date @db.Date).
-  localDate      DateTime  @db.Date
-  isClosed       Boolean   @default(true)
+  localDate      DateTime @db.Date
+  isClosed       Boolean  @default(true)
   startLocalTime String?
   endLocalTime   String?
   slotCapacity   Int?
   reason         String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   advisor BookingAdvisor  @relation(fields: [organizationId, advisorId], references: [organizationId, id], onDelete: Cascade)
   service BookingService? @relation(fields: [organizationId, serviceId], references: [organizationId, id], onDelete: Cascade)
@@ -1399,13 +1433,13 @@ model BookingReservation {
   updatedAt            DateTime           @updatedAt
   deletedAt            DateTime?
 
-  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  slot            BookingSlot         @relation(fields: [organizationId, slotId], references: [organizationId, id], onDelete: Restrict)
-  formSubmission  FormSubmission?     @relation(fields: [organizationId, formSubmissionId], references: [organizationId, id], onDelete: Restrict)
-  lead            Lead?               @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
-  rescheduledFrom BookingReservation? @relation("BookingRescheduleChain", fields: [rescheduledFromId], references: [id], onDelete: Restrict)
+  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  slot            BookingSlot          @relation(fields: [organizationId, slotId], references: [organizationId, id], onDelete: Restrict)
+  formSubmission  FormSubmission?      @relation(fields: [organizationId, formSubmissionId], references: [organizationId, id], onDelete: Restrict)
+  lead            Lead?                @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  rescheduledFrom BookingReservation?  @relation("BookingRescheduleChain", fields: [rescheduledFromId], references: [id], onDelete: Restrict)
   rescheduledTo   BookingReservation[] @relation("BookingRescheduleChain")
-  checkIns BookingCheckIn[]
+  checkIns        BookingCheckIn[]
 
   @@unique([organizationId, trackingCode])
   @@unique([organizationId, id])
@@ -1648,9 +1682,9 @@ model CrmPipeline {
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  stages       CrmPipelineStage[]
-  leads        Lead[]
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  stages          CrmPipelineStage[]
+  leads           Lead[]
   automationRules AutomationRule[]
 
   @@unique([organizationId, code])
@@ -1676,9 +1710,9 @@ model CrmPipelineStage {
   updatedAt      DateTime     @updatedAt
   deletedAt      DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  pipeline     CrmPipeline  @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
-  leads        Lead[]
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  pipeline        CrmPipeline      @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
+  leads           Lead[]
   automationRules AutomationRule[]
 
   @@unique([organizationId, pipelineId, code])
@@ -1690,24 +1724,24 @@ model CrmPipelineStage {
 }
 
 model CrmTask {
-  id                String          @id @default(cuid())
-  organizationId    String
-  leadId            String
-  assignedToUserId  String?
-  title             String
-  description       String?
-  taskType          CrmTaskType     @default(FOLLOW_UP)
-  priority          CrmTaskPriority @default(NORMAL)
-  status            CrmTaskStatus   @default(OPEN)
-  dueAt             DateTime?
-  completedAt       DateTime?
-  cancelledAt       DateTime?
-  createdByUserId   String?
-  automationRuleId  String?
-  idempotencyKey    String?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  deletedAt         DateTime?
+  id               String          @id @default(cuid())
+  organizationId   String
+  leadId           String
+  assignedToUserId String?
+  title            String
+  description      String?
+  taskType         CrmTaskType     @default(FOLLOW_UP)
+  priority         CrmTaskPriority @default(NORMAL)
+  status           CrmTaskStatus   @default(OPEN)
+  dueAt            DateTime?
+  completedAt      DateTime?
+  cancelledAt      DateTime?
+  createdByUserId  String?
+  automationRuleId String?
+  idempotencyKey   String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  deletedAt        DateTime?
 
   organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   lead           Lead            @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
@@ -1727,19 +1761,19 @@ model CrmTask {
 }
 
 model CrmActivity {
-  id                           String          @id @default(cuid())
-  organizationId               String
-  leadId                       String
-  activityType                 CrmActivityType
-  title                        String
-  summary                      String?
-  actorUserId                  String?
-  relatedTaskId                String?
-  relatedFormSubmissionId      String?
-  relatedBookingReservationId  String?
-  metadata                     Json?
-  occurredAt                   DateTime        @default(now())
-  createdAt                    DateTime        @default(now())
+  id                          String          @id @default(cuid())
+  organizationId              String
+  leadId                      String
+  activityType                CrmActivityType
+  title                       String
+  summary                     String?
+  actorUserId                 String?
+  relatedTaskId               String?
+  relatedFormSubmissionId     String?
+  relatedBookingReservationId String?
+  metadata                    Json?
+  occurredAt                  DateTime        @default(now())
+  createdAt                   DateTime        @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   lead         Lead         @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
@@ -1753,18 +1787,18 @@ model CrmActivity {
 }
 
 model CrmCallLog {
-  id                 String         @id @default(cuid())
-  organizationId     String
-  leadId             String
-  membershipId       String
-  outcome            CrmCallOutcome
-  note               String?
-  durationSeconds    Int?
-  calledAt           DateTime       @default(now())
-  nextFollowUpAt     DateTime?
-  createdTaskId      String?
-  idempotencyKey     String
-  createdAt          DateTime       @default(now())
+  id              String         @id @default(cuid())
+  organizationId  String
+  leadId          String
+  membershipId    String
+  outcome         CrmCallOutcome
+  note            String?
+  durationSeconds Int?
+  calledAt        DateTime       @default(now())
+  nextFollowUpAt  DateTime?
+  createdTaskId   String?
+  idempotencyKey  String
+  createdAt       DateTime       @default(now())
 
   organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   lead         Lead                   @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
@@ -1780,19 +1814,19 @@ model CrmCallLog {
 }
 
 model AutomationExecution {
-  id               String                     @id @default(cuid())
+  id               String                    @id @default(cuid())
   organizationId   String
   automationRuleId String
   domainEventId    String
-  status           AutomationExecutionStatus  @default(PENDING)
-  attempts         Int                        @default(0)
+  status           AutomationExecutionStatus @default(PENDING)
+  attempts         Int                       @default(0)
   startedAt        DateTime?
   completedAt      DateTime?
   errorCode        String?
   lastError        String?
   idempotencyKey   String
-  createdAt        DateTime                   @default(now())
-  updatedAt        DateTime                   @updatedAt
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
 
   organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   automationRule AutomationRule @relation(fields: [organizationId, automationRuleId], references: [organizationId, id], onDelete: Restrict)
@@ -1804,4 +1838,3 @@ model AutomationExecution {
   @@index([organizationId, domainEventId])
   @@map("automation_executions")
 }
-

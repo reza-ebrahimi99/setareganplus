@@ -7,23 +7,19 @@ import {
   createLeadAction,
   type CreateLeadState,
 } from "@/app/admin/(dashboard)/leads/actions";
+import type { LeadOwnerOption } from "@/lib/crm/lead-owners";
 
 export type LeadIntakeBranchOption = {
   id: string;
   name: string;
 };
 
-export type LeadIntakeAdvisorOption = {
-  id: string;
-  name: string;
-  roleLabel: string;
-  /** Empty means organization-wide branch eligibility. */
-  branchIds: string[];
-};
+export type LeadIntakeAdvisorOption = LeadOwnerOption;
 
 type LeadIntakeFormProps = {
   branches: LeadIntakeBranchOption[];
   advisors: LeadIntakeAdvisorOption[];
+  canAssign: boolean;
 };
 
 const initialState: CreateLeadState = {};
@@ -91,6 +87,7 @@ function SectionHeading({
 export function LeadIntakeForm({
   branches,
   advisors,
+  canAssign,
 }: LeadIntakeFormProps) {
   const router = useRouter();
   const idempotencyKey = useRef("");
@@ -315,9 +312,9 @@ export function LeadIntakeForm({
               <FieldError id="lead-branch-error" message={errors?.branchId} />
             </div>
 
-            <div>
+            {canAssign ? <div>
               <label htmlFor="lead-advisor" className="text-sm font-medium text-primary">
-                مشاور
+                مسئول لید
               </label>
               <select
                 id="lead-advisor"
@@ -332,7 +329,7 @@ export function LeadIntakeForm({
                 }
                 className={fieldClassName(Boolean(errors?.ownerUserId))}
               >
-                <option value="">بدون مشاور</option>
+                <option value="">بدون مسئول</option>
                 {visibleAdvisors.map((advisor) => (
                   <option key={advisor.id} value={advisor.id}>
                     {advisor.name} — {advisor.roleLabel}
@@ -343,7 +340,7 @@ export function LeadIntakeForm({
                 فقط همکاران مجاز برای شعبه انتخاب‌شده نمایش داده می‌شوند.
               </p>
               <FieldError id="lead-advisor-error" message={errors?.ownerUserId} />
-            </div>
+            </div> : null}
 
             <div className="sm:col-span-2">
               <label htmlFor="lead-source" className="text-sm font-medium text-primary">

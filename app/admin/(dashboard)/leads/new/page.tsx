@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import {
   LeadIntakeForm,
-  type LeadIntakeAdvisorOption,
   type LeadIntakeBranchOption,
 } from "@/components/admin/leads/LeadIntakeForm";
-import { ROLE_LABELS } from "@/lib/auth/permissions";
+import { hasPermission } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-admin";
+import { loadLeadOwnerOptions } from "@/lib/crm/lead-owners";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -24,8 +24,9 @@ const breadcrumbs = [
 export default async function NewLeadPage() {
   const session = await requirePermission("crm.create_lead");
   const organizationId = session.organization.id;
+  const canAssign = hasPermission(session, "crm.assign");
 
-  const [branches, memberships] = await Promise.all([
+  const [branches, advisorOptions] = await Promise.all([
     prisma.branch.findMany({
       where: {
         organizationId,
@@ -38,43 +39,17 @@ export default async function NewLeadPage() {
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
-    prisma.organizationMembership.findMany({
-      where: {
-        organizationId,
-        status: "ACTIVE",
-        deletedAt: null,
-        user: {
-          status: "ACTIVE",
-          deletedAt: null,
-        },
-      },
-      select: {
-        role: true,
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        branchMemberships: {
-          where: { deletedAt: null },
-          select: { branchId: true },
-        },
-      },
-      take: 200,
-    }),
+    canAssign
+      ? loadLeadOwnerOptions({
+          organizationId,
+          accessibleBranchIds: session.membership.allBranches
+            ? undefined
+            : session.membership.branchIds,
+        })
+      : Promise.resolve([]),
   ]);
 
   const branchOptions: LeadIntakeBranchOption[] = branches;
-  const advisorOptions: LeadIntakeAdvisorOption[] = memberships
-    .map((membership) => ({
-      id: membership.user.id,
-      name: `${membership.user.firstName} ${membership.user.lastName}`.trim(),
-      roleLabel: ROLE_LABELS[membership.role],
-      branchIds: membership.branchMemberships.map((scope) => scope.branchId),
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name, "fa"));
 
   return (
     <>
@@ -89,6 +64,7 @@ export default async function NewLeadPage() {
         <LeadIntakeForm
           branches={branchOptions}
           advisors={advisorOptions}
+          canAssign={canAssign}
         />
       </div>
     </>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { CrmTaskStatus } from "@/generated/prisma/enums";
 import { AdminMetricGrid } from "@/components/admin/AdminMetricGrid";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -10,6 +11,10 @@ import { AdminSection } from "@/components/admin/AdminSection";
 import { AdminSystemCard } from "@/components/admin/AdminSystemCard";
 import { AdminTaskEmpty } from "@/components/admin/AdminTaskEmpty";
 import { AdminTimelineEmpty } from "@/components/admin/AdminTimelineEmpty";
+import {
+  CrmDashboardInsightsSection,
+  CrmDashboardInsightsSkeleton,
+} from "@/components/admin/crm/CrmDashboardInsights";
 import {
   adminBreadcrumbs,
   dashboardQuickActions,
@@ -37,7 +42,9 @@ export default async function AdminDashboardPage() {
   }
   if (!hasPermission(session, "crm.view_all")) redirect("/admin/reports/staff-performance");
   const organizationId = session.organization.id;
-  const today = getTehranParts(new Date());
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86_400_000);
+  const today = getTehranParts(now);
   const { startUtc, endUtc } = tehranDayBoundsUtc(today.year, today.month, today.day);
   const branchScope = session.membership.allBranches
     ? {}
@@ -45,12 +52,12 @@ export default async function AdminDashboardPage() {
   const leadScope = { organizationId, deletedAt: null, ...branchScope };
   const [callsToday, overdue, unassigned, hotWithoutFollowUp, bookingsToday, won30, leads30, staffCalls] = await Promise.all([
     prisma.crmCallLog.count({ where: { organizationId, calledAt: { gte: startUtc, lte: endUtc }, lead: leadScope } }),
-    prisma.crmTask.count({ where: { organizationId, deletedAt: null, status: { in: [CrmTaskStatus.OPEN, CrmTaskStatus.IN_PROGRESS] }, dueAt: { lt: new Date() }, lead: leadScope } }),
+    prisma.crmTask.count({ where: { organizationId, deletedAt: null, status: { in: [CrmTaskStatus.OPEN, CrmTaskStatus.IN_PROGRESS] }, dueAt: { lt: now }, lead: leadScope } }),
     prisma.lead.count({ where: { ...leadScope, ownerUserId: null } }),
     prisma.lead.count({ where: { ...leadScope, scoreBand: { in: ["HOT", "QUALIFIED"] }, nextFollowUpAt: null } }),
     prisma.bookingReservation.count({ where: { organizationId, deletedAt: null, slot: { startsAt: { gte: startUtc, lte: endUtc }, ...(session.membership.allBranches ? {} : { branchId: { in: session.membership.branchIds } }) } } }),
-    prisma.lead.count({ where: { ...leadScope, convertedAt: { gte: new Date(Date.now() - 30 * 86_400_000) } } }),
-    prisma.lead.count({ where: { ...leadScope, createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) } } }),
+    prisma.lead.count({ where: { ...leadScope, convertedAt: { gte: thirtyDaysAgo } } }),
+    prisma.lead.count({ where: { ...leadScope, createdAt: { gte: thirtyDaysAgo } } }),
     prisma.crmCallLog.findMany({
       where: {
         organizationId,
@@ -98,6 +105,9 @@ export default async function AdminDashboardPage() {
       <section className="mb-7 grid gap-3 sm:grid-cols-3 xl:grid-cols-6" aria-label="شاخص‌های عملیاتی مدیر">
         {managerMetrics.map(([label, value]) => <div key={label} className="admin-card p-4"><p className="text-xs text-muted">{label}</p><p className="mt-1 text-xl font-bold text-primary">{value}</p></div>)}
       </section>
+      <Suspense fallback={<CrmDashboardInsightsSkeleton />}>
+        <CrmDashboardInsightsSection session={session} />
+      </Suspense>
       <section className="admin-card mb-7 p-5">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-semibold text-primary">عملکرد تماس همکاران امروز</h2>
@@ -108,7 +118,6 @@ export default async function AdminDashboardPage() {
           {callsByStaff.length === 0 && <li className="text-sm text-muted">امروز تماسی ثبت نشده است.</li>}
         </ul>
       </section>
-
       <AdminMetricGrid
         items={dashboardStats}
         heading="کارت‌های آماری"

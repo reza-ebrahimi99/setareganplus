@@ -3,12 +3,14 @@ import Link from "next/link";
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { CrmKanbanViewport } from "@/components/admin/crm/CrmKanbanViewport";
+import { LeadOwnerBadge } from "@/components/admin/crm/LeadOwnerBadge";
 import { LeadSmsAction } from "@/components/admin/crm/LeadSmsAction";
 import { LeadStageControl } from "@/components/admin/crm/LeadStageControl";
 import { adminBreadcrumbs } from "@/content/admin";
 import { loadCrmPipelineBoard } from "@/lib/crm/load-crm-board";
 import { toPersianDigits } from "@/lib/persian";
-import { LeadScoreBand } from "@/generated/prisma/enums";
+import { LeadScoreBand, LeadSourceType } from "@/generated/prisma/enums";
+import type { LeadScopeFilter } from "@/lib/auth/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -33,11 +35,22 @@ export default async function AdminCrmBoardPage({
   searchParams: SearchParams;
 }) {
   const params = await searchParams;
+  const scoreBandParam = readParam(params, "band");
+  const sourceTypeParam = readParam(params, "source");
   const filters = {
+    scope: readParam(params, "scope") as LeadScopeFilter | undefined,
     ownerUserId: readParam(params, "owner"),
     stageId: readParam(params, "stage"),
-    sourceType: readParam(params, "source"),
-    scoreBand: readParam(params, "band") as LeadScoreBand | undefined,
+    sourceType:
+      sourceTypeParam &&
+      (Object.values(LeadSourceType) as string[]).includes(sourceTypeParam)
+        ? (sourceTypeParam as LeadSourceType)
+        : undefined,
+    scoreBand:
+      scoreBandParam &&
+      (Object.values(LeadScoreBand) as string[]).includes(scoreBandParam)
+        ? (scoreBandParam as LeadScoreBand)
+        : undefined,
     branchId: readParam(params, "branch"),
     followUpOverdue: readParam(params, "overdue") === "1",
   };
@@ -72,6 +85,7 @@ export default async function AdminCrmBoardPage({
     columns,
     owners,
     branches,
+    scope,
     totalLeads,
     permissions,
     smsTemplates,
@@ -94,9 +108,17 @@ export default async function AdminCrmBoardPage({
 
       <form className="admin-card mb-5 grid gap-3 px-4 py-4 sm:grid-cols-2 lg:grid-cols-4" method="get">
         <label className="text-sm">
+          <span className="mb-1 block text-muted">دامنه لیدها</span>
+          <select name="scope" defaultValue={scope} className="w-full rounded-lg border border-border bg-white px-3 py-2">
+            {permissions.viewAll ? <option value="all">همه لیدها</option> : null}
+            <option value="mine">لیدهای من</option>
+            {permissions.viewAll ? <option value="unassigned">بدون مسئول</option> : null}
+          </select>
+        </label>
+        <label className="text-sm">
           <span className="mb-1 block text-muted">مسئول</span>
           <select name="owner" defaultValue={filters.ownerUserId ?? ""} className="w-full rounded-lg border border-border bg-white px-3 py-2">
-            <option value="">همه</option>
+            <option value="">همه مسئولان</option>
             {owners.map((o) => (
               <option key={o.id} value={o.id}>{o.name}</option>
             ))}
@@ -164,7 +186,7 @@ export default async function AdminCrmBoardPage({
                       <p className="mt-1 text-xs text-muted" dir="ltr">{lead.mobileMasked}</p>
                       <div className="mt-2 flex flex-wrap gap-1 text-[11px]">
                         <span className="rounded bg-slate-100 px-1.5 py-0.5">{lead.scoreBandLabel} · {toPersianDigits(lead.score)}</span>
-                        {lead.ownerName ? <span className="rounded bg-slate-100 px-1.5 py-0.5">{lead.ownerName}</span> : null}
+                        <LeadOwnerBadge ownerName={lead.ownerName} compact />
                         {lead.overdueTaskCount > 0 ? (
                           <span className="rounded bg-red-50 px-1.5 py-0.5 text-red-700">
                             سررسید: {toPersianDigits(lead.overdueTaskCount)}
@@ -214,8 +236,10 @@ export default async function AdminCrmBoardPage({
                   </Link>
                   <p className="mt-1 text-sm text-muted">
                     {lead.scoreBandLabel} · {toPersianDigits(lead.score)}
-                    {lead.ownerName ? ` · ${lead.ownerName}` : ""}
                   </p>
+                  <div className="mt-2">
+                    <LeadOwnerBadge ownerName={lead.ownerName} compact />
+                  </div>
                   {permissions.changeStage ? (
                     <LeadStageControl
                       key={lead.stageId ?? "unassigned"}

@@ -271,11 +271,15 @@ async function executeAction(params: {
     }
     case "ASSIGN_OWNER": {
       if (!leadId) return null;
-      await assignLeadOwner({
+      const assignment = await assignLeadOwner({
         organizationId,
         leadId,
         ownerUserId: action.userId,
+        source: "AUTOMATION",
       });
+      if (!assignment.ok) {
+        throw new Error(`ASSIGN_OWNER_FAILED: ${assignment.error}`);
+      }
       return leadId;
     }
     case "CREATE_TASK": {

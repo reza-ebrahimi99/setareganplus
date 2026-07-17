@@ -5,6 +5,7 @@ import { AuditAction, CrmCallOutcome, CrmTaskType } from "@/generated/prisma/enu
 import {
   assertPermission,
   hasPermission,
+  permissionsForRole,
   scopedLeadWhere,
   type Permission,
 } from "@/lib/auth/permissions";
@@ -14,6 +15,12 @@ import {
   type AdminSessionContext,
 } from "@/lib/auth/require-admin";
 import { recordCrmActivity } from "@/lib/crm/activity";
+import {
+  MAX_FILTERED_LEAD_ASSIGNMENT_SIZE,
+  parseBulkLeadAssignmentInput,
+} from "@/lib/crm/lead-assignment";
+import { leadListWhere } from "@/lib/crm/lead-list-filters";
+import { setLeadOwnersBulk } from "@/lib/crm/lead-ownership";
 import { CrmActivityType } from "@/generated/prisma/enums";
 import {
   createManualLead,
@@ -96,13 +103,20 @@ export async function createLeadAction(
   formData: FormData,
 ): Promise<CreateLeadState> {
   const session = await requirePermission("crm.create_lead");
+  const requestedOwnerUserId = readFormString(formData, "ownerUserId");
+  if (requestedOwnerUserId.trim() && !hasPermission(session, "crm.assign")) {
+    return {
+      status: "error",
+      fieldErrors: { ownerUserId: "اجازه تخصیص مسئول را ندارید." },
+    };
+  }
   const validation = validateManualLeadIntake({
     firstName: readFormString(formData, "firstName"),
     lastName: readFormString(formData, "lastName"),
     mobile: readFormString(formData, "mobile"),
     branchId: readFormString(formData, "branchId"),
     source: readFormString(formData, "source"),
-    ownerUserId: readFormString(formData, "ownerUserId"),
+    ownerUserId: requestedOwnerUserId,
     notes: readFormString(formData, "notes"),
     createFollowUpTask: readDefaultTrueBoolean(
       formData,
@@ -296,35 +310,136 @@ export async function assignLeadOwnerAction(formData: FormData) {
         userId: ownerUserId,
         status: "ACTIVE",
         deletedAt: null,
+        user: { status: "ACTIVE", deletedAt: null },
         OR: [
           { branchMemberships: { none: { deletedAt: null } } },
           { branchMemberships: { some: { branchId: accessibleLead.branchId, deletedAt: null } } },
         ],
       },
-      select: { id: true },
+      select: { id: true, role: true },
     });
     if (!owner) throw new Error("INVALID_BRANCH_ASSIGNEE");
+    if (!permissionsForRole(owner.role).has("crm.view_assigned")) {
+      throw new Error("INVALID_LEAD_ASSIGNEE");
+    }
   }
 
-  await assignLeadOwner({
+  const assigned = await assignLeadOwner({
     organizationId: session.organization.id,
     leadId,
     ownerUserId,
     actorUserId: session.user.id,
   });
-  await prisma.auditLog.create({
-    data: {
-      organizationId: session.organization.id,
-      actorUserId: session.user.id,
-      action: AuditAction.CRM_LEAD_ASSIGNED,
-      entityType: "Lead",
-      entityId: leadId,
-      metadata: { assigned: Boolean(ownerUserId) },
-    },
-  });
+  if (!assigned.ok) throw new Error("LEAD_ASSIGNMENT_FAILED");
 
   revalidatePath(`/admin/leads/${leadId}`);
+  revalidatePath("/admin/leads");
   revalidatePath("/admin/crm");
+  revalidatePath("/admin/workspace");
+  revalidatePath("/admin");
+}
+
+export type BulkAssignLeadOwnerResult =
+  | { ok: true; updatedCount: number; message: string }
+  | { ok: false; error: string };
+
+export async function bulkAssignLeadOwnerAction(
+  input: unknown,
+): Promise<BulkAssignLeadOwnerResult> {
+  const session = await requirePermission("crm.assign");
+  const parsed = parseBulkLeadAssignmentInput(input);
+  if (!parsed.ok) return parsed;
+  const { ownerUserId } = parsed;
+  let leadIds: string[];
+  if (parsed.selection.mode === "explicit") {
+    leadIds = parsed.selection.leadIds;
+  } else {
+    const filteredLeads = await prisma.lead.findMany({
+      where: {
+        ...leadListWhere(session, parsed.selection.filters),
+        ...(parsed.selection.excludedLeadIds.length
+          ? { id: { notIn: parsed.selection.excludedLeadIds } }
+          : {}),
+      },
+      orderBy: { id: "asc" },
+      take: MAX_FILTERED_LEAD_ASSIGNMENT_SIZE + 1,
+      select: { id: true },
+    });
+    if (filteredLeads.length > MAX_FILTERED_LEAD_ASSIGNMENT_SIZE) {
+      return {
+        ok: false,
+        error: `تعداد نتایج فیلتر بیش از ${MAX_FILTERED_LEAD_ASSIGNMENT_SIZE} لید است. فیلتر را محدودتر کنید.`,
+      };
+    }
+    leadIds = filteredLeads.map((lead) => lead.id);
+    if (leadIds.length === 0) {
+      return { ok: false, error: "لیدی مطابق فیلتر برای تخصیص وجود ندارد." };
+    }
+  }
+
+  const transactionScope =
+    parsed.selection.mode === "filtered"
+      ? leadListWhere(session, parsed.selection.filters)
+      : scopedLeadWhere(session);
+  const transactionResult = await prisma.$transaction(async (tx) => {
+    const leads = await tx.lead.findMany({
+      where: {
+        ...transactionScope,
+        id: { in: leadIds },
+      },
+      select: { id: true, branchId: true, ownerUserId: true },
+    });
+    if (leads.length !== leadIds.length) {
+      return {
+        ok: false as const,
+        error: "یک یا چند لید انتخاب‌شده خارج از محدوده دسترسی شما است.",
+      };
+    }
+
+    const assigned = await setLeadOwnersBulk({
+      organizationId: session.organization.id,
+      leads,
+      ownerUserId,
+      actorUserId: session.user.id,
+      source: "BULK",
+      tx,
+    });
+    if (!assigned.ok) {
+      return assigned;
+    }
+    const changedLeadIds = new Set(assigned.changedLeadIds);
+    const changedLeads = leads.filter((lead) => changedLeadIds.has(lead.id));
+    return { ok: true as const, changedLeads };
+  }).catch((error: unknown) => {
+    console.error("Bulk lead assignment failed", {
+      error,
+      actorUserId: session.user.id,
+      organizationId: session.organization.id,
+      leadCount: leadIds.length,
+    });
+    return {
+      ok: false as const,
+      error: "تخصیص گروهی انجام نشد. دوباره تلاش کنید.",
+    };
+  });
+  if (!transactionResult.ok) {
+    return transactionResult;
+  }
+  const { changedLeads } = transactionResult;
+
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin/crm");
+  revalidatePath("/admin/workspace");
+  revalidatePath("/admin");
+
+  return {
+    ok: true,
+    updatedCount: changedLeads.length,
+    message:
+      changedLeads.length > 0
+        ? `${changedLeads.length} لید با موفقیت به‌روزرسانی شد.`
+        : "مسئول لیدهای انتخاب‌شده تغییری نکرد.",
+  };
 }
 
 export async function assignLeadTaskAction(formData: FormData) {

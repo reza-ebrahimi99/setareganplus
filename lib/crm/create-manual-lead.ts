@@ -318,6 +318,16 @@ export async function createManualLead(params: {
     ) {
       throw new Error("MANUAL_LEAD_FORBIDDEN");
     }
+    if (
+      input.ownerUserId &&
+      !actor.isPlatformAdmin &&
+      !permissionsForRole(membership.role).has("crm.assign")
+    ) {
+      return {
+        status: "invalid",
+        fieldErrors: { ownerUserId: "اجازه تخصیص مسئول را ندارید." },
+      };
+    }
 
     const currentBranchIds = membership.branchMemberships.map((scope) => scope.branchId);
     const actorHasAllBranches = currentBranchIds.length === 0;
@@ -359,9 +369,12 @@ export async function createManualLead(params: {
             },
           ],
         },
-        select: { id: true },
+        select: { id: true, role: true },
       });
-      if (!owner) {
+      if (
+        !owner ||
+        !permissionsForRole(owner.role).has("crm.view_assigned")
+      ) {
         return {
           status: "invalid",
           fieldErrors: {
@@ -487,6 +500,22 @@ export async function createManualLead(params: {
       occurredAt,
       tx,
     });
+    if (input.ownerUserId) {
+      await recordCrmActivity({
+        organizationId: actor.organizationId,
+        leadId: lead.id,
+        activityType: CrmActivityType.OWNER_ASSIGNED,
+        title: "تخصیص مسئول",
+        actorUserId: actor.userId,
+        metadata: {
+          previousOwnerUserId: null,
+          ownerUserId: input.ownerUserId,
+          source: "MANUAL",
+        },
+        occurredAt,
+        tx,
+      });
+    }
 
     await tx.auditLog.create({
       data: {
@@ -499,10 +528,28 @@ export async function createManualLead(params: {
         metadata: {
           sourceType: LeadSourceType.MANUAL,
           ownerAssigned: Boolean(input.ownerUserId),
+          ownerUserId: input.ownerUserId,
           followUpTaskCreated: Boolean(taskId),
         },
       },
     });
+    if (input.ownerUserId) {
+      await tx.auditLog.create({
+        data: {
+          organizationId: actor.organizationId,
+          branchId: input.branchId,
+          actorUserId: actor.userId,
+          action: AuditAction.CRM_LEAD_ASSIGNED,
+          entityType: "Lead",
+          entityId: lead.id,
+          metadata: {
+            previousOwnerUserId: null,
+            ownerUserId: input.ownerUserId,
+            source: "MANUAL",
+          },
+        },
+      });
+    }
 
     return {
       status: "created",

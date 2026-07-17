@@ -1,5 +1,6 @@
 "use server";
 
+import type { Prisma } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth/require-admin";
 import {
@@ -11,7 +12,17 @@ import {
   type ImportMappingField,
   type WorkbookInspection,
 } from "@/lib/crm/import-parser";
-import { importCrmLeads, type CrmImportResult } from "@/lib/crm/import-service";
+import {
+  importCrmLeads,
+  preflightCrmImport,
+  type CrmImportPreflight,
+  type CrmImportResult,
+} from "@/lib/crm/import-service";
+import {
+  parseImportAssignmentConfig,
+  type ImportAssignmentConfig,
+} from "@/lib/crm/import-assignment";
+import { prisma } from "@/lib/prisma";
 
 export type ImportActionError = { ok: false; error: string };
 export type InspectImportActionResult =
@@ -20,21 +31,16 @@ export type InspectImportActionResult =
 export type ValidateImportActionResult =
   | {
       ok: true;
-      summary: {
-        total: number;
-        valid: number;
-        invalid: number;
-        errors: Array<{
-          excelRowNumber: number;
-          mobile: string;
-          name: string;
-          message: string;
-        }>;
-      };
+      summary: CrmImportPreflight;
     }
   | ImportActionError;
 export type ExecuteImportActionResult =
-  | { ok: true; result: CrmImportResult }
+  | {
+      ok: true;
+      result: CrmImportResult;
+      reportId: string | null;
+      reportWarning: string | null;
+    }
   | ImportActionError;
 
 function readFile(formData: FormData): File {
@@ -81,6 +87,22 @@ function errorMessage(error: unknown): string {
     : "پردازش فایل انجام نشد.";
 }
 
+function readBoolean(formData: FormData, key: string): boolean {
+  return String(formData.get(key) ?? "") === "true";
+}
+
+function readAssignment(formData: FormData): ImportAssignmentConfig {
+  const raw = formData.get("assignment");
+  if (typeof raw !== "string") return { method: "NONE" };
+  try {
+    const parsed = parseImportAssignmentConfig(JSON.parse(raw));
+    if (!parsed) throw new Error("INVALID");
+    return parsed;
+  } catch {
+    throw new Error("روش تخصیص مسئول نامعتبر است.");
+  }
+}
+
 export async function inspectCrmImportAction(
   formData: FormData,
 ): Promise<InspectImportActionResult> {
@@ -99,7 +121,7 @@ export async function inspectCrmImportAction(
 export async function validateCrmImportAction(
   formData: FormData,
 ): Promise<ValidateImportActionResult> {
-  await requirePermission("crm.import_leads");
+  const session = await requirePermission("crm.import_leads");
   try {
     const parsed = await parseLeadImportFile({
       file: readFile(formData),
@@ -108,17 +130,12 @@ export async function validateCrmImportAction(
     });
     return {
       ok: true,
-      summary: {
-        total: parsed.totalRows,
-        valid: parsed.validRows.length,
-        invalid: parsed.invalidRows.length,
-        errors: parsed.invalidRows.slice(0, 100).map((row) => ({
-          excelRowNumber: row.excelRowNumber,
-          mobile: row.mobile,
-          name: row.name,
-          message: row.errors.join(" "),
-        })),
-      },
+      summary: await preflightCrmImport({
+        organizationId: session.organization.id,
+        validRows: parsed.validRows,
+        invalidRows: parsed.invalidRows,
+        matchParentName: readBoolean(formData, "matchParentName"),
+      }),
     };
   } catch (error) {
     return { ok: false, error: errorMessage(error) };
@@ -131,14 +148,19 @@ export async function executeCrmImportAction(
   const session = await requirePermission("crm.import_leads");
   try {
     const strategyRaw = String(formData.get("strategy") ?? "");
-    if (strategyRaw !== "SKIP" && strategyRaw !== "UPDATE_EMPTY_FIELDS") {
+    if (
+      strategyRaw !== "SKIP" &&
+      strategyRaw !== "UPDATE_EMPTY_FIELDS" &&
+      strategyRaw !== "IMPORT_ANYWAY"
+    ) {
       throw new Error("راهبرد برخورد با تکراری‌ها نامعتبر است.");
     }
     const strategy = strategyRaw as ImportDuplicateStrategy;
     const branchId = String(formData.get("branchId") ?? "").trim();
     if (!branchId) throw new Error("شعبه باید انتخاب شود.");
+    const file = readFile(formData);
     const parsed = await parseLeadImportFile({
-      file: readFile(formData),
+      file,
       sheetName: String(formData.get("sheetName") ?? ""),
       mapping: readMapping(formData),
     });
@@ -153,11 +175,42 @@ export async function executeCrmImportAction(
       strategy,
       validRows: parsed.validRows,
       invalidRows: parsed.invalidRows,
+      assignment: readAssignment(formData),
+      matchParentName: readBoolean(formData, "matchParentName"),
     });
+    let reportId: string | null = null;
+    let reportWarning: string | null = null;
+    try {
+      const report = await prisma.crmLeadImportReport.create({
+        data: {
+          organizationId: session.organization.id,
+          branchId,
+          importedByUserId: session.user.id,
+          sourceFileName: file.name.trim().slice(0, 255) || "crm-import",
+          totalRows: result.total,
+          createdCount: result.created,
+          updatedCount: result.updated,
+          skippedCount: result.skipped,
+          invalidCount: result.invalid,
+          failedCount: result.failed,
+          duplicateCount: result.duplicates,
+          ownerDistribution:
+            result.ownerDistribution as Prisma.InputJsonValue,
+          resultCsv: result.csv,
+        },
+        select: { id: true },
+      });
+      reportId = report.id;
+    } catch (error) {
+      console.error("Failed to persist CRM import report", error);
+      reportWarning =
+        "ورود لیدها انجام شد، اما ذخیره گزارش مدیریتی ممکن نبود.";
+    }
     revalidatePath("/admin/leads");
     revalidatePath("/admin/crm");
     revalidatePath("/admin/workspace");
-    return { ok: true, result };
+    revalidatePath("/admin");
+    return { ok: true, result, reportId, reportWarning };
   } catch (error) {
     return { ok: false, error: errorMessage(error) };
   }

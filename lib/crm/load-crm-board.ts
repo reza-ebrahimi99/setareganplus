@@ -5,11 +5,18 @@
 import {
   CrmTaskStatus,
   LeadScoreBand,
+  LeadSourceType,
   type CrmStageType,
 } from "@/generated/prisma/enums";
-import { hasPermission, scopedLeadWhere } from "@/lib/auth/permissions";
+import {
+  hasPermission,
+  normalizeLeadScopeFilter,
+  scopedLeadWhereForFilter,
+  type LeadScopeFilter,
+} from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { ensureDefaultPipeline } from "@/lib/crm/pipeline";
+import { loadLeadOwnerOptions } from "@/lib/crm/lead-owners";
 import { loadCrmSmsTemplates, type CrmSmsTemplateOption } from "@/lib/crm/manual-sms";
 import { SCORE_BAND_LABELS } from "@/lib/crm/scoring";
 import { isTaskOverdue } from "@/lib/crm/tasks";
@@ -18,9 +25,10 @@ import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { prisma } from "@/lib/prisma";
 
 export type CrmBoardFilters = {
+  scope?: LeadScopeFilter;
   ownerUserId?: string;
   stageId?: string;
-  sourceType?: string;
+  sourceType?: LeadSourceType;
   scoreBand?: LeadScoreBand;
   branchId?: string;
   followUpOverdue?: boolean;
@@ -74,8 +82,11 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
         columns: CrmBoardColumn[];
         owners: Array<{ id: string; name: string }>;
         branches: Array<{ id: string; name: string }>;
+        scope: LeadScopeFilter;
         totalLeads: number;
         permissions: {
+          assign: boolean;
+          viewAll: boolean;
           changeStage: boolean;
           terminal: boolean;
           sendSms: boolean;
@@ -88,6 +99,7 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
   const session = await requirePermission("crm.view_assigned");
   try {
     const organizationId = session.organization.id;
+    const scope = normalizeLeadScopeFilter(session, filters.scope);
     const initialized = await ensureDefaultPipeline(organizationId);
 
     const pipeline = await prisma.crmPipeline.findFirst({
@@ -119,15 +131,30 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
     const leads = await prisma.lead.findMany({
       where: {
         AND: [
-          scopedLeadWhere(session),
+          scopedLeadWhereForFilter(session, scope),
           {
             pipelineId: pipeline.id,
             ...(filters.ownerUserId ? { ownerUserId: filters.ownerUserId } : {}),
             ...(filters.stageId ? { stageId: filters.stageId } : {}),
-            ...(filters.sourceType ? { sourceType: filters.sourceType as never } : {}),
+            ...(filters.sourceType ? { sourceType: filters.sourceType } : {}),
             ...(filters.scoreBand ? { scoreBand: filters.scoreBand } : {}),
             ...(filters.branchId ? { branchId: filters.branchId } : {}),
-            ...(filters.followUpOverdue ? { nextFollowUpAt: { lt: now } } : {}),
+            ...(filters.followUpOverdue
+              ? {
+                  crmTasks: {
+                    some: {
+                      deletedAt: null,
+                      status: {
+                        in: [
+                          CrmTaskStatus.OPEN,
+                          CrmTaskStatus.IN_PROGRESS,
+                        ],
+                      },
+                      dueAt: { lt: now },
+                    },
+                  },
+                }
+              : {}),
           },
         ],
       },
@@ -211,17 +238,15 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
       }
     }
 
-    const memberships = hasPermission(session, "crm.assign") ? await prisma.organizationMembership.findMany({
-      where: {
-        organizationId,
-        deletedAt: null,
-        status: "ACTIVE",
-      },
-      take: 100,
-      select: {
-        user: { select: { id: true, firstName: true, lastName: true } },
-      },
-    }) : [];
+    const canViewAll = hasPermission(session, "crm.view_all");
+    const ownerOptions = canViewAll
+      ? await loadLeadOwnerOptions({
+          organizationId,
+          accessibleBranchIds: session.membership.allBranches
+            ? undefined
+            : session.membership.branchIds,
+        })
+      : [];
 
     const branches = await prisma.branch.findMany({
       where: {
@@ -252,14 +277,17 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
           isTerminal: stage.isTerminal,
           leads: cardsByStage.get(stage.id) ?? [],
         })),
-        owners: memberships.map((m) => ({
-          id: m.user.id,
-          name: `${m.user.firstName} ${m.user.lastName}`.trim(),
+        owners: ownerOptions.map((owner) => ({
+          id: owner.id,
+          name: owner.name,
         })),
         branches,
+        scope,
         totalLeads: leads.length,
         smsTemplates,
         permissions: {
+          assign: hasPermission(session, "crm.assign"),
+          viewAll: canViewAll,
           changeStage: hasPermission(session, "crm.change_stage"),
           terminal: hasPermission(session, "crm.mark_won_lost"),
           sendSms: hasPermission(session, "crm.send_sms"),

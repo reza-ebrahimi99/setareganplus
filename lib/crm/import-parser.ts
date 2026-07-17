@@ -34,7 +34,10 @@ export const IMPORT_MAPPING_FIELDS = [
 
 export type ImportMappingField = (typeof IMPORT_MAPPING_FIELDS)[number];
 export type ImportColumnMapping = Record<string, ImportMappingField>;
-export type ImportDuplicateStrategy = "SKIP" | "UPDATE_EMPTY_FIELDS";
+export type ImportDuplicateStrategy =
+  | "SKIP"
+  | "UPDATE_EMPTY_FIELDS"
+  | "IMPORT_ANYWAY";
 
 export type ImportProfile = {
   firstName: string;
@@ -96,7 +99,15 @@ const FIELD_ALIASES: Readonly<Record<Exclude<ImportMappingField, "IGNORE">, read
   firstName: ["نام", "first name", "firstname", "given name"],
   lastName: ["نام خانوادگی", "نام‌خانوادگی", "فامیل", "last name", "lastname", "surname"],
   fullName: ["نام کامل", "نام و نام خانوادگی", "full name", "fullname", "name"],
-  fatherName: ["نام پدر", "father name", "fathername"],
+  fatherName: [
+    "نام پدر",
+    "نام والد",
+    "نام سرپرست",
+    "father name",
+    "fathername",
+    "parent name",
+    "guardian name",
+  ],
   mobile: ["موبایل", "شماره موبایل", "تلفن همراه", "mobile", "mobile number", "phone"],
   nationalCode: ["کد ملی", "کدملی", "national code", "national id"],
   school: ["مدرسه", "نام مدرسه", "school"],
@@ -213,7 +224,6 @@ function optionalText(
 export function validateMappedImportRows(rows: readonly RawMappedImportRow[]): ParsedLeadImport {
   const validRows: ValidImportRow[] = [];
   const invalidRows: InvalidImportRow[] = [];
-  const seenMobiles = new Map<string, number>();
 
   for (const row of rows) {
     const errors: string[] = [];
@@ -269,15 +279,6 @@ export function validateMappedImportRows(rows: readonly RawMappedImportRow[]): P
 
     if (row.formulaColumns?.length) {
       errors.push("سلول فرمول‌دار در ستون‌های انتخاب‌شده مجاز نیست.");
-    }
-
-    if (mobile.ok) {
-      const firstRow = seenMobiles.get(mobile.normalized);
-      if (firstRow !== undefined) {
-        errors.push(`موبایل در همین فایل تکراری است (ردیف ${firstRow}).`);
-      } else {
-        seenMobiles.set(mobile.normalized, row.excelRowNumber);
-      }
     }
 
     const fatherName = optionalText(values.fatherName, 100, "نام پدر", errors);
@@ -401,7 +402,12 @@ function validateWorksheetBounds(worksheet: ExcelJS.Worksheet): void {
   if (worksheet.columnCount > CRM_IMPORT_MAX_COLUMNS) {
     throw new Error("تعداد ستون‌ها نباید بیشتر از ۱۰۰ باشد.");
   }
+  let nonEmptyRows = 0;
   worksheet.eachRow({ includeEmpty: false }, (row) => {
+    nonEmptyRows += 1;
+    if (nonEmptyRows > CRM_IMPORT_MAX_ROWS + 1) {
+      throw new Error("تعداد ردیف‌های اطلاعات نباید بیشتر از ۱۰٬۰۰۰ باشد.");
+    }
     row.eachCell({ includeEmpty: false }, (cell, column) => {
       if (column > CRM_IMPORT_MAX_COLUMNS) {
         throw new Error("تعداد ستون‌ها نباید بیشتر از ۱۰۰ باشد.");

@@ -22,6 +22,10 @@ import { CrmStageType, CrmTaskStatus, LeadStatus } from "../generated/prisma/enu
 import { parseFormCrmSettings } from "../lib/crm/form-crm-settings";
 import { validateManualLeadIntake } from "../lib/crm/create-manual-lead";
 import { evaluateTerminalConfirmation } from "../lib/crm/stage-transition";
+import {
+  MAX_BULK_LEAD_ASSIGNMENT_SIZE,
+  parseBulkLeadAssignmentInput,
+} from "../lib/crm/lead-assignment";
 
 let passed = 0;
 
@@ -265,6 +269,65 @@ test("16. invalid terminal stage type is rejected", () => {
   assert.equal(
     "requiresConfirmation" in invalid && invalid.requiresConfirmation,
     false,
+  );
+});
+
+test("17. bulk lead assignment input is normalized and deduplicated", () => {
+  assert.deepEqual(
+    parseBulkLeadAssignmentInput({
+      leadIds: [" lead-1 ", "lead-1", "lead-2"],
+      ownerUserId: " owner-1 ",
+    }),
+    {
+      ok: true,
+      selection: {
+        mode: "explicit",
+        leadIds: ["lead-1", "lead-2"],
+      },
+      ownerUserId: "owner-1",
+    },
+  );
+});
+
+test("18. bulk lead assignment rejects forged and oversized payloads", () => {
+  assert.equal(parseBulkLeadAssignmentInput(null).ok, false);
+  assert.equal(
+    parseBulkLeadAssignmentInput({
+      leadIds: Array.from(
+        { length: MAX_BULK_LEAD_ASSIGNMENT_SIZE + 1 },
+        (_, index) => `lead-${index}`,
+      ),
+      ownerUserId: null,
+    }).ok,
+    false,
+  );
+});
+
+test("19. filtered bulk assignment preserves scope and exclusions", () => {
+  assert.deepEqual(
+    parseBulkLeadAssignmentInput({
+      selectAllFiltered: true,
+      scope: "unassigned",
+      excludedLeadIds: [" lead-2 ", "lead-2"],
+      ownerUserId: "",
+    }),
+    {
+      ok: true,
+      selection: {
+        mode: "filtered",
+        scope: "unassigned",
+        filters: {
+          scope: "unassigned",
+          assignment: undefined,
+          created: undefined,
+          sourceType: undefined,
+          outcome: undefined,
+          ownerUserId: undefined,
+        },
+        excludedLeadIds: ["lead-2"],
+      },
+      ownerUserId: null,
+    },
   );
 });
 

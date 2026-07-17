@@ -24,7 +24,6 @@ import {
 } from "@/generated/prisma/enums";
 import { recordCrmActivity } from "@/lib/crm/activity";
 import {
-  assertOwnerInOrg,
   assertStageInOrg,
   ensureDefaultPipeline,
   stageTypeToLeadStatus,
@@ -32,6 +31,11 @@ import {
 import { calculateLeadScore } from "@/lib/crm/scoring";
 import { createCrmTask } from "@/lib/crm/tasks";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
+import {
+  isEligibleLeadOwner,
+  setLeadOwner,
+  type LeadOwnershipSource,
+} from "@/lib/crm/lead-ownership";
 import { prisma } from "@/lib/prisma";
 
 export type LeadIdentityInput = {
@@ -135,8 +139,9 @@ export async function upsertLead(input: LeadIdentityInput): Promise<UpsertLeadRe
   stageId = stage.id;
 
   if (input.ownerUserId) {
-    const ok = await assertOwnerInOrg({
+    const ok = await isEligibleLeadOwner({
       organizationId: input.organizationId,
+      branchId: input.branchId,
       userId: input.ownerUserId,
     });
     if (!ok) {
@@ -168,24 +173,35 @@ export async function upsertLead(input: LeadIdentityInput): Promise<UpsertLeadRe
 
   try {
     if (existing) {
-      await prisma.lead.update({
-        where: { id: existing.id },
-        data: {
-          pipelineId,
-          stageId,
-          status: stageTypeToLeadStatus(stage.stageType),
-          ownerUserId: input.ownerUserId ?? undefined,
-          sourceBookingReservationId:
-            input.sourceBookingReservationId ?? undefined,
-          sourceFormSubmissionId: input.sourceFormSubmissionId ?? undefined,
-          ...(scoreResult
-            ? {
-                score: scoreResult.score,
-                scoreBand: scoreResult.band,
-                scoreBreakdown: scoreResult.breakdown,
-              }
-            : {}),
-        },
+      await prisma.$transaction(async (tx) => {
+        await tx.lead.update({
+          where: { id: existing.id },
+          data: {
+            pipelineId,
+            stageId,
+            status: stageTypeToLeadStatus(stage.stageType),
+            sourceBookingReservationId:
+              input.sourceBookingReservationId ?? undefined,
+            sourceFormSubmissionId: input.sourceFormSubmissionId ?? undefined,
+            ...(scoreResult
+              ? {
+                  score: scoreResult.score,
+                  scoreBand: scoreResult.band,
+                  scoreBreakdown: scoreResult.breakdown,
+                }
+              : {}),
+          },
+        });
+        if (input.ownerUserId) {
+          const assignment = await setLeadOwner({
+            organizationId: input.organizationId,
+            leadId: existing.id,
+            ownerUserId: input.ownerUserId,
+            source: "SYSTEM",
+            tx,
+          });
+          if (!assignment.ok) throw new Error(assignment.error);
+        }
       });
       return { ok: true, leadId: existing.id, created: false };
     }
@@ -231,6 +247,19 @@ export async function upsertLead(input: LeadIdentityInput): Promise<UpsertLeadRe
         ? { score: scoreResult.score, band: scoreResult.band }
         : null,
     });
+    if (input.ownerUserId) {
+      await recordCrmActivity({
+        organizationId: input.organizationId,
+        leadId: lead.id,
+        activityType: CrmActivityType.OWNER_ASSIGNED,
+        title: "تخصیص مسئول",
+        metadata: {
+          previousOwnerUserId: null,
+          ownerUserId: input.ownerUserId,
+          source: "SYSTEM",
+        },
+      });
+    }
 
     if (input.createInitialTask) {
       await createCrmTask({
@@ -386,40 +415,10 @@ export async function assignLeadOwner(params: {
   leadId: string;
   ownerUserId: string | null;
   actorUserId?: string | null;
+  source?: LeadOwnershipSource;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (params.ownerUserId) {
-    const ok = await assertOwnerInOrg({
-      organizationId: params.organizationId,
-      userId: params.ownerUserId,
-    });
-    if (!ok) return { ok: false, error: "کاربر در این سازمان عضو نیست." };
-  }
-
-  const lead = await prisma.lead.findFirst({
-    where: {
-      id: params.leadId,
-      organizationId: params.organizationId,
-      deletedAt: null,
-    },
-    select: { id: true },
-  });
-  if (!lead) return { ok: false, error: "لید یافت نشد." };
-
-  await prisma.lead.update({
-    where: { id: lead.id },
-    data: { ownerUserId: params.ownerUserId },
-  });
-
-  await recordCrmActivity({
-    organizationId: params.organizationId,
-    leadId: lead.id,
-    activityType: CrmActivityType.OWNER_ASSIGNED,
-    title: "تخصیص مسئول",
-    actorUserId: params.actorUserId,
-    metadata: { ownerUserId: params.ownerUserId },
-  });
-
-  return { ok: true };
+  const result = await setLeadOwner(params);
+  return result.ok ? { ok: true } : result;
 }
 
 /** @deprecated use LeadStatus sync via stage — kept for type imports */

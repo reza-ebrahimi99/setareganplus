@@ -7,6 +7,7 @@ import { hasPermission, scopedLeadWhere } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { SCORE_BAND_LABELS } from "@/lib/crm/scoring";
 import { loadCrmSmsTemplates } from "@/lib/crm/manual-sms";
+import { loadLeadOwnerOptions } from "@/lib/crm/lead-owners";
 import { displayTaskStatus } from "@/lib/crm/tasks";
 import { formatJalaliDateShort, formatJalaliDateTimeLabel } from "@/lib/datetime/jalali";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
@@ -114,21 +115,12 @@ export async function loadLeadDetail(leadId: string) {
         })
       : [];
 
-    const owners = hasPermission(session, "crm.assign") ? await prisma.organizationMembership.findMany({
-      where: {
-        organizationId,
-        deletedAt: null,
-        status: "ACTIVE",
-        OR: [
-          { branchMemberships: { none: { deletedAt: null } } },
-          { branchMemberships: { some: { branchId: lead.branchId, deletedAt: null } } },
-        ],
-      },
-      take: 100,
-      select: {
-        user: { select: { id: true, firstName: true, lastName: true } },
-      },
-    }) : [];
+    const owners = hasPermission(session, "crm.assign")
+      ? await loadLeadOwnerOptions({
+          organizationId,
+          branchId: lead.branchId,
+        })
+      : [];
 
     const branches = hasPermission(session, "crm.assign") ? await prisma.branch.findMany({
       where: {
@@ -201,9 +193,9 @@ export async function loadLeadDetail(leadId: string) {
         lostAtLabel: lead.lostAt ? formatJalaliDateShort(lead.lostAt) : null,
         lostReason: lead.lostReason,
         stages,
-        owners: owners.map((m) => ({
-          id: m.user.id,
-          name: `${m.user.firstName} ${m.user.lastName}`.trim(),
+        owners: owners.map((owner) => ({
+          id: owner.id,
+          name: owner.name,
         })),
         submissions: lead.formSubmissions.map((s) => ({
           id: s.id,

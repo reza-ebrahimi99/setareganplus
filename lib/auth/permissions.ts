@@ -25,6 +25,7 @@ export const PERMISSIONS = [
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
+export type LeadScopeFilter = "all" | "mine" | "unassigned";
 
 const ALL = new Set<Permission>(PERMISSIONS);
 const CRM_MANAGER = new Set<Permission>([
@@ -148,14 +149,29 @@ export function scopedBranchWhere(session: AdminSessionContext):
 }
 
 export function scopedLeadWhere(session: AdminSessionContext) {
+  return scopedLeadWhereForFilter(session, "all");
+}
+
+export function normalizeLeadScopeFilter(
+  session: Pick<AdminSessionContext, "membership" | "user">,
+  requested: string | null | undefined,
+): LeadScopeFilter {
+  if (!hasPermission(session, "crm.view_all")) return "mine";
+  return requested === "mine" || requested === "unassigned" ? requested : "all";
+}
+
+export function scopedLeadWhereForFilter(
+  session: AdminSessionContext,
+  requested: string | null | undefined,
+) {
   const branch = scopedBranchWhere(session);
-  if (hasPermission(session, "crm.view_all")) {
-    return { organizationId: session.organization.id, deletedAt: null, ...branch };
-  }
-  return {
+  const scope = normalizeLeadScopeFilter(session, requested);
+  const base = {
     organizationId: session.organization.id,
     deletedAt: null,
     ...branch,
-    ownerUserId: session.user.id,
   };
+  if (scope === "all") return base;
+  if (scope === "unassigned") return { ...base, ownerUserId: null };
+  return { ...base, ownerUserId: session.user.id };
 }
