@@ -4,7 +4,10 @@
  */
 
 import { enqueueSms, renderSmsTemplate } from "@/lib/communication/queue";
-import { FormFieldSemantic } from "@/generated/prisma/enums";
+import {
+  FormFieldSemantic,
+  SmsTemplatePurpose,
+} from "@/generated/prisma/enums";
 import { parseFormVersionSettings } from "@/lib/forms/form-version-settings";
 import { prisma } from "@/lib/prisma";
 
@@ -67,10 +70,11 @@ export async function enqueueFormConfirmationSms(params: {
     const template = await prisma.smsTemplate.findFirst({
       where: {
         organizationId: params.organizationId,
-        code: "form_confirmation",
+        purpose: SmsTemplatePurpose.FORM_CONFIRMATION,
         isActive: true,
         deletedAt: null,
       },
+      orderBy: { updatedAt: "desc" },
       select: { id: true, body: true },
     });
 

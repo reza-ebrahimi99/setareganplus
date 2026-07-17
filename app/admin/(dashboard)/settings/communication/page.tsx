@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminBreadcrumbs } from "@/content/admin";
 import { loadAdminCommunicationSettings } from "@/lib/communication/load-admin-communication";
 import { toPersianDigits } from "@/lib/persian";
 import { CommunicationTestForms } from "./CommunicationTestForms";
+import { SmsTemplateManager } from "./SmsTemplateManager";
 
 export const dynamic = "force-dynamic";
 
@@ -144,32 +144,7 @@ export default async function AdminCommunicationSettingsPage() {
       </section>
 
       <section className="admin-card mb-6 space-y-4 px-5 py-5" aria-labelledby="templates-heading">
-        <h2 id="templates-heading" className="text-base font-bold text-primary">
-          قالب‌های پیامک
-        </h2>
-        {templates.length === 0 ? (
-          <AdminEmptyState
-            title="قالبی تعریف نشده"
-            description="قالب‌های booking_confirmation و form_confirmation را می‌توانید بعداً اضافه کنید. تا آن زمان متن پیش‌فرض استفاده می‌شود."
-          />
-        ) : (
-          <ul className="divide-y divide-border">
-            {templates.map((template) => (
-              <li key={template.id} className="py-3">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p className="font-medium text-primary">{template.name}</p>
-                  <p className="text-xs text-muted" dir="ltr">
-                    {template.code}
-                    {template.isActive ? "" : " · غیرفعال"}
-                  </p>
-                </div>
-                <p className="mt-1 text-sm leading-7 text-muted">
-                  هدف: <span dir="ltr">{template.purpose}</span>
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
+        <SmsTemplateManager templates={templates} />
       </section>
 
       <section

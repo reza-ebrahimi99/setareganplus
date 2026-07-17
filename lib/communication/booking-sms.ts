@@ -3,7 +3,7 @@
  * Must run outside the capacity transaction. Failures never fail the booking.
  */
 
-import { BookingStatus } from "@/generated/prisma/enums";
+import { BookingStatus, SmsTemplatePurpose } from "@/generated/prisma/enums";
 import { parseBookingServiceSettings } from "@/lib/booking/service-settings";
 import {
   formatJalaliDateShort,
@@ -95,10 +95,11 @@ export async function enqueueBookingConfirmationSms(params: {
     const template = await prisma.smsTemplate.findFirst({
       where: {
         organizationId: params.organizationId,
-        code: "booking_confirmation",
+        purpose: SmsTemplatePurpose.BOOKING_CONFIRMATION,
         isActive: true,
         deletedAt: null,
       },
+      orderBy: { updatedAt: "desc" },
       select: { id: true, body: true },
     });
 

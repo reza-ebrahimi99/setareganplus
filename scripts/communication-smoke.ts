@@ -21,6 +21,11 @@ import {
   renderSmsTemplate,
 } from "../lib/communication/queue";
 import { parseSmsTemplateVariables } from "../lib/communication/template";
+import {
+  parseSmsParameterNames,
+  purposeForSmsTemplateType,
+  validateSmsTemplateInput,
+} from "../lib/communication/template-management";
 import { buildBookingSmsTemplateVariables } from "../lib/communication/booking-sms";
 import { maskSecret } from "../lib/communication/config";
 
@@ -94,6 +99,39 @@ async function main() {
     });
     assert.equal(malformed.state, "invalid");
     assert.equal(parseSmsTemplateDelivery({ source: "crm" }).state, "absent");
+  });
+
+  await test("SMS template management validation", () => {
+    assert.deepEqual(parseSmsParameterNames("NAME, DATE\nTIME"), {
+      ok: true,
+      parameters: ["NAME", "DATE", "TIME"],
+    });
+    assert.equal(parseSmsParameterNames("NAME, NAME").ok, false);
+    assert.equal(parseSmsParameterNames("نام").ok, false);
+    assert.equal(
+      validateSmsTemplateInput({
+        name: "یادآوری",
+        type: "CUSTOM",
+        patternId: "12345",
+        parameterNames: "NAME",
+        isActive: true,
+        description: "یادآوری برای {{NAME}}",
+      }).ok,
+      true,
+    );
+    assert.equal(
+      validateSmsTemplateInput({
+        name: "نامعتبر",
+        type: "CUSTOM",
+        patternId: "abc",
+        parameterNames: "",
+        isActive: true,
+        description: "",
+      }).ok,
+      false,
+    );
+    assert.equal(purposeForSmsTemplateType("BOOKING"), "BOOKING_CONFIRMATION");
+    assert.equal(purposeForSmsTemplateType("FORM"), "FORM_CONFIRMATION");
   });
 
   await test("booking semantic template values use Jalali/Tehran", () => {

@@ -8,6 +8,11 @@ import {
   getSmsSecretStatus,
 } from "@/lib/communication/config";
 import { getSmsProvider } from "@/lib/communication/sms-provider";
+import { parseSmsTemplateVariables } from "@/lib/communication/template";
+import {
+  editorTypeForSmsTemplatePurpose,
+  type SmsTemplateEditorType,
+} from "@/lib/communication/template-management";
 import { requireAdminSession } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/prisma";
 
@@ -29,6 +34,9 @@ export type AdminCommunicationData = {
     code: string;
     name: string;
     purpose: string;
+    type: SmsTemplateEditorType;
+    description: string;
+    parameters: string[];
     isActive: boolean;
   }>;
   queue: {
@@ -76,13 +84,15 @@ export async function loadAdminCommunicationSettings(): Promise<
     ] = await Promise.all([
       prisma.smsTemplate.findMany({
         where: { organizationId, deletedAt: null },
-        orderBy: { code: "asc" },
-        take: 50,
+        orderBy: [{ updatedAt: "desc" }, { name: "asc" }],
+        take: 200,
         select: {
           id: true,
           code: true,
           name: true,
           purpose: true,
+          body: true,
+          variables: true,
           isActive: true,
         },
       }),
@@ -163,6 +173,9 @@ export async function loadAdminCommunicationSettings(): Promise<
           code: t.code,
           name: t.name,
           purpose: t.purpose,
+          type: editorTypeForSmsTemplatePurpose(t.purpose),
+          description: t.body,
+          parameters: parseSmsTemplateVariables(t.variables),
           isActive: t.isActive,
         })),
         queue: {

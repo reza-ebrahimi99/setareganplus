@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { Prisma } from "@/generated/prisma/client";
 import {
   AuditAction,
@@ -11,6 +12,10 @@ import { getCommunicationConfig } from "@/lib/communication/config";
 import { requestOtp } from "@/lib/communication/otp";
 import { sendTemplateMessage } from "@/lib/communication/send";
 import { getSmsProvider } from "@/lib/communication/sms-provider";
+import {
+  purposeForSmsTemplateType,
+  validateSmsTemplateInput,
+} from "@/lib/communication/template-management";
 import type { SmsTemplateKind } from "@/lib/communication/types";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { prisma } from "@/lib/prisma";
@@ -239,4 +244,170 @@ export async function sendFormTestAction(
   formData: FormData,
 ): Promise<CommunicationTestActionState> {
   return runCommunicationTest("form", formData);
+}
+
+export type SmsTemplateMutationResult =
+  | { ok: true; message: string; templateId: string }
+  | { ok: false; error: string };
+
+function readString(formData: FormData, key: string): string {
+  const value = formData.get(key);
+  return typeof value === "string" ? value : "";
+}
+
+function readTemplateInput(formData: FormData) {
+  return validateSmsTemplateInput({
+    name: readString(formData, "name"),
+    type: readString(formData, "type"),
+    patternId: readString(formData, "patternId"),
+    parameterNames: readString(formData, "parameterNames"),
+    isActive: formData.get("isActive") === "true",
+    description: readString(formData, "description"),
+  });
+}
+
+function revalidateTemplateConsumers() {
+  revalidatePath("/admin/settings/communication");
+  revalidatePath("/admin/crm");
+}
+
+function templateMutationError(error: unknown): SmsTemplateMutationResult {
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  ) {
+    return {
+      ok: false,
+      error: "این شناسه الگوی SMS.ir قبلاً برای سازمان ثبت شده است.",
+    };
+  }
+  console.error("SMS template mutation failed:", error);
+  return { ok: false, error: "ذخیره قالب پیامک ممکن نشد." };
+}
+
+export async function createSmsTemplateAction(
+  formData: FormData,
+): Promise<SmsTemplateMutationResult> {
+  const session = await requirePermission("communication.manage");
+  const validation = readTemplateInput(formData);
+  if (!validation.ok) return validation;
+  const purpose = purposeForSmsTemplateType(validation.data.type);
+  try {
+    const template = await prisma.$transaction(async (tx) => {
+      if (validation.data.isActive && validation.data.type !== "CUSTOM") {
+        await tx.smsTemplate.updateMany({
+          where: {
+            organizationId: session.organization.id,
+            purpose,
+            isActive: true,
+            deletedAt: null,
+          },
+          data: { isActive: false },
+        });
+      }
+      return tx.smsTemplate.create({
+        data: {
+          organizationId: session.organization.id,
+          name: validation.data.name,
+          purpose,
+          code: validation.data.patternId,
+          variables: validation.data.parameters,
+          isActive: validation.data.isActive,
+          body: validation.data.description,
+        },
+        select: { id: true },
+      });
+    });
+    revalidateTemplateConsumers();
+    return {
+      ok: true,
+      templateId: template.id,
+      message: "قالب پیامک ایجاد شد.",
+    };
+  } catch (error) {
+    return templateMutationError(error);
+  }
+}
+
+export async function updateSmsTemplateAction(
+  formData: FormData,
+): Promise<SmsTemplateMutationResult> {
+  const session = await requirePermission("communication.manage");
+  const templateId = readString(formData, "templateId").trim();
+  const validation = readTemplateInput(formData);
+  if (!templateId) return { ok: false, error: "شناسه قالب معتبر نیست." };
+  if (!validation.ok) return validation;
+  const purpose = purposeForSmsTemplateType(validation.data.type);
+  try {
+    const updated = await prisma.$transaction(async (tx) => {
+      const existing = await tx.smsTemplate.findFirst({
+        where: {
+          id: templateId,
+          organizationId: session.organization.id,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (!existing) return null;
+      if (validation.data.isActive && validation.data.type !== "CUSTOM") {
+        await tx.smsTemplate.updateMany({
+          where: {
+            organizationId: session.organization.id,
+            purpose,
+            isActive: true,
+            deletedAt: null,
+            NOT: { id: templateId },
+          },
+          data: { isActive: false },
+        });
+      }
+      return tx.smsTemplate.update({
+        where: { id: templateId },
+        data: {
+          name: validation.data.name,
+          purpose,
+          code: validation.data.patternId,
+          variables: validation.data.parameters,
+          isActive: validation.data.isActive,
+          body: validation.data.description,
+        },
+        select: { id: true },
+      });
+    });
+    if (!updated) return { ok: false, error: "قالب پیامک یافت نشد." };
+    revalidateTemplateConsumers();
+    return {
+      ok: true,
+      templateId: updated.id,
+      message: "قالب پیامک به‌روزرسانی شد.",
+    };
+  } catch (error) {
+    return templateMutationError(error);
+  }
+}
+
+export async function deleteSmsTemplateAction(input: {
+  templateId: string;
+}): Promise<SmsTemplateMutationResult> {
+  const session = await requirePermission("communication.manage");
+  const templateId = input.templateId?.trim();
+  if (!templateId) return { ok: false, error: "شناسه قالب معتبر نیست." };
+  try {
+    const result = await prisma.smsTemplate.updateMany({
+      where: {
+        id: templateId,
+        organizationId: session.organization.id,
+        deletedAt: null,
+      },
+      data: { isActive: false, deletedAt: new Date() },
+    });
+    if (result.count !== 1) {
+      return { ok: false, error: "قالب پیامک یافت نشد." };
+    }
+    revalidateTemplateConsumers();
+    return { ok: true, templateId, message: "قالب پیامک حذف شد." };
+  } catch (error) {
+    console.error("SMS template deletion failed:", error);
+    return { ok: false, error: "حذف قالب پیامک ممکن نشد." };
+  }
 }
