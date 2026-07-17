@@ -57,6 +57,15 @@ export type SmsTemplateMessageRequest =
       signal?: AbortSignal;
     };
 
+export type SmsPatternTemplateRequest = {
+  toMobile: string;
+  /** Provider pattern identifier read from the organization's SmsTemplate.code. */
+  templateCode: string;
+  parameters: Record<string, string>;
+  correlationId?: string;
+  signal?: AbortSignal;
+};
+
 export type SmsProviderErrorCode =
   | "disabled"
   | "configuration"
@@ -98,6 +107,9 @@ export type SmsProvider = {
   sendOtpTemplate(request: SmsOtpTemplateRequest): Promise<SmsSendResult>;
   sendTemplateMessage(
     request: SmsTemplateMessageRequest,
+  ): Promise<SmsSendResult>;
+  sendPatternTemplate(
+    request: SmsPatternTemplateRequest,
   ): Promise<SmsSendResult>;
   /** @deprecated Compatibility bridge for the existing OTP caller. */
   sendTemplate(request: SmsSendTemplateRequest): Promise<SmsSendResult>;

@@ -10,6 +10,7 @@ import {
 } from "@/lib/communication/sms-provider";
 import type {
   SmsOtpTemplateRequest,
+  SmsPatternTemplateRequest,
   SmsSendResult,
   SmsSendTemplateRequest,
   SmsSendTextRequest,
@@ -57,6 +58,22 @@ export async function sendTemplateMessage(
     return await withSmsTimeout(
       timeoutMs,
       (signal) => provider.sendTemplateMessage({ ...request, signal }),
+      request.signal,
+    );
+  } catch (error) {
+    return normalizeProviderError(error);
+  }
+}
+
+export async function sendPatternTemplate(
+  request: SmsPatternTemplateRequest,
+): Promise<SmsSendResult> {
+  const provider = getSmsProvider();
+  const timeoutMs = readSmsTimeoutMs();
+  try {
+    return await withSmsTimeout(
+      timeoutMs,
+      (signal) => provider.sendPatternTemplate({ ...request, signal }),
       request.signal,
     );
   } catch (error) {

@@ -20,6 +20,7 @@ import {
   parseSmsTemplateDelivery,
   renderSmsTemplate,
 } from "../lib/communication/queue";
+import { parseSmsTemplateVariables } from "../lib/communication/template";
 import { buildBookingSmsTemplateVariables } from "../lib/communication/booking-sms";
 import { maskSecret } from "../lib/communication/config";
 
@@ -63,6 +64,10 @@ async function main() {
     );
     assert.equal(computeSmsBackoffMs(1), 30_000);
     assert.equal(computeSmsBackoffMs(3), 120_000);
+    assert.deepEqual(
+      parseSmsTemplateVariables(["NAME", "DATE", "NAME", "invalid-name"]),
+      ["NAME", "DATE"],
+    );
   });
 
   await test("queue template delivery descriptor validation", () => {

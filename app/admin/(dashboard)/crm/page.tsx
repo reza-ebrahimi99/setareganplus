@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { CrmKanbanViewport } from "@/components/admin/crm/CrmKanbanViewport";
+import { LeadSmsAction } from "@/components/admin/crm/LeadSmsAction";
 import { LeadStageControl } from "@/components/admin/crm/LeadStageControl";
 import { adminBreadcrumbs } from "@/content/admin";
 import { loadCrmPipelineBoard } from "@/lib/crm/load-crm-board";
@@ -67,7 +68,14 @@ export default async function AdminCrmBoardPage({
     );
   }
 
-  const { columns, owners, branches, totalLeads, permissions } = result.data;
+  const {
+    columns,
+    owners,
+    branches,
+    totalLeads,
+    permissions,
+    smsTemplates,
+  } = result.data;
   const stageOptions = columns.map((column) => ({
     id: column.stageId,
     name: column.stageName,
@@ -178,6 +186,16 @@ export default async function AdminCrmBoardPage({
                           compact
                         />
                       ) : null}
+                      {permissions.sendSms ? (
+                        <LeadSmsAction
+                          leadId={lead.id}
+                          leadName={`${lead.firstName} ${lead.lastName}`.trim()}
+                          mobile={lead.mobile}
+                          mobileValid={lead.mobileValid}
+                          templates={smsTemplates}
+                          compact
+                        />
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -205,6 +223,16 @@ export default async function AdminCrmBoardPage({
                       currentStageId={lead.stageId ?? col.stageId}
                       stages={stageOptions}
                       canMarkTerminal={permissions.terminal}
+                      compact
+                    />
+                  ) : null}
+                  {permissions.sendSms ? (
+                    <LeadSmsAction
+                      leadId={lead.id}
+                      leadName={`${lead.firstName} ${lead.lastName}`.trim()}
+                      mobile={lead.mobile}
+                      mobileValid={lead.mobileValid}
+                      templates={smsTemplates}
                       compact
                     />
                   ) : null}

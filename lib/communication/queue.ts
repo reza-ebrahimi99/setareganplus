@@ -26,6 +26,8 @@ import type {
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { prisma } from "@/lib/prisma";
 
+export { renderSmsTemplate } from "@/lib/communication/template";
+
 export type SmsTemplateDeliveryDescriptor =
   | {
       version: 1;
@@ -64,15 +66,6 @@ export type EnqueueSmsInput = {
 export type EnqueueSmsResult =
   | { ok: true; messageId: string; created: boolean }
   | { ok: false; error: string };
-
-export function renderSmsTemplate(
-  body: string,
-  variables: Record<string, string>,
-): string {
-  return body.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_match, key: string) => {
-    return variables[key] ?? "";
-  });
-}
 
 type ParsedTemplateDelivery =
   | { state: "absent" }

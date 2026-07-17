@@ -11,6 +11,7 @@
 import { SmsIrProvider, readSmsIrTimeoutMs } from "@/lib/communication/providers/smsir-provider";
 import type {
   SmsOtpTemplateRequest,
+  SmsPatternTemplateRequest,
   SmsProvider,
   SmsSendFailure,
   SmsSendResult,
@@ -69,6 +70,20 @@ export class NullSmsProvider implements SmsProvider {
   ): Promise<SmsSendResult> {
     void request;
     if (!readSmsEnabled()) return disabledFailure();
+    return nullSuccess();
+  }
+
+  async sendPatternTemplate(
+    request: SmsPatternTemplateRequest,
+  ): Promise<SmsSendResult> {
+    if (!readSmsEnabled()) return disabledFailure();
+    if (!request.templateCode.trim()) {
+      return providerFailure(
+        "invalid",
+        "مشخصات قالب پیامک معتبر نیست.",
+        false,
+      );
+    }
     return nullSuccess();
   }
 
@@ -144,6 +159,13 @@ class UnsupportedSmsProvider implements SmsProvider {
 
   sendTemplateMessage(
     request: SmsTemplateMessageRequest,
+  ): Promise<SmsSendResult> {
+    void request;
+    return Promise.resolve(this.configurationFailure());
+  }
+
+  sendPatternTemplate(
+    request: SmsPatternTemplateRequest,
   ): Promise<SmsSendResult> {
     void request;
     return Promise.resolve(this.configurationFailure());

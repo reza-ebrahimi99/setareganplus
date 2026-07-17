@@ -3,6 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CrmCallOutcome } from "@/generated/prisma/enums";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import {
+  FailedLeadSmsResendAction,
+  LeadSmsAction,
+} from "@/components/admin/crm/LeadSmsAction";
 import { LeadStageControl } from "@/components/admin/crm/LeadStageControl";
 import {
   addLeadNoteAction,
@@ -106,6 +110,15 @@ export default async function LeadDetailPage({ params }: PageProps) {
               currentStageId={lead.stageId}
               stages={lead.stages}
               canMarkTerminal={lead.permissions.terminal}
+            />
+          )}
+          {lead.permissions.sendSms && (
+            <LeadSmsAction
+              leadId={lead.id}
+              leadName={`${lead.firstName} ${lead.lastName}`.trim()}
+              mobile={lead.mobileTel}
+              mobileValid={lead.mobileValid}
+              templates={lead.smsTemplates}
             />
           )}
 
@@ -220,13 +233,26 @@ export default async function LeadDetailPage({ params }: PageProps) {
             <ol className="space-y-3">
               {lead.timeline.map((item) => (
                 <li key={item.id} className="border-r-2 border-primary/30 pr-3 text-sm">
-                  <p className="font-medium text-primary">{item.title}</p>
+                  <p className="font-medium text-primary">
+                    {item.activityType === "SMS_QUEUED" ? (
+                      <span aria-hidden="true" className="ml-1">✉</span>
+                    ) : null}
+                    {item.title}
+                  </p>
                   {item.summary ? <p className="text-muted">{item.summary}</p> : null}
                   <p className="text-xs text-muted">
                     {item.whenLabel}
                     {item.actor ? ` · ${item.actor}` : ""}
                     {` · ${item.activityType}`}
                   </p>
+                  {lead.permissions.sendSms &&
+                  item.smsStatus === "failed" &&
+                  item.smsMessageId ? (
+                    <FailedLeadSmsResendAction
+                      leadId={lead.id}
+                      messageId={item.smsMessageId}
+                    />
+                  ) : null}
                 </li>
               ))}
             </ol>

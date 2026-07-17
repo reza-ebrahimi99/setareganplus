@@ -14,6 +14,7 @@ export const PERMISSIONS = [
   "crm.create_task",
   "crm.complete_task",
   "crm.call",
+  "crm.send_sms",
   "booking.view_all",
   "booking.view_assigned",
   "reports.view",
@@ -38,6 +39,7 @@ const CRM_MANAGER = new Set<Permission>([
   "crm.create_task",
   "crm.complete_task",
   "crm.call",
+  "crm.send_sms",
   "booking.view_all",
   "booking.view_assigned",
   "reports.view",
@@ -50,6 +52,7 @@ const CRM_AGENT = new Set<Permission>([
   "crm.create_task",
   "crm.complete_task",
   "crm.call",
+  "crm.send_sms",
   "booking.view_assigned",
 ]);
 
@@ -95,6 +98,7 @@ const ROLE_PERMISSIONS: Readonly<Partial<Record<SystemRoleValue, ReadonlySet<Per
     "crm.create_task",
     "crm.complete_task",
     "crm.call",
+    "crm.send_sms",
     "booking.view_assigned",
   ]),
   CALL_OPERATOR: new Set([
@@ -103,10 +107,11 @@ const ROLE_PERMISSIONS: Readonly<Partial<Record<SystemRoleValue, ReadonlySet<Per
     "crm.create_task",
     "crm.complete_task",
     "crm.call",
+    "crm.send_sms",
   ]),
   REPORT_VIEWER: new Set(["reports.view"]),
   REGISTRATION_STAFF: CRM_AGENT,
-  SUPPORT: new Set(["crm.view_assigned", "crm.add_note", "crm.call"]),
+  SUPPORT: new Set(["crm.view_assigned", "crm.add_note", "crm.call", "crm.send_sms"]),
   CONTENT_MANAGER: new Set(["forms.manage"]),
   FINANCE: new Set(["reports.view"]),
 };

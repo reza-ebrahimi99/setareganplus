@@ -10,9 +10,11 @@ import {
 import { hasPermission, scopedLeadWhere } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { ensureDefaultPipeline } from "@/lib/crm/pipeline";
+import { loadCrmSmsTemplates, type CrmSmsTemplateOption } from "@/lib/crm/manual-sms";
 import { SCORE_BAND_LABELS } from "@/lib/crm/scoring";
 import { isTaskOverdue } from "@/lib/crm/tasks";
 import { formatJalaliDateShort } from "@/lib/datetime/jalali";
+import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { prisma } from "@/lib/prisma";
 
 export type CrmBoardFilters = {
@@ -28,7 +30,9 @@ export type CrmBoardLeadCard = {
   id: string;
   firstName: string;
   lastName: string;
+  mobile: string;
   mobileMasked: string;
+  mobileValid: boolean;
   score: number;
   scoreBand: LeadScoreBand;
   scoreBandLabel: string;
@@ -74,7 +78,9 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
         permissions: {
           changeStage: boolean;
           terminal: boolean;
+          sendSms: boolean;
         };
+        smsTemplates: CrmSmsTemplateOption[];
       };
     }
   | { ok: false; error: CrmBoardLoadError }
@@ -132,6 +138,7 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
         firstName: true,
         lastName: true,
         mobile: true,
+        normalizedMobile: true,
         score: true,
         scoreBand: true,
         source: true,
@@ -166,11 +173,16 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
     }
 
     for (const lead of leads) {
+      const normalizedMobile = normalizeIranianMobile(
+        lead.normalizedMobile ?? lead.mobile,
+      );
       const card: CrmBoardLeadCard = {
         id: lead.id,
         firstName: lead.firstName,
         lastName: lead.lastName,
+        mobile: normalizedMobile.ok ? normalizedMobile.normalized : lead.mobile,
         mobileMasked: maskMobile(lead.mobile),
+        mobileValid: normalizedMobile.ok,
         score: lead.score,
         scoreBand: lead.scoreBand,
         scoreBandLabel: SCORE_BAND_LABELS[lead.scoreBand],
@@ -223,6 +235,9 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
       orderBy: { name: "asc" },
       take: 50,
     });
+    const smsTemplates = hasPermission(session, "crm.send_sms")
+      ? await loadCrmSmsTemplates(organizationId)
+      : [];
 
     return {
       ok: true,
@@ -243,9 +258,11 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
         })),
         branches,
         totalLeads: leads.length,
+        smsTemplates,
         permissions: {
           changeStage: hasPermission(session, "crm.change_stage"),
           terminal: hasPermission(session, "crm.mark_won_lost"),
+          sendSms: hasPermission(session, "crm.send_sms"),
         },
       },
     };

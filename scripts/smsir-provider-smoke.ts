@@ -3,7 +3,10 @@
  * this script never contacts SMS.ir.
  */
 import assert from "node:assert/strict";
-import { sendOtpTemplate } from "../lib/communication/send";
+import {
+  sendOtpTemplate,
+  sendPatternTemplate,
+} from "../lib/communication/send";
 import {
   NullSmsProvider,
   getSmsProvider,
@@ -82,6 +85,25 @@ async function main(): Promise<void> {
       const result = await sendOtp();
       assert.equal(result.ok, true);
       assert.equal(result.providerMessageId, "987654");
+    });
+
+    await test("SMS.ir custom pattern uses database template code", async () => {
+      mockFetch(async (input, init) => {
+        assert.equal(String(input), "https://api.sms.ir/v1/send/verify");
+        assert.deepEqual(JSON.parse(String(init?.body)), {
+          mobile: "09121234567",
+          templateId: 404,
+          parameters: [{ name: "NAME", value: "سارا" }],
+        });
+        return jsonResponse({ status: 1, data: { messageId: 123456 } });
+      });
+      const result = await sendPatternTemplate({
+        toMobile: "09121234567",
+        templateCode: "404",
+        parameters: { NAME: "سارا" },
+      });
+      assert.equal(result.ok, true);
+      assert.equal(result.providerMessageId, "123456");
     });
 
     for (const [status, errorCode, retryable] of [

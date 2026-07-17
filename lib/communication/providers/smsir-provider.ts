@@ -1,5 +1,6 @@
 import type {
   SmsOtpTemplateRequest,
+  SmsPatternTemplateRequest,
   SmsProvider,
   SmsProviderErrorCode,
   SmsSendFailure,
@@ -400,6 +401,27 @@ export class SmsIrProvider implements SmsProvider {
           value: request.variables.tracking,
         },
       ],
+      request.signal,
+      config,
+    );
+  }
+
+  async sendPatternTemplate(
+    request: SmsPatternTemplateRequest,
+  ): Promise<SmsSendResult> {
+    const config = readSmsIrRuntimeConfig();
+    const templateId = readPositiveInteger(request.templateCode);
+    const parameters = Object.entries(request.parameters).map(([name, value]) => ({
+      name: readParameterName(name, name),
+      value: value.trim(),
+    }));
+    if (parameters.length > 10) {
+      return failure("invalid", "پارامترهای قالب پیامک معتبر نیست.", false);
+    }
+    return this.sendVerify(
+      request.toMobile,
+      templateId,
+      parameters,
       request.signal,
       config,
     );

@@ -6,13 +6,29 @@ import { CrmTaskStatus } from "@/generated/prisma/enums";
 import { hasPermission, scopedLeadWhere } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { SCORE_BAND_LABELS } from "@/lib/crm/scoring";
+import { loadCrmSmsTemplates } from "@/lib/crm/manual-sms";
 import { displayTaskStatus } from "@/lib/crm/tasks";
 import { formatJalaliDateShort, formatJalaliDateTimeLabel } from "@/lib/datetime/jalali";
+import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { prisma } from "@/lib/prisma";
 
 function maskMobile(mobile: string): string {
   if (mobile.length < 7) return "••••";
   return `${mobile.slice(0, 4)}•••${mobile.slice(-2)}`;
+}
+
+function smsActivityMetadata(metadata: unknown): {
+  status: "sent" | "failed";
+  messageId: string;
+} | null {
+  if (typeof metadata !== "object" || metadata === null || Array.isArray(metadata)) {
+    return null;
+  }
+  const status = Reflect.get(metadata, "status");
+  const messageId = Reflect.get(metadata, "smsMessageId");
+  return (status === "sent" || status === "failed") && typeof messageId === "string"
+    ? { status, messageId }
+    : null;
 }
 
 export async function loadLeadDetail(leadId: string) {
@@ -68,6 +84,7 @@ export async function loadLeadDetail(leadId: string) {
             activityType: true,
             title: true,
             summary: true,
+            metadata: true,
             occurredAt: true,
             actor: { select: { firstName: true, lastName: true } },
           },
@@ -124,13 +141,20 @@ export async function loadLeadDetail(leadId: string) {
       select: { id: true, name: true },
     }) : [];
 
-    const smsCount = await prisma.smsMessage.count({
-      where: {
-        organizationId,
-        relatedType: "Lead",
-        relatedId: lead.id,
-      },
-    });
+    const canSendSms = hasPermission(session, "crm.send_sms");
+    const [smsCount, smsTemplates] = await Promise.all([
+      prisma.smsMessage.count({
+        where: {
+          organizationId,
+          relatedType: "Lead",
+          relatedId: lead.id,
+        },
+      }),
+      canSendSms ? loadCrmSmsTemplates(organizationId) : Promise.resolve([]),
+    ]);
+    const normalizedMobile = normalizeIranianMobile(
+      lead.normalizedMobile ?? lead.mobile,
+    );
 
     const breakdown = Array.isArray(lead.scoreBreakdown)
       ? (lead.scoreBreakdown as Array<{ key: string; label: string; points: number }>)
@@ -144,7 +168,8 @@ export async function loadLeadDetail(leadId: string) {
         lastName: lead.lastName,
         fatherName: lead.fatherName,
         mobileMasked: maskMobile(lead.mobile),
-        mobileTel: lead.mobile,
+        mobileTel: normalizedMobile.ok ? normalizedMobile.normalized : lead.mobile,
+        mobileValid: normalizedMobile.ok,
         school: lead.school,
         gradeLevel: lead.gradeLevel,
         source: lead.source,
@@ -203,17 +228,23 @@ export async function loadLeadDetail(leadId: string) {
             ? `${t.assignedTo.firstName} ${t.assignedTo.lastName}`.trim()
             : null,
         })),
-        timeline: lead.crmActivities.map((a) => ({
-          id: a.id,
-          activityType: a.activityType,
-          title: a.title,
-          summary: a.summary,
-          whenLabel: formatJalaliDateShort(a.occurredAt),
-          actor: a.actor
-            ? `${a.actor.firstName} ${a.actor.lastName}`.trim()
-            : null,
-        })),
+        timeline: lead.crmActivities.map((a) => {
+          const sms = smsActivityMetadata(a.metadata);
+          return {
+            id: a.id,
+            activityType: a.activityType,
+            title: a.title,
+            summary: a.summary,
+            whenLabel: formatJalaliDateShort(a.occurredAt),
+            actor: a.actor
+              ? `${a.actor.firstName} ${a.actor.lastName}`.trim()
+              : null,
+            smsStatus: sms?.status ?? null,
+            smsMessageId: sms?.messageId ?? null,
+          };
+        }),
         smsQueuedCount: smsCount,
+        smsTemplates,
         openTaskCount: lead.crmTasks.filter(
           (t) =>
             t.status === CrmTaskStatus.OPEN ||
@@ -227,6 +258,7 @@ export async function loadLeadDetail(leadId: string) {
           createTask: hasPermission(session, "crm.create_task"),
           completeTask: hasPermission(session, "crm.complete_task"),
           call: hasPermission(session, "crm.call"),
+          sendSms: canSendSms,
         },
       },
     };
