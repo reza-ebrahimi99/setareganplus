@@ -2,7 +2,11 @@
  * Load CRM pipeline board data (org-scoped, bounded, no N+1).
  */
 
-import { CrmTaskStatus, LeadScoreBand } from "@/generated/prisma/enums";
+import {
+  CrmTaskStatus,
+  LeadScoreBand,
+  type CrmStageType,
+} from "@/generated/prisma/enums";
 import { hasPermission, scopedLeadWhere } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { ensureDefaultPipeline } from "@/lib/crm/pipeline";
@@ -42,6 +46,7 @@ export type CrmBoardColumn = {
   stageId: string;
   stageName: string;
   stageCode: string;
+  stageType: CrmStageType;
   colorKey: string | null;
   isTerminal: boolean;
   leads: CrmBoardLeadCard[];
@@ -66,6 +71,10 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
         owners: Array<{ id: string; name: string }>;
         branches: Array<{ id: string; name: string }>;
         totalLeads: number;
+        permissions: {
+          changeStage: boolean;
+          terminal: boolean;
+        };
       };
     }
   | { ok: false; error: CrmBoardLoadError }
@@ -223,6 +232,7 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
           stageId: stage.id,
           stageName: stage.name,
           stageCode: stage.code,
+          stageType: stage.stageType,
           colorKey: stage.colorKey,
           isTerminal: stage.isTerminal,
           leads: cardsByStage.get(stage.id) ?? [],
@@ -233,6 +243,10 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
         })),
         branches,
         totalLeads: leads.length,
+        permissions: {
+          changeStage: hasPermission(session, "crm.change_stage"),
+          terminal: hasPermission(session, "crm.mark_won_lost"),
+        },
       },
     };
   } catch (error) {

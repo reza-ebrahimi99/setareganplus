@@ -20,6 +20,8 @@ import { DEFAULT_STAGES, stageTypeToLeadStatus } from "../lib/crm/pipeline";
 import { isTaskOverdue, displayTaskStatus } from "../lib/crm/tasks";
 import { CrmStageType, CrmTaskStatus, LeadStatus } from "../generated/prisma/enums";
 import { parseFormCrmSettings } from "../lib/crm/form-crm-settings";
+import { validateManualLeadIntake } from "../lib/crm/create-manual-lead";
+import { evaluateTerminalConfirmation } from "../lib/crm/stage-transition";
 
 let passed = 0;
 
@@ -156,6 +158,114 @@ test("10. form CRM settings defaults", () => {
   );
   assert.equal(enabled.createLeadOnSubmit, true);
   assert.equal(enabled.leadSourceLabel, "PRE_REG");
+});
+
+test("11. manual intake normalizes Persian mobile and defaults", () => {
+  const now = new Date("2026-07-17T00:00:00.000Z");
+  const result = validateManualLeadIntake(
+    {
+      firstName: "  علی  ",
+      lastName: " رضایی ",
+      mobile: "۰۹۱۲ ۱۲۳ ۴۵۶۷",
+      branchId: "branch-1",
+      source: "",
+      ownerUserId: "",
+      notes: "  تماس ورودی  ",
+      createFollowUpTask: true,
+      followUpDueAt: "",
+      idempotencyKey: "manual-test-1",
+    },
+    now,
+  );
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.data.mobile, "09121234567");
+  assert.equal(result.data.source, "MANUAL");
+  assert.equal(
+    result.data.followUpDueAt?.toISOString(),
+    "2026-07-18T00:00:00.000Z",
+  );
+});
+
+test("12. manual intake rejects malformed phone and past follow-up", () => {
+  const result = validateManualLeadIntake(
+    {
+      firstName: "علی",
+      lastName: "رضایی",
+      mobile: "abc09121234567",
+      branchId: "branch-1",
+      source: "CALL",
+      ownerUserId: "",
+      notes: "",
+      createFollowUpTask: true,
+      followUpDueAt: "2026-07-16T00:00:00.000Z",
+      idempotencyKey: "manual-test-2",
+    },
+    new Date("2026-07-17T00:00:00.000Z"),
+  );
+  assert.equal(result.ok, false);
+  if (result.ok) return;
+  assert.ok(result.fieldErrors.mobile);
+  assert.ok(result.fieldErrors.followUpDueAt);
+});
+
+test("13. WON and LOST transitions return typed confirmation requirements", () => {
+  const won = evaluateTerminalConfirmation(
+    { isTerminal: true, stageType: CrmStageType.WON },
+    false,
+  );
+  assert.deepEqual(won, {
+    ok: false,
+    requiresConfirmation: true,
+    terminalStatus: "WON",
+  });
+  const lost = evaluateTerminalConfirmation(
+    { isTerminal: true, stageType: CrmStageType.LOST },
+    false,
+  );
+  assert.deepEqual(lost, {
+    ok: false,
+    requiresConfirmation: true,
+    terminalStatus: "LOST",
+  });
+});
+
+test("14. confirmed terminal transitions proceed without throwing", () => {
+  assert.deepEqual(
+    evaluateTerminalConfirmation(
+      { isTerminal: true, stageType: CrmStageType.WON },
+      true,
+    ),
+    { ok: true, terminalStatus: "WON" },
+  );
+  assert.deepEqual(
+    evaluateTerminalConfirmation(
+      { isTerminal: true, stageType: CrmStageType.LOST },
+      true,
+    ),
+    { ok: true, terminalStatus: "LOST" },
+  );
+});
+
+test("15. cancelling confirmation has no transition decision", () => {
+  const request = evaluateTerminalConfirmation(
+    { isTerminal: true, stageType: CrmStageType.WON },
+    false,
+  );
+  assert.equal(request.ok, false);
+  assert.equal("requiresConfirmation" in request && request.requiresConfirmation, true);
+});
+
+test("16. invalid terminal stage type is rejected", () => {
+  const invalid = evaluateTerminalConfirmation(
+    { isTerminal: true, stageType: CrmStageType.NEW },
+    false,
+  );
+  assert.equal(invalid.ok, false);
+  assert.equal(
+    "requiresConfirmation" in invalid && invalid.requiresConfirmation,
+    false,
+  );
 });
 
 console.log(`\nAll ${passed} CRM smoke tests passed.`);

@@ -3,13 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CrmCallOutcome } from "@/generated/prisma/enums";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { LeadStageControl } from "@/components/admin/crm/LeadStageControl";
 import {
   addLeadNoteAction,
   assignLeadOwnerAction,
   assignLeadBranchAction,
   assignLeadTaskAction,
   cancelLeadTaskAction,
-  changeLeadStageAction,
   completeLeadTaskAction,
   createLeadTaskAction,
   logLeadCallAction,
@@ -99,23 +99,15 @@ export default async function LeadDetailPage({ params }: PageProps) {
             </ul>
           </div>
 
-          {lead.permissions.changeStage && <form action={changeLeadStageAction} className="space-y-2 border-t border-border pt-3">
-            <input type="hidden" name="leadId" value={lead.id} />
-            <label className="block text-sm">
-              <span className="mb-1 block text-muted">تغییر مرحله</span>
-              <select name="stageId" defaultValue={lead.stageId ?? ""} className="w-full rounded-lg border border-border px-3 py-2">
-                {lead.stages.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block text-muted">علت از دست رفتن (در صورت نیاز)</span>
-              <input name="lostReason" className="w-full rounded-lg border border-border px-3 py-2" />
-            </label>
-            {lead.permissions.terminal && <label className="flex items-center gap-2 text-xs text-muted"><input type="checkbox" name="terminalConfirmed" value="true" />تغییر نهایی به برنده/از‌دست‌رفته را تأیید می‌کنم</label>}
-            <button type="submit" className="rounded-lg bg-primary px-3 py-2 text-sm text-white">ذخیره مرحله</button>
-          </form>}
+          {lead.permissions.changeStage && (
+            <LeadStageControl
+              key={lead.stageId ?? "unassigned"}
+              leadId={lead.id}
+              currentStageId={lead.stageId}
+              stages={lead.stages}
+              canMarkTerminal={lead.permissions.terminal}
+            />
+          )}
 
           {lead.permissions.assign && <form action={assignLeadOwnerAction} className="space-y-2 border-t border-border pt-3">
             <input type="hidden" name="leadId" value={lead.id} />

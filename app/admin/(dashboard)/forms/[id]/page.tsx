@@ -192,6 +192,7 @@ export default async function AdminFormEditorPage({
           displayStatus={displayStatus}
           hasDraft={Boolean(draft)}
           isPublished={isPublished}
+          draftVersionId={draft?.id ?? null}
           draftVersionNumber={draft?.versionNumber ?? null}
           publishedVersionNumber={publishedVersion?.versionNumber ?? null}
         />
@@ -257,9 +258,9 @@ export default async function AdminFormEditorPage({
           }
           description={
             isPublished
-              ? "این فرم منتشر شده است. پرسش‌های نسخه منتشرشده از این‌جا ویرایش نمی‌شوند. ساخت پیش‌نویس جدید پس از انتشار در مرحله بعدی اضافه می‌شود."
+              ? "نسخه منتشرشده تغییر نمی‌کند، اما پیش‌نویس تازه مورد انتظار یافت نشد. صفحه را تازه‌سازی کنید و در صورت تداوم خطا با پشتیبانی تماس بگیرید."
               : displayStatus === "PAUSED"
-                ? "نسخه فعال عمومی ندارد. برای انتشار دوباره باید نسخه پیش‌نویس ساخته شود (در اسپرینت‌های بعدی)."
+                ? "نسخه فعال عمومی و پیش‌نویس قابل ویرایش برای این فرم یافت نشد."
                 : "فقط نسخه‌های پیش‌نویس قابل ویرایش هستند."
           }
           action={

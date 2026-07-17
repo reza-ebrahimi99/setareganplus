@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
 // Prisma 7 loads this config for all CLI commands. A placeholder URL allows

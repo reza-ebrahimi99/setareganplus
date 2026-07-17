@@ -28,7 +28,7 @@ import {
   processPendingAutomationBatch,
 } from "../lib/crm/automation-processor";
 import { ensureDefaultPipeline } from "../lib/crm/pipeline";
-import { upsertLead } from "../lib/crm/leads";
+import { changeLeadStage, upsertLead } from "../lib/crm/leads";
 import { createCrmTask, completeCrmTask } from "../lib/crm/tasks";
 import { processFormSubmissionCrm } from "../lib/crm/form-to-lead";
 import { enqueueSms } from "../lib/communication/queue";
@@ -393,6 +393,122 @@ async function main() {
   assert(Array.isArray(claimed), "claimed array");
   await processPendingAutomationBatch(5);
   ok("worker claim/process batch");
+
+  // Terminal stage transitions: timestamps, exits, isolation, and idempotency.
+  const wonStageId = pipeline.stageByCode.won;
+  const lostStageId = pipeline.stageByCode.lost;
+  assert(wonStageId && lostStageId, "terminal stages available");
+
+  const won = await changeLeadStage({
+    organizationId: org.id,
+    leadId: a.leadId,
+    stageId: wonStageId,
+  });
+  assert(won.ok && won.changed, "confirmed-equivalent WON transition succeeds");
+  let terminalLead = await prisma.lead.findUniqueOrThrow({
+    where: { id: a.leadId },
+  });
+  assert(
+    terminalLead.status === "ENROLLED" &&
+      terminalLead.convertedAt &&
+      !terminalLead.lostAt &&
+      !terminalLead.lostReason,
+    "WON timestamps and status",
+  );
+  const convertedAt = terminalLead.convertedAt.getTime();
+  const wonAgain = await changeLeadStage({
+    organizationId: org.id,
+    leadId: a.leadId,
+    stageId: wonStageId,
+  });
+  assert(wonAgain.ok && !wonAgain.changed, "repeated WON is idempotent");
+  terminalLead = await prisma.lead.findUniqueOrThrow({ where: { id: a.leadId } });
+  assert(terminalLead.convertedAt?.getTime() === convertedAt, "convertedAt preserved");
+  assert(
+    (await prisma.crmActivity.count({
+      where: {
+        organizationId: org.id,
+        leadId: a.leadId,
+        activityType: "CONVERTED",
+      },
+    })) === 1,
+    "one conversion activity",
+  );
+  ok("terminal WON transition is timestamp-safe and idempotent");
+
+  const leaveWon = await changeLeadStage({
+    organizationId: org.id,
+    leadId: a.leadId,
+    stageId: pipeline.newStageId,
+  });
+  assert(leaveWon.ok && leaveWon.changed, "moving away from WON succeeds");
+  terminalLead = await prisma.lead.findUniqueOrThrow({ where: { id: a.leadId } });
+  assert(!terminalLead.convertedAt, "convertedAt cleared outside WON");
+  ok("moving away from WON clears active conversion timestamp");
+
+  const lost = await changeLeadStage({
+    organizationId: org.id,
+    leadId: a.leadId,
+    stageId: lostStageId,
+    lostReason: "عدم تمایل",
+  });
+  assert(lost.ok && lost.changed, "confirmed-equivalent LOST transition succeeds");
+  terminalLead = await prisma.lead.findUniqueOrThrow({ where: { id: a.leadId } });
+  assert(
+    terminalLead.status === "LOST" &&
+      terminalLead.lostAt &&
+      terminalLead.lostReason === "عدم تمایل" &&
+      !terminalLead.convertedAt,
+    "LOST timestamps and reason",
+  );
+  const lostAt = terminalLead.lostAt.getTime();
+  const lostAgain = await changeLeadStage({
+    organizationId: org.id,
+    leadId: a.leadId,
+    stageId: lostStageId,
+  });
+  assert(lostAgain.ok && !lostAgain.changed, "repeated LOST is idempotent");
+  terminalLead = await prisma.lead.findUniqueOrThrow({ where: { id: a.leadId } });
+  assert(
+    terminalLead.lostAt?.getTime() === lostAt &&
+      terminalLead.lostReason === "عدم تمایل",
+    "lost fields preserved on replay",
+  );
+  assert(
+    (await prisma.crmActivity.count({
+      where: {
+        organizationId: org.id,
+        leadId: a.leadId,
+        activityType: "LOST",
+      },
+    })) === 1,
+    "one lost activity",
+  );
+  ok("terminal LOST transition is timestamp-safe and idempotent");
+
+  const leaveLost = await changeLeadStage({
+    organizationId: org.id,
+    leadId: a.leadId,
+    stageId: pipeline.newStageId,
+  });
+  assert(leaveLost.ok && leaveLost.changed, "moving away from LOST succeeds");
+  terminalLead = await prisma.lead.findUniqueOrThrow({ where: { id: a.leadId } });
+  assert(!terminalLead.lostAt && !terminalLead.lostReason, "lost fields cleared");
+  ok("moving away from LOST clears active lost fields");
+
+  const invalidStage = await changeLeadStage({
+    organizationId: org.id,
+    leadId: a.leadId,
+    stageId: "invalid-stage",
+  });
+  assert(!invalidStage.ok, "invalid stage rejected");
+  const crossOrganization = await changeLeadStage({
+    organizationId: otherOrg?.id ?? "other-organization",
+    leadId: a.leadId,
+    stageId: wonStageId,
+  });
+  assert(!crossOrganization.ok, "cross-organization lead rejected");
+  ok("invalid and cross-organization transitions rejected");
 
   // Cleanup
   await prisma.automationExecution.deleteMany({

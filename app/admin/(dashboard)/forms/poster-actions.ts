@@ -143,14 +143,22 @@ export async function uploadFormPosterAction(
       });
 
       if (previousMediaId && previousMediaId !== created.id) {
-        await tx.mediaAsset.updateMany({
+        const remainingReferences = await tx.formVersion.count({
           where: {
-            id: previousMediaId,
             organizationId: session.organization.id,
-            deletedAt: null,
+            posterMediaId: previousMediaId,
           },
-          data: { deletedAt: new Date() },
         });
+        if (remainingReferences === 0) {
+          await tx.mediaAsset.updateMany({
+            where: {
+              id: previousMediaId,
+              organizationId: session.organization.id,
+              deletedAt: null,
+            },
+            data: { deletedAt: new Date() },
+          });
+        }
       }
 
       return created;
@@ -206,14 +214,22 @@ export async function removeFormPosterAction(
         data: { posterMediaId: null },
       });
 
-      await tx.mediaAsset.updateMany({
+      const remainingReferences = await tx.formVersion.count({
         where: {
-          id: mediaId,
           organizationId: session.organization.id,
-          deletedAt: null,
+          posterMediaId: mediaId,
         },
-        data: { deletedAt: new Date() },
       });
+      if (remainingReferences === 0) {
+        await tx.mediaAsset.updateMany({
+          where: {
+            id: mediaId,
+            organizationId: session.organization.id,
+            deletedAt: null,
+          },
+          data: { deletedAt: new Date() },
+        });
+      }
     });
   } catch {
     return { formError: "حذف پوستر انجام نشد. دوباره تلاش کنید." };

@@ -89,6 +89,7 @@ export async function loadLeadDetail(leadId: string) {
             id: true,
             name: true,
             code: true,
+            stageType: true,
             isTerminal: true,
             isWon: true,
             isLost: true,

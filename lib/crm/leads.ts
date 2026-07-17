@@ -15,6 +15,7 @@
  */
 
 import {
+  AuditAction,
   CrmActivityType,
   LeadScoreBand,
   LeadSourceType,
@@ -255,67 +256,129 @@ export async function changeLeadStage(params: {
   stageId: string;
   actorUserId?: string | null;
   lostReason?: string | null;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
-  const lead = await prisma.lead.findFirst({
-    where: {
-      id: params.leadId,
-      organizationId: params.organizationId,
-      deletedAt: null,
-    },
-  });
-  if (!lead) return { ok: false, error: "لید یافت نشد." };
-
-  const stage = await assertStageInOrg({
-    organizationId: params.organizationId,
-    stageId: params.stageId,
-    pipelineId: lead.pipelineId,
-  });
-  if (!stage) return { ok: false, error: "مرحله معتبر نیست." };
-
-  if (lead.stageId) {
-    const current = await assertStageInOrg({
-      organizationId: params.organizationId,
-      stageId: lead.stageId,
+}): Promise<
+  | { ok: true; changed: boolean; repairedTerminalFields: boolean }
+  | { ok: false; error: string }
+> {
+  return prisma.$transaction(async (tx) => {
+    const lead = await tx.lead.findFirst({
+      where: {
+        id: params.leadId,
+        organizationId: params.organizationId,
+        deletedAt: null,
+      },
     });
-    if (current?.isTerminal && !stage.isTerminal) {
-      return { ok: false, error: "خروج از مرحله پایانی مجاز نیست." };
+    if (!lead) return { ok: false as const, error: "لید یافت نشد." };
+
+    const stage = await tx.crmPipelineStage.findFirst({
+      where: {
+        id: params.stageId,
+        organizationId: params.organizationId,
+        deletedAt: null,
+        ...(lead.pipelineId ? { pipelineId: lead.pipelineId } : {}),
+      },
+      select: {
+        id: true,
+        pipelineId: true,
+        stageType: true,
+        isTerminal: true,
+        isWon: true,
+        isLost: true,
+        name: true,
+      },
+    });
+    if (!stage) return { ok: false as const, error: "مرحله معتبر نیست." };
+
+    const nextStatus = stageTypeToLeadStatus(stage.stageType);
+    const transitioned = lead.stageId !== stage.id || lead.status !== nextStatus;
+    const now = new Date();
+    const nextConvertedAt = stage.isWon ? (lead.convertedAt ?? now) : null;
+    const nextLostAt = stage.isLost ? (lead.lostAt ?? now) : null;
+    const suppliedLostReason = params.lostReason?.trim() || null;
+    const nextLostReason = stage.isLost
+      ? suppliedLostReason ?? (lead.stageId === stage.id ? lead.lostReason : null)
+      : null;
+    const repairedTerminalFields =
+      lead.convertedAt?.getTime() !== nextConvertedAt?.getTime() ||
+      lead.lostAt?.getTime() !== nextLostAt?.getTime() ||
+      lead.lostReason !== nextLostReason;
+
+    if (!transitioned && !repairedTerminalFields) {
+      return {
+        ok: true as const,
+        changed: false,
+        repairedTerminalFields: false,
+      };
     }
-  }
 
-  const now = new Date();
-  await prisma.lead.update({
-    where: { id: lead.id },
-    data: {
-      stageId: stage.id,
-      pipelineId: stage.pipelineId,
-      status: stageTypeToLeadStatus(stage.stageType),
-      convertedAt: stage.isWon ? now : lead.convertedAt,
-      lostAt: stage.isLost ? now : null,
-      lostReason: stage.isLost
-        ? params.lostReason?.trim() || lead.lostReason
-        : null,
-    },
+    await tx.lead.update({
+      where: {
+        organizationId_id: {
+          organizationId: params.organizationId,
+          id: lead.id,
+        },
+      },
+      data: {
+        stageId: stage.id,
+        pipelineId: stage.pipelineId,
+        status: nextStatus,
+        convertedAt: nextConvertedAt,
+        lostAt: nextLostAt,
+        lostReason: nextLostReason,
+      },
+    });
+
+    if (transitioned) {
+      await recordCrmActivity({
+        organizationId: params.organizationId,
+        leadId: lead.id,
+        activityType: stage.isWon
+          ? CrmActivityType.CONVERTED
+          : stage.isLost
+            ? CrmActivityType.LOST
+            : CrmActivityType.STAGE_CHANGED,
+        title: stage.isWon
+          ? "ثبت‌نام نهایی"
+          : stage.isLost
+            ? "از دست‌رفته"
+            : "تغییر مرحله",
+        summary: stage.name,
+        actorUserId: params.actorUserId,
+        metadata: {
+          stageId: stage.id,
+          stageType: stage.stageType,
+          previousStageId: lead.stageId,
+          previousStatus: lead.status,
+        },
+        tx,
+      });
+      if (params.actorUserId) {
+        await tx.auditLog.create({
+          data: {
+            organizationId: params.organizationId,
+            branchId: lead.branchId,
+            actorUserId: params.actorUserId,
+            action: AuditAction.CRM_STAGE_CHANGED,
+            entityType: "Lead",
+            entityId: lead.id,
+            metadata: {
+              previousStageId: lead.stageId,
+              nextStageId: stage.id,
+              previousStatus: lead.status,
+              nextStatus,
+              terminal: stage.isTerminal,
+            },
+          },
+        });
+      }
+    }
+
+    return {
+      ok: true as const,
+      changed: transitioned,
+      repairedTerminalFields,
+    };
   });
-
-  await recordCrmActivity({
-    organizationId: params.organizationId,
-    leadId: lead.id,
-    activityType: stage.isWon
-      ? CrmActivityType.CONVERTED
-      : stage.isLost
-        ? CrmActivityType.LOST
-        : CrmActivityType.STAGE_CHANGED,
-    title: stage.isWon
-      ? "ثبت‌نام نهایی"
-      : stage.isLost
-        ? "از دست‌رفته"
-        : "تغییر مرحله",
-    summary: stage.name,
-    actorUserId: params.actorUserId,
-    metadata: { stageId: stage.id, stageType: stage.stageType },
-  });
-
-  return { ok: true };
 }
 
 export async function assignLeadOwner(params: {

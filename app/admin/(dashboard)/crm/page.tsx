@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { LeadStageControl } from "@/components/admin/crm/LeadStageControl";
 import { adminBreadcrumbs } from "@/content/admin";
 import { loadCrmPipelineBoard } from "@/lib/crm/load-crm-board";
 import { toPersianDigits } from "@/lib/persian";
 import { LeadScoreBand } from "@/generated/prisma/enums";
-import { changeLeadStageAction } from "@/app/admin/(dashboard)/leads/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -66,7 +66,13 @@ export default async function AdminCrmBoardPage({
     );
   }
 
-  const { columns, owners, branches, totalLeads } = result.data;
+  const { columns, owners, branches, totalLeads, permissions } = result.data;
+  const stageOptions = columns.map((column) => ({
+    id: column.stageId,
+    name: column.stageName,
+    stageType: column.stageType,
+    isTerminal: column.isTerminal,
+  }));
 
   return (
     <>
@@ -125,15 +131,16 @@ export default async function AdminCrmBoardPage({
           description="با فعال‌سازی «ساخت لید از فرم» یا ثبت رزرو، متقاضیان اینجا ظاهر می‌شوند."
         />
       ) : (
-        <>
+        <div className="min-w-0 max-w-full">
           {/* Desktop board */}
-          <div className="hidden gap-3 overflow-x-auto pb-4 lg:flex">
-            {columns.map((col) => (
-              <section
-                key={col.stageId}
-                className="admin-card flex w-72 shrink-0 flex-col px-3 py-3"
-                aria-label={col.stageName}
-              >
+          <div className="hidden w-full max-w-full overflow-x-auto pb-4 lg:block">
+            <div className="flex w-max min-w-full gap-3">
+              {columns.map((col) => (
+                <section
+                  key={col.stageId}
+                  className="admin-card flex w-72 min-w-72 shrink-0 flex-col px-3 py-3"
+                  aria-label={col.stageName}
+                >
                 <header className="mb-3 flex items-center justify-between gap-2 border-b border-border pb-2">
                   <h2 className="text-sm font-bold text-primary">{col.stageName}</h2>
                   <span className="text-xs text-muted" dir="ltr">
@@ -161,31 +168,22 @@ export default async function AdminCrmBoardPage({
                         {lead.nextFollowUpLabel ? ` · پیگیری: ${lead.nextFollowUpLabel}` : ""}
                         {lead.lastActivityLabel ? ` · فعالیت: ${lead.lastActivityLabel}` : ""}
                       </p>
-                      {!col.isTerminal ? (
-                        <form action={changeLeadStageAction} className="mt-2">
-                          <input type="hidden" name="leadId" value={lead.id} />
-                          <label className="sr-only" htmlFor={`stage-${lead.id}`}>تغییر مرحله</label>
-                          <select
-                            id={`stage-${lead.id}`}
-                            name="stageId"
-                            defaultValue={lead.stageId ?? col.stageId}
-                            className="w-full rounded border border-border px-2 py-1 text-xs"
-                            onChange={undefined}
-                          >
-                            {columns.map((c) => (
-                              <option key={c.stageId} value={c.stageId}>{c.stageName}</option>
-                            ))}
-                          </select>
-                          <button type="submit" className="mt-1 w-full rounded bg-primary/90 px-2 py-1 text-xs text-white">
-                            انتقال مرحله
-                          </button>
-                        </form>
+                      {permissions.changeStage ? (
+                        <LeadStageControl
+                          key={lead.stageId ?? "unassigned"}
+                          leadId={lead.id}
+                          currentStageId={lead.stageId ?? col.stageId}
+                          stages={stageOptions}
+                          canMarkTerminal={permissions.terminal}
+                          compact
+                        />
                       ) : null}
                     </li>
                   ))}
                 </ul>
-              </section>
-            ))}
+                </section>
+              ))}
+            </div>
           </div>
 
           {/* Mobile list fallback */}
@@ -201,11 +199,21 @@ export default async function AdminCrmBoardPage({
                     {lead.scoreBandLabel} · {toPersianDigits(lead.score)}
                     {lead.ownerName ? ` · ${lead.ownerName}` : ""}
                   </p>
+                  {permissions.changeStage ? (
+                    <LeadStageControl
+                      key={lead.stageId ?? "unassigned"}
+                      leadId={lead.id}
+                      currentStageId={lead.stageId ?? col.stageId}
+                      stages={stageOptions}
+                      canMarkTerminal={permissions.terminal}
+                      compact
+                    />
+                  ) : null}
                 </article>
               )),
             )}
           </div>
-        </>
+        </div>
       )}
     </>
   );

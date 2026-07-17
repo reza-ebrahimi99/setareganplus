@@ -28,6 +28,7 @@ type FormPublishControlsProps = {
   displayStatus: EditorDisplayStatus;
   hasDraft: boolean;
   isPublished: boolean;
+  draftVersionId: string | null;
   draftVersionNumber: number | null;
   publishedVersionNumber: number | null;
 };
@@ -37,6 +38,7 @@ export function FormPublishControls({
   displayStatus,
   hasDraft,
   isPublished,
+  draftVersionId,
   draftVersionNumber,
   publishedVersionNumber,
 }: FormPublishControlsProps) {
@@ -106,7 +108,9 @@ export function FormPublishControls({
             onSubmit={(event) => {
               if (
                 !window.confirm(
-                  "نسخه پیش‌نویس منتشر شود؟ در صورت وجود نسخه منتشرشده قبلی، آن نسخه جایگزین می‌شود.",
+                  isPublished
+                    ? "تغییرات پیش‌نویس منتشر شود؟ نسخه عمومی فعلی با این نسخه جایگزین می‌شود و برای ویرایش‌های بعدی یک پیش‌نویس تازه ساخته خواهد شد."
+                    : "نسخه پیش‌نویس منتشر شود؟ پس از انتشار، یک پیش‌نویس تازه برای ویرایش‌های بعدی ساخته خواهد شد.",
                 )
               ) {
                 event.preventDefault();
@@ -114,12 +118,21 @@ export function FormPublishControls({
             }}
           >
             <input type="hidden" name="formId" value={formId} />
+            <input
+              type="hidden"
+              name="draftVersionId"
+              value={draftVersionId ?? ""}
+            />
             <button
               type="submit"
               disabled={publishPending}
               className="inline-flex w-full items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary/92 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
-              {publishPending ? "در حال انتشار..." : "انتشار فرم"}
+              {publishPending
+                ? "در حال انتشار..."
+                : isPublished
+                  ? "انتشار تغییرات"
+                  : "انتشار فرم"}
             </button>
           </form>
         ) : null}
