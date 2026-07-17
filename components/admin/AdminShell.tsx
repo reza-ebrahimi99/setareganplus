@@ -30,7 +30,7 @@ export function AdminShell({
         />
         <main
           id="admin-main-content"
-          className="admin-main min-w-0 max-w-full flex-1 overflow-x-clip px-4 py-6 sm:px-6 lg:py-8"
+          className="admin-main min-w-0 max-w-full flex-1 px-4 py-6 sm:px-6 lg:py-8"
         >
           {children}
         </main>

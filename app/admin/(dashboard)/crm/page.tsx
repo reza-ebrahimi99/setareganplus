@@ -131,14 +131,17 @@ export default async function AdminCrmBoardPage({
           description="با فعال‌سازی «ساخت لید از فرم» یا ثبت رزرو، متقاضیان اینجا ظاهر می‌شوند."
         />
       ) : (
-        <div className="min-w-0 max-w-full">
+        <div className="w-full min-w-0 max-w-full">
           {/* Desktop board */}
-          <div className="hidden w-full max-w-full overflow-x-auto pb-4 lg:block">
-            <div className="flex w-max min-w-full gap-3">
+          <div
+            className="hidden w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain pb-4 lg:block"
+            dir="rtl"
+          >
+            <div className="flex w-max min-w-full flex-nowrap gap-3">
               {columns.map((col) => (
                 <section
                   key={col.stageId}
-                  className="admin-card flex w-72 min-w-72 shrink-0 flex-col px-3 py-3"
+                  className="admin-card flex w-72 min-w-72 flex-none flex-col px-3 py-3"
                   aria-label={col.stageName}
                 >
                 <header className="mb-3 flex items-center justify-between gap-2 border-b border-border pb-2">
