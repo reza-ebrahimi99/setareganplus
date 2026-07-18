@@ -23,6 +23,9 @@ export const PERMISSIONS = [
   "communication.manage",
   "automations.manage",
   "website.manage",
+  "students.portal.manage",
+  "portal.student.access",
+  "portal.guardian.access",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -112,11 +115,18 @@ const ROLE_PERMISSIONS: Readonly<Partial<Record<SystemRoleValue, ReadonlySet<Per
     "crm.send_sms",
   ]),
   REPORT_VIEWER: new Set(["reports.view"]),
-  REGISTRATION_STAFF: CRM_AGENT,
+  REGISTRATION_STAFF: new Set<Permission>([...CRM_AGENT, "students.portal.manage"]),
   SUPPORT: new Set(["crm.view_assigned", "crm.add_note", "crm.call", "crm.send_sms"]),
-  CONTENT_MANAGER: new Set(["forms.manage", "website.manage"]),
+  CONTENT_MANAGER: new Set([
+    "forms.manage",
+    "website.manage",
+    "students.portal.manage",
+  ]),
   FINANCE: new Set(["reports.view"]),
+  STUDENT: new Set(["portal.student.access"]),
+  PARENT: new Set(["portal.guardian.access"]),
 };
+
 
 export function permissionsForRole(role: SystemRoleValue): ReadonlySet<Permission> {
   return ROLE_PERMISSIONS[role] ?? new Set<Permission>();

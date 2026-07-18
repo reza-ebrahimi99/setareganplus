@@ -1,0 +1,108 @@
+import { prisma } from "@/lib/prisma";
+import {
+  publicStudentPortraitUrl,
+  type StudentPortraitVariantSize,
+} from "@/lib/media/student-portrait";
+import { ensureDefaultStudentGrades } from "@/lib/website/student-grades";
+
+export const ADMIN_STUDENT_PAGE_SIZE = 30;
+
+export async function listAdminStudents(
+  organizationId: string,
+  options?: { page?: number; q?: string },
+) {
+  await ensureDefaultStudentGrades(organizationId);
+
+  const q = options?.q?.trim() ?? "";
+  const where = {
+    organizationId,
+    deletedAt: null,
+    ...(q
+      ? {
+          OR: [
+            { fullName: { contains: q, mode: "insensitive" as const } },
+            { firstName: { contains: q, mode: "insensitive" as const } },
+            { lastName: { contains: q, mode: "insensitive" as const } },
+            { slug: { contains: q, mode: "insensitive" as const } },
+            { parentName: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
+
+  const total = await prisma.student.count({ where });
+  const pageCount = Math.max(1, Math.ceil(total / ADMIN_STUDENT_PAGE_SIZE));
+  const requested = options?.page && options.page > 0 ? options.page : 1;
+  const page = Math.min(requested, pageCount);
+
+  const students = await prisma.student.findMany({
+    where,
+    orderBy: [
+      { isFeatured: "desc" },
+      { featuredPriority: "asc" },
+      { displayOrder: "asc" },
+      { fullName: "asc" },
+    ],
+    skip: (page - 1) * ADMIN_STUDENT_PAGE_SIZE,
+    take: ADMIN_STUDENT_PAGE_SIZE,
+    select: {
+      id: true,
+      fullName: true,
+      firstName: true,
+      lastName: true,
+      slug: true,
+      schoolYear: true,
+      displayOrder: true,
+      featuredPriority: true,
+      isActive: true,
+      isFeatured: true,
+      archivedAt: true,
+      grade: { select: { id: true, name: true } },
+    },
+  });
+
+  return { students, total, page, pageCount, pageSize: ADMIN_STUDENT_PAGE_SIZE };
+}
+
+export async function loadAdminStudent(
+  organizationId: string,
+  studentId: string,
+) {
+  return prisma.student.findFirst({
+    where: { id: studentId, organizationId, deletedAt: null },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      fullName: true,
+      gradeId: true,
+      biography: true,
+      parentName: true,
+      schoolYear: true,
+      slug: true,
+      seoTitle: true,
+      seoDescription: true,
+      displayOrder: true,
+      featuredPriority: true,
+      isActive: true,
+      isFeatured: true,
+      archivedAt: true,
+      grade: { select: { id: true, name: true, slug: true } },
+      portraitMedia: {
+        select: { id: true, storageKey: true, altText: true, metadata: true },
+      },
+    },
+  });
+}
+
+export function studentPortraitPublicUrl(
+  media: {
+    storageKey: string;
+    metadata?: unknown;
+  } | null
+    | undefined,
+  size: StudentPortraitVariantSize = "w480",
+): string | null {
+  if (!media) return null;
+  return publicStudentPortraitUrl(media, size);
+}

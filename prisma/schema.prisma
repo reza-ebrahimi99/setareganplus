@@ -482,6 +482,17 @@ model Organization {
   automationExecutions AutomationExecution[]
   teamDepartments      TeamDepartment[]
   teamMembers          TeamMember[]
+  studentGrades          StudentGrade[]
+  students               Student[]
+  achievementCategories  AchievementCategory[]
+  achievements           Achievement[]
+  assessmentProviders    AssessmentProvider[]
+  subjects               Subject[]
+  assessments            Assessment[]
+  assessmentResults      AssessmentResult[]
+  studentGuardians           StudentGuardian[]
+  studentGuardianRelations   StudentGuardianRelation[]
+  portalAccountLinks         PortalAccountLink[]
 
   @@map("organizations")
 }
@@ -549,6 +560,7 @@ model User {
   createdCrmTasks      CrmTask[]                @relation("CrmTaskCreator")
   crmActivities        CrmActivity[]            @relation("CrmActivityActor")
   crmLeadImportReports CrmLeadImportReport[]    @relation("CrmLeadImportActor")
+  portalAccountLinks   PortalAccountLink[]
 
   @@index([status])
   @@index([deletedAt])
@@ -883,8 +895,11 @@ model MediaAsset {
 
   organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   createdBy    User?         @relation("MediaAssetCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  formPosters  FormVersion[] @relation("FormVersionPoster")
-  teamPortraits TeamMember[] @relation("TeamMemberPortrait")
+  formPosters              FormVersion[]         @relation("FormVersionPoster")
+  teamPortraits            TeamMember[]          @relation("TeamMemberPortrait")
+  studentPortraits         Student[]             @relation("StudentPortrait")
+  achievementCertificates  Achievement[]         @relation("AchievementCertificate")
+  achievementCovers        Achievement[]         @relation("AchievementCover")
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])
@@ -1909,4 +1924,380 @@ model TeamMember {
   @@index([organizationId, isActive, archivedAt, deletedAt, displayOrder])
   @@index([organizationId, unitKey])
   @@map("team_members")
+}
+
+// ─── Institute website Student CMS (org-scoped public profiles) ───────────────
+
+model StudentGrade {
+  id             String    @id @default(cuid())
+  organizationId String
+  slug           String
+  name           String
+  sortOrder      Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  archivedAt     DateTime?
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  students     Student[]
+  assessments  Assessment[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, sortOrder])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("student_grades")
+}
+
+model Student {
+  id               String    @id @default(cuid())
+  organizationId   String
+  gradeId          String
+  firstName        String
+  lastName         String
+  fullName         String
+  slug             String
+  biography        String    @default("")
+  parentName       String?
+  schoolYear       String?
+  portraitMediaId  String?
+  seoTitle         String?
+  seoDescription   String?
+  displayOrder     Int       @default(0)
+  isActive         Boolean   @default(true)
+  isFeatured       Boolean   @default(false)
+  featuredPriority Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  archivedAt       DateTime?
+  deletedAt        DateTime?
+
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  grade              StudentGrade       @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
+  portraitMedia      MediaAsset?        @relation("StudentPortrait", fields: [portraitMediaId], references: [id], onDelete: SetNull)
+  achievements       Achievement[]
+  assessmentResults  AssessmentResult[]
+  guardianRelations  StudentGuardianRelation[]
+  portalAccountLinks PortalAccountLink[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, gradeId, displayOrder])
+  @@index([organizationId, isFeatured, featuredPriority])
+  @@index([organizationId, isActive, deletedAt])
+  @@index([organizationId, isActive, archivedAt, deletedAt, displayOrder])
+  @@map("students")
+}
+
+// ─── Institute website Achievement CMS (linked to Student profiles) ───────────
+
+model AchievementCategory {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  slug           String
+  icon           String?
+  color          String?
+  displayOrder   Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  archivedAt     DateTime?
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  achievements Achievement[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, displayOrder])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("achievement_categories")
+}
+
+model Achievement {
+  id                 String    @id @default(cuid())
+  organizationId     String
+  studentId          String
+  categoryId         String
+  title              String
+  slug               String
+  shortDescription   String    @default("")
+  description        String    @default("")
+  achievementDate    DateTime?
+  schoolYear         String?
+  issuer             String?
+  level              String?
+  place              String?
+  score              String?
+  certificateMediaId String?
+  coverMediaId       String?
+  isFeatured         Boolean   @default(false)
+  featuredPriority   Int       @default(0)
+  displayOrder       Int       @default(0)
+  seoTitle           String?
+  seoDescription     String?
+  isPublished        Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  archivedAt         DateTime?
+  deletedAt          DateTime?
+
+  organization     Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student          Student             @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  category         AchievementCategory @relation(fields: [organizationId, categoryId], references: [organizationId, id], onDelete: Restrict)
+  certificateMedia MediaAsset?         @relation("AchievementCertificate", fields: [certificateMediaId], references: [id], onDelete: SetNull)
+  coverMedia       MediaAsset?         @relation("AchievementCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, studentId, achievementDate])
+  @@index([organizationId, categoryId, displayOrder])
+  @@index([organizationId, isFeatured, featuredPriority])
+  @@index([organizationId, isPublished, deletedAt])
+  @@index([organizationId, schoolYear])
+  @@index([organizationId, isPublished, archivedAt, deletedAt, achievementDate])
+  @@map("achievements")
+}
+
+// ─── Assessment Center (آزمون) — multi-provider exam results ─────────────────
+
+enum AssessmentType {
+  QALAMCHI
+  SCHOOL_EXAM
+  MIDTERM
+  FINAL
+  OLYMPIAD
+  ENTRANCE
+  OTHER
+}
+
+enum GuardianRelationshipType {
+  FATHER
+  MOTHER
+  GUARDIAN
+  OTHER
+}
+
+enum PortalAccountType {
+  STUDENT
+  GUARDIAN
+}
+
+/// Parent / legal guardian / authorized family member (portal identity, not public CMS).
+model StudentGuardian {
+  id             String                   @id @default(cuid())
+  organizationId String
+  firstName      String
+  lastName       String
+  fullName       String
+  nationalId     String?
+  mobile         String
+  normalizedMobile String
+  relationshipType GuardianRelationshipType @default(GUARDIAN)
+  isPrimary      Boolean                  @default(false)
+  isActive       Boolean                  @default(true)
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  archivedAt     DateTime?
+  deletedAt      DateTime?
+
+  organization Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  relations    StudentGuardianRelation[]
+  portalLinks  PortalAccountLink[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, normalizedMobile])
+  @@index([organizationId, fullName])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("student_guardians")
+}
+
+model StudentGuardianRelation {
+  id                     String                   @id @default(cuid())
+  organizationId         String
+  studentId              String
+  guardianId             String
+  relationshipType       GuardianRelationshipType @default(GUARDIAN)
+  isPrimary              Boolean                  @default(false)
+  canViewAcademicData    Boolean                  @default(true)
+  canViewAchievements    Boolean                  @default(true)
+  canViewCertificates    Boolean                  @default(true)
+  canReceiveNotifications Boolean                 @default(true)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  deletedAt              DateTime?
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student      Student        @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  guardian     StudentGuardian @relation(fields: [organizationId, guardianId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, studentId, guardianId])
+  @@unique([organizationId, id])
+  @@index([organizationId, guardianId, deletedAt])
+  @@index([organizationId, studentId, deletedAt])
+  @@map("student_guardian_relations")
+}
+
+/// Links an authenticated User to exactly one Student OR one StudentGuardian (XOR enforced in SQL + services).
+model PortalAccountLink {
+  id             String            @id @default(cuid())
+  organizationId String
+  userId         String
+  studentId      String?
+  guardianId     String?
+  accountType    PortalAccountType
+  isActive       Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  /// Single-field FKs: Prisma optional composite FKs require all-or-nothing nulls.
+  /// Organization match is enforced in portal/admin services.
+  student      Student?         @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  guardian     StudentGuardian? @relation(fields: [guardianId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, userId, deletedAt, isActive])
+  @@index([userId, deletedAt, isActive])
+  @@index([studentId])
+  @@index([guardianId])
+  @@map("portal_account_links")
+}
+
+model AssessmentProvider {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  slug           String
+  displayOrder   Int       @default(0)
+  color          String?
+  icon           String?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  archivedAt     DateTime?
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  assessments  Assessment[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, displayOrder])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("assessment_providers")
+}
+
+model Subject {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  slug           String
+  shortName      String?
+  displayOrder   Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization   Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  subjectResults AssessmentSubjectResult[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, displayOrder])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("subjects")
+}
+
+model Assessment {
+  id             String         @id @default(cuid())
+  organizationId String
+  providerId     String
+  gradeId        String
+  title          String
+  slug           String
+  assessmentType AssessmentType @default(OTHER)
+  assessmentDate DateTime?
+  schoolYear     String?
+  participants   Int?
+  maxScore       Float?
+  description    String         @default("")
+  isPublished    Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  archivedAt     DateTime?
+  deletedAt      DateTime?
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  provider     AssessmentProvider  @relation(fields: [organizationId, providerId], references: [organizationId, id], onDelete: Restrict)
+  grade        StudentGrade        @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
+  results      AssessmentResult[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, providerId, assessmentDate])
+  @@index([organizationId, gradeId, assessmentDate])
+  @@index([organizationId, assessmentType])
+  @@index([organizationId, schoolYear])
+  @@index([organizationId, isPublished, deletedAt])
+  @@index([organizationId, isPublished, archivedAt, deletedAt, assessmentDate])
+  @@map("assessments")
+}
+
+model AssessmentResult {
+  id             String    @id @default(cuid())
+  organizationId String
+  studentId      String
+  assessmentId   String
+  score          Float?
+  scaledScore    Float?
+  rankSchool     Int?
+  rankCity       Int?
+  rankProvince   Int?
+  rankCountry    Int?
+  percentile     Float?
+  growth         Float?
+  averageClass   Float?
+  averageGrade   Float?
+  notes          String?
+  isFeatured     Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization   Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student        Student                   @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  assessment     Assessment                @relation(fields: [organizationId, assessmentId], references: [organizationId, id], onDelete: Restrict)
+  subjectResults AssessmentSubjectResult[]
+
+  @@unique([organizationId, studentId, assessmentId])
+  @@unique([organizationId, id])
+  @@index([organizationId, assessmentId, score])
+  @@index([organizationId, studentId, createdAt])
+  @@index([organizationId, isFeatured, deletedAt])
+  @@map("assessment_results")
+}
+
+model AssessmentSubjectResult {
+  id                 String @id @default(cuid())
+  assessmentResultId String
+  subjectId          String
+  percentage         Float?
+  correctAnswers     Int?
+  wrongAnswers       Int?
+  blankAnswers       Int?
+  timeSpent          Int?
+
+  assessmentResult AssessmentResult @relation(fields: [assessmentResultId], references: [id], onDelete: Cascade)
+  subject          Subject          @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+
+  @@unique([assessmentResultId, subjectId])
+  @@index([subjectId])
+  @@map("assessment_subject_results")
 }

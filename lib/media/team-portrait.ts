@@ -24,8 +24,14 @@ export type TeamPortraitVariantMeta = {
   byteSize: number;
 };
 
+export type WebsitePortraitKind =
+  | "team-portrait"
+  | "student-portrait"
+  | "achievement-cover"
+  | "achievement-certificate-image";
+
 export type TeamPortraitMediaMetadata = {
-  kind: "team-portrait";
+  kind: WebsitePortraitKind;
   variants: {
     w480: TeamPortraitVariantMeta;
     w960: TeamPortraitVariantMeta;
@@ -151,7 +157,14 @@ export function parseTeamPortraitMetadata(
 ): TeamPortraitMediaMetadata | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
-  if (record.kind !== "team-portrait") return null;
+  if (
+    record.kind !== "team-portrait" &&
+    record.kind !== "student-portrait" &&
+    record.kind !== "achievement-cover" &&
+    record.kind !== "achievement-certificate-image"
+  ) {
+    return null;
+  }
   const variants = record.variants;
   if (!variants || typeof variants !== "object" || Array.isArray(variants)) {
     return null;
@@ -160,7 +173,10 @@ export function parseTeamPortraitMetadata(
   const w480 = parseVariant(map.w480);
   const w960 = parseVariant(map.w960);
   if (!w480 || !w960) return null;
-  return { kind: "team-portrait", variants: { w480, w960 } };
+  return {
+    kind: record.kind,
+    variants: { w480, w960 },
+  };
 }
 
 function parseVariant(value: unknown): TeamPortraitVariantMeta | null {
