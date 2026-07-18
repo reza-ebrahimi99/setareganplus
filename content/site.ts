@@ -8,6 +8,7 @@ export const siteConfig = {
 
 export const navLinks = [
   { href: "/", label: "صفحه اصلی" },
+  { href: "/team", label: "تیم ما" },
   { href: "/courses", label: "دوره‌ها" },
   { href: "/classes", label: "کلاس‌ها" },
   { href: "/exams", label: "آزمون‌ها" },

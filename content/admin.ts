@@ -100,6 +100,18 @@ export const adminNavGroups: ReadonlyArray<{
     ],
   },
   {
+    label: "وب‌سایت",
+    items: [
+      {
+        href: "/admin/website/team",
+        label: "اعضای تیم",
+        icon: "settings",
+        enabled: true,
+        permission: "website.manage",
+      },
+    ],
+  },
+  {
     label: "سامانه",
     items: [
       {

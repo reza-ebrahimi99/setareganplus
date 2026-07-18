@@ -480,6 +480,8 @@ model Organization {
   crmCallLogs          CrmCallLog[]
   crmLeadImportReports CrmLeadImportReport[]
   automationExecutions AutomationExecution[]
+  teamDepartments      TeamDepartment[]
+  teamMembers          TeamMember[]
 
   @@map("organizations")
 }
@@ -872,6 +874,8 @@ model MediaAsset {
   width           Int?
   height          Int?
   altText         String?
+  /// Optional structured metadata (e.g. team portrait variant keys).
+  metadata        Json?
   createdByUserId String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -880,6 +884,7 @@ model MediaAsset {
   organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   createdBy    User?         @relation("MediaAssetCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   formPosters  FormVersion[] @relation("FormVersionPoster")
+  teamPortraits TeamMember[] @relation("TeamMemberPortrait")
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])
@@ -1837,4 +1842,71 @@ model AutomationExecution {
   @@index([organizationId, status, createdAt])
   @@index([organizationId, domainEventId])
   @@map("automation_executions")
+}
+
+// ─── Institute website team CMS (not school-specific; not staff login accounts) ─
+
+model TeamDepartment {
+  id             String    @id @default(cuid())
+  organizationId String
+  slug           String
+  name           String
+  sortOrder      Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  archivedAt     DateTime?
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  members      TeamMember[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, sortOrder])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("team_departments")
+}
+
+model TeamMember {
+  id               String    @id @default(cuid())
+  organizationId   String
+  departmentId     String
+  fullName         String
+  roleTitle        String
+  biography        String    @default("")
+  specialty        String?
+  email            String?
+  phone            String?
+  instagramUrl     String?
+  linkedinUrl      String?
+  websiteUrl       String?
+  portraitMediaId  String?
+  slug             String
+  seoTitle         String?
+  seoDescription   String?
+  displayOrder     Int       @default(0)
+  isActive         Boolean   @default(true)
+  isFeatured       Boolean   @default(false)
+  featuredPriority Int       @default(0)
+  /// Reserved for future institute unit scoping (e.g. primary-school, plus, ghalamchi). Null in v1.
+  unitKey          String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  archivedAt       DateTime?
+  deletedAt        DateTime?
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  department    TeamDepartment @relation(fields: [organizationId, departmentId], references: [organizationId, id], onDelete: Restrict)
+  portraitMedia MediaAsset?    @relation("TeamMemberPortrait", fields: [portraitMediaId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, departmentId, displayOrder])
+  @@index([organizationId, isFeatured, featuredPriority])
+  @@index([organizationId, isActive, deletedAt])
+  /// Public directory: active + non-archived ordering
+  @@index([organizationId, isActive, archivedAt, deletedAt, displayOrder])
+  @@index([organizationId, unitKey])
+  @@map("team_members")
 }
