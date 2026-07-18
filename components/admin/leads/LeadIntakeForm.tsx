@@ -24,12 +24,49 @@ type LeadIntakeFormProps = {
 
 const initialState: CreateLeadState = {};
 
+const PREDEFINED_LEAD_SOURCES = [
+  "تماس تلفنی",
+  "مراجعه حضوری",
+  "معرفی",
+  "شبکه‌های اجتماعی",
+  "کمپین تبلیغاتی",
+] as const;
+
+const LEAD_SOURCE_OTHER = "__other__";
+
+type LeadSourceSelectValue = "" | (typeof PREDEFINED_LEAD_SOURCES)[number] | typeof LEAD_SOURCE_OTHER;
+
+function resolveLeadSourceUi(source: string | undefined): {
+  selectValue: LeadSourceSelectValue;
+  customText: string;
+} {
+  const trimmed = source?.trim() ?? "";
+  // Backend falls back empty → "MANUAL"; keep the select empty so the user
+  // still sees the optional default rather than a fake "سایر" value.
+  if (!trimmed || trimmed === "MANUAL") {
+    return { selectValue: "", customText: "" };
+  }
+  if (
+    (PREDEFINED_LEAD_SOURCES as readonly string[]).includes(trimmed)
+  ) {
+    return {
+      selectValue: trimmed as (typeof PREDEFINED_LEAD_SOURCES)[number],
+      customText: "",
+    };
+  }
+  return { selectValue: LEAD_SOURCE_OTHER, customText: trimmed };
+}
+
 function fieldClassName(hasError: boolean): string {
   const base =
     "mt-1.5 w-full rounded-xl border bg-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary";
   return hasError
     ? `${base} border-red-400`
     : `${base} border-border hover:border-secondary/40`;
+}
+
+function sourceFieldClassName(hasError: boolean): string {
+  return `${fieldClassName(hasError)} min-h-11`;
 }
 
 function localDateTimeValue(isoValue: string | undefined): string {
@@ -97,6 +134,11 @@ export function LeadIntakeForm({
   const [selectedAdvisorId, setSelectedAdvisorId] = useState(
     initialState.values?.ownerUserId ?? "",
   );
+  const [sourceSelect, setSourceSelect] = useState<LeadSourceSelectValue>("");
+  const [sourceCustom, setSourceCustom] = useState("");
+  const [syncedSourceValue, setSyncedSourceValue] = useState<
+    string | undefined
+  >(undefined);
 
   const [state, formAction, pending] = useActionState(
     async (previousState: CreateLeadState, formData: FormData) => {
@@ -134,6 +176,19 @@ export function LeadIntakeForm({
       !selectedBranchId ||
       advisor.branchIds.includes(selectedBranchId),
   );
+
+  // Re-hydrate source UI after server validation returns values (no first-paint mismatch).
+  if (values?.source !== syncedSourceValue) {
+    const resolved = resolveLeadSourceUi(values?.source);
+    setSyncedSourceValue(values?.source);
+    setSourceSelect(resolved.selectValue);
+    setSourceCustom(resolved.customText);
+  }
+
+  const submittedSource =
+    sourceSelect === LEAD_SOURCE_OTHER
+      ? sourceCustom.trim()
+      : sourceSelect;
 
   function handleBranchChange(event: React.ChangeEvent<HTMLSelectElement>) {
     const branchId = event.target.value;
@@ -346,28 +401,60 @@ export function LeadIntakeForm({
               <label htmlFor="lead-source" className="text-sm font-medium text-primary">
                 منبع لید
               </label>
-              <input
+              <input type="hidden" name="source" value={submittedSource} />
+              <select
                 id="lead-source"
-                name="source"
-                list="lead-source-options"
-                maxLength={100}
-                defaultValue={values?.source ?? ""}
+                dir="rtl"
+                value={sourceSelect}
+                onChange={(event) => {
+                  const next = event.target.value as LeadSourceSelectValue;
+                  setSourceSelect(next);
+                  if (next !== LEAD_SOURCE_OTHER) {
+                    setSourceCustom("");
+                  }
+                }}
                 aria-invalid={errors?.source ? true : undefined}
                 aria-describedby={
                   errors?.source
                     ? "lead-source-hint lead-source-error"
                     : "lead-source-hint"
                 }
-                className={fieldClassName(Boolean(errors?.source))}
-                placeholder="مثال: تماس تلفنی"
-              />
-              <datalist id="lead-source-options">
-                <option value="تماس تلفنی" />
-                <option value="مراجعه حضوری" />
-                <option value="معرفی" />
-                <option value="شبکه‌های اجتماعی" />
-                <option value="کمپین تبلیغاتی" />
-              </datalist>
+                className={sourceFieldClassName(Boolean(errors?.source))}
+              >
+                <option value="">انتخاب منبع لید</option>
+                {PREDEFINED_LEAD_SOURCES.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+                <option value={LEAD_SOURCE_OTHER}>سایر</option>
+              </select>
+              {sourceSelect === LEAD_SOURCE_OTHER ? (
+                <div className="mt-3">
+                  <label
+                    htmlFor="lead-source-custom"
+                    className="text-sm font-medium text-primary"
+                  >
+                    منبع سفارشی
+                  </label>
+                  <input
+                    id="lead-source-custom"
+                    dir="rtl"
+                    value={sourceCustom}
+                    onChange={(event) => setSourceCustom(event.target.value)}
+                    maxLength={100}
+                    autoComplete="off"
+                    aria-invalid={errors?.source ? true : undefined}
+                    aria-describedby={
+                      errors?.source
+                        ? "lead-source-hint lead-source-error"
+                        : "lead-source-hint"
+                    }
+                    className={sourceFieldClassName(Boolean(errors?.source))}
+                    placeholder="منبع را بنویسید"
+                  />
+                </div>
+              ) : null}
               <p id="lead-source-hint" className="mt-1.5 text-xs leading-6 text-muted">
                 در صورت خالی بودن، منبع «MANUAL» ثبت می‌شود.
               </p>
