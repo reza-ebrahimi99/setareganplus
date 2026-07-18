@@ -95,9 +95,19 @@ function pathBasename(name: string): string {
   return parts[parts.length - 1] || "poster";
 }
 
+export type ValidatePosterOptions = {
+  maxBytes?: number;
+  tooLargeMessage?: string;
+};
+
 export async function validatePosterFile(
   file: File | null | undefined,
+  options?: ValidatePosterOptions,
 ): Promise<PosterValidationResult> {
+  const maxBytes = options?.maxBytes ?? POSTER_MAX_BYTES;
+  const tooLargeMessage =
+    options?.tooLargeMessage ?? "حجم پوستر نباید بیشتر از ۸ مگابایت باشد.";
+
   if (!file || typeof file.arrayBuffer !== "function") {
     return { ok: false, error: "لطفاً یک فایل تصویر انتخاب کنید." };
   }
@@ -106,10 +116,10 @@ export async function validatePosterFile(
     return { ok: false, error: "فایل خالی است و قابل دریافت نیست." };
   }
 
-  if (file.size > POSTER_MAX_BYTES) {
+  if (file.size > maxBytes) {
     return {
       ok: false,
-      error: "حجم پوستر نباید بیشتر از ۸ مگابایت باشد.",
+      error: tooLargeMessage,
     };
   }
 

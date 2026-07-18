@@ -9,6 +9,7 @@ import path from "node:path";
  */
 
 const FORMS_SUBDIR = "forms";
+const TEAM_SUBDIR = "team";
 
 export function getMediaRoot(): string {
   const configured = process.env.STAROS_MEDIA_ROOT?.trim();
@@ -70,6 +71,15 @@ export function generateFormsStorageKey(extension: string): string {
   }
   const name = randomBytes(16).toString("hex");
   return `${FORMS_SUBDIR}/${name}.${safeExt}`;
+}
+
+export function generateTeamStorageKey(extension: string): string {
+  const safeExt = extension.replace(/[^a-z0-9]/gi, "").toLowerCase();
+  if (!safeExt) {
+    throw new Error("Missing file extension.");
+  }
+  const name = randomBytes(16).toString("hex");
+  return `${TEAM_SUBDIR}/${name}.${safeExt}`;
 }
 
 export function sha256Hex(buffer: Buffer): string {

@@ -22,6 +22,7 @@ export const PERMISSIONS = [
   "forms.manage",
   "communication.manage",
   "automations.manage",
+  "website.manage",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -113,7 +114,7 @@ const ROLE_PERMISSIONS: Readonly<Partial<Record<SystemRoleValue, ReadonlySet<Per
   REPORT_VIEWER: new Set(["reports.view"]),
   REGISTRATION_STAFF: CRM_AGENT,
   SUPPORT: new Set(["crm.view_assigned", "crm.add_note", "crm.call", "crm.send_sms"]),
-  CONTENT_MANAGER: new Set(["forms.manage"]),
+  CONTENT_MANAGER: new Set(["forms.manage", "website.manage"]),
   FINANCE: new Set(["reports.view"]),
 };
 
