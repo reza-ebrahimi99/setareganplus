@@ -16,9 +16,13 @@ import { toPersianDigits } from "@/lib/persian";
 type JalaliDatePickerProps = {
   value: JalaliDate | null;
   onChange: (value: JalaliDate) => void;
+  /** When provided, shows a clear control; Booking callers omit this. */
+  onClear?: () => void;
   min?: JalaliDate;
   max?: JalaliDate;
   label?: string;
+  className?: string;
+  disabled?: boolean;
 };
 
 function compare(a: JalaliDate, b: JalaliDate): number {
@@ -30,9 +34,12 @@ function compare(a: JalaliDate, b: JalaliDate): number {
 export function JalaliDatePicker({
   value,
   onChange,
+  onClear,
   min,
   max,
   label = "انتخاب تاریخ",
+  className = "",
+  disabled = false,
 }: JalaliDatePickerProps) {
   const today = todayJalaliInTehran();
   const [cursor, setCursor] = useState<JalaliDate>(value ?? today);
@@ -63,13 +70,17 @@ export function JalaliDatePicker({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-3 sm:p-4" dir="rtl">
+    <div
+      className={`rounded-2xl border border-border bg-surface p-3 sm:p-4 ${className}`}
+      dir="rtl"
+    >
       <div className="mb-3 flex items-center justify-between gap-2">
         <button
           type="button"
-          className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-background"
+          className="min-h-11 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-background disabled:opacity-50"
           onClick={() => shiftMonth(1)}
           aria-label="ماه بعد"
+          disabled={disabled}
         >
           ‹
         </button>
@@ -81,9 +92,10 @@ export function JalaliDatePicker({
         </div>
         <button
           type="button"
-          className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-background"
+          className="min-h-11 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-background disabled:opacity-50"
           onClick={() => shiftMonth(-1)}
           aria-label="ماه قبل"
+          disabled={disabled}
         >
           ›
         </button>
@@ -107,7 +119,8 @@ export function JalaliDatePicker({
             value.jy === day.jy &&
             value.jm === day.jm &&
             value.jd === day.jd;
-          const disabled =
+          const dayDisabled =
+            disabled ||
             (min != null && compare(day, min) < 0) ||
             (max != null && compare(day, max) > 0);
 
@@ -115,16 +128,17 @@ export function JalaliDatePicker({
             <button
               key={`${day.jy}-${day.jm}-${day.jd}`}
               type="button"
-              disabled={disabled}
+              disabled={dayDisabled}
               onClick={() => onChange(day)}
-              className={`rounded-xl py-2 text-sm transition-colors ${
+              className={`min-h-11 rounded-xl py-2 text-sm transition-colors ${
                 selected
                   ? "bg-primary text-white"
-                  : disabled
+                  : dayDisabled
                     ? "cursor-not-allowed text-slate-300"
                     : "text-foreground hover:bg-secondary/15"
               }`}
               aria-label={formatJalaliDate(day.jy, day.jm, day.jd)}
+              aria-pressed={selected ? true : undefined}
             >
               {toPersianDigits(day.jd)}
             </button>
@@ -132,11 +146,23 @@ export function JalaliDatePicker({
         })}
       </div>
 
-      {value ? (
-        <p className="mt-3 text-center text-xs text-muted">
-          انتخاب‌شده: {formatJalaliDate(value.jy, value.jm, value.jd)}
-        </p>
-      ) : null}
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+        {value ? (
+          <p className="text-center text-xs text-muted">
+            انتخاب‌شده: {formatJalaliDate(value.jy, value.jm, value.jd)}
+          </p>
+        ) : null}
+        {onClear && value ? (
+          <button
+            type="button"
+            onClick={onClear}
+            disabled={disabled}
+            className="min-h-11 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:bg-background disabled:opacity-50"
+          >
+            پاک کردن تاریخ
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

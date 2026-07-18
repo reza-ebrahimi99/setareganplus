@@ -80,9 +80,13 @@ export function jalaliTehranLocalToUtc(
   return tehranLocalToUtc(gy, gm, gd, hour, minute, second);
 }
 
+/** Canonical ASCII Jalali date for FormData / parsers (not for display). */
+export function formatJalaliDateAscii(jy: number, jm: number, jd: number): string {
+  return `${String(jy).padStart(4, "0")}/${String(jm).padStart(2, "0")}/${String(jd).padStart(2, "0")}`;
+}
+
 export function formatJalaliDate(jy: number, jm: number, jd: number): string {
-  const raw = `${String(jy).padStart(4, "0")}/${String(jm).padStart(2, "0")}/${String(jd).padStart(2, "0")}`;
-  return toPersianDigits(raw);
+  return toPersianDigits(formatJalaliDateAscii(jy, jm, jd));
 }
 
 export function formatJalaliDateLong(date: Date): string {
@@ -105,6 +109,12 @@ export function formatPersianTimeRange(startsAt: Date, endsAt: Date): string {
 
 export function formatJalaliDateTimeLabel(startsAt: Date, endsAt: Date): string {
   return `${formatJalaliDateLong(startsAt)} · ${formatPersianTimeRange(startsAt, endsAt)}`;
+}
+
+/** Compact CRM display: ۱۴۰۵/۰۴/۲۸ ۱۴:۳۰ (Tehran). */
+export function formatJalaliDateTimeShort(date: Date): string {
+  const time = toPersianDigits(formatTehranTime24(date));
+  return `${formatJalaliDateShort(date)} ${time}`;
 }
 
 /**

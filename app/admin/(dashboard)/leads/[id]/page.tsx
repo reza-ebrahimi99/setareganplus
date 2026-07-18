@@ -7,6 +7,7 @@ import {
   FailedLeadSmsResendAction,
   LeadSmsAction,
 } from "@/components/admin/crm/LeadSmsAction";
+import { LeadCallFollowUpFields } from "@/components/admin/crm/LeadCallFollowUpFields";
 import { LeadOwnerBadge } from "@/components/admin/crm/LeadOwnerBadge";
 import { LeadOwnerSelect } from "@/components/admin/crm/LeadOwnerSelect";
 import { LeadStageControl } from "@/components/admin/crm/LeadStageControl";
@@ -161,8 +162,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
               </select>
               <input name="durationSeconds" type="number" min="0" max="86400" placeholder="مدت تماس (ثانیه)" className="rounded-lg border border-border px-3 py-2 text-sm" />
               <textarea name="note" maxLength={1000} placeholder="یادداشت تماس" className="rounded-lg border border-border px-3 py-2 text-sm sm:col-span-2" />
-              <label className="text-sm"><span className="mb-1 block text-muted">تاریخ پیگیری (شمسی)</span><input name="nextFollowUpDate" dir="ltr" placeholder="۱۴۰۵/۰۱/۳۰" className="w-full rounded-lg border border-border px-3 py-2" /></label>
-              <label className="text-sm"><span className="mb-1 block text-muted">ساعت پیگیری</span><input name="nextFollowUpTime" type="time" defaultValue="09:00" className="w-full rounded-lg border border-border px-3 py-2" /></label>
+              <LeadCallFollowUpFields />
               {lead.permissions.changeStage && <label className="text-sm"><span className="mb-1 block text-muted">تغییر مرحله (اختیاری)</span><select name="stageId" defaultValue="" className="w-full rounded-lg border border-border px-3 py-2"><option value="">بدون تغییر</option>{lead.stages.map((stage) => <option key={stage.id} value={stage.id}>{stage.name}</option>)}</select></label>}
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="createTask" value="true" />برای پیگیری وظیفه بساز</label>
               {lead.permissions.terminal && <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="terminalConfirmed" value="true" />انتقال نهایی را تأیید می‌کنم</label>}

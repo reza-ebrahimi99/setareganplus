@@ -4,7 +4,10 @@ import { CrmTaskStatus } from "@/generated/prisma/enums";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { hasPermission, scopedLeadWhere } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-admin";
-import { formatJalaliDateShort } from "@/lib/datetime/jalali";
+import {
+  formatJalaliDateShort,
+  formatJalaliDateTimeShort,
+} from "@/lib/datetime/jalali";
 import { getTehranParts, tehranDayBoundsUtc } from "@/lib/datetime/tehran-zone";
 import { prisma } from "@/lib/prisma";
 
@@ -116,11 +119,11 @@ export default async function WorkspacePage() {
         </section>
         <section className="admin-card p-5">
           <h2 className="font-semibold text-primary">وظایف باز</h2>
-          <ul className="mt-3 space-y-2">{tasks.map((task) => <li key={task.id} className="text-sm"><Link href={`/admin/leads/${task.lead.id}`} className="font-medium">{task.title}</Link> · {task.lead.firstName} {task.lead.lastName}{task.dueAt ? ` · ${formatJalaliDateShort(task.dueAt)}` : ""}</li>)}</ul>
+          <ul className="mt-3 space-y-2">{tasks.map((task) => <li key={task.id} className="text-sm"><Link href={`/admin/leads/${task.lead.id}`} className="font-medium">{task.title}</Link> · {task.lead.firstName} {task.lead.lastName}{task.dueAt ? ` · ${formatJalaliDateTimeShort(task.dueAt)}` : ""}</li>)}</ul>
         </section>
         <section className="admin-card p-5">
           <h2 className="font-semibold text-primary">فعالیت‌های اخیر</h2>
-          <ul className="mt-3 space-y-2">{activities.map((activity) => <li key={activity.id} className="text-sm">{activity.title} · {activity.lead.firstName} {activity.lead.lastName} · {formatJalaliDateShort(activity.occurredAt)}</li>)}</ul>
+          <ul className="mt-3 space-y-2">{activities.map((activity) => <li key={activity.id} className="text-sm">{activity.title} · {activity.lead.firstName} {activity.lead.lastName} · {formatJalaliDateTimeShort(activity.occurredAt)}</li>)}</ul>
         </section>
       </div>
     </>

@@ -7,6 +7,17 @@ import {
   createLeadAction,
   type CreateLeadState,
 } from "@/app/admin/(dashboard)/leads/actions";
+import { JalaliDatePicker } from "@/components/booking/JalaliDatePicker";
+import { PersianTimePicker } from "@/components/datetime/PersianTimePicker";
+import {
+  jalaliTehranLocalToUtc,
+  type JalaliDate,
+  utcToJalaliInTehran,
+} from "@/lib/datetime/jalali";
+import {
+  formatTehranTime24,
+  parseLocalTimeHm,
+} from "@/lib/datetime/tehran-zone";
 import type { LeadOwnerOption } from "@/lib/crm/lead-owners";
 
 export type LeadIntakeBranchOption = {
@@ -69,12 +80,24 @@ function sourceFieldClassName(hasError: boolean): string {
   return `${fieldClassName(hasError)} min-h-11`;
 }
 
-function localDateTimeValue(isoValue: string | undefined): string {
-  if (!isoValue) return "";
-  const date = new Date(isoValue);
-  if (Number.isNaN(date.getTime())) return "";
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+const FOLLOW_UP_INCOMPLETE_MESSAGE =
+  "تاریخ و ساعت پیگیری باید هر دو انتخاب شوند یا هر دو خالی بمانند.";
+
+function resolveFollowUpFromIso(isoValue: string | undefined): {
+  date: JalaliDate | null;
+  time: string | null;
+} {
+  if (!isoValue?.trim()) {
+    return { date: null, time: null };
+  }
+  const instant = new Date(isoValue);
+  if (Number.isNaN(instant.getTime())) {
+    return { date: null, time: null };
+  }
+  return {
+    date: utcToJalaliInTehran(instant),
+    time: formatTehranTime24(instant),
+  };
 }
 
 function FieldError({
@@ -139,6 +162,14 @@ export function LeadIntakeForm({
   const [syncedSourceValue, setSyncedSourceValue] = useState<
     string | undefined
   >(undefined);
+  const [followUpDate, setFollowUpDate] = useState<JalaliDate | null>(null);
+  const [followUpTime, setFollowUpTime] = useState<string | null>(null);
+  const [syncedFollowUpIso, setSyncedFollowUpIso] = useState<
+    string | undefined
+  >(undefined);
+  const [followUpPairError, setFollowUpPairError] = useState<
+    string | undefined
+  >(undefined);
 
   const [state, formAction, pending] = useActionState(
     async (previousState: CreateLeadState, formData: FormData) => {
@@ -147,16 +178,27 @@ export function LeadIntakeForm({
       }
       formData.set("idempotencyKey", idempotencyKey.current);
 
-      const localDueAt = formData.get("followUpDueAtLocal");
-      formData.delete("followUpDueAtLocal");
-      if (typeof localDueAt === "string" && localDueAt.trim()) {
-        const parsed = new Date(localDueAt);
-        formData.set(
-          "followUpDueAt",
-          Number.isNaN(parsed.getTime()) ? localDueAt : parsed.toISOString(),
-        );
-      } else {
-        formData.set("followUpDueAt", "");
+      const dueIso = String(formData.get("followUpDueAt") ?? "").trim();
+      const hasDate = Boolean(formData.get("followUpDateSelected"));
+      const hasTime = Boolean(formData.get("followUpTimeSelected"));
+      if (hasDate !== hasTime || ((hasDate || hasTime) && !dueIso)) {
+        return {
+          status: "error" as const,
+          fieldErrors: { followUpDueAt: FOLLOW_UP_INCOMPLETE_MESSAGE },
+          values: {
+            firstName: String(formData.get("firstName") ?? ""),
+            lastName: String(formData.get("lastName") ?? ""),
+            mobile: String(formData.get("mobile") ?? ""),
+            branchId: String(formData.get("branchId") ?? ""),
+            source: String(formData.get("source") ?? ""),
+            ownerUserId: String(formData.get("ownerUserId") ?? ""),
+            notes: String(formData.get("notes") ?? ""),
+            createFollowUpTask:
+              String(formData.get("createFollowUpTask") ?? "") === "true",
+            followUpDueAt: "",
+            idempotencyKey: idempotencyKey.current,
+          },
+        };
       }
 
       const result = await createLeadAction(previousState, formData);
@@ -185,10 +227,32 @@ export function LeadIntakeForm({
     setSourceCustom(resolved.customText);
   }
 
+  if (values?.followUpDueAt !== syncedFollowUpIso) {
+    const resolved = resolveFollowUpFromIso(values?.followUpDueAt);
+    setSyncedFollowUpIso(values?.followUpDueAt);
+    setFollowUpDate(resolved.date);
+    setFollowUpTime(resolved.time);
+    setFollowUpPairError(undefined);
+  }
+
   const submittedSource =
     sourceSelect === LEAD_SOURCE_OTHER
       ? sourceCustom.trim()
       : sourceSelect;
+
+  const followUpIncomplete =
+    Boolean(followUpDate) !== Boolean(followUpTime);
+  const followUpHm = followUpTime ? parseLocalTimeHm(followUpTime) : null;
+  const submittedFollowUpIso =
+    followUpDate && followUpHm
+      ? jalaliTehranLocalToUtc(
+          followUpDate.jy,
+          followUpDate.jm,
+          followUpDate.jd,
+          followUpHm.hour,
+          followUpHm.minute,
+        ).toISOString()
+      : "";
 
   function handleBranchChange(event: React.ChangeEvent<HTMLSelectElement>) {
     const branchId = event.target.value;
@@ -525,30 +589,69 @@ export function LeadIntakeForm({
               </span>
             </label>
 
-            <div>
-              <label htmlFor="lead-follow-up-due" className="text-sm font-medium text-primary">
-                تاریخ و ساعت سررسید
-              </label>
+            <div className="space-y-4">
               <input
-                id="lead-follow-up-due"
-                name="followUpDueAtLocal"
-                type="datetime-local"
-                dir="ltr"
-                defaultValue={localDateTimeValue(values?.followUpDueAt)}
-                aria-invalid={errors?.followUpDueAt ? true : undefined}
+                type="hidden"
+                name="followUpDueAt"
+                value={followUpIncomplete ? "" : submittedFollowUpIso}
+              />
+              <input
+                type="hidden"
+                name="followUpDateSelected"
+                value={followUpDate ? "1" : ""}
+              />
+              <input
+                type="hidden"
+                name="followUpTimeSelected"
+                value={followUpTime ? "1" : ""}
+              />
+
+              <div>
+                <p className="text-sm font-medium text-primary">تاریخ سررسید</p>
+                <div className="mt-1.5">
+                  <JalaliDatePicker
+                    label="تاریخ پیگیری (شمسی)"
+                    value={followUpDate}
+                    onChange={(next) => {
+                      setFollowUpDate(next);
+                      setFollowUpPairError(undefined);
+                    }}
+                    onClear={() => {
+                      setFollowUpDate(null);
+                      setFollowUpPairError(undefined);
+                    }}
+                    disabled={pending}
+                  />
+                </div>
+              </div>
+
+              <PersianTimePicker
+                id="lead-follow-up-time"
+                label="ساعت سررسید"
+                value={followUpTime}
+                disabled={pending}
+                onChange={(next) => {
+                  setFollowUpTime(next);
+                  setFollowUpPairError(undefined);
+                }}
+                aria-invalid={
+                  errors?.followUpDueAt || followUpPairError ? true : undefined
+                }
                 aria-describedby={
-                  errors?.followUpDueAt
+                  errors?.followUpDueAt || followUpPairError
                     ? "lead-follow-up-hint lead-follow-up-error"
                     : "lead-follow-up-hint"
                 }
-                className={fieldClassName(Boolean(errors?.followUpDueAt))}
               />
-              <p id="lead-follow-up-hint" className="mt-1.5 text-xs leading-6 text-muted">
-                اختیاری؛ زمان بر اساس منطقه زمانی دستگاه شما ثبت می‌شود.
+
+              <p id="lead-follow-up-hint" className="text-xs leading-6 text-muted">
+                {followUpIncomplete
+                  ? FOLLOW_UP_INCOMPLETE_MESSAGE
+                  : "اختیاری؛ زمان بر اساس تقویم تهران (نه منطقه زمانی دستگاه) ثبت می‌شود. در صورت خالی بودن و فعال بودن وظیفه، سررسید ۲۴ ساعت بعد است."}
               </p>
               <FieldError
                 id="lead-follow-up-error"
-                message={errors?.followUpDueAt}
+                message={errors?.followUpDueAt ?? followUpPairError}
               />
             </div>
           </div>
