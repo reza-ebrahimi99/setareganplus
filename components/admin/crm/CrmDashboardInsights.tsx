@@ -2,18 +2,8 @@ import Link from "next/link";
 import { hasPermission } from "@/lib/auth/permissions";
 import type { AdminSessionContext } from "@/lib/auth/require-admin";
 import { loadCrmDashboardInsights } from "@/lib/crm/dashboard-insights";
+import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import { toPersianDigits } from "@/lib/persian";
-
-function formatDateTime(date: Date): string {
-  return new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
-    timeZone: "Asia/Tehran",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
 
 function number(value: number): string {
   return toPersianDigits(value);
@@ -264,7 +254,7 @@ export async function CrmDashboardInsightsSection({
                 {recentImports.map((report) => (
                   <tr key={report.id} className="align-top hover:bg-background/60">
                     <td className="px-4 py-3">
-                      <strong className="block text-primary">{formatDateTime(report.createdAt)}</strong>
+                      <strong className="block text-primary">{formatJalaliDateTimeShort(report.createdAt)}</strong>
                       <span className="mt-1 block text-xs text-muted">{report.importedBy}</span>
                     </td>
                     <td className="px-3 py-3">{number(report.total)}</td>

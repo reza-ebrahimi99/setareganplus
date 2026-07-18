@@ -20,7 +20,7 @@ import { loadLeadOwnerOptions } from "@/lib/crm/lead-owners";
 import { loadCrmSmsTemplates, type CrmSmsTemplateOption } from "@/lib/crm/manual-sms";
 import { SCORE_BAND_LABELS } from "@/lib/crm/scoring";
 import { isTaskOverdue } from "@/lib/crm/tasks";
-import { formatJalaliDateShort } from "@/lib/datetime/jalali";
+import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { prisma } from "@/lib/prisma";
 
@@ -219,14 +219,14 @@ export async function loadCrmPipelineBoard(filters: CrmBoardFilters = {}): Promi
           ? `${lead.owner.firstName} ${lead.owner.lastName}`.trim()
           : null,
         nextFollowUpLabel: lead.nextFollowUpAt
-          ? formatJalaliDateShort(lead.nextFollowUpAt)
+          ? formatJalaliDateTimeShort(lead.nextFollowUpAt)
           : null,
         overdueTaskCount: lead.crmTasks.filter((t) =>
           isTaskOverdue({ status: t.status, dueAt: t.dueAt, now }),
         ).length,
         bookingStatus: lead.bookingReservations[0]?.status ?? null,
         lastActivityLabel: lead.crmActivities[0]
-          ? formatJalaliDateShort(lead.crmActivities[0].occurredAt)
+          ? formatJalaliDateTimeShort(lead.crmActivities[0].occurredAt)
           : null,
         stageId: lead.stageId,
       };

@@ -9,7 +9,11 @@ import { SCORE_BAND_LABELS } from "@/lib/crm/scoring";
 import { loadCrmSmsTemplates } from "@/lib/crm/manual-sms";
 import { loadLeadOwnerOptions } from "@/lib/crm/lead-owners";
 import { displayTaskStatus } from "@/lib/crm/tasks";
-import { formatJalaliDateShort, formatJalaliDateTimeLabel } from "@/lib/datetime/jalali";
+import {
+  formatJalaliDateShort,
+  formatJalaliDateTimeLabel,
+  formatJalaliDateTimeShort,
+} from "@/lib/datetime/jalali";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { prisma } from "@/lib/prisma";
 
@@ -182,10 +186,10 @@ export async function loadLeadDetail(leadId: string) {
         branchId: lead.branch.id,
         branches,
         nextFollowUpLabel: lead.nextFollowUpAt
-          ? formatJalaliDateShort(lead.nextFollowUpAt)
+          ? formatJalaliDateTimeShort(lead.nextFollowUpAt)
           : null,
         lastContactLabel: lead.lastContactAt
-          ? formatJalaliDateShort(lead.lastContactAt)
+          ? formatJalaliDateTimeShort(lead.lastContactAt)
           : null,
         convertedAtLabel: lead.convertedAt
           ? formatJalaliDateShort(lead.convertedAt)
@@ -214,7 +218,7 @@ export async function loadLeadDetail(leadId: string) {
           status: t.status,
           displayStatus: displayTaskStatus(t.status, t.dueAt),
           priority: t.priority,
-          dueLabel: t.dueAt ? formatJalaliDateShort(t.dueAt) : null,
+          dueLabel: t.dueAt ? formatJalaliDateTimeShort(t.dueAt) : null,
           assignedToUserId: t.assignedToUserId,
           assignee: t.assignedTo
             ? `${t.assignedTo.firstName} ${t.assignedTo.lastName}`.trim()
@@ -227,7 +231,7 @@ export async function loadLeadDetail(leadId: string) {
             activityType: a.activityType,
             title: a.title,
             summary: a.summary,
-            whenLabel: formatJalaliDateShort(a.occurredAt),
+            whenLabel: formatJalaliDateTimeShort(a.occurredAt),
             actor: a.actor
               ? `${a.actor.firstName} ${a.actor.lastName}`.trim()
               : null,
