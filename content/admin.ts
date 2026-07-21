@@ -159,6 +159,13 @@ export const adminNavGroups: ReadonlyArray<{
         permission: "website.manage",
       },
       {
+        href: "/admin/website/pages",
+        label: "صفحات",
+        icon: "settings",
+        enabled: true,
+        permission: "website.manage",
+      },
+      {
         href: "/admin/website/assessments",
         label: "آزمون‌ها",
         icon: "settings",

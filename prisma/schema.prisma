@@ -468,6 +468,9 @@ model Organization {
   galleryAlbums            GalleryAlbum[]
   mediaPlacements          MediaPlacement[]
   websiteMarketingCards    WebsiteMarketingCard[]
+  websitePages             WebsitePage[]
+  websitePageSections      WebsitePageSection[]
+  websitePageSectionMedia  WebsitePageSectionMedia[]
   bookingServices          BookingService[]
   bookingAdvisors          BookingAdvisor[]
   bookingSlots             BookingSlot[]
@@ -920,6 +923,7 @@ model MediaAsset {
   galleryAlbumItems       GalleryAlbumItem[]
   mediaPlacements         MediaPlacement[]
   websiteMarketingCards   WebsiteMarketingCard[]    @relation("WebsiteMarketingCardImage")
+  websitePageSectionMedia WebsitePageSectionMedia[] @relation("WebsitePageSectionMediaAsset")
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])
@@ -1029,6 +1033,84 @@ model WebsiteMarketingCard {
   @@index([organizationId, sectionKey, deletedAt, isActive, sortOrder])
   @@index([imageMediaId])
   @@map("website_marketing_cards")
+}
+
+// ─── Visual Page Builder (Phase 1) ───────────────────────────────────────────
+
+enum WebsitePageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum WebsiteSectionStatus {
+  DRAFT
+  PUBLISHED
+  DISABLED
+}
+
+model WebsitePage {
+  id             String            @id @default(cuid())
+  organizationId String
+  slug           String
+  title          String
+  seoTitle       String?
+  seoDescription String?
+  status         WebsitePageStatus @default(DRAFT)
+  publishedAt    DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  sections     WebsitePageSection[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, status, deletedAt])
+  @@map("website_pages")
+}
+
+model WebsitePageSection {
+  id             String               @id @default(cuid())
+  organizationId String
+  pageId         String
+  /// Allowlisted section type (HERO, IMAGE, RICH_TEXT, CTA, SPACER, …)
+  type           String
+  status         WebsiteSectionStatus @default(DRAFT)
+  sortOrder      Int                  @default(0)
+  /// Typed JSON validated by Section Registry for `type`
+  config         Json                 @default("{}")
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  page         WebsitePage               @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  mediaLinks   WebsitePageSectionMedia[]
+
+  @@index([organizationId, pageId, deletedAt, status, sortOrder])
+  @@index([pageId, deletedAt, sortOrder])
+  @@map("website_page_sections")
+}
+
+model WebsitePageSectionMedia {
+  id             String @id @default(cuid())
+  organizationId String
+  sectionId      String
+  mediaId        String
+  /// Semantic role within section config (e.g. primary, mobile, background)
+  role           String
+  sortOrder      Int    @default(0)
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  section      WebsitePageSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  media        MediaAsset         @relation("WebsitePageSectionMediaAsset", fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@unique([sectionId, role, sortOrder])
+  @@index([mediaId])
+  @@index([organizationId, mediaId])
+  @@index([sectionId, sortOrder])
+  @@map("website_page_section_media")
 }
 
 // ─── Form parent identity (stable slug) ──────────────────────────────────────
