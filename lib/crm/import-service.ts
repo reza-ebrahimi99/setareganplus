@@ -189,9 +189,10 @@ async function lockMobiles(
     .sort()
     .map((mobile) => `manual-lead:phone:${organizationId}:${mobile}`);
   if (keys.length === 0) return;
-  await tx.$queryRaw`
-    SELECT pg_advisory_xact_lock(hashtext(lock_key))
+  await tx.$queryRaw<Array<{ locked: number }>>`
+    SELECT 1 AS locked
     FROM unnest(${keys}::text[]) AS lock_key
+    CROSS JOIN LATERAL pg_advisory_xact_lock(hashtext(lock_key))
     ORDER BY lock_key
   `;
 }
@@ -776,7 +777,20 @@ export async function importCrmLeads(params: {
         ownerCounts.set(ownerUserId, (ownerCounts.get(ownerUserId) ?? 0) + 1);
       }
       resultRows.push(...batchResults.rows);
-    } catch {
+    } catch (error) {
+      console.error("[CRM_IMPORT_BATCH_FAILED]", {
+        organizationId: params.actor.organizationId,
+        branchId: params.branchId,
+        rowNumbers: rowBatch.map((row) => row.excelRowNumber),
+        error:
+          error instanceof Error
+            ? {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+              }
+            : error,
+      });
       failed += rowBatch.length;
       resultRows.push(
         ...rowBatch.map((row) => ({
