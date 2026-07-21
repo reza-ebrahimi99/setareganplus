@@ -85,7 +85,7 @@ export function AchievementFilters({
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="عنوان، دانش‌آموز، صادرکننده یا مقام"
+          placeholder="عنوان، صادرکننده یا مقام"
           className="min-h-11 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm"
           autoComplete="off"
           inputMode="search"

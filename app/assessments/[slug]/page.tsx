@@ -4,12 +4,10 @@ import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { SiteShell } from "@/components/layout/SiteShell";
-import { AssessmentResultCard } from "@/components/assessments/AssessmentResultCard";
 import { loadPublicAssessmentBySlug } from "@/lib/assessment/assessments";
 import { formatJalaliDateShort } from "@/lib/datetime/jalali";
 import { toPersianDigits } from "@/lib/persian";
 import { siteConfig } from "@/content/site";
-import type { PublicAssessmentResultCard } from "@/lib/assessment/results";
 
 export const revalidate = 120;
 
@@ -42,30 +40,6 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
   const { slug } = await params;
   const assessment = await loadPublicAssessmentBySlug(slug);
   if (!assessment) notFound();
-
-  const featuredResults: PublicAssessmentResultCard[] =
-    assessment.results.map((row) => ({
-      id: row.id,
-      score: row.score,
-      scaledScore: row.scaledScore,
-      rankSchool: row.rankSchool,
-      rankCity: row.rankCity,
-      rankProvince: row.rankProvince,
-      rankCountry: row.rankCountry,
-      percentile: row.percentile,
-      growth: null,
-      isFeatured: true,
-      studentName: row.student.fullName,
-      studentSlug: row.student.slug,
-      gradeName: row.student.grade.name,
-      assessmentTitle: assessment.title,
-      assessmentSlug: assessment.slug,
-      assessmentDate: assessment.assessmentDate,
-      schoolYear: assessment.schoolYear,
-      providerName: assessment.provider.name,
-      providerColor: assessment.provider.color,
-      assessmentTypeLabel: assessment.assessmentTypeLabel,
-    }));
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -176,17 +150,18 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
             </Link>
           </article>
 
-          <aside className="space-y-4">
-            <h2 className="text-lg font-bold text-primary">نتایج ویژه</h2>
-            {featuredResults.length === 0 ? (
-              <p className="rounded-2xl border border-border bg-surface px-4 py-6 text-sm text-muted">
-                هنوز نتیجه ویژه‌ای برای این آزمون منتشر نشده است.
-              </p>
-            ) : (
-              featuredResults.map((result) => (
-                <AssessmentResultCard key={result.id} result={result} />
-              ))
-            )}
+          <aside className="admin-card space-y-3 p-5 sm:p-6">
+            <h2 className="text-lg font-bold text-primary">نتایج فردی</h2>
+            <p className="text-sm leading-7 text-muted">
+              نتایج فردی دانش‌آموزان به‌صورت عمومی منتشر نمی‌شود و فقط از طریق
+              پرتال امن اولیا و دانش‌آموزان قابل مشاهده است.
+            </p>
+            <Link
+              href="/portal"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-medium text-white"
+            >
+              ورود به پرتال
+            </Link>
           </aside>
         </div>
       </Container>

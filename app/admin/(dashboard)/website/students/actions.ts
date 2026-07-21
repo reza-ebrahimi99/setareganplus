@@ -34,11 +34,9 @@ function readString(formData: FormData, key: string): string {
   return typeof value === "string" ? value : "";
 }
 
-function revalidateStudents(slug?: string) {
+function revalidateStudents() {
   revalidatePath("/admin/website/students");
   revalidatePath("/admin/website/students/grades");
-  revalidatePath("/students");
-  if (slug) revalidatePath(`/students/${slug}`);
 }
 
 async function uniqueStudentSlug(
@@ -177,7 +175,7 @@ export async function createStudent(
     },
   });
 
-  revalidateStudents(slug);
+  revalidateStudents();
   return { successMessage: "دانش‌آموز با موفقیت ثبت شد." };
 }
 
@@ -262,8 +260,8 @@ export async function updateStudent(
     },
   });
 
-  revalidateStudents(slug);
-  revalidateStudents(existing.slug);
+  revalidateStudents();
+  revalidateStudents();
   return { successMessage: "تغییرات ذخیره شد." };
 }
 
@@ -283,7 +281,7 @@ export async function archiveStudent(formData: FormData) {
     where: { id: student.id },
     data: { archivedAt: new Date(), isFeatured: false },
   });
-  revalidateStudents(student.slug);
+  revalidateStudents();
 }
 
 export async function restoreStudent(formData: FormData) {
@@ -302,7 +300,7 @@ export async function restoreStudent(formData: FormData) {
     where: { id: student.id },
     data: { archivedAt: null },
   });
-  revalidateStudents(student.slug);
+  revalidateStudents();
 }
 
 export async function deleteStudent(formData: FormData) {
@@ -326,7 +324,7 @@ export async function deleteStudent(formData: FormData) {
       slug: `${student.slug}-deleted-${Date.now().toString(36)}`,
     },
   });
-  revalidateStudents(student.slug);
+  revalidateStudents();
 }
 
 export async function uploadPortrait(
@@ -454,7 +452,7 @@ export async function uploadPortrait(
     }
   }
 
-  revalidateStudents(student.slug);
+  revalidateStudents();
   return {
     successMessage: "تصویر پروفایل ذخیره شد.",
     formError: undefined,

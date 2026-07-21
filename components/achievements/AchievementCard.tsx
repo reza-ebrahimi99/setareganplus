@@ -13,6 +13,7 @@ export function AchievementCard({
   priority = false,
 }: AchievementCardProps) {
   const meta = [
+    achievement.gradeName,
     achievement.place,
     achievement.level,
     achievement.schoolYear,
@@ -56,10 +57,6 @@ export function AchievementCard({
       </div>
       <div className="space-y-2 p-4 sm:p-5">
         <h3 className="text-lg font-bold text-primary">{achievement.title}</h3>
-        <p className="text-sm text-muted">
-          {achievement.studentName}
-          {achievement.gradeName ? ` · ${achievement.gradeName}` : ""}
-        </p>
         {meta ? <p className="text-sm text-secondary">{meta}</p> : null}
         {achievement.shortDescription ? (
           <p className="line-clamp-2 text-sm leading-7 text-muted">

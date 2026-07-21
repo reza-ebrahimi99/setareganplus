@@ -67,12 +67,11 @@ function parseOptionalInt(raw: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function revalidateResults(assessmentSlug?: string, studentSlug?: string) {
+function revalidateResults(assessmentSlug?: string) {
   revalidatePath("/admin/website/assessment-results");
   revalidatePath("/admin/website/assessments");
   revalidatePath("/assessments");
   if (assessmentSlug) revalidatePath(`/assessments/${assessmentSlug}`);
-  if (studentSlug) revalidatePath(`/students/${studentSlug}`);
 }
 
 function validateMetricFields(formData: FormData): Record<string, string> {
@@ -185,7 +184,7 @@ export async function createAssessmentResult(
         where: { id: existing.id },
         data: { ...payload, deletedAt: null },
       });
-      revalidateResults(assessment!.slug, student!.slug);
+      revalidateResults(assessment!.slug);
       return { successMessage: "نتیجه بازیابی و به‌روزرسانی شد." };
     }
 
@@ -217,7 +216,7 @@ export async function createAssessmentResult(
     return { formError: persianPrismaError(error) };
   }
 
-  revalidateResults(assessment!.slug, student!.slug);
+  revalidateResults(assessment!.slug);
   return { successMessage: "نتیجه آزمون ثبت شد." };
 }
 
@@ -276,7 +275,7 @@ export async function updateAssessmentResult(
     return { formError: persianPrismaError(error) };
   }
 
-  revalidateResults(existing.assessment.slug, existing.student.slug);
+  revalidateResults(existing.assessment.slug);
   return { successMessage: "نتیجه به‌روزرسانی شد." };
 }
 
@@ -301,7 +300,7 @@ export async function deleteAssessmentResult(formData: FormData) {
     where: { id: result.id },
     data: { deletedAt: new Date(), isFeatured: false },
   });
-  revalidateResults(result.assessment.slug, result.student.slug);
+  revalidateResults(result.assessment.slug);
 }
 
 function readFile(formData: FormData): File {
@@ -466,7 +465,6 @@ export async function executeAssessmentImportAction(
     });
 
     revalidateResults(assessment.slug);
-    revalidatePath("/students");
     return { ok: true, result };
   } catch (error) {
     logServerError(

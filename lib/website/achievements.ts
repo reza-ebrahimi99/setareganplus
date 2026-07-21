@@ -24,8 +24,6 @@ export type PublicAchievementCard = {
   categoryName: string;
   categorySlug: string;
   categoryColor: string | null;
-  studentName: string;
-  studentSlug: string;
   gradeName: string;
   coverUrl: string | null;
   coverAlt: string;
@@ -107,11 +105,6 @@ function publicAchievementWhere(
             { shortDescription: { contains: q, mode: "insensitive" as const } },
             { issuer: { contains: q, mode: "insensitive" as const } },
             { place: { contains: q, mode: "insensitive" as const } },
-            {
-              student: {
-                fullName: { contains: q, mode: "insensitive" as const },
-              },
-            },
           ],
         }
       : {}),
@@ -149,8 +142,6 @@ export async function loadFeaturedAchievements(): Promise<
         category: { select: { name: true, slug: true, color: true } },
         student: {
           select: {
-            fullName: true,
-            slug: true,
             grade: { select: { name: true } },
           },
         },
@@ -171,8 +162,6 @@ export async function loadFeaturedAchievements(): Promise<
       categoryName: row.category.name,
       categorySlug: row.category.slug,
       categoryColor: row.category.color,
-      studentName: row.student.fullName,
-      studentSlug: row.student.slug,
       gradeName: row.student.grade.name,
       ...mapCover(row.coverMedia, row.title),
     }));
@@ -246,8 +235,6 @@ export async function loadPublicAchievementPage(filters?: {
       category: { select: { name: true, slug: true, color: true } },
       student: {
         select: {
-          fullName: true,
-          slug: true,
           grade: { select: { name: true } },
         },
       },
@@ -269,8 +256,6 @@ export async function loadPublicAchievementPage(filters?: {
       categoryName: row.category.name,
       categorySlug: row.category.slug,
       categoryColor: row.category.color,
-      studentName: row.student.fullName,
-      studentSlug: row.student.slug,
       gradeName: row.student.grade.name,
       ...mapCover(row.coverMedia, row.title),
     })),
@@ -334,8 +319,6 @@ export async function loadPublicAchievementBySlug(
       category: { select: { name: true, slug: true, color: true } },
       student: {
         select: {
-          fullName: true,
-          slug: true,
           grade: { select: { name: true } },
         },
       },
@@ -377,8 +360,6 @@ export async function loadPublicAchievementBySlug(
     categoryName: row.category.name,
     categorySlug: row.category.slug,
     categoryColor: row.category.color,
-    studentName: row.student.fullName,
-    studentSlug: row.student.slug,
     gradeName: row.student.grade.name,
     ...cover,
     coverUrlLarge: publicCoverUrl(row.coverMedia, "w960"),
@@ -387,66 +368,9 @@ export async function loadPublicAchievementBySlug(
   };
 }
 
-/** Student profile: published achievements, featured first then date. */
+/** Privacy: per-student public achievement lists are disabled. */
 export async function loadPublicAchievementsForStudent(
-  studentId: string,
+  _studentId: string,
 ): Promise<PublicAchievementCard[]> {
-  const organization = await getCurrentOrganization();
-  if (!organization) return [];
-
-  const rows = await prisma.achievement.findMany({
-    where: {
-      organizationId: organization.id,
-      studentId,
-      deletedAt: null,
-      archivedAt: null,
-      isPublished: true,
-      category: { deletedAt: null, archivedAt: null, isActive: true },
-    },
-    orderBy: [
-      { isFeatured: "desc" },
-      { featuredPriority: "asc" },
-      { achievementDate: "desc" },
-      { displayOrder: "asc" },
-    ],
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      shortDescription: true,
-      schoolYear: true,
-      place: true,
-      level: true,
-      achievementDate: true,
-      isFeatured: true,
-      category: { select: { name: true, slug: true, color: true } },
-      student: {
-        select: {
-          fullName: true,
-          slug: true,
-          grade: { select: { name: true } },
-        },
-      },
-      coverMedia: { select: mediaSelect },
-    },
-  });
-
-  return rows.map((row) => ({
-    id: row.id,
-    slug: row.slug,
-    title: row.title,
-    shortDescription: row.shortDescription,
-    schoolYear: row.schoolYear,
-    place: row.place,
-    level: row.level,
-    achievementDate: row.achievementDate,
-    isFeatured: row.isFeatured,
-    categoryName: row.category.name,
-    categorySlug: row.category.slug,
-    categoryColor: row.category.color,
-    studentName: row.student.fullName,
-    studentSlug: row.student.slug,
-    gradeName: row.student.grade.name,
-    ...mapCover(row.coverMedia, row.title),
-  }));
+  return [];
 }

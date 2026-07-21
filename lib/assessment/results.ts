@@ -1,7 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
-import { ASSESSMENT_TYPE_LABELS } from "@/lib/assessment/types";
 
 export const ADMIN_RESULT_PAGE_SIZE = 30;
 export const HOMEPAGE_FEATURED_RESULT_LIMIT = 6;
@@ -168,175 +166,13 @@ export async function loadAdminAssessmentResult(
 export async function loadFeaturedAssessmentResults(): Promise<
   PublicAssessmentResultCard[]
 > {
-  try {
-    const organization = await getCurrentOrganization();
-    if (!organization) return [];
-
-    const rows = await prisma.assessmentResult.findMany({
-      where: {
-        organizationId: organization.id,
-        deletedAt: null,
-        isFeatured: true,
-        assessment: {
-          deletedAt: null,
-          archivedAt: null,
-          isPublished: true,
-        },
-        student: {
-          deletedAt: null,
-          archivedAt: null,
-          isActive: true,
-        },
-      },
-      orderBy: [
-        { assessment: { assessmentDate: "desc" } },
-        { score: "desc" },
-      ],
-      take: HOMEPAGE_FEATURED_RESULT_LIMIT,
-      select: {
-        id: true,
-        score: true,
-        scaledScore: true,
-        rankSchool: true,
-        rankCity: true,
-        rankProvince: true,
-        rankCountry: true,
-        percentile: true,
-        growth: true,
-        isFeatured: true,
-        student: {
-          select: {
-            fullName: true,
-            slug: true,
-            grade: { select: { name: true } },
-          },
-        },
-        assessment: {
-          select: {
-            title: true,
-            slug: true,
-            assessmentDate: true,
-            schoolYear: true,
-            assessmentType: true,
-            provider: { select: { name: true, color: true } },
-          },
-        },
-      },
-    });
-
-    return rows.map(mapPublicResultCard);
-  } catch {
-    return [];
-  }
+  /** Privacy: public featured individual results are disabled. */
+  return [];
 }
 
 export async function loadPublicAssessmentHistoryForStudent(
-  studentId: string,
+  _studentId: string,
 ): Promise<PublicAssessmentResultCard[]> {
-  const organization = await getCurrentOrganization();
-  if (!organization) return [];
-
-  const rows = await prisma.assessmentResult.findMany({
-    where: {
-      organizationId: organization.id,
-      studentId,
-      deletedAt: null,
-      assessment: {
-        deletedAt: null,
-        archivedAt: null,
-        isPublished: true,
-      },
-    },
-    orderBy: [
-      { assessment: { assessmentDate: "desc" } },
-      { createdAt: "desc" },
-    ],
-    select: {
-      id: true,
-      score: true,
-      scaledScore: true,
-      rankSchool: true,
-      rankCity: true,
-      rankProvince: true,
-      rankCountry: true,
-      percentile: true,
-      growth: true,
-      isFeatured: true,
-      student: {
-        select: {
-          fullName: true,
-          slug: true,
-          grade: { select: { name: true } },
-        },
-      },
-      assessment: {
-        select: {
-          title: true,
-          slug: true,
-          assessmentDate: true,
-          schoolYear: true,
-          assessmentType: true,
-          provider: { select: { name: true, color: true } },
-        },
-      },
-      subjectResults: {
-        select: {
-          percentage: true,
-          subject: { select: { name: true, shortName: true } },
-        },
-        orderBy: { subject: { displayOrder: "asc" } },
-      },
-    },
-  });
-
-  return rows.map(mapPublicResultCard);
-}
-
-function mapPublicResultCard(row: {
-  id: string;
-  score: number | null;
-  scaledScore: number | null;
-  rankSchool: number | null;
-  rankCity: number | null;
-  rankProvince: number | null;
-  rankCountry: number | null;
-  percentile: number | null;
-  growth: number | null;
-  isFeatured: boolean;
-  student: {
-    fullName: string;
-    slug: string;
-    grade: { name: string };
-  };
-  assessment: {
-    title: string;
-    slug: string;
-    assessmentDate: Date | null;
-    schoolYear: string | null;
-    assessmentType: keyof typeof ASSESSMENT_TYPE_LABELS;
-    provider: { name: string; color: string | null };
-  };
-}): PublicAssessmentResultCard {
-  return {
-    id: row.id,
-    score: row.score,
-    scaledScore: row.scaledScore,
-    rankSchool: row.rankSchool,
-    rankCity: row.rankCity,
-    rankProvince: row.rankProvince,
-    rankCountry: row.rankCountry,
-    percentile: row.percentile,
-    growth: row.growth,
-    isFeatured: row.isFeatured,
-    studentName: row.student.fullName,
-    studentSlug: row.student.slug,
-    gradeName: row.student.grade.name,
-    assessmentTitle: row.assessment.title,
-    assessmentSlug: row.assessment.slug,
-    assessmentDate: row.assessment.assessmentDate,
-    schoolYear: row.assessment.schoolYear,
-    providerName: row.assessment.provider.name,
-    providerColor: row.assessment.provider.color,
-    assessmentTypeLabel: ASSESSMENT_TYPE_LABELS[row.assessment.assessmentType],
-  };
+  /** Privacy: public per-student assessment history is disabled. */
+  return [];
 }

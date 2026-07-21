@@ -10,7 +10,7 @@ type AssessmentResultCardProps = {
 
 export function AssessmentResultCard({
   result,
-  showStudent = true,
+  showStudent = false,
 }: AssessmentResultCardProps) {
   const ranks = [
     result.rankSchool != null
@@ -55,15 +55,12 @@ export function AssessmentResultCard({
         ) : null}
       </div>
 
-      {showStudent ? (
+      {showStudent && result.studentName ? (
         <p className="mt-3 text-sm">
-          <Link
-            href={`/students/${result.studentSlug}`}
-            className="font-medium text-primary underline-offset-2 hover:underline"
-          >
-            {result.studentName}
-          </Link>
-          <span className="text-muted"> · {result.gradeName}</span>
+          <span className="font-medium text-primary">{result.studentName}</span>
+          {result.gradeName ? (
+            <span className="text-muted"> · {result.gradeName}</span>
+          ) : null}
         </p>
       ) : null}
 

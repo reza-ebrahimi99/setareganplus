@@ -1,7 +1,3 @@
-import {
-  publicStudentPortraitUrl,
-  type StudentPortraitVariantSize,
-} from "@/lib/media/student-portrait";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { prisma } from "@/lib/prisma";
 import { listPublicStudentGrades } from "@/lib/website/student-grades";
@@ -11,6 +7,10 @@ export { listPublicStudentGrades };
 export const HOMEPAGE_FEATURED_STUDENT_LIMIT = 4;
 export const PUBLIC_STUDENT_PAGE_SIZE = 30;
 
+/**
+ * @deprecated Public student identity cards are disabled for privacy.
+ * Kept only so legacy imports type-check; never populate with real PII.
+ */
 export type PublicStudentCard = {
   id: string;
   slug: string;
@@ -25,79 +25,86 @@ export type PublicStudentCard = {
   portraitAlt: string;
 };
 
-type PortraitMediaSelect = {
-  storageKey: string;
-  altText: string | null;
-  metadata: unknown;
-} | null;
+export type PublicStudentDetail = PublicStudentCard & {
+  biography: string;
+  parentName: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+};
 
-function mapPortrait(
-  media: PortraitMediaSelect,
-  fullName: string,
-  size: StudentPortraitVariantSize,
-): { portraitUrl: string | null; portraitAlt: string } {
-  return {
-    portraitUrl: publicStudentPortraitUrl(media, size),
-    portraitAlt: media?.altText?.trim() || fullName,
-  };
-}
+export type PublicStudentOverview = {
+  totalStudents: number;
+  gradeCount: number;
+  publishedAchievementCount: number;
+  grades: Array<{ id: string; slug: string; name: string }>;
+};
 
-const portraitSelect = {
-  storageKey: true,
-  altText: true,
-  metadata: true,
-} as const;
-
-export async function loadFeaturedStudents(): Promise<PublicStudentCard[]> {
+/** Aggregate-only public overview — no names, photos, or profile links. */
+export async function loadPublicStudentOverview(): Promise<PublicStudentOverview | null> {
   try {
     const organization = await getCurrentOrganization();
-    if (!organization) return [];
+    if (!organization) return null;
 
-    const rows = await prisma.student.findMany({
-      where: {
-        organizationId: organization.id,
-        deletedAt: null,
-        archivedAt: null,
-        isActive: true,
-        isFeatured: true,
-        grade: { deletedAt: null, archivedAt: null, isActive: true },
-      },
-      orderBy: [
-        { featuredPriority: "asc" },
-        { displayOrder: "asc" },
-        { fullName: "asc" },
-      ],
-      take: HOMEPAGE_FEATURED_STUDENT_LIMIT,
-      select: {
-        id: true,
-        slug: true,
-        fullName: true,
-        firstName: true,
-        lastName: true,
-        schoolYear: true,
-        grade: { select: { name: true, slug: true } },
-        major: { select: { name: true } },
-        portraitMedia: { select: portraitSelect },
-      },
-    });
+    const studentWhere = {
+      organizationId: organization.id,
+      deletedAt: null,
+      archivedAt: null,
+      isActive: true,
+      grade: { deletedAt: null, archivedAt: null, isActive: true },
+    };
 
-    return rows.map((row) => ({
-      id: row.id,
-      slug: row.slug,
-      fullName: row.fullName,
-      firstName: row.firstName,
-      lastName: row.lastName,
-      schoolYear: row.schoolYear,
-      gradeName: row.grade.name,
-      gradeSlug: row.grade.slug,
-      majorName: row.major?.name ?? null,
-      ...mapPortrait(row.portraitMedia, row.fullName, "w480"),
-    }));
+    const [totalStudents, grades, publishedAchievementCount] = await Promise.all([
+      prisma.student.count({ where: studentWhere }),
+      listPublicStudentGrades(organization.id),
+      prisma.achievement.count({
+        where: {
+          organizationId: organization.id,
+          deletedAt: null,
+          archivedAt: null,
+          isPublished: true,
+        },
+      }),
+    ]);
+
+    return {
+      totalStudents,
+      gradeCount: grades.length,
+      publishedAchievementCount,
+      grades,
+    };
   } catch {
-    return [];
+    return null;
   }
 }
 
+/** Privacy: public featured student strips are disabled. */
+export async function loadFeaturedStudents(): Promise<PublicStudentCard[]> {
+  return [];
+}
+
+/**
+ * @deprecated Individual public student directories are disabled.
+ * Always returns null so callers cannot leak PII.
+ */
+export async function loadPublicStudentBySlug(
+  _slug: string,
+): Promise<PublicStudentDetail | null> {
+  return null;
+}
+
+/**
+ * @deprecated Public student directories are disabled.
+ * Always returns null — use {@link loadPublicStudentOverview} instead.
+ */
+export async function loadPublicStudentPage(_filters?: {
+  gradeSlug?: string;
+  q?: string;
+  page?: number;
+}): Promise<PublicStudentPageData | null> {
+  return null;
+}
+
+/** @deprecated Directory payloads are no longer produced for the public site. */
 export type PublicStudentPageData = {
   grades: Array<{
     id: string;
@@ -112,192 +119,3 @@ export type PublicStudentPageData = {
   pageCount: number;
   gradeCount: number;
 };
-
-function publicStudentWhere(
-  organizationId: string,
-  filters?: { gradeSlug?: string; q?: string },
-) {
-  const q = filters?.q?.trim() ?? "";
-  const gradeSlug = filters?.gradeSlug?.trim() ?? "";
-
-  return {
-    organizationId,
-    deletedAt: null,
-    archivedAt: null,
-    isActive: true,
-    grade: {
-      deletedAt: null,
-      archivedAt: null,
-      isActive: true,
-      ...(gradeSlug ? { slug: gradeSlug } : {}),
-    },
-    ...(q
-      ? {
-          OR: [
-            { fullName: { contains: q, mode: "insensitive" as const } },
-            { firstName: { contains: q, mode: "insensitive" as const } },
-            { lastName: { contains: q, mode: "insensitive" as const } },
-            { schoolYear: { contains: q, mode: "insensitive" as const } },
-          ],
-        }
-      : {}),
-  };
-}
-
-export async function loadPublicStudentPage(filters?: {
-  gradeSlug?: string;
-  q?: string;
-  page?: number;
-}): Promise<PublicStudentPageData | null> {
-  const organization = await getCurrentOrganization();
-  if (!organization) return null;
-
-  const pageSize = PUBLIC_STUDENT_PAGE_SIZE;
-  const where = publicStudentWhere(organization.id, filters);
-
-  const [totalStudents, gradeCount] = await Promise.all([
-    prisma.student.count({ where }),
-    prisma.studentGrade.count({
-      where: {
-        organizationId: organization.id,
-        deletedAt: null,
-        archivedAt: null,
-        isActive: true,
-      },
-    }),
-  ]);
-
-  const pageCount = Math.max(1, Math.ceil(totalStudents / pageSize));
-  const requested = filters?.page && filters.page > 0 ? filters.page : 1;
-  const page = Math.min(requested, pageCount);
-
-  const rows = await prisma.student.findMany({
-    where,
-    orderBy: [
-      { grade: { sortOrder: "asc" } },
-      { displayOrder: "asc" },
-      { fullName: "asc" },
-    ],
-    skip: (page - 1) * pageSize,
-    take: pageSize,
-    select: {
-      id: true,
-      slug: true,
-      fullName: true,
-      firstName: true,
-      lastName: true,
-      schoolYear: true,
-      grade: { select: { id: true, name: true, slug: true } },
-      major: { select: { name: true } },
-      portraitMedia: { select: portraitSelect },
-    },
-  });
-
-  const gradeMap = new Map<
-    string,
-    {
-      id: string;
-      slug: string;
-      name: string;
-      students: PublicStudentCard[];
-    }
-  >();
-  const students: PublicStudentCard[] = [];
-
-  for (const row of rows) {
-    const student: PublicStudentCard = {
-      id: row.id,
-      slug: row.slug,
-      fullName: row.fullName,
-      firstName: row.firstName,
-      lastName: row.lastName,
-      schoolYear: row.schoolYear,
-      gradeName: row.grade.name,
-      gradeSlug: row.grade.slug,
-      majorName: row.major?.name ?? null,
-      ...mapPortrait(row.portraitMedia, row.fullName, "w480"),
-    };
-    students.push(student);
-
-    const existing = gradeMap.get(row.grade.id);
-    if (existing) {
-      existing.students.push(student);
-    } else {
-      gradeMap.set(row.grade.id, {
-        id: row.grade.id,
-        slug: row.grade.slug,
-        name: row.grade.name,
-        students: [student],
-      });
-    }
-  }
-
-  return {
-    grades: Array.from(gradeMap.values()),
-    students,
-    totalStudents,
-    page,
-    pageSize,
-    pageCount,
-    gradeCount,
-  };
-}
-
-export type PublicStudentDetail = PublicStudentCard & {
-  biography: string;
-  parentName: string | null;
-  seoTitle: string | null;
-  seoDescription: string | null;
-};
-
-export async function loadPublicStudentBySlug(
-  slug: string,
-): Promise<PublicStudentDetail | null> {
-  const organization = await getCurrentOrganization();
-  if (!organization) return null;
-
-  const student = await prisma.student.findFirst({
-    where: {
-      organizationId: organization.id,
-      slug,
-      deletedAt: null,
-      archivedAt: null,
-      isActive: true,
-      grade: { deletedAt: null, archivedAt: null, isActive: true },
-    },
-    select: {
-      id: true,
-      slug: true,
-      fullName: true,
-      firstName: true,
-      lastName: true,
-      schoolYear: true,
-      biography: true,
-      parentName: true,
-      seoTitle: true,
-      seoDescription: true,
-      grade: { select: { name: true, slug: true } },
-      major: { select: { name: true } },
-      portraitMedia: { select: portraitSelect },
-    },
-  });
-
-  if (!student) return null;
-
-  return {
-    id: student.id,
-    slug: student.slug,
-    fullName: student.fullName,
-    firstName: student.firstName,
-    lastName: student.lastName,
-    schoolYear: student.schoolYear,
-    biography: student.biography,
-    parentName: student.parentName,
-    seoTitle: student.seoTitle,
-    seoDescription: student.seoDescription,
-    gradeName: student.grade.name,
-    gradeSlug: student.grade.slug,
-    majorName: student.major?.name ?? null,
-    ...mapPortrait(student.portraitMedia, student.fullName, "w960"),
-  };
-}

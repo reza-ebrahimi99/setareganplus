@@ -306,13 +306,6 @@ export async function loadPublicAssessmentBySlug(slug: string) {
           rankProvince: true,
           rankCountry: true,
           percentile: true,
-          student: {
-            select: {
-              fullName: true,
-              slug: true,
-              grade: { select: { name: true } },
-            },
-          },
         },
       },
       _count: { select: { results: { where: { deletedAt: null } } } },

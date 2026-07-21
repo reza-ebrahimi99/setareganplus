@@ -26,7 +26,9 @@ export async function generateMetadata({
   const description =
     achievement.seoDescription?.trim() ||
     achievement.shortDescription ||
-    `${achievement.title} — ${achievement.studentName} · ${achievement.categoryName}`;
+    `${achievement.title} — ${achievement.categoryName}${
+      achievement.gradeName ? ` · ${achievement.gradeName}` : ""
+    }`;
 
   return {
     title,
@@ -69,11 +71,6 @@ export default async function AchievementDetailPage({ params }: PageProps) {
           name: "مؤسسه علمی ستارگان",
           alternateName: siteConfig.name,
         },
-    recipient: {
-      "@type": "Person",
-      name: achievement.studentName,
-      url: `/students/${achievement.studentSlug}`,
-    },
   };
 
   const breadcrumbJsonLd = {
@@ -108,7 +105,9 @@ export default async function AchievementDetailPage({ params }: PageProps) {
       />
       <PageHero
         title={achievement.title}
-        subtitle={`${achievement.studentName} · ${achievement.categoryName}`}
+        subtitle={`${achievement.categoryName}${
+          achievement.gradeName ? ` · ${achievement.gradeName}` : ""
+        }`}
         breadcrumbs={[
           { label: "صفحه اصلی", href: "/" },
           { label: "افتخارات", href: "/achievements" },
@@ -151,21 +150,12 @@ export default async function AchievementDetailPage({ params }: PageProps) {
 
           <aside className="admin-card space-y-4 p-5 sm:p-6">
             <dl className="space-y-3 text-sm">
-              <div>
-                <dt className="text-muted">دانش‌آموز</dt>
-                <dd>
-                  <Link
-                    href={`/students/${achievement.studentSlug}`}
-                    className="font-medium text-primary underline"
-                  >
-                    {achievement.studentName}
-                  </Link>
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted">پایه</dt>
-                <dd className="text-primary">{achievement.gradeName}</dd>
-              </div>
+              {achievement.gradeName ? (
+                <div>
+                  <dt className="text-muted">پایه</dt>
+                  <dd className="text-primary">{achievement.gradeName}</dd>
+                </div>
+              ) : null}
               <div>
                 <dt className="text-muted">دسته‌بندی</dt>
                 <dd className="text-primary">{achievement.categoryName}</dd>

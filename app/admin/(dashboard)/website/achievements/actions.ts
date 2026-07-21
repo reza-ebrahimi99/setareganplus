@@ -35,12 +35,11 @@ function readString(formData: FormData, key: string): string {
   return typeof value === "string" ? value : "";
 }
 
-function revalidateAchievements(slug?: string, studentSlug?: string) {
+function revalidateAchievements(slug?: string) {
   revalidatePath("/admin/website/achievements");
   revalidatePath("/admin/website/achievement-categories");
   revalidatePath("/achievements");
   if (slug) revalidatePath(`/achievements/${slug}`);
-  if (studentSlug) revalidatePath(`/students/${studentSlug}`);
 }
 
 async function uniqueAchievementSlug(
@@ -188,7 +187,7 @@ export async function createAchievement(
     },
   });
 
-  revalidateAchievements(slug, student!.slug);
+  revalidateAchievements(slug);
   return { successMessage: "افتخار با موفقیت ثبت شد." };
 }
 
@@ -278,8 +277,8 @@ export async function updateAchievement(
     },
   });
 
-  revalidateAchievements(slug, student!.slug);
-  revalidateAchievements(existing.slug, existing.student.slug);
+  revalidateAchievements(slug);
+  revalidateAchievements(existing.slug);
   return { successMessage: "تغییرات ذخیره شد." };
 }
 
@@ -304,7 +303,7 @@ export async function archiveAchievement(formData: FormData) {
     where: { id: achievement.id },
     data: { archivedAt: new Date(), isFeatured: false, isPublished: false },
   });
-  revalidateAchievements(achievement.slug, achievement.student.slug);
+  revalidateAchievements(achievement.slug);
 }
 
 export async function restoreAchievement(formData: FormData) {
@@ -328,7 +327,7 @@ export async function restoreAchievement(formData: FormData) {
     where: { id: achievement.id },
     data: { archivedAt: null },
   });
-  revalidateAchievements(achievement.slug, achievement.student.slug);
+  revalidateAchievements(achievement.slug);
 }
 
 export async function deleteAchievement(formData: FormData) {
@@ -356,7 +355,7 @@ export async function deleteAchievement(formData: FormData) {
       slug: `${achievement.slug}-deleted-${Date.now().toString(36)}`,
     },
   });
-  revalidateAchievements(achievement.slug, achievement.student.slug);
+  revalidateAchievements(achievement.slug);
 }
 
 export async function uploadCover(
@@ -450,7 +449,7 @@ export async function uploadCover(
   });
   await cleanupUnusedMedia(previous);
 
-  revalidateAchievements(achievement.slug, achievement.student.slug);
+  revalidateAchievements(achievement.slug);
   return { successMessage: "تصویر کاور ذخیره شد." };
 }
 
@@ -580,7 +579,7 @@ export async function uploadCertificate(
   });
   await cleanupUnusedMedia(previous);
 
-  revalidateAchievements(achievement.slug, achievement.student.slug);
+  revalidateAchievements(achievement.slug);
   return { successMessage: "گواهی ذخیره شد." };
 }
 

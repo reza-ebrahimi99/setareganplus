@@ -47,7 +47,7 @@ export default async function AdminStudentsPage({ searchParams }: PageProps) {
     <>
       <AdminPageHeader
         title="دانش‌آموزان"
-        description="مدیریت پروفایل‌های قابل‌نمایش دانش‌آموزان در وب‌سایت مؤسسه علمی ستارگان"
+        description="مدیریت پروفایل دانش‌آموزان برای پرتال اولیا و دانش‌آموزان"
         breadcrumbs={[
           { label: "مدیریت", href: "/admin" },
           { label: "وب‌سایت" },
@@ -68,12 +68,6 @@ export default async function AdminStudentsPage({ searchParams }: PageProps) {
           className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm"
         >
           مدیریت پایه‌ها
-        </Link>
-        <Link
-          href="/students"
-          className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm"
-        >
-          مشاهده صفحه عمومی
         </Link>
       </div>
 
