@@ -83,6 +83,8 @@ export async function listAdminMediaAssets(
     category?: string;
     sort?: AdminMediaSort;
     page?: number;
+    /** When true, only rows whose mimeType starts with `image/`. */
+    imagesOnly?: boolean;
   } = {},
 ): Promise<AdminMediaListResult> {
   const pageSize = MEDIA_LIBRARY_PAGE_SIZE;
@@ -97,6 +99,9 @@ export async function listAdminMediaAssets(
     deletedAt: null,
     ...(statusFilter !== "all" ? { status: statusFilter } : {}),
     ...(category ? { category } : {}),
+    ...(options.imagesOnly
+      ? { mimeType: { startsWith: "image/" } }
+      : {}),
     ...(q
       ? {
           OR: [

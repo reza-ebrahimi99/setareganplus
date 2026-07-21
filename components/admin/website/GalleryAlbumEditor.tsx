@@ -1,7 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import {
+  useActionState,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import {
   addGalleryAlbumItemsAction,
   reorderGalleryAlbumItemsAction,
@@ -11,8 +18,11 @@ import {
   deleteGalleryAlbumAction,
   type GalleryActionState,
 } from "@/app/admin/(dashboard)/website/gallery/actions";
+import { MediaPicker } from "@/components/admin/media/MediaPicker";
+import type { MediaPickerItem } from "@/components/admin/media/media-picker-types";
 
 const emptyState: GalleryActionState = {};
+const GALLERY_ADD_MAX = 50;
 
 type AlbumItem = {
   id: string;
@@ -28,13 +38,6 @@ type AlbumItem = {
   height: number | null;
 };
 
-type LibraryOption = {
-  id: string;
-  title: string | null;
-  url: string;
-  category: string | null;
-};
-
 type GalleryAlbumEditorProps = {
   album: {
     id: string;
@@ -47,7 +50,6 @@ type GalleryAlbumEditorProps = {
     coverMediaId: string | null;
     items: AlbumItem[];
   };
-  libraryOptions: LibraryOption[];
 };
 
 function toDateInput(value: Date | null): string {
@@ -55,12 +57,16 @@ function toDateInput(value: Date | null): string {
   return value.toISOString().slice(0, 10);
 }
 
-export function GalleryAlbumEditor({
-  album,
-  libraryOptions,
-}: GalleryAlbumEditorProps) {
+export function GalleryAlbumEditor({ album }: GalleryAlbumEditorProps) {
+  const router = useRouter();
   const [items, setItems] = useState(album.items);
+  const [itemsSource, setItemsSource] = useState(album.items);
+  if (album.items !== itemsSource) {
+    setItemsSource(album.items);
+    setItems(album.items);
+  }
   const [dragId, setDragId] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [updateState, updateAction, updatePending] = useActionState(
     updateGalleryAlbumAction,
     emptyState,
@@ -79,12 +85,14 @@ export function GalleryAlbumEditor({
   );
   const [, startTransition] = useTransition();
 
-  const itemMediaIds = useMemo(
-    () => new Set(items.map((item) => item.mediaId)),
+  useEffect(() => {
+    if (!addState.successMessage) return;
+    router.refresh();
+  }, [addState.successMessage, router]);
+
+  const excludeIds = useMemo(
+    () => items.map((item) => item.mediaId),
     [items],
-  );
-  const availableLibrary = libraryOptions.filter(
-    (option) => !itemMediaIds.has(option.id),
   );
 
   function moveItem(fromId: string, toId: string) {
@@ -96,6 +104,18 @@ export function GalleryAlbumEditor({
       const [moved] = next.splice(fromIndex, 1);
       next.splice(toIndex, 0, moved);
       return next.map((item, index) => ({ ...item, sortOrder: index }));
+    });
+  }
+
+  function handlePickerConfirm(selected: MediaPickerItem[]) {
+    if (selected.length === 0) return;
+    const formData = new FormData();
+    formData.set("albumId", album.id);
+    for (const item of selected.slice(0, GALLERY_ADD_MAX)) {
+      formData.append("mediaIds", item.id);
+    }
+    startTransition(() => {
+      addAction(formData);
     });
   }
 
@@ -317,54 +337,35 @@ export function GalleryAlbumEditor({
         )}
       </section>
 
-      <form action={addAction} className="admin-card space-y-3 p-4">
-        <input type="hidden" name="albumId" value={album.id} />
+      <section className="admin-card space-y-3 p-4">
         <h2 className="text-sm font-semibold text-primary">
           افزودن از کتابخانه رسانه
         </h2>
-        {availableLibrary.length === 0 ? (
-          <p className="text-sm text-muted">
-            تصویر فعالی برای افزودن باقی نمانده است.
-          </p>
-        ) : (
-          <ul className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-4">
-            {availableLibrary.map((option) => (
-              <li key={option.id}>
-                <label className="block cursor-pointer overflow-hidden rounded-xl border border-border bg-white">
-                  <div className="relative aspect-square">
-                    <Image
-                      src={option.url}
-                      alt={option.title || "رسانه"}
-                      fill
-                      unoptimized
-                      className="object-cover"
-                      sizes="160px"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 px-2 py-2">
-                    <input
-                      type="checkbox"
-                      name="mediaIds"
-                      value={option.id}
-                      className="size-4 rounded border-border"
-                    />
-                    <span className="truncate text-xs text-muted">
-                      {option.title || option.category || option.id}
-                    </span>
-                  </div>
-                </label>
-              </li>
-            ))}
-          </ul>
-        )}
+        <p className="text-xs leading-6 text-muted">
+          تا {GALLERY_ADD_MAX} تصویر را در هر نوبت از کتابخانه انتخاب کنید.
+          تصاویر موجود در آلبوم در انتخاب‌گر غیرفعال می‌شوند.
+        </p>
         <button
-          type="submit"
-          disabled={addPending || availableLibrary.length === 0}
+          type="button"
+          disabled={addPending}
+          onClick={() => setPickerOpen(true)}
           className="min-h-11 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
         >
-          {addPending ? "در حال افزودن…" : "افزودن انتخاب‌شده‌ها"}
+          {addPending ? "در حال افزودن…" : "انتخاب تصاویر از کتابخانه"}
         </button>
-      </form>
+      </section>
+
+      <MediaPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        mode="multiple"
+        excludeIds={excludeIds}
+        maxSelection={GALLERY_ADD_MAX}
+        allowUpload
+        title="افزودن تصویر به آلبوم"
+        confirmLabel="افزودن به آلبوم"
+        onConfirm={handlePickerConfirm}
+      />
 
       <form action={deleteAction} className="admin-card p-4">
         <input type="hidden" name="albumId" value={album.id} />

@@ -5,12 +5,12 @@ import {
   createMediaPlacementAction,
   deleteMediaPlacementAction,
 } from "@/app/admin/(dashboard)/website/media/placement-actions";
+import { MediaPickerField } from "@/components/admin/media/MediaPickerField";
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { HOME_GALLERY_PLACEMENT_KEY } from "@/lib/media/placement-keys";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { listAdminGalleryAlbums } from "@/lib/website/gallery-admin";
-import { listAdminMediaAssets } from "@/lib/website/media-library-admin";
 import { listAdminMediaPlacements } from "@/lib/website/media-placements-admin";
 
 export const dynamic = "force-dynamic";
@@ -20,14 +20,9 @@ export default async function AdminMediaPlacementsPage() {
   const session = await requirePermission("website.manage");
   const organizationId = session.organization.id;
 
-  const [placements, albums, media] = await Promise.all([
+  const [placements, albums] = await Promise.all([
     listAdminMediaPlacements(organizationId, HOME_GALLERY_PLACEMENT_KEY),
     listAdminGalleryAlbums(organizationId, { active: "yes", page: 1 }),
-    listAdminMediaAssets(organizationId, {
-      status: "ACTIVE",
-      page: 1,
-      sort: "newest",
-    }),
   ]);
 
   return (
@@ -90,21 +85,15 @@ export default async function AdminMediaPlacementsPage() {
             ))}
           </select>
         </label>
-        <label className="block text-sm">
-          <span className="mb-1.5 block text-muted">تصویر (یا خالی)</span>
-          <select
+        <div className="sm:col-span-1">
+          <MediaPickerField
             name="mediaId"
-            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
-            defaultValue=""
-          >
-            <option value="">—</option>
-            {media.items.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.title || item.category || item.id}
-              </option>
-            ))}
-          </select>
-        </label>
+            label="تصویر (یا خالی)"
+            helperText="در صورت انتخاب آلبوم، تصویر را خالی بگذارید."
+            clearable
+            allowUpload
+          />
+        </div>
         <label className="block text-sm">
           <span className="mb-1.5 block text-muted">عنوان جایگزین</span>
           <input
