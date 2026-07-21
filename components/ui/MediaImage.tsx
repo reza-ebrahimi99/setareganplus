@@ -28,6 +28,11 @@ export function MediaImage({
   }
 
   const isLocalPath = url.startsWith("/");
+  // /media/* is served directly by nginx from STAROS_MEDIA_ROOT (outside
+  // public/). Passing it through the Next.js image optimizer causes /_next/image
+  // requests that fail on production (Sharp). Serve those URLs unoptimized.
+  const isNginxMediaPath = url.startsWith("/media/");
+  const unoptimized = !isLocalPath || isNginxMediaPath;
 
   if (fill) {
     return (
@@ -38,7 +43,7 @@ export function MediaImage({
         className={className}
         sizes={sizes}
         priority={priority}
-        unoptimized={!isLocalPath}
+        unoptimized={unoptimized}
       />
     );
   }
@@ -52,7 +57,7 @@ export function MediaImage({
       className={className}
       sizes={sizes}
       priority={priority}
-      unoptimized={!isLocalPath}
+      unoptimized={unoptimized}
     />
   );
 }
