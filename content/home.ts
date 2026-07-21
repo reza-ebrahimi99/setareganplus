@@ -217,7 +217,7 @@ export const aboutContent = {
   description:
     "مقطع ابتدایی مجموعه ستارگان با فضای آموزشی مستقل، امکانات تخصصی و مسیر روشن برای رشد دانش‌آموزان.",
   cover: {
-    url: "/images/about/about.jpg" as string | null,
+    url: "/images/about/about.png" as string | null,
     alt: "نمای تابلوی نمایندگی قلم‌چی شعبه پسران",
   } satisfies MediaAsset,
   branches: {
@@ -229,7 +229,7 @@ export const aboutContent = {
         title: "شعبه دختران",
         description: "ویژه دانش‌آموزان دختر",
         media: {
-          url: "/images/about/girls-branch.jpg",
+          url: "/images/about/girls-branch.png",
           alt: "تابلوی نمایندگی قلم‌چی شعبه دختران نسیم‌شهر",
         } satisfies MediaAsset,
       },
@@ -237,7 +237,7 @@ export const aboutContent = {
         title: "شعبه پسران",
         description: "ویژه دانش‌آموزان پسر",
         media: {
-          url: "/images/about/about.jpg",
+          url: "/images/about/about.png",
           alt: "تابلوی نمایندگی قلم‌چی شعبه پسران نسیم‌شهر",
         } satisfies MediaAsset,
       },

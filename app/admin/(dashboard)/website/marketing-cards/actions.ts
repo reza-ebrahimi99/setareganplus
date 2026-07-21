@@ -19,6 +19,7 @@ import {
   nextMarketingCardSortOrder,
   type MarketingCardWriteInput,
 } from "@/lib/website/marketing-cards-admin";
+import { importHomepageQalamchiCards } from "@/lib/website/import-homepage-qalamchi-cards";
 
 export type MarketingCardActionState = {
   formError?: string;
@@ -324,4 +325,21 @@ export async function reorderMarketingCardsAction(
 
   revalidateMarketingCards();
   return { successMessage: "ترتیب کارت‌ها ذخیره شد." };
+}
+
+/** One-time import of the two static homepage Qalamchi cards into CMS. */
+export async function importHomepageQalamchiCardsAction(): Promise<void> {
+  const session = await requirePermission("website.manage");
+  const result = await importHomepageQalamchiCards(session.organization.id);
+
+  if (!result.ok) {
+    redirect("/admin/website/marketing-cards?import=error");
+  }
+
+  if (result.status === "created") {
+    revalidateMarketingCards();
+    redirect("/admin/website/marketing-cards?import=ok");
+  }
+
+  redirect("/admin/website/marketing-cards?import=already");
 }

@@ -8,6 +8,7 @@ import {
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { DeleteMarketingCardButton } from "@/components/admin/website/DeleteMarketingCardButton";
+import { ImportLegacyMarketingCardsButton } from "@/components/admin/website/ImportLegacyMarketingCardsButton";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { HOMEPAGE_QALAMCHI_SECTION_KEY } from "@/lib/website/marketing-card-constants";
 import { listAdminMarketingCards } from "@/lib/website/marketing-cards-admin";
@@ -16,8 +17,13 @@ import { toPersianDigits } from "@/lib/persian";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "کارت‌های نمایندگی" };
 
-export default async function AdminMarketingCardsPage() {
+export default async function AdminMarketingCardsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ import?: string }>;
+}) {
   const session = await requirePermission("website.manage");
+  const params = searchParams ? await searchParams : {};
   const cards = await listAdminMarketingCards(
     session.organization.id,
     HOMEPAGE_QALAMCHI_SECTION_KEY,
@@ -36,6 +42,31 @@ export default async function AdminMarketingCardsPage() {
         compact
       />
 
+      {params.import === "ok" ? (
+        <div
+          role="status"
+          className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-7 text-emerald-900"
+        >
+          دو کارت موجود درون‌ریزی شدند.
+        </div>
+      ) : null}
+      {params.import === "already" ? (
+        <div
+          role="status"
+          className="mb-4 rounded-xl border border-border bg-white px-4 py-3 text-sm leading-7 text-muted"
+        >
+          Already imported
+        </div>
+      ) : null}
+      {params.import === "error" ? (
+        <div
+          role="alert"
+          className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-7 text-red-800"
+        >
+          درون‌ریزی ناموفق بود.
+        </div>
+      ) : null}
+
       <div className="mb-4 flex flex-wrap gap-3">
         <Link
           href="/admin/website/marketing-cards/new"
@@ -49,6 +80,7 @@ export default async function AdminMarketingCardsPage() {
         >
           مشاهده در صفحه اصلی
         </Link>
+        {cards.length === 0 ? <ImportLegacyMarketingCardsButton /> : null}
       </div>
 
       {cards.length === 0 ? (
