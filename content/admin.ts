@@ -138,6 +138,20 @@ export const adminNavGroups: ReadonlyArray<{
         permission: "website.manage",
       },
       {
+        href: "/admin/website/media",
+        label: "کتابخانه رسانه",
+        icon: "settings",
+        enabled: true,
+        permission: "website.manage",
+      },
+      {
+        href: "/admin/website/gallery",
+        label: "گالری",
+        icon: "settings",
+        enabled: true,
+        permission: "website.manage",
+      },
+      {
         href: "/admin/website/assessments",
         label: "آزمون‌ها",
         icon: "settings",

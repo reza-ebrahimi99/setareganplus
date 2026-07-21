@@ -465,6 +465,8 @@ model Organization {
   formAnalyticsEvents  FormAnalyticsEvent[]
   formAnalyticsDaily   FormAnalyticsDaily[]
   mediaAssets          MediaAsset[]
+  galleryAlbums        GalleryAlbum[]
+  mediaPlacements      MediaPlacement[]
   bookingServices      BookingService[]
   bookingAdvisors      BookingAdvisor[]
   bookingSlots         BookingSlot[]
@@ -876,10 +878,15 @@ model FormTemplateField {
 
 // ─── Persistent media assets (outside git / deploy tree) ─────────────────────
 
+enum MediaAssetStatus {
+  ACTIVE
+  INACTIVE
+}
+
 model MediaAsset {
-  id              String    @id @default(cuid())
+  id              String           @id @default(cuid())
   organizationId  String
-  storageKey      String    @unique
+  storageKey      String           @unique
   originalName    String
   mimeType        String
   byteSize        Int
@@ -887,11 +894,18 @@ model MediaAsset {
   width           Int?
   height          Int?
   altText         String?
-  /// Optional structured metadata (e.g. team portrait variant keys).
+  /// Editorial title for library browsing and public captions.
+  title           String?
+  /// Editorial description (separate from technical metadata JSON).
+  description     String?
+  /// Optional free-text category label (normalized whitespace, max length enforced in app).
+  category        String?
+  status          MediaAssetStatus @default(ACTIVE)
+  /// Optional structured technical metadata (e.g. team portrait variant keys).
   metadata        Json?
   createdByUserId String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   deletedAt       DateTime?
 
   organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
@@ -901,11 +915,90 @@ model MediaAsset {
   studentPortraits         Student[]             @relation("StudentPortrait")
   achievementCertificates  Achievement[]         @relation("AchievementCertificate")
   achievementCovers        Achievement[]         @relation("AchievementCover")
+  galleryAlbumCovers       GalleryAlbum[]        @relation("GalleryAlbumCover")
+  galleryAlbumItems        GalleryAlbumItem[]
+  mediaPlacements          MediaPlacement[]
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])
+  @@index([organizationId, status, deletedAt])
+  @@index([organizationId, category])
   @@index([createdByUserId])
   @@map("media_assets")
+}
+
+// ─── Media Library / Gallery CMS ─────────────────────────────────────────────
+
+model GalleryAlbum {
+  id             String    @id @default(cuid())
+  organizationId String
+  title          String
+  slug           String
+  description    String?
+  coverMediaId   String?
+  isActive       Boolean   @default(true)
+  sortOrder      Int       @default(0)
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  coverMedia   MediaAsset?        @relation("GalleryAlbumCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  items        GalleryAlbumItem[]
+  placements   MediaPlacement[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, deletedAt, isActive, sortOrder])
+  @@index([organizationId, publishedAt])
+  @@index([coverMediaId])
+  @@map("gallery_albums")
+}
+
+model GalleryAlbumItem {
+  id        String   @id @default(cuid())
+  albumId   String
+  mediaId   String
+  caption   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  album GalleryAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  media MediaAsset   @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@unique([albumId, mediaId])
+  @@index([albumId, sortOrder])
+  @@index([mediaId])
+  @@map("gallery_album_items")
+}
+
+model MediaPlacement {
+  id                  String    @id @default(cuid())
+  organizationId      String
+  placementKey        String
+  mediaId             String?
+  albumId             String?
+  titleOverride       String?
+  descriptionOverride String?
+  sortOrder           Int       @default(0)
+  isActive            Boolean   @default(true)
+  /// Optional schedule window. DB enforces media_placements_schedule_check:
+  /// both NULL, only startAt, only endAt, or both with endAt > startAt.
+  startAt             DateTime?
+  endAt               DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  media        MediaAsset?   @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  album        GalleryAlbum? @relation(fields: [albumId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, placementKey, deletedAt, isActive, sortOrder])
+  @@index([mediaId])
+  @@index([albumId])
+  @@map("media_placements")
 }
 
 // ─── Form parent identity (stable slug) ──────────────────────────────────────

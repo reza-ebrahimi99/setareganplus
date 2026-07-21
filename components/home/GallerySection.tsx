@@ -2,14 +2,10 @@ import { Container } from "@/components/ui/Container";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { Section } from "@/components/ui/Section";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import {
-  galleryContent,
-  galleryImages,
-  type GalleryFit,
-  type GallerySlot,
-} from "@/content/home";
+import type { GalleryFit, GallerySlot } from "@/content/home";
 import { hasMediaUrl } from "@/lib/media";
 import { toPersianDigits } from "@/lib/persian";
+import { loadHomepageGalleryImages } from "@/lib/website/gallery-public";
 
 const headingId = "gallery-heading";
 
@@ -54,7 +50,9 @@ function GalleryTileFallback({
   );
 }
 
-export function GallerySection() {
+export async function GallerySection() {
+  const { content, images } = await loadHomepageGalleryImages();
+
   return (
     <Section
       className="section-muted border-y border-border"
@@ -62,14 +60,14 @@ export function GallerySection() {
     >
       <Container>
         <SectionHeader
-          eyebrow={galleryContent.eyebrow}
-          heading={galleryContent.heading}
-          description={galleryContent.description}
+          eyebrow={content.eyebrow}
+          heading={content.heading}
+          description={content.description}
           headingId={headingId}
         />
 
         <ul className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-12">
-          {galleryImages.map((item, index) => (
+          {images.map((item, index) => (
             <li
               key={item.mediaKey}
               className={`gallery-reveal ${slotClassName[item.slot]}`}

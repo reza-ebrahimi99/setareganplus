@@ -5,9 +5,9 @@ import { contactContent } from "@/content/home";
 import {
   footerContent,
   footerLinks,
-  navLinks,
   siteConfig,
 } from "@/content/site";
+import { publicNavLinks as navLinks } from "@/content/public-nav";
 import { services } from "@/content/services";
 
 export function SiteFooter() {

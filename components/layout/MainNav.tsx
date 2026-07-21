@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { navLinks } from "@/content/site";
+import { publicNavLinks as navLinks } from "@/content/public-nav";
 
 type MainNavProps = {
   activePath?: string;
