@@ -152,6 +152,13 @@ export const adminNavGroups: ReadonlyArray<{
         permission: "website.manage",
       },
       {
+        href: "/admin/website/marketing-cards",
+        label: "کارت‌های نمایندگی",
+        icon: "settings",
+        enabled: true,
+        permission: "website.manage",
+      },
+      {
         href: "/admin/website/assessments",
         label: "آزمون‌ها",
         icon: "settings",

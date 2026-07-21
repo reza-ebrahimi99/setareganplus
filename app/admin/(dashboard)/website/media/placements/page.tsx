@@ -52,6 +52,12 @@ export default async function AdminMediaPlacementsPage() {
         >
           آلبوم‌ها
         </Link>
+        <Link
+          href="/admin/website/marketing-cards"
+          className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm"
+        >
+          کارت‌های نمایندگی
+        </Link>
       </div>
 
       <form

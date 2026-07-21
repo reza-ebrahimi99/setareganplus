@@ -37,6 +37,7 @@ export async function getMediaAssetDependencies(
     achievementCovers,
     achievementCerts,
     formPosters,
+    marketingCards,
   ] = await Promise.all([
     prisma.galleryAlbumItem.findMany({
       where: {
@@ -89,6 +90,11 @@ export async function getMediaAssetDependencies(
         versionNumber: true,
         form: { select: { id: true, slug: true } },
       },
+      take: 50,
+    }),
+    prisma.websiteMarketingCard.findMany({
+      where: { organizationId, imageMediaId: mediaId, deletedAt: null },
+      select: { id: true, title: true, sectionKey: true },
       take: 50,
     }),
   ]);
@@ -164,6 +170,15 @@ export async function getMediaAssetDependencies(
       label: "پوستر فرم",
       detail: `فرم «${version.form.slug}» (نسخه ${version.versionNumber})`,
       href: `/admin/forms/${version.form.id}`,
+    });
+  }
+
+  for (const card of marketingCards) {
+    dependencies.push({
+      kind: "website_marketing_card",
+      label: "کارت نمایندگی",
+      detail: `«${card.title}» (${card.sectionKey})`,
+      href: `/admin/website/marketing-cards/${card.id}`,
     });
   }
 

@@ -446,56 +446,57 @@ model Organization {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  branches             Branch[]
-  leads                Lead[]
-  memberships          OrganizationMembership[]
-  auditLogs            AuditLog[]
-  forms                Form[]
-  formVersions         FormVersion[]
-  formFields           FormField[]
-  formSubmissions      FormSubmission[]
-  formAnswers          FormAnswer[]
-  formTemplates        FormTemplate[]
-  formTemplateFields   FormTemplateField[]
-  tags                 Tag[]
-  formTags             FormTag[]
-  formSubmissionTags   FormSubmissionTag[]
-  automationRules      AutomationRule[]
-  domainEvents         DomainEventOutbox[]
-  formAnalyticsEvents  FormAnalyticsEvent[]
-  formAnalyticsDaily   FormAnalyticsDaily[]
-  mediaAssets          MediaAsset[]
-  galleryAlbums        GalleryAlbum[]
-  mediaPlacements      MediaPlacement[]
-  bookingServices      BookingService[]
-  bookingAdvisors      BookingAdvisor[]
-  bookingSlots         BookingSlot[]
-  bookingReservations  BookingReservation[]
-  sitePlacements       SitePlacement[]
-  smsTemplates         SmsTemplate[]
-  smsMessages          SmsMessage[]
-  otpChallenges        OtpChallenge[]
-  crmPipelines         CrmPipeline[]
-  crmPipelineStages    CrmPipelineStage[]
-  crmTasks             CrmTask[]
-  crmActivities        CrmActivity[]
-  crmCallLogs          CrmCallLog[]
-  crmLeadImportReports CrmLeadImportReport[]
-  automationExecutions AutomationExecution[]
-  teamDepartments      TeamDepartment[]
-  teamMembers          TeamMember[]
-  studentGrades          StudentGrade[]
-  studentMajors          StudentMajor[]
-  students               Student[]
-  achievementCategories  AchievementCategory[]
-  achievements           Achievement[]
-  assessmentProviders    AssessmentProvider[]
-  subjects               Subject[]
-  assessments            Assessment[]
-  assessmentResults      AssessmentResult[]
-  studentGuardians           StudentGuardian[]
-  studentGuardianRelations   StudentGuardianRelation[]
-  portalAccountLinks         PortalAccountLink[]
+  branches                 Branch[]
+  leads                    Lead[]
+  memberships              OrganizationMembership[]
+  auditLogs                AuditLog[]
+  forms                    Form[]
+  formVersions             FormVersion[]
+  formFields               FormField[]
+  formSubmissions          FormSubmission[]
+  formAnswers              FormAnswer[]
+  formTemplates            FormTemplate[]
+  formTemplateFields       FormTemplateField[]
+  tags                     Tag[]
+  formTags                 FormTag[]
+  formSubmissionTags       FormSubmissionTag[]
+  automationRules          AutomationRule[]
+  domainEvents             DomainEventOutbox[]
+  formAnalyticsEvents      FormAnalyticsEvent[]
+  formAnalyticsDaily       FormAnalyticsDaily[]
+  mediaAssets              MediaAsset[]
+  galleryAlbums            GalleryAlbum[]
+  mediaPlacements          MediaPlacement[]
+  websiteMarketingCards    WebsiteMarketingCard[]
+  bookingServices          BookingService[]
+  bookingAdvisors          BookingAdvisor[]
+  bookingSlots             BookingSlot[]
+  bookingReservations      BookingReservation[]
+  sitePlacements           SitePlacement[]
+  smsTemplates             SmsTemplate[]
+  smsMessages              SmsMessage[]
+  otpChallenges            OtpChallenge[]
+  crmPipelines             CrmPipeline[]
+  crmPipelineStages        CrmPipelineStage[]
+  crmTasks                 CrmTask[]
+  crmActivities            CrmActivity[]
+  crmCallLogs              CrmCallLog[]
+  crmLeadImportReports     CrmLeadImportReport[]
+  automationExecutions     AutomationExecution[]
+  teamDepartments          TeamDepartment[]
+  teamMembers              TeamMember[]
+  studentGrades            StudentGrade[]
+  studentMajors            StudentMajor[]
+  students                 Student[]
+  achievementCategories    AchievementCategory[]
+  achievements             Achievement[]
+  assessmentProviders      AssessmentProvider[]
+  subjects                 Subject[]
+  assessments              Assessment[]
+  assessmentResults        AssessmentResult[]
+  studentGuardians         StudentGuardian[]
+  studentGuardianRelations StudentGuardianRelation[]
+  portalAccountLinks       PortalAccountLink[]
 
   @@map("organizations")
 }
@@ -908,16 +909,17 @@ model MediaAsset {
   updatedAt       DateTime         @updatedAt
   deletedAt       DateTime?
 
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  createdBy    User?         @relation("MediaAssetCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  formPosters              FormVersion[]         @relation("FormVersionPoster")
-  teamPortraits            TeamMember[]          @relation("TeamMemberPortrait")
-  studentPortraits         Student[]             @relation("StudentPortrait")
-  achievementCertificates  Achievement[]         @relation("AchievementCertificate")
-  achievementCovers        Achievement[]         @relation("AchievementCover")
-  galleryAlbumCovers       GalleryAlbum[]        @relation("GalleryAlbumCover")
-  galleryAlbumItems        GalleryAlbumItem[]
-  mediaPlacements          MediaPlacement[]
+  organization            Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdBy               User?                     @relation("MediaAssetCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  formPosters             FormVersion[]             @relation("FormVersionPoster")
+  teamPortraits           TeamMember[]              @relation("TeamMemberPortrait")
+  studentPortraits        Student[]                 @relation("StudentPortrait")
+  achievementCertificates Achievement[]             @relation("AchievementCertificate")
+  achievementCovers       Achievement[]             @relation("AchievementCover")
+  galleryAlbumCovers      GalleryAlbum[]            @relation("GalleryAlbumCover")
+  galleryAlbumItems       GalleryAlbumItem[]
+  mediaPlacements         MediaPlacement[]
+  websiteMarketingCards   WebsiteMarketingCard[]    @relation("WebsiteMarketingCardImage")
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])
@@ -999,6 +1001,34 @@ model MediaPlacement {
   @@index([mediaId])
   @@index([albumId])
   @@map("media_placements")
+}
+
+// ─── Website marketing cards (homepage Qalamchi / future sections) ───────────
+
+model WebsiteMarketingCard {
+  id             String    @id @default(cuid())
+  organizationId String
+  /// Allowlisted section key, e.g. HOMEPAGE_QALAMCHI
+  sectionKey     String
+  title          String
+  description    String    @default("")
+  /// Optional badge under the image; empty → public UI default.
+  badge          String?
+  imageMediaId   String?
+  /// Optional alt override; public loader falls back to MediaAsset.altText then title.
+  imageAlt       String?
+  sortOrder      Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  imageMedia   MediaAsset?  @relation("WebsiteMarketingCardImage", fields: [imageMediaId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, sectionKey, deletedAt, isActive, sortOrder])
+  @@index([imageMediaId])
+  @@map("website_marketing_cards")
 }
 
 // ─── Form parent identity (stable slug) ──────────────────────────────────────
@@ -2091,10 +2121,10 @@ model Student {
   archivedAt       DateTime?
   deletedAt        DateTime?
 
-  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  grade              StudentGrade       @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
-  major              StudentMajor?      @relation(fields: [organizationId, majorId], references: [organizationId, id], onDelete: Restrict)
-  portraitMedia      MediaAsset?        @relation("StudentPortrait", fields: [portraitMediaId], references: [id], onDelete: SetNull)
+  organization       Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  grade              StudentGrade              @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
+  major              StudentMajor?             @relation(fields: [organizationId, majorId], references: [organizationId, id], onDelete: Restrict)
+  portraitMedia      MediaAsset?               @relation("StudentPortrait", fields: [portraitMediaId], references: [id], onDelete: SetNull)
   achievements       Achievement[]
   assessmentResults  AssessmentResult[]
   guardianRelations  StudentGuardianRelation[]
@@ -2126,7 +2156,7 @@ model AchievementCategory {
   archivedAt     DateTime?
   deletedAt      DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   achievements Achievement[]
 
   @@unique([organizationId, slug])
@@ -2207,21 +2237,21 @@ enum PortalAccountType {
 
 /// Parent / legal guardian / authorized family member (portal identity, not public CMS).
 model StudentGuardian {
-  id             String                   @id @default(cuid())
-  organizationId String
-  firstName      String
-  lastName       String
-  fullName       String
-  nationalId     String?
-  mobile         String
+  id               String                   @id @default(cuid())
+  organizationId   String
+  firstName        String
+  lastName         String
+  fullName         String
+  nationalId       String?
+  mobile           String
   normalizedMobile String
   relationshipType GuardianRelationshipType @default(GUARDIAN)
-  isPrimary      Boolean                  @default(false)
-  isActive       Boolean                  @default(true)
-  createdAt      DateTime                 @default(now())
-  updatedAt      DateTime                 @updatedAt
-  archivedAt     DateTime?
-  deletedAt      DateTime?
+  isPrimary        Boolean                  @default(false)
+  isActive         Boolean                  @default(true)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  archivedAt       DateTime?
+  deletedAt        DateTime?
 
   organization Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   relations    StudentGuardianRelation[]
@@ -2235,22 +2265,22 @@ model StudentGuardian {
 }
 
 model StudentGuardianRelation {
-  id                     String                   @id @default(cuid())
-  organizationId         String
-  studentId              String
-  guardianId             String
-  relationshipType       GuardianRelationshipType @default(GUARDIAN)
-  isPrimary              Boolean                  @default(false)
-  canViewAcademicData    Boolean                  @default(true)
-  canViewAchievements    Boolean                  @default(true)
-  canViewCertificates    Boolean                  @default(true)
-  canReceiveNotifications Boolean                 @default(true)
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime                 @updatedAt
-  deletedAt              DateTime?
+  id                      String                   @id @default(cuid())
+  organizationId          String
+  studentId               String
+  guardianId              String
+  relationshipType        GuardianRelationshipType @default(GUARDIAN)
+  isPrimary               Boolean                  @default(false)
+  canViewAcademicData     Boolean                  @default(true)
+  canViewAchievements     Boolean                  @default(true)
+  canViewCertificates     Boolean                  @default(true)
+  canReceiveNotifications Boolean                  @default(true)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  deletedAt               DateTime?
 
-  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  student      Student        @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student      Student         @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
   guardian     StudentGuardian @relation(fields: [organizationId, guardianId], references: [organizationId, id], onDelete: Restrict)
 
   @@unique([organizationId, studentId, guardianId])
@@ -2353,9 +2383,9 @@ model Assessment {
   archivedAt     DateTime?
   deletedAt      DateTime?
 
-  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  provider     AssessmentProvider  @relation(fields: [organizationId, providerId], references: [organizationId, id], onDelete: Restrict)
-  grade        StudentGrade        @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  provider     AssessmentProvider @relation(fields: [organizationId, providerId], references: [organizationId, id], onDelete: Restrict)
+  grade        StudentGrade       @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
   results      AssessmentResult[]
 
   @@unique([organizationId, slug])

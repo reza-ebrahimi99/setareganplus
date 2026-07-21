@@ -1,9 +1,9 @@
 import { Container } from "@/components/ui/Container";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { hasMediaUrl } from "@/lib/media";
-import type { MediaAsset } from "@/lib/media";
 import { aboutContent } from "@/content/home";
 import { toPersianDigits } from "@/lib/persian";
+import type { PublicQalamchiCard } from "@/lib/website/marketing-cards-public";
 
 const headingId = "qalamchi-branches-heading";
 
@@ -23,45 +23,43 @@ function BranchImageFallback({ label }: { label: string }) {
   );
 }
 
-function BranchCard({
-  title,
-  description,
-  media,
-}: {
-  title: string;
-  description: string;
-  media: MediaAsset;
-}) {
+function BranchCard({ card }: { card: PublicQalamchiCard }) {
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-amber-200/70 bg-white shadow-sm">
       <div className="relative aspect-[16/11] overflow-hidden bg-amber-50/60">
-        {hasMediaUrl(media) ? (
+        {hasMediaUrl(card.media) ? (
           <MediaImage
-            media={media}
+            media={card.media}
             fill
             className="object-cover object-center"
             sizes="(max-width: 640px) 100vw, 50vw"
           />
         ) : (
-          <BranchImageFallback label={media.alt} />
+          <BranchImageFallback label={card.media.alt || card.title} />
         )}
       </div>
       <div className="flex flex-1 flex-col border-t border-border px-5 py-4 sm:px-6 sm:py-5">
         <p className="text-[0.7rem] font-medium tracking-wide text-secondary sm:text-xs">
-          نمایندگی رسمی
+          {toPersianDigits(card.badge)}
         </p>
         <h3 className="mt-1.5 text-lg font-bold text-primary sm:text-xl">
-          {toPersianDigits(title)}
+          {toPersianDigits(card.title)}
         </h3>
         <p className="mt-2 text-sm leading-7 text-muted">
-          {toPersianDigits(description)}
+          {toPersianDigits(card.description)}
         </p>
       </div>
     </article>
   );
 }
 
-export function QalamchiBranchesSection() {
+type QalamchiBranchesSectionProps = {
+  cards: PublicQalamchiCard[];
+};
+
+export function QalamchiBranchesSection({
+  cards,
+}: QalamchiBranchesSectionProps) {
   const { branches } = aboutContent;
 
   return (
@@ -96,13 +94,8 @@ export function QalamchiBranchesSection() {
           </header>
 
           <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6">
-            {branches.items.map((branch) => (
-              <BranchCard
-                key={branch.title}
-                title={branch.title}
-                description={branch.description}
-                media={branch.media}
-              />
+            {cards.map((card) => (
+              <BranchCard key={card.id} card={card} />
             ))}
           </div>
         </Container>

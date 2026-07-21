@@ -12,17 +12,20 @@ import { QalamchiBranchesSection } from "@/components/home/QalamchiBranchesSecti
 import { SuccessStoriesSection } from "@/components/home/SuccessStoriesSection";
 import { TrustSection } from "@/components/home/TrustSection";
 import { SiteShell } from "@/components/layout/SiteShell";
+import { loadHomepageQalamchiCards } from "@/lib/website/marketing-cards-public";
 
-/** Featured team is ISR-cached; admin mutations revalidate "/". */
+/** Featured team / marketing cards are ISR-cached; admin mutations revalidate "/". */
 export const revalidate = 120;
 
-export default function Home() {
+export default async function Home() {
+  const qalamchiCards = await loadHomepageQalamchiCards();
+
   return (
     <SiteShell activePath="/">
       <PremiumHero />
       <FeaturedTeamSection />
       {/* 1) Qalamchi first — never place school content above this */}
-      <QalamchiBranchesSection />
+      <QalamchiBranchesSection cards={qalamchiCards} />
       {/* 2) School second — AboutSection must remain school-only */}
       <AboutSection />
       <TrustSection />
