@@ -19,6 +19,7 @@ export type PublicStudentCard = {
   lastName: string;
   gradeName: string;
   gradeSlug: string;
+  majorName: string | null;
   schoolYear: string | null;
   portraitUrl: string | null;
   portraitAlt: string;
@@ -75,6 +76,7 @@ export async function loadFeaturedStudents(): Promise<PublicStudentCard[]> {
         lastName: true,
         schoolYear: true,
         grade: { select: { name: true, slug: true } },
+        major: { select: { name: true } },
         portraitMedia: { select: portraitSelect },
       },
     });
@@ -88,6 +90,7 @@ export async function loadFeaturedStudents(): Promise<PublicStudentCard[]> {
       schoolYear: row.schoolYear,
       gradeName: row.grade.name,
       gradeSlug: row.grade.slug,
+      majorName: row.major?.name ?? null,
       ...mapPortrait(row.portraitMedia, row.fullName, "w480"),
     }));
   } catch {
@@ -185,6 +188,7 @@ export async function loadPublicStudentPage(filters?: {
       lastName: true,
       schoolYear: true,
       grade: { select: { id: true, name: true, slug: true } },
+      major: { select: { name: true } },
       portraitMedia: { select: portraitSelect },
     },
   });
@@ -210,6 +214,7 @@ export async function loadPublicStudentPage(filters?: {
       schoolYear: row.schoolYear,
       gradeName: row.grade.name,
       gradeSlug: row.grade.slug,
+      majorName: row.major?.name ?? null,
       ...mapPortrait(row.portraitMedia, row.fullName, "w480"),
     };
     students.push(student);
@@ -272,6 +277,7 @@ export async function loadPublicStudentBySlug(
       seoTitle: true,
       seoDescription: true,
       grade: { select: { name: true, slug: true } },
+      major: { select: { name: true } },
       portraitMedia: { select: portraitSelect },
     },
   });
@@ -291,6 +297,7 @@ export async function loadPublicStudentBySlug(
     seoDescription: student.seoDescription,
     gradeName: student.grade.name,
     gradeSlug: student.grade.slug,
+    majorName: student.major?.name ?? null,
     ...mapPortrait(student.portraitMedia, student.fullName, "w960"),
   };
 }

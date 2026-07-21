@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   createStudent,
   updateStudent,
@@ -9,17 +9,20 @@ import {
   type StudentActionState,
 } from "@/app/admin/(dashboard)/website/students/actions";
 
-type GradeOption = { id: string; name: string };
+type GradeOption = { id: string; name: string; requiresMajor: boolean };
+type MajorOption = { id: string; name: string };
 
 type StudentFormProps = {
   mode: "create" | "edit";
   grades: GradeOption[];
+  majors: MajorOption[];
   student?: {
     id: string;
     firstName: string;
     lastName: string;
     fullName: string;
     gradeId: string;
+    majorId: string | null;
     biography: string;
     parentName: string | null;
     schoolYear: string | null;
@@ -39,13 +42,23 @@ const initial: StudentActionState = {};
 const inputClass =
   "mt-1.5 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm";
 
-export function StudentForm({ mode, grades, student }: StudentFormProps) {
+export function StudentForm({
+  mode,
+  grades,
+  majors,
+  student,
+}: StudentFormProps) {
   const action = mode === "create" ? createStudent : updateStudent;
   const [state, formAction, pending] = useActionState(action, initial);
   const [portraitState, portraitAction, portraitPending] = useActionState(
     uploadPortrait,
     initial,
   );
+  const [selectedGradeId, setSelectedGradeId] = useState(
+    student?.gradeId ?? "",
+  );
+  const selectedGrade = grades.find((grade) => grade.id === selectedGradeId);
+  const showMajor = Boolean(selectedGrade?.requiresMajor);
 
   return (
     <div className="space-y-5">
@@ -99,7 +112,8 @@ export function StudentForm({ mode, grades, student }: StudentFormProps) {
             <select
               name="gradeId"
               required
-              defaultValue={student?.gradeId ?? ""}
+              value={selectedGradeId}
+              onChange={(event) => setSelectedGradeId(event.target.value)}
               className={inputClass}
             >
               <option value="">انتخاب پایه</option>
@@ -109,7 +123,35 @@ export function StudentForm({ mode, grades, student }: StudentFormProps) {
                 </option>
               ))}
             </select>
+            {state.fieldErrors?.gradeId ? (
+              <span className="mt-1 block text-xs text-red-700">
+                {state.fieldErrors.gradeId}
+              </span>
+            ) : null}
           </label>
+          {showMajor ? (
+            <label className="text-sm sm:col-span-2">
+              <span className="font-medium text-primary">رشته تحصیلی</span>
+              <select
+                name="majorId"
+                required
+                defaultValue={student?.majorId ?? ""}
+                className={inputClass}
+              >
+                <option value="">انتخاب رشته</option>
+                {majors.map((major) => (
+                  <option key={major.id} value={major.id}>
+                    {major.name}
+                  </option>
+                ))}
+              </select>
+              {state.fieldErrors?.majorId ? (
+                <span className="mt-1 block text-xs text-red-700">
+                  {state.fieldErrors.majorId}
+                </span>
+              ) : null}
+            </label>
+          ) : null}
           <label className="text-sm">
             <span className="font-medium text-primary">نام ولی (اختیاری)</span>
             <input

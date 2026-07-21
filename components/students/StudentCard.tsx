@@ -14,7 +14,7 @@ export function StudentCard({
   priority = false,
 }: StudentCardProps) {
   const featured = size === "featured";
-  const subtitle = [student.gradeName, student.schoolYear]
+  const subtitle = [student.gradeName, student.majorName, student.schoolYear]
     .filter(Boolean)
     .join(" · ");
 

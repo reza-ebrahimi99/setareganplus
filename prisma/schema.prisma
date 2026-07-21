@@ -483,6 +483,7 @@ model Organization {
   teamDepartments      TeamDepartment[]
   teamMembers          TeamMember[]
   studentGrades          StudentGrade[]
+  studentMajors          StudentMajor[]
   students               Student[]
   achievementCategories  AchievementCategory[]
   achievements           Achievement[]
@@ -1951,10 +1952,33 @@ model StudentGrade {
   @@map("student_grades")
 }
 
+model StudentMajor {
+  id             String    @id @default(cuid())
+  organizationId String
+  slug           String
+  name           String
+  sortOrder      Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  archivedAt     DateTime?
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  students     Student[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, sortOrder])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("student_majors")
+}
+
 model Student {
   id               String    @id @default(cuid())
   organizationId   String
   gradeId          String
+  majorId          String?
   firstName        String
   lastName         String
   fullName         String
@@ -1976,6 +2000,7 @@ model Student {
 
   organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   grade              StudentGrade       @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
+  major              StudentMajor?      @relation(fields: [organizationId, majorId], references: [organizationId, id], onDelete: Restrict)
   portraitMedia      MediaAsset?        @relation("StudentPortrait", fields: [portraitMediaId], references: [id], onDelete: SetNull)
   achievements       Achievement[]
   assessmentResults  AssessmentResult[]
@@ -1985,6 +2010,7 @@ model Student {
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
   @@index([organizationId, gradeId, displayOrder])
+  @@index([organizationId, majorId])
   @@index([organizationId, isFeatured, featuredPriority])
   @@index([organizationId, isActive, deletedAt])
   @@index([organizationId, isActive, archivedAt, deletedAt, displayOrder])

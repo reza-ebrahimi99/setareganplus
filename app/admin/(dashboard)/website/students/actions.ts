@@ -13,8 +13,10 @@ import {
 import { prisma } from "@/lib/prisma";
 import {
   ensureDefaultStudentGrades,
+  gradeRequiresMajor,
   gradeSlugFromName,
 } from "@/lib/website/student-grades";
+import { ensureDefaultStudentMajors } from "@/lib/website/student-majors";
 import {
   composeStudentFullName,
   normalizeStudentSlug,
@@ -63,17 +65,53 @@ async function uniqueStudentSlug(
   return `${base}-${Date.now().toString(36)}`;
 }
 
+/** Resolve majorId from form: required for grades 10–12; cleared otherwise. */
+async function resolveStudentMajorId(options: {
+  organizationId: string;
+  gradeSlug: string | undefined;
+  majorIdInput: string;
+  fieldErrors: Record<string, string>;
+}): Promise<string | null> {
+  const { organizationId, gradeSlug, majorIdInput, fieldErrors } = options;
+  const requiresMajor = gradeSlug ? gradeRequiresMajor(gradeSlug) : false;
+
+  if (!requiresMajor) return null;
+
+  if (!majorIdInput) {
+    fieldErrors.majorId = "رشته تحصیلی برای پایه‌های دهم تا دوازدهم الزامی است.";
+    return null;
+  }
+
+  const major = await prisma.studentMajor.findFirst({
+    where: {
+      id: majorIdInput,
+      organizationId,
+      deletedAt: null,
+    },
+    select: { id: true },
+  });
+  if (!major) {
+    fieldErrors.majorId = "رشته تحصیلی معتبر نیست.";
+    return null;
+  }
+  return major.id;
+}
+
 export async function createStudent(
   _prev: StudentActionState,
   formData: FormData,
 ): Promise<StudentActionState> {
   const session = await requirePermission("website.manage");
   const organizationId = session.organization.id;
-  await ensureDefaultStudentGrades(organizationId);
+  await Promise.all([
+    ensureDefaultStudentGrades(organizationId),
+    ensureDefaultStudentMajors(organizationId),
+  ]);
 
   const firstName = readString(formData, "firstName").trim().slice(0, 80);
   const lastName = readString(formData, "lastName").trim().slice(0, 80);
   const gradeId = readString(formData, "gradeId").trim();
+  const majorIdInput = readString(formData, "majorId").trim();
   const biography = readString(formData, "biography").trim().slice(0, 5000);
   const parentName =
     readString(formData, "parentName").trim().slice(0, 120) || null;
@@ -89,10 +127,17 @@ export async function createStudent(
   const grade = gradeId
     ? await prisma.studentGrade.findFirst({
         where: { id: gradeId, organizationId, deletedAt: null },
-        select: { id: true },
+        select: { id: true, slug: true },
       })
     : null;
   if (gradeId && !grade) fieldErrors.gradeId = "پایه تحصیلی معتبر نیست.";
+
+  const majorId = await resolveStudentMajorId({
+    organizationId,
+    gradeSlug: grade?.slug,
+    majorIdInput,
+    fieldErrors,
+  });
 
   if (Object.keys(fieldErrors).length > 0) {
     return { formError: "لطفاً خطاهای فرم را برطرف کنید.", fieldErrors };
@@ -112,6 +157,7 @@ export async function createStudent(
     data: {
       organizationId,
       gradeId: grade!.id,
+      majorId,
       firstName,
       lastName,
       fullName,
@@ -149,9 +195,12 @@ export async function updateStudent(
   });
   if (!existing) return { formError: "دانش‌آموز یافت نشد." };
 
+  await ensureDefaultStudentMajors(organizationId);
+
   const firstName = readString(formData, "firstName").trim().slice(0, 80);
   const lastName = readString(formData, "lastName").trim().slice(0, 80);
   const gradeId = readString(formData, "gradeId").trim();
+  const majorIdInput = readString(formData, "majorId").trim();
   const fieldErrors: Record<string, string> = {};
   if (!firstName) fieldErrors.firstName = "نام الزامی است.";
   if (!lastName) fieldErrors.lastName = "نام خانوادگی الزامی است.";
@@ -159,9 +208,17 @@ export async function updateStudent(
 
   const grade = await prisma.studentGrade.findFirst({
     where: { id: gradeId, organizationId, deletedAt: null },
-    select: { id: true },
+    select: { id: true, slug: true },
   });
   if (!grade) fieldErrors.gradeId = "پایه تحصیلی معتبر نیست.";
+
+  const majorId = await resolveStudentMajorId({
+    organizationId,
+    gradeSlug: grade?.slug,
+    majorIdInput,
+    fieldErrors,
+  });
+
   if (Object.keys(fieldErrors).length > 0) {
     return { formError: "لطفاً خطاهای فرم را برطرف کنید.", fieldErrors };
   }
@@ -181,6 +238,7 @@ export async function updateStudent(
     where: { id: existing.id },
     data: {
       gradeId: grade!.id,
+      majorId,
       firstName,
       lastName,
       fullName,

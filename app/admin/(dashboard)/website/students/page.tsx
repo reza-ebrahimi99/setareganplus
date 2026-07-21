@@ -104,6 +104,7 @@ export default async function AdminStudentsPage({ searchParams }: PageProps) {
             <tr>
               <th className="px-3 py-3 text-start font-medium">دانش‌آموز</th>
               <th className="px-3 py-3 text-start font-medium">پایه</th>
+              <th className="px-3 py-3 text-start font-medium">رشته</th>
               <th className="px-3 py-3 text-start font-medium">ترتیب</th>
               <th className="px-3 py-3 text-start font-medium">وضعیت</th>
               <th className="px-3 py-3 text-start font-medium">عملیات</th>
@@ -112,7 +113,7 @@ export default async function AdminStudentsPage({ searchParams }: PageProps) {
           <tbody>
             {students.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-3 py-8 text-center text-muted">
+                <td colSpan={6} className="px-3 py-8 text-center text-muted">
                   هنوز دانش‌آموزی ثبت نشده است.
                 </td>
               </tr>
@@ -135,6 +136,9 @@ export default async function AdminStudentsPage({ searchParams }: PageProps) {
                     </div>
                   </td>
                   <td className="px-3 py-3">{student.grade.name}</td>
+                  <td className="px-3 py-3">
+                    {student.major?.name ?? "—"}
+                  </td>
                   <td className="px-3 py-3">
                     {toPersianDigits(student.displayOrder)}
                     {student.isFeatured

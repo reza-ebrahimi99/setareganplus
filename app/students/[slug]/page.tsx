@@ -31,6 +31,8 @@ export async function generateMetadata({
   const description =
     student.seoDescription?.trim() ||
     `${student.fullName}، ${student.gradeName}${
+      student.majorName ? ` · ${student.majorName}` : ""
+    }${
       student.schoolYear ? ` · ${student.schoolYear}` : ""
     } — مؤسسه علمی ستارگان`;
 
@@ -82,8 +84,8 @@ export default async function StudentProfilePage({ params }: PageProps) {
       <PageHero
         title={student.fullName}
         subtitle={`${student.gradeName}${
-          student.schoolYear ? ` · ${student.schoolYear}` : ""
-        }`}
+          student.majorName ? ` · ${student.majorName}` : ""
+        }${student.schoolYear ? ` · ${student.schoolYear}` : ""}`}
         breadcrumbs={[
           { label: "صفحه اصلی", href: "/" },
           { label: "دانش‌آموزان", href: "/students" },
@@ -115,6 +117,12 @@ export default async function StudentProfilePage({ params }: PageProps) {
                 <span className="text-muted">پایه: </span>
                 {student.gradeName}
               </p>
+              {student.majorName ? (
+                <p>
+                  <span className="text-muted">رشته: </span>
+                  {student.majorName}
+                </p>
+              ) : null}
               {student.schoolYear ? (
                 <p>
                   <span className="text-muted">سال تحصیلی: </span>

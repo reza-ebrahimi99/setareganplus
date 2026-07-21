@@ -4,6 +4,7 @@ import {
   type StudentPortraitVariantSize,
 } from "@/lib/media/student-portrait";
 import { ensureDefaultStudentGrades } from "@/lib/website/student-grades";
+import { ensureDefaultStudentMajors } from "@/lib/website/student-majors";
 
 export const ADMIN_STUDENT_PAGE_SIZE = 30;
 
@@ -11,7 +12,10 @@ export async function listAdminStudents(
   organizationId: string,
   options?: { page?: number; q?: string },
 ) {
-  await ensureDefaultStudentGrades(organizationId);
+  await Promise.all([
+    ensureDefaultStudentGrades(organizationId),
+    ensureDefaultStudentMajors(organizationId),
+  ]);
 
   const q = options?.q?.trim() ?? "";
   const where = {
@@ -58,6 +62,7 @@ export async function listAdminStudents(
       isFeatured: true,
       archivedAt: true,
       grade: { select: { id: true, name: true } },
+      major: { select: { id: true, name: true } },
     },
   });
 
@@ -76,6 +81,7 @@ export async function loadAdminStudent(
       lastName: true,
       fullName: true,
       gradeId: true,
+      majorId: true,
       biography: true,
       parentName: true,
       schoolYear: true,
@@ -88,6 +94,7 @@ export async function loadAdminStudent(
       isFeatured: true,
       archivedAt: true,
       grade: { select: { id: true, name: true, slug: true } },
+      major: { select: { id: true, name: true, slug: true } },
       portraitMedia: {
         select: { id: true, storageKey: true, altText: true, metadata: true },
       },
