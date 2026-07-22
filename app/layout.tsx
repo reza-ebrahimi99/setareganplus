@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google";
+import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import {
   DEFAULT_DESCRIPTION,
   DEFAULT_TITLE,
@@ -60,6 +61,7 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`}>
       <body className="min-h-full flex flex-col font-sans antialiased">
+        <JsonLdScript />
         {children}
       </body>
     </html>
