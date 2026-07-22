@@ -45,7 +45,7 @@ export function AssessmentTopResultsSection({
           برترین‌های آزمون
         </h2>
         <p className="mt-2 text-sm leading-7 text-muted">
-          برترین نتایج منتشرشده به تفکیک پایه، بر اساس نمره.
+          برترین نتایج منتشرشده به تفکیک پایه، بر اساس تراز یا نمره.
         </p>
       </div>
 
@@ -60,6 +60,8 @@ export function AssessmentTopResultsSection({
                 `${result.firstName} ${result.lastName}`.trim() ||
                 result.fullName;
               const initial = displayName.slice(0, 1) || "؟";
+              const scoreLabel =
+                result.scoreSource === "scaledScore" ? "تراز" : "نمره";
 
               return (
                 <li
@@ -95,7 +97,7 @@ export function AssessmentTopResultsSection({
                     <p className="mt-0.5 text-sm text-muted">
                       {group.gradeName}
                       <span className="mx-1.5 text-border">·</span>
-                      نمره {toPersianDigits(result.score)}
+                      {scoreLabel} {toPersianDigits(result.score)}
                     </p>
                   </div>
                 </li>

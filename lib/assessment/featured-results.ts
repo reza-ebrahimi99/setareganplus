@@ -29,7 +29,9 @@ export type FeaturedActionResult =
 export type PublicAssessmentTopResult = {
   id: string;
   rank: number;
+  /** Ranking display value: scaledScore (تراز) when present, else score (نمره). */
   score: number;
+  scoreSource: "scaledScore" | "score";
   firstName: string;
   lastName: string;
   fullName: string;
@@ -48,6 +50,7 @@ export type PublicAssessmentTopResultsByGrade = {
 export type RankablePublicResult = {
   id: string;
   score: number;
+  scoreSource: "scaledScore" | "score";
   fullName: string;
   firstName: string;
   lastName: string;
@@ -56,6 +59,82 @@ export type RankablePublicResult = {
   gradeSortOrder: number;
   studentPortraitUrl: string | null;
 };
+
+export type ResolvedPublicGrade = {
+  gradeId: string;
+  gradeName: string;
+  gradeSortOrder: number;
+};
+
+/** Aggregate-only diagnostics (no PII). Enable via ASSESSMENT_TOP_RESULTS_DEBUG=1. */
+export type PublicTopResultsDiagnostic = {
+  assessmentFound: boolean;
+  assessmentGradeId: string | null;
+  totalResults: number;
+  withNonNullScore: number;
+  withNonNullScaledScore: number;
+  withRankingValue: number;
+  withStudentGradeId: number;
+  gradeResolved: number;
+  gradeUnresolved: number;
+  emptyReason:
+    | null
+    | "assessment_gate"
+    | "no_results"
+    | "no_ranking_value"
+    | "no_grade";
+};
+
+type GradeRef = {
+  id: string;
+  name: string;
+  sortOrder: number;
+};
+
+/**
+ * Resolve public ranking value for imported results.
+ * Kanoon/Qalamchi imports typically store تراز in `scaledScore` and may leave `score` null.
+ * Prefer scaledScore to align with admin FEATURED_RANKING_ORDER.
+ */
+export function resolvePublicRankingValue(
+  score: number | null | undefined,
+  scaledScore: number | null | undefined,
+): { value: number; source: "scaledScore" | "score" } | null {
+  if (scaledScore != null && Number.isFinite(scaledScore)) {
+    return { value: scaledScore, source: "scaledScore" };
+  }
+  if (score != null && Number.isFinite(score)) {
+    return { value: score, source: "score" };
+  }
+  return null;
+}
+
+/**
+ * Resolve display/group grade for a public result.
+ * 1) student.grade when present
+ * 2) assessment.grade fallback (single-grade assessments)
+ * AssessmentResult has no grade column.
+ */
+export function resolvePublicResultGrade(
+  studentGrade: GradeRef | null | undefined,
+  assessmentGrade: GradeRef | null | undefined,
+): ResolvedPublicGrade | null {
+  if (studentGrade) {
+    return {
+      gradeId: studentGrade.id,
+      gradeName: studentGrade.name,
+      gradeSortOrder: studentGrade.sortOrder,
+    };
+  }
+  if (assessmentGrade) {
+    return {
+      gradeId: assessmentGrade.id,
+      gradeName: assessmentGrade.name,
+      gradeSortOrder: assessmentGrade.sortOrder,
+    };
+  }
+  return null;
+}
 
 /** Normalize a student name for deterministic tie-breaking. */
 export function normalizeFullNameForSort(fullName: string): string {
@@ -66,7 +145,7 @@ export function normalizeFullNameForSort(fullName: string): string {
 }
 
 /**
- * Group by student grade, sort by score desc / name asc / id asc,
+ * Group by resolved grade, sort by ranking value desc / name asc / id asc,
  * then take exactly `limit` per grade (or fewer when a grade has fewer rows).
  */
 export function selectTopResultsPerGrade(
@@ -112,6 +191,7 @@ export function selectTopResultsPerGrade(
         id: row.id,
         rank: index + 1,
         score: row.score,
+        scoreSource: row.scoreSource,
         firstName: row.firstName,
         lastName: row.lastName,
         fullName: row.fullName,
@@ -348,8 +428,10 @@ export async function countFeaturedResultsForAssessment(
 
 /**
  * Public top-N-per-grade results for one assessment.
- * Computed dynamically from scores — does not require `isFeatured`.
- * Returns [] when publishing gates fail or the assessment is unavailable.
+ * Computed dynamically — does not require `isFeatured`.
+ * Ranking value: scaledScore (تراز) when present, else score (نمره).
+ * Grade: student.grade when present, else assessment.grade.
+ * Returns [] when publishing gates fail or no rankable rows remain.
  */
 export async function getPublicAssessmentTopResults(params: {
   organizationId: string;
@@ -365,10 +447,32 @@ export async function getPublicAssessmentTopResults(params: {
     select: {
       id: true,
       featuredResultsLimit: true,
+      gradeId: true,
+      grade: {
+        select: {
+          id: true,
+          name: true,
+          sortOrder: true,
+        },
+      },
     },
   });
 
-  if (!assessment) return [];
+  if (!assessment) {
+    logTopResultsDiagnostic({
+      assessmentFound: false,
+      assessmentGradeId: null,
+      totalResults: 0,
+      withNonNullScore: 0,
+      withNonNullScaledScore: 0,
+      withRankingValue: 0,
+      withStudentGradeId: 0,
+      gradeResolved: 0,
+      gradeUnresolved: 0,
+      emptyReason: "assessment_gate",
+    });
+    return [];
+  }
 
   const limitParse = parseFeaturedResultsLimit(
     params.limit ??
@@ -379,26 +483,24 @@ export async function getPublicAssessmentTopResults(params: {
     ? limitParse.value
     : FEATURED_RESULTS_LIMIT_DEFAULT;
 
+  // Do not require student.grade to be active — assessment.grade is the fallback.
+  // Do not require score alone — Kanoon imports often only set scaledScore.
   const rows = await prisma.assessmentResult.findMany({
     where: {
       organizationId: params.organizationId,
       assessmentId: assessment.id,
       deletedAt: null,
-      score: { not: null },
+      OR: [{ score: { not: null } }, { scaledScore: { not: null } }],
       student: {
         deletedAt: null,
         archivedAt: null,
         isActive: true,
-        grade: {
-          deletedAt: null,
-          archivedAt: null,
-          isActive: true,
-        },
       },
     },
     select: {
       id: true,
       score: true,
+      scaledScore: true,
       student: {
         select: {
           firstName: true,
@@ -424,9 +526,33 @@ export async function getPublicAssessmentTopResults(params: {
     },
   });
 
+  let withNonNullScore = 0;
+  let withNonNullScaledScore = 0;
+  let withRankingValue = 0;
+  let withStudentGradeId = 0;
+  let gradeResolved = 0;
+  let gradeUnresolved = 0;
+
   const rankable: RankablePublicResult[] = [];
   for (const row of rows) {
-    if (row.score == null) continue;
+    if (row.score != null) withNonNullScore += 1;
+    if (row.scaledScore != null) withNonNullScaledScore += 1;
+    if (row.student.gradeId) withStudentGradeId += 1;
+
+    const ranking = resolvePublicRankingValue(row.score, row.scaledScore);
+    if (!ranking) continue;
+    withRankingValue += 1;
+
+    const grade = resolvePublicResultGrade(
+      row.student.grade,
+      assessment.grade,
+    );
+    if (!grade) {
+      gradeUnresolved += 1;
+      continue;
+    }
+    gradeResolved += 1;
+
     const portrait =
       row.student.portraitMedia &&
       row.student.portraitMedia.deletedAt == null &&
@@ -436,18 +562,46 @@ export async function getPublicAssessmentTopResults(params: {
 
     rankable.push({
       id: row.id,
-      score: row.score,
+      score: ranking.value,
+      scoreSource: ranking.source,
       firstName: row.student.firstName,
       lastName: row.student.lastName,
       fullName: row.student.fullName,
-      gradeId: row.student.grade.id,
-      gradeName: row.student.grade.name,
-      gradeSortOrder: row.student.grade.sortOrder,
+      gradeId: grade.gradeId,
+      gradeName: grade.gradeName,
+      gradeSortOrder: grade.gradeSortOrder,
       studentPortraitUrl: portrait,
     });
   }
 
+  const emptyReason =
+    rows.length === 0
+      ? ("no_results" as const)
+      : withRankingValue === 0
+        ? ("no_ranking_value" as const)
+        : gradeResolved === 0
+          ? ("no_grade" as const)
+          : null;
+
+  logTopResultsDiagnostic({
+    assessmentFound: true,
+    assessmentGradeId: assessment.gradeId,
+    totalResults: rows.length,
+    withNonNullScore,
+    withNonNullScaledScore,
+    withRankingValue,
+    withStudentGradeId,
+    gradeResolved,
+    gradeUnresolved,
+    emptyReason: rankable.length === 0 ? emptyReason : null,
+  });
+
   return selectTopResultsPerGrade(rankable, limit);
+}
+
+function logTopResultsDiagnostic(diagnostic: PublicTopResultsDiagnostic) {
+  if (process.env.ASSESSMENT_TOP_RESULTS_DEBUG !== "1") return;
+  console.info("[assessment-top-results]", diagnostic);
 }
 
 /**
