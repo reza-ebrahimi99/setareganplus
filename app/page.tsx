@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { AboutSection } from "@/components/home/AboutSection";
 import { AchievementsSection } from "@/components/home/AchievementsSection";
 import { FaqPreview } from "@/components/home/FaqPreview";
@@ -12,10 +13,38 @@ import { QalamchiBranchesSection } from "@/components/home/QalamchiBranchesSecti
 import { SuccessStoriesSection } from "@/components/home/SuccessStoriesSection";
 import { TrustSection } from "@/components/home/TrustSection";
 import { SiteShell } from "@/components/layout/SiteShell";
+import {
+  HOME_DESCRIPTION,
+  HOME_TITLE,
+  SITE_NAME,
+} from "@/lib/seo/site-metadata";
 import { loadHomepageQalamchiCards } from "@/lib/website/marketing-cards-public";
 
 /** Featured team / marketing cards are ISR-cached; admin mutations revalidate "/". */
 export const revalidate = 120;
+
+export const metadata: Metadata = {
+  title: {
+    absolute: HOME_TITLE,
+  },
+  description: HOME_DESCRIPTION,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "fa_IR",
+    url: "/",
+    siteName: SITE_NAME,
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+  },
+};
 
 export default async function Home() {
   const qalamchiCards = await loadHomepageQalamchiCards();

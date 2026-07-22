@@ -1,8 +1,9 @@
 import type { MetadataRoute } from "next";
+import { SITE_ORIGIN } from "@/lib/seo/site-metadata";
 
 /**
- * Disallow legacy public student routes from crawlers.
- * Student identities live only in authenticated admin/portal surfaces.
+ * Public crawler policy.
+ * Private surfaces stay disallowed; static assets remain crawlable.
  */
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -16,8 +17,11 @@ export default function robots(): MetadataRoute.Robots {
           "/admin/",
           "/portal/",
           "/staff/",
+          "/api/",
         ],
       },
     ],
+    sitemap: `${SITE_ORIGIN}/sitemap.xml`,
+    host: SITE_ORIGIN,
   };
 }

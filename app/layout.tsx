@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google";
-import { siteConfig } from "@/content/site";
+import {
+  DEFAULT_DESCRIPTION,
+  DEFAULT_TITLE,
+  SITE_NAME,
+  SITE_ORIGIN,
+} from "@/lib/seo/site-metadata";
 import "./globals.css";
 
 const vazirmatn = Vazirmatn({
@@ -10,14 +15,39 @@ const vazirmatn = Vazirmatn({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_ORIGIN),
   title: {
-    default: siteConfig.name,
-    template: `%s | ${siteConfig.name}`,
+    default: DEFAULT_TITLE,
+    template: `%s | ${SITE_NAME}`,
   },
-  description: siteConfig.description,
+  description: DEFAULT_DESCRIPTION,
+  applicationName: SITE_NAME,
+  formatDetection: {
+    telephone: false,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "fa_IR",
+    url: "/",
+    siteName: SITE_NAME,
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+  },
   appleWebApp: {
     capable: true,
-    title: siteConfig.name,
+    title: SITE_NAME,
     statusBarStyle: "default",
   },
 };
