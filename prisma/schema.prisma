@@ -1063,6 +1063,7 @@ model WebsitePage {
   templateKey     String?
   status          WebsitePageStatus @default(DRAFT)
   publishedAt     DateTime?
+  archivedAt      DateTime?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   deletedAt       DateTime?
@@ -1074,6 +1075,7 @@ model WebsitePage {
   /// Live-slug uniqueness is enforced by partial unique index in SQL:
   /// website_pages_organizationId_slug_live_key (WHERE deletedAt IS NULL)
   @@index([organizationId, status, deletedAt])
+  @@index([organizationId, status, archivedAt, deletedAt])
   @@index([seoImageMediaId])
   @@map("website_pages")
 }
