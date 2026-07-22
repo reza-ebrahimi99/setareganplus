@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { tryUnlinkMediaFile, writeMediaFile } from "@/lib/media/storage";
 import {
@@ -30,6 +31,8 @@ export type AchievementActionState = {
   fieldErrors?: Record<string, string>;
 };
 
+const CATEGORY_ADMIN_PATH = "/admin/website/achievement-categories";
+
 function readString(formData: FormData, key: string): string {
   const value = formData.get(key);
   return typeof value === "string" ? value : "";
@@ -37,9 +40,34 @@ function readString(formData: FormData, key: string): string {
 
 function revalidateAchievements(slug?: string) {
   revalidatePath("/admin/website/achievements");
-  revalidatePath("/admin/website/achievement-categories");
+  revalidatePath(CATEGORY_ADMIN_PATH);
   revalidatePath("/achievements");
   if (slug) revalidatePath(`/achievements/${slug}`);
+}
+
+function redirectToCategoryAdmin(
+  params: Record<string, string | undefined>,
+): never {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value) search.set(key, value);
+  }
+  const qs = search.toString();
+  redirect(qs ? `${CATEGORY_ADMIN_PATH}?${qs}` : CATEGORY_ADMIN_PATH);
+}
+
+async function loadWritableAchievementCategory(
+  organizationId: string,
+  categoryId: string,
+) {
+  return prisma.achievementCategory.findFirst({
+    where: { id: categoryId, organizationId, deletedAt: null },
+    select: {
+      id: true,
+      isActive: true,
+      archivedAt: true,
+    },
+  });
 }
 
 async function uniqueAchievementSlug(
@@ -135,13 +163,20 @@ export async function createAchievement(
     categoryId
       ? prisma.achievementCategory.findFirst({
           where: { id: categoryId, organizationId, deletedAt: null },
-          select: { id: true },
+          select: { id: true, isActive: true, archivedAt: true },
         })
       : Promise.resolve(null),
   ]);
 
   if (studentId && !student) fieldErrors.studentId = "دانش‌آموز معتبر نیست.";
-  if (categoryId && !category) fieldErrors.categoryId = "دسته‌بندی معتبر نیست.";
+  if (categoryId && !category) {
+    fieldErrors.categoryId = "دسته‌بندی معتبر نیست.";
+  } else if (
+    category &&
+    (!category.isActive || category.archivedAt)
+  ) {
+    fieldErrors.categoryId = "دسته‌بندی انتخاب‌شده غیرفعال است.";
+  }
   if (Object.keys(fieldErrors).length > 0) {
     return { formError: "لطفاً خطاهای فرم را برطرف کنید.", fieldErrors };
   }
@@ -204,6 +239,7 @@ export async function updateAchievement(
     select: {
       id: true,
       slug: true,
+      categoryId: true,
       student: { select: { slug: true } },
     },
   });
@@ -224,11 +260,18 @@ export async function updateAchievement(
     }),
     prisma.achievementCategory.findFirst({
       where: { id: categoryId, organizationId, deletedAt: null },
-      select: { id: true },
+      select: { id: true, isActive: true, archivedAt: true },
     }),
   ]);
   if (!student) fieldErrors.studentId = "دانش‌آموز معتبر نیست.";
-  if (!category) fieldErrors.categoryId = "دسته‌بندی معتبر نیست.";
+  if (!category) {
+    fieldErrors.categoryId = "دسته‌بندی معتبر نیست.";
+  } else if (
+    categoryId !== existing.categoryId &&
+    (!category.isActive || category.archivedAt)
+  ) {
+    fieldErrors.categoryId = "دسته‌بندی انتخاب‌شده غیرفعال است.";
+  }
   if (Object.keys(fieldErrors).length > 0) {
     return { formError: "لطفاً خطاهای فرم را برطرف کنید.", fieldErrors };
   }
@@ -583,13 +626,17 @@ export async function uploadCertificate(
   return { successMessage: "گواهی ذخیره شد." };
 }
 
-export async function createAchievementCategory(formData: FormData) {
+export async function createAchievementCategory(
+  formData: FormData,
+): Promise<void> {
   const session = await requirePermission("website.manage");
   const organizationId = session.organization.id;
   await ensureDefaultAchievementCategories(organizationId);
 
   const name = readString(formData, "name").trim().slice(0, 120);
-  if (!name) return;
+  if (!name) {
+    redirectToCategoryAdmin({ error: "name_required" });
+  }
 
   let slug = categorySlugFromName(
     readString(formData, "slug").trim() || name,
@@ -617,24 +664,31 @@ export async function createAchievementCategory(formData: FormData) {
     },
   });
   revalidateAchievements();
+  redirectToCategoryAdmin({ success: "created" });
 }
 
-export async function updateAchievementCategory(formData: FormData) {
+export async function updateAchievementCategory(
+  formData: FormData,
+): Promise<void> {
   const session = await requirePermission("website.manage");
   const organizationId = session.organization.id;
   const categoryId = readString(formData, "categoryId").trim();
-  const category = await prisma.achievementCategory.findFirst({
-    where: { id: categoryId, organizationId, deletedAt: null },
-    select: { id: true },
-  });
-  if (!category) return;
+  const category = await loadWritableAchievementCategory(
+    organizationId,
+    categoryId,
+  );
+  if (!category) {
+    redirectToCategoryAdmin({ error: "not_found" });
+  }
 
   const name = readString(formData, "name").trim().slice(0, 120);
   const displayOrder = Number(readString(formData, "displayOrder") || "0");
-  if (!name) return;
+  if (!name) {
+    redirectToCategoryAdmin({ error: "name_required" });
+  }
 
   await prisma.achievementCategory.update({
-    where: { id: category.id },
+    where: { id: category!.id },
     data: {
       name,
       icon: readString(formData, "icon").trim().slice(0, 40) || null,
@@ -646,9 +700,53 @@ export async function updateAchievementCategory(formData: FormData) {
     },
   });
   revalidateAchievements();
+  redirectToCategoryAdmin({ success: "updated" });
 }
 
-export async function deleteAchievementCategory(formData: FormData) {
+export async function moveAchievementCategory(formData: FormData): Promise<void> {
+  const session = await requirePermission("website.manage");
+  const organizationId = session.organization.id;
+  const categoryId = readString(formData, "categoryId").trim();
+  const direction = readString(formData, "direction").trim();
+
+  const categories = await prisma.achievementCategory.findMany({
+    where: { organizationId, deletedAt: null },
+    orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+    select: { id: true, displayOrder: true },
+  });
+
+  const index = categories.findIndex((category) => category.id === categoryId);
+  if (index < 0) {
+    redirectToCategoryAdmin({ error: "not_found" });
+  }
+
+  const targetIndex =
+    direction === "up" ? index - 1 : direction === "down" ? index + 1 : -1;
+  if (targetIndex < 0 || targetIndex >= categories.length) {
+    redirectToCategoryAdmin({ error: "reorder_blocked" });
+  }
+
+  const current = categories[index];
+  const neighbor = categories[targetIndex];
+
+  await prisma.$transaction([
+    prisma.achievementCategory.update({
+      where: { id: current.id },
+      data: { displayOrder: neighbor.displayOrder },
+    }),
+    prisma.achievementCategory.update({
+      where: { id: neighbor.id },
+      data: { displayOrder: current.displayOrder },
+    }),
+  ]);
+
+  revalidateAchievements();
+  redirectToCategoryAdmin({ success: "reordered" });
+}
+
+export async function deleteAchievementCategory(
+  formData: FormData,
+): Promise<void> {
   const session = await requirePermission("website.manage");
   const organizationId = session.organization.id;
   const categoryId = readString(formData, "categoryId").trim();
@@ -660,22 +758,22 @@ export async function deleteAchievementCategory(formData: FormData) {
       _count: { select: { achievements: { where: { deletedAt: null } } } },
     },
   });
-  if (!category) return;
-
-  if (category._count.achievements > 0) {
-    await prisma.achievementCategory.update({
-      where: { id: category.id },
-      data: { archivedAt: new Date(), isActive: false },
-    });
-  } else {
-    await prisma.achievementCategory.update({
-      where: { id: category.id },
-      data: {
-        deletedAt: new Date(),
-        isActive: false,
-        slug: `${category.slug}-deleted-${Date.now().toString(36)}`,
-      },
-    });
+  if (!category) {
+    redirectToCategoryAdmin({ error: "not_found" });
   }
+
+  if (category!._count.achievements > 0) {
+    redirectToCategoryAdmin({ error: "in_use" });
+  }
+
+  await prisma.achievementCategory.update({
+    where: { id: category!.id },
+    data: {
+      deletedAt: new Date(),
+      isActive: false,
+      slug: `${category!.slug}-deleted-${Date.now().toString(36)}`,
+    },
+  });
   revalidateAchievements();
+  redirectToCategoryAdmin({ success: "deleted" });
 }

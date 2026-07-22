@@ -9,7 +9,10 @@ import {
   listAdminStudentOptions,
   loadAdminAchievement,
 } from "@/lib/website/achievement-admin";
-import { listAdminAchievementCategories } from "@/lib/website/achievement-categories";
+import {
+  categoriesForAchievementForm,
+  listAdminAchievementCategories,
+} from "@/lib/website/achievement-categories";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "ویرایش افتخار" };
@@ -50,9 +53,10 @@ export default async function EditAchievementPage({ params }: PageProps) {
           name: student.fullName,
           gradeName: student.grade.name,
         }))}
-        categories={categories
-          .filter((category) => category.isActive && !category.archivedAt)
-          .map((category) => ({ id: category.id, name: category.name }))}
+        categories={categoriesForAchievementForm(
+          categories,
+          achievement.categoryId,
+        )}
         achievement={{
           id: achievement.id,
           studentId: achievement.studentId,
