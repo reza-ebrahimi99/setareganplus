@@ -3,15 +3,20 @@ import { notFound } from "next/navigation";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { PageSectionsRenderer } from "@/components/website/page-builder/SectionRenderer";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
-import { EXPERIMENTAL_PUBLIC_PATH } from "@/lib/website/page-builder/constants";
-import { loadPublishedBuilderDemoPage } from "@/lib/website/page-builder/pages-public";
+import { getPublicPagePath } from "@/lib/website/page-builder/public-path";
+import { loadPublishedPageBySlug } from "@/lib/website/page-builder/pages-public";
 
 export const revalidate = 60;
 
-export async function generateMetadata(): Promise<Metadata> {
+type Props = {
+  params: Promise<{ slug: string }>;
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
   try {
     const organization = await getCurrentOrganization();
-    const page = await loadPublishedBuilderDemoPage(organization.id);
+    const page = await loadPublishedPageBySlug(organization.id, slug);
     if (!page) {
       return { title: "صفحه یافت نشد", robots: { index: false } };
     }
@@ -24,7 +29,9 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function BuilderDemoPublicPage() {
+export default async function PublicWebsitePageBySlug({ params }: Props) {
+  const { slug } = await params;
+
   let organization;
   try {
     organization = await getCurrentOrganization();
@@ -32,11 +39,13 @@ export default async function BuilderDemoPublicPage() {
     notFound();
   }
 
-  const page = await loadPublishedBuilderDemoPage(organization.id);
+  const page = await loadPublishedPageBySlug(organization.id, slug);
   if (!page) notFound();
 
+  const publicPath = getPublicPagePath(page.slug);
+
   return (
-    <SiteShell activePath={EXPERIMENTAL_PUBLIC_PATH}>
+    <SiteShell activePath={publicPath}>
       <PageSectionsRenderer sections={page.sections} />
       {page.sections.length === 0 ? (
         <p className="mx-auto max-w-6xl px-4 py-20 text-center text-muted">

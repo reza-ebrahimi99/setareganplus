@@ -6,7 +6,7 @@ import { PageSettingsForm } from "@/components/admin/website/page-builder/PageSe
 import { SectionList } from "@/components/admin/website/page-builder/SectionList";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { requirePermission } from "@/lib/auth/require-admin";
-import { EXPERIMENTAL_PUBLIC_PATH } from "@/lib/website/page-builder/constants";
+import { getPublicPagePath } from "@/lib/website/page-builder/public-path";
 import { getAdminWebsitePage } from "@/lib/website/page-builder/pages-admin";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +27,8 @@ export default async function AdminWebsitePageEditorPage({ params }: Props) {
   const { pageId } = await params;
   const page = await getAdminWebsitePage(session.organization.id, pageId);
   if (!page) notFound();
+
+  const publicPath = getPublicPagePath(page.slug);
 
   return (
     <>
@@ -50,7 +52,7 @@ export default async function AdminWebsitePageEditorPage({ params }: Props) {
           پیش‌نمایش
         </Link>
         <Link
-          href={EXPERIMENTAL_PUBLIC_PATH}
+          href={publicPath}
           target="_blank"
           className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm"
         >
@@ -69,11 +71,13 @@ export default async function AdminWebsitePageEditorPage({ params }: Props) {
           <PageSettingsForm
             page={{
               id: page.id,
+              slug: page.slug,
               title: page.title,
               seoTitle: page.seoTitle,
               seoDescription: page.seoDescription,
               status: page.status,
               publishedSectionCount: page.publishedSectionCount,
+              publicPath,
             }}
           />
         </div>

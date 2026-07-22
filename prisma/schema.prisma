@@ -924,6 +924,7 @@ model MediaAsset {
   mediaPlacements         MediaPlacement[]
   websiteMarketingCards   WebsiteMarketingCard[]    @relation("WebsiteMarketingCardImage")
   websitePageSectionMedia WebsitePageSectionMedia[] @relation("WebsitePageSectionMediaAsset")
+  websitePageSeoImages    WebsitePage[]             @relation("WebsitePageSeoImage")
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])
@@ -1035,7 +1036,7 @@ model WebsiteMarketingCard {
   @@map("website_marketing_cards")
 }
 
-// ─── Visual Page Builder (Phase 1) ───────────────────────────────────────────
+// ─── Visual Page Builder ─────────────────────────────────────────────────────
 
 enum WebsitePageStatus {
   DRAFT
@@ -1050,23 +1051,30 @@ enum WebsiteSectionStatus {
 }
 
 model WebsitePage {
-  id             String            @id @default(cuid())
-  organizationId String
-  slug           String
-  title          String
-  seoTitle       String?
-  seoDescription String?
-  status         WebsitePageStatus @default(DRAFT)
-  publishedAt    DateTime?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  deletedAt      DateTime?
+  id              String            @id @default(cuid())
+  organizationId  String
+  slug            String
+  title           String
+  seoTitle        String?
+  seoDescription  String?
+  /// Optional dedicated Open Graph / SEO image (Phase 2.1+; used in Phase 2.5).
+  seoImageMediaId String?
+  /// Audit-only template key from create factories (e.g. blank, about).
+  templateKey     String?
+  status          WebsitePageStatus @default(DRAFT)
+  publishedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  deletedAt       DateTime?
 
-  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  sections     WebsitePageSection[]
+  organization  Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  seoImageMedia MediaAsset?          @relation("WebsitePageSeoImage", fields: [seoImageMediaId], references: [id], onDelete: SetNull)
+  sections      WebsitePageSection[]
 
-  @@unique([organizationId, slug])
+  /// Live-slug uniqueness is enforced by partial unique index in SQL:
+  /// website_pages_organizationId_slug_live_key (WHERE deletedAt IS NULL)
   @@index([organizationId, status, deletedAt])
+  @@index([seoImageMediaId])
   @@map("website_pages")
 }
 

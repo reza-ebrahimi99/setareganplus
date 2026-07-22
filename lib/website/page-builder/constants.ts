@@ -1,10 +1,6 @@
 /**
- * Page Builder Phase 1 — shared constants (safe for client imports).
+ * Page Builder — shared constants (safe for client imports).
  */
-
-export const EXPERIMENTAL_PAGE_SLUG = "builder-demo" as const;
-export const EXPERIMENTAL_PUBLIC_PATH = "/p/builder-demo" as const;
-export const EXPERIMENTAL_PAGE_DEFAULT_TITLE = "صفحه آزمایشی صفحه‌ساز" as const;
 
 export const PAGE_BUILDER_SECTION_TYPES = [
   "HERO",

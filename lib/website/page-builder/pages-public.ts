@@ -5,7 +5,6 @@
 import { prisma } from "@/lib/prisma";
 import { publicLibraryUrl } from "@/lib/media/library-image";
 import {
-  EXPERIMENTAL_PAGE_SLUG,
   isPageBuilderSectionType,
   type PageBuilderSectionType,
 } from "./constants";
@@ -26,6 +25,7 @@ export type PublicWebsitePage = {
   title: string;
   seoTitle: string | null;
   seoDescription: string | null;
+  seoImageMediaId: string | null;
   sections: RenderableSection[];
 };
 
@@ -49,6 +49,7 @@ async function loadPageBySlug(
       title: true,
       seoTitle: true,
       seoDescription: true,
+      seoImageMediaId: true,
       status: true,
       sections: {
         where: {
@@ -122,14 +123,17 @@ async function loadPageBySlug(
     title: page.title,
     seoTitle: page.seoTitle,
     seoDescription: page.seoDescription,
+    seoImageMediaId: page.seoImageMediaId,
     sections,
   };
 }
 
-export async function loadPublishedBuilderDemoPage(
+/** Load a published WebsitePage by slug for the public site. */
+export async function loadPublishedPageBySlug(
   organizationId: string,
+  slug: string,
 ): Promise<PublicWebsitePage | null> {
-  return loadPageBySlug(organizationId, EXPERIMENTAL_PAGE_SLUG, "public");
+  return loadPageBySlug(organizationId, slug, "public");
 }
 
 export async function loadPreviewWebsitePage(

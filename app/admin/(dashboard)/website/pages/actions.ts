@@ -6,8 +6,6 @@ import type { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/prisma";
 import {
-  EXPERIMENTAL_PAGE_SLUG,
-  EXPERIMENTAL_PUBLIC_PATH,
   PAGE_SEO_DESCRIPTION_MAX,
   PAGE_SEO_TITLE_MAX,
   PAGE_TITLE_MAX,
@@ -16,6 +14,7 @@ import {
   isSectionStatus,
   normalizePageBuilderText,
   type PageBuilderSectionType,
+  type PageStatus,
 } from "@/lib/website/page-builder/constants";
 import {
   assertOrganizationMediaIds,
@@ -26,13 +25,16 @@ import {
   nextSectionSortOrder,
 } from "@/lib/website/page-builder/normalize-order";
 import {
-  createExperimentalPageRecord,
-  findExperimentalPage,
+  createWebsitePageRecord,
+  findLivePageBySlug,
 } from "@/lib/website/page-builder/pages-admin";
+import { getPublicPagePath } from "@/lib/website/page-builder/public-path";
+import { resolvePagePublishedAt } from "@/lib/website/page-builder/publish";
 import {
   getDefaultSectionConfig,
   getSectionDefinition,
 } from "@/lib/website/page-builder/registry";
+import { parseWebsitePageSlug } from "@/lib/website/page-builder/reserved-slugs";
 import type {
   SectionMediaLinkInput,
   SectionMediaRole,
@@ -50,19 +52,26 @@ function readString(formData: FormData, key: string): string {
   return typeof value === "string" ? value : "";
 }
 
-function revalidatePageBuilder(pageId?: string) {
+function revalidatePageBuilder(pageId?: string, slug?: string) {
   revalidatePath("/admin/website/pages");
   if (pageId) {
     revalidatePath(`/admin/website/pages/${pageId}`);
     revalidatePath(`/admin/website/pages/${pageId}/preview`);
   }
-  revalidatePath(EXPERIMENTAL_PUBLIC_PATH);
+  if (slug) {
+    revalidatePath(getPublicPagePath(slug));
+  }
 }
 
 async function assertOwnedPage(organizationId: string, pageId: string) {
   return prisma.websitePage.findFirst({
     where: { id: pageId, organizationId, deletedAt: null },
-    select: { id: true, slug: true, status: true },
+    select: {
+      id: true,
+      slug: true,
+      status: true,
+      publishedAt: true,
+    },
   });
 }
 
@@ -79,6 +88,7 @@ async function assertOwnedSection(
       status: true,
       sortOrder: true,
       config: true,
+      page: { select: { slug: true } },
     },
   });
 }
@@ -179,24 +189,52 @@ function buildConfigObjectFromFields(
   }
 }
 
-export async function createExperimentalPageAction(): Promise<void> {
+export async function createWebsitePageAction(
+  _prev: PageBuilderActionState,
+  formData: FormData,
+): Promise<PageBuilderActionState> {
   const session = await requirePermission("website.manage");
   const organizationId = session.organization.id;
 
-  const existing = await findExperimentalPage(organizationId);
+  const title =
+    normalizePageBuilderText(readString(formData, "title"), PAGE_TITLE_MAX) ??
+    "";
+  if (!title) {
+    return {
+      formError: "عنوان صفحه الزامی است.",
+      fieldErrors: { title: "عنوان را وارد کنید." },
+    };
+  }
+
+  const slugParsed = parseWebsitePageSlug(readString(formData, "slug"));
+  if (!slugParsed.ok) {
+    return {
+      formError: slugParsed.error,
+      fieldErrors: { slug: slugParsed.error },
+    };
+  }
+
+  const existing = await findLivePageBySlug(organizationId, slugParsed.slug);
   if (existing) {
-    redirect(`/admin/website/pages/${existing.id}`);
+    return {
+      formError: "صفحه‌ای با این نامک از قبل وجود دارد.",
+      fieldErrors: { slug: "نامک تکراری است." },
+    };
   }
 
   let pageId: string;
   try {
-    const page = await createExperimentalPageRecord(organizationId);
+    const page = await createWebsitePageRecord({
+      organizationId,
+      slug: slugParsed.slug,
+      title,
+    });
     pageId = page.id;
   } catch {
-    redirect("/admin/website/pages?error=create");
+    return { formError: "ایجاد صفحه ناموفق بود. دوباره تلاش کنید." };
   }
 
-  revalidatePageBuilder(pageId);
+  revalidatePageBuilder(pageId, slugParsed.slug);
   redirect(`/admin/website/pages/${pageId}`);
 }
 
@@ -223,6 +261,28 @@ export async function updatePageSettingsAction(
     };
   }
 
+  const slugParsed = parseWebsitePageSlug(readString(formData, "slug"));
+  if (!slugParsed.ok) {
+    return {
+      formError: slugParsed.error,
+      fieldErrors: { slug: slugParsed.error },
+    };
+  }
+
+  if (slugParsed.slug !== page.slug) {
+    const clash = await findLivePageBySlug(
+      organizationId,
+      slugParsed.slug,
+      pageId,
+    );
+    if (clash) {
+      return {
+        formError: "صفحه‌ای با این نامک از قبل وجود دارد.",
+        fieldErrors: { slug: "نامک تکراری است." },
+      };
+    }
+  }
+
   const seoTitle = normalizePageBuilderText(
     readString(formData, "seoTitle"),
     PAGE_SEO_TITLE_MAX,
@@ -236,8 +296,9 @@ export async function updatePageSettingsAction(
   if (!isPageStatus(statusRaw)) {
     return { formError: "وضعیت صفحه نامعتبر است." };
   }
+  const nextStatus: PageStatus = statusRaw;
 
-  if (statusRaw === "PUBLISHED") {
+  if (nextStatus === "PUBLISHED") {
     const publishedCount = await prisma.websitePageSection.count({
       where: {
         organizationId,
@@ -254,27 +315,34 @@ export async function updatePageSettingsAction(
     }
   }
 
+  const publishedAt = resolvePagePublishedAt({
+    nextStatus,
+    previousStatus: page.status,
+    previousPublishedAt: page.publishedAt,
+  });
+
+  const previousSlug = page.slug;
+
   try {
     await prisma.websitePage.update({
       where: { id: pageId },
       data: {
         title,
+        slug: slugParsed.slug,
         seoTitle,
         seoDescription,
-        status: statusRaw,
-        publishedAt:
-          statusRaw === "PUBLISHED"
-            ? page.status === "PUBLISHED"
-              ? undefined
-              : new Date()
-            : null,
+        status: nextStatus,
+        publishedAt,
       },
     });
   } catch {
     return { formError: "ذخیره تنظیمات صفحه ناموفق بود." };
   }
 
-  revalidatePageBuilder(pageId);
+  revalidatePageBuilder(pageId, slugParsed.slug);
+  if (previousSlug !== slugParsed.slug) {
+    revalidatePath(getPublicPagePath(previousSlug));
+  }
   return { successMessage: "تنظیمات صفحه ذخیره شد." };
 }
 
@@ -288,10 +356,6 @@ export async function publishPageAction(
 
   const page = await assertOwnedPage(organizationId, pageId);
   if (!page) return { formError: "صفحه یافت نشد." };
-
-  if (page.slug !== EXPERIMENTAL_PAGE_SLUG) {
-    return { formError: "در فاز ۱ فقط صفحه آزمایشی قابل انتشار است." };
-  }
 
   const publishedCount = await prisma.websitePageSection.count({
     where: {
@@ -308,21 +372,28 @@ export async function publishPageAction(
     };
   }
 
+  const publishedAt = resolvePagePublishedAt({
+    nextStatus: "PUBLISHED",
+    previousStatus: page.status,
+    previousPublishedAt: page.publishedAt,
+  });
+
   try {
     await prisma.websitePage.update({
       where: { id: pageId },
       data: {
         status: "PUBLISHED",
-        publishedAt: new Date(),
+        publishedAt,
       },
     });
   } catch {
     return { formError: "انتشار صفحه ناموفق بود." };
   }
 
-  revalidatePageBuilder(pageId);
+  const publicPath = getPublicPagePath(page.slug);
+  revalidatePageBuilder(pageId, page.slug);
   return {
-    successMessage: `صفحه منتشر شد. آدرس عمومی: ${EXPERIMENTAL_PUBLIC_PATH}`,
+    successMessage: `صفحه منتشر شد. آدرس عمومی: ${publicPath}`,
   };
 }
 
@@ -361,7 +432,7 @@ export async function addSectionAction(
     return { formError: "افزودن بخش ناموفق بود." };
   }
 
-  revalidatePageBuilder(pageId);
+  revalidatePageBuilder(pageId, page.slug);
   return { successMessage: "بخش جدید به‌صورت پیش‌نویس افزوده شد." };
 }
 
@@ -420,7 +491,7 @@ export async function updateSectionAction(
     return { formError: message };
   }
 
-  revalidatePageBuilder(section.pageId);
+  revalidatePageBuilder(section.pageId, section.page.slug);
   return { successMessage: "بخش ذخیره شد." };
 }
 
@@ -476,7 +547,7 @@ export async function duplicateSectionAction(formData: FormData): Promise<void> 
     return;
   }
 
-  revalidatePageBuilder(section.pageId);
+  revalidatePageBuilder(section.pageId, section.page.slug);
 }
 
 export async function moveSectionAction(formData: FormData): Promise<void> {
@@ -532,7 +603,7 @@ export async function moveSectionAction(formData: FormData): Promise<void> {
     return;
   }
 
-  revalidatePageBuilder(section.pageId);
+  revalidatePageBuilder(section.pageId, section.page.slug);
 }
 
 export async function updateSectionStatusAction(
@@ -557,7 +628,7 @@ export async function updateSectionStatusAction(
     return;
   }
 
-  revalidatePageBuilder(section.pageId);
+  revalidatePageBuilder(section.pageId, section.page.slug);
 }
 
 export async function softDeleteSectionAction(formData: FormData): Promise<void> {
@@ -583,5 +654,5 @@ export async function softDeleteSectionAction(formData: FormData): Promise<void>
     return;
   }
 
-  revalidatePageBuilder(section.pageId);
+  revalidatePageBuilder(section.pageId, section.page.slug);
 }

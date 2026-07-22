@@ -39,6 +39,7 @@ export async function getMediaAssetDependencies(
     formPosters,
     marketingCards,
     pageSectionMedia,
+    pageSeoImages,
   ] = await Promise.all([
     prisma.galleryAlbumItem.findMany({
       where: {
@@ -115,6 +116,15 @@ export async function getMediaAssetDependencies(
           },
         },
       },
+      take: 50,
+    }),
+    prisma.websitePage.findMany({
+      where: {
+        organizationId,
+        seoImageMediaId: mediaId,
+        deletedAt: null,
+      },
+      select: { id: true, title: true, slug: true },
       take: 50,
     }),
   ]);
@@ -208,6 +218,15 @@ export async function getMediaAssetDependencies(
       label: "بخش صفحه‌ساز",
       detail: `صفحه «${link.section.page.title}» · بخش ${link.section.type} (${link.role})`,
       href: `/admin/website/pages/${link.section.page.id}`,
+    });
+  }
+
+  for (const page of pageSeoImages) {
+    dependencies.push({
+      kind: "website_page_seo_image",
+      label: "تصویر سئو صفحه",
+      detail: `صفحه «${page.title}» (${page.slug})`,
+      href: `/admin/website/pages/${page.id}`,
     });
   }
 

@@ -13,11 +13,13 @@ const emptyState: PageBuilderActionState = {};
 type Props = {
   page: {
     id: string;
+    slug: string;
     title: string;
     seoTitle: string | null;
     seoDescription: string | null;
     status: PageStatus;
     publishedSectionCount: number;
+    publicPath: string;
   };
 };
 
@@ -60,8 +62,22 @@ export function PageSettingsForm({ page }: Props) {
             name="title"
             defaultValue={page.title}
             required
-            className="min-h-11 rounded-xl border border-border bg-white px-3 py-2.5 w-full"
+            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
           />
+        </label>
+
+        <label className="block text-sm">
+          <span className="mb-1.5 block text-muted">نامک (slug)</span>
+          <input
+            name="slug"
+            defaultValue={page.slug}
+            required
+            dir="ltr"
+            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5 font-mono text-sm"
+          />
+          <span className="mt-1 block text-xs text-muted" dir="ltr">
+            {page.publicPath}
+          </span>
         </label>
 
         <label className="block text-sm">
@@ -69,7 +85,7 @@ export function PageSettingsForm({ page }: Props) {
           <input
             name="seoTitle"
             defaultValue={page.seoTitle ?? ""}
-            className="min-h-11 rounded-xl border border-border bg-white px-3 py-2.5 w-full"
+            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
           />
         </label>
 
@@ -79,7 +95,7 @@ export function PageSettingsForm({ page }: Props) {
             name="seoDescription"
             defaultValue={page.seoDescription ?? ""}
             rows={3}
-            className="min-h-11 rounded-xl border border-border bg-white px-3 py-2.5 w-full"
+            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
           />
         </label>
 
@@ -88,7 +104,7 @@ export function PageSettingsForm({ page }: Props) {
           <select
             name="status"
             defaultValue={page.status}
-            className="min-h-11 rounded-xl border border-border bg-white px-3 py-2.5 w-full"
+            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
           >
             <option value="DRAFT">پیش‌نویس</option>
             <option value="PUBLISHED">منتشرشده</option>
@@ -140,7 +156,7 @@ export function PageSettingsForm({ page }: Props) {
           disabled={publishPending || page.publishedSectionCount === 0}
           className="min-h-11 rounded-xl border border-primary bg-white px-4 py-2.5 text-sm font-medium text-primary disabled:opacity-60"
         >
-          {publishPending ? "در حال انتشار…" : "انتشار صفحه آزمایشی"}
+          {publishPending ? "در حال انتشار…" : "انتشار صفحه"}
         </button>
       </form>
     </div>

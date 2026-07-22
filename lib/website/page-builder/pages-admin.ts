@@ -1,12 +1,10 @@
 /**
- * Admin loaders for Visual Page Builder.
+ * Admin loaders / writers for Visual Page Builder.
  */
 
 import { prisma } from "@/lib/prisma";
 import { publicLibraryUrl } from "@/lib/media/library-image";
 import {
-  EXPERIMENTAL_PAGE_DEFAULT_TITLE,
-  EXPERIMENTAL_PAGE_SLUG,
   isPageBuilderSectionType,
   type PageBuilderSectionType,
   type PageStatus,
@@ -50,6 +48,8 @@ export type AdminWebsitePageDetail = {
   title: string;
   seoTitle: string | null;
   seoDescription: string | null;
+  seoImageMediaId: string | null;
+  templateKey: string | null;
   status: PageStatus;
   publishedAt: Date | null;
   updatedAt: Date;
@@ -101,6 +101,8 @@ export async function getAdminWebsitePage(
       title: true,
       seoTitle: true,
       seoDescription: true,
+      seoImageMediaId: true,
+      templateKey: true,
       status: true,
       publishedAt: true,
       updatedAt: true,
@@ -174,6 +176,8 @@ export async function getAdminWebsitePage(
     title: page.title,
     seoTitle: page.seoTitle,
     seoDescription: page.seoDescription,
+    seoImageMediaId: page.seoImageMediaId,
+    templateKey: page.templateKey,
     status: page.status,
     publishedAt: page.publishedAt,
     updatedAt: page.updatedAt,
@@ -182,29 +186,34 @@ export async function getAdminWebsitePage(
   };
 }
 
-export async function findExperimentalPage(
+export async function findLivePageBySlug(
   organizationId: string,
+  slug: string,
+  excludePageId?: string,
 ): Promise<{ id: string } | null> {
   return prisma.websitePage.findFirst({
     where: {
       organizationId,
-      slug: EXPERIMENTAL_PAGE_SLUG,
+      slug,
       deletedAt: null,
+      ...(excludePageId ? { NOT: { id: excludePageId } } : {}),
     },
     select: { id: true },
   });
 }
 
-export async function createExperimentalPageRecord(
-  organizationId: string,
-): Promise<{ id: string }> {
+export async function createWebsitePageRecord(params: {
+  organizationId: string;
+  slug: string;
+  title: string;
+}): Promise<{ id: string; slug: string }> {
   return prisma.websitePage.create({
     data: {
-      organizationId,
-      slug: EXPERIMENTAL_PAGE_SLUG,
-      title: EXPERIMENTAL_PAGE_DEFAULT_TITLE,
+      organizationId: params.organizationId,
+      slug: params.slug,
+      title: params.title,
       status: "DRAFT",
     },
-    select: { id: true },
+    select: { id: true, slug: true },
   });
 }
