@@ -27,6 +27,7 @@ type StudentFormProps = {
     parentName: string | null;
     schoolYear: string | null;
     slug: string;
+    kanoonStudentId: string | null;
     seoTitle: string | null;
     seoDescription: string | null;
     displayOrder: number;
@@ -181,6 +182,25 @@ export function StudentForm({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
+          <label className="text-sm">
+            <span className="font-medium text-primary">شناسه قلم‌چی</span>
+            <input
+              name="kanoonStudentId"
+              dir="ltr"
+              inputMode="numeric"
+              defaultValue={student?.kanoonStudentId ?? ""}
+              className={inputClass}
+              placeholder="مثال: 00123456"
+            />
+            <span className="mt-1 block text-xs text-muted">
+              شماره شمارنده دانش‌آموز در آزمون‌های قلم‌چی
+            </span>
+            {state.fieldErrors?.kanoonStudentId ? (
+              <span className="mt-1 block text-xs text-red-700">
+                {state.fieldErrors.kanoonStudentId}
+              </span>
+            ) : null}
+          </label>
           <label className="text-sm">
             <span className="font-medium text-primary">Slug</span>
             <input

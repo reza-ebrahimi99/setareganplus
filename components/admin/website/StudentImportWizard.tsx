@@ -6,7 +6,7 @@ import {
   downloadStudentImportInvalidRowsAction,
   downloadStudentImportTemplateAction,
   executeStudentImportAction,
-  inspectStudentImportAction,
+  parseStudentImportAction,
   validateStudentImportAction,
 } from "@/app/admin/(dashboard)/website/students/import/actions";
 import {
@@ -14,10 +14,13 @@ import {
   STUDENT_IMPORT_FIELDS,
   STUDENT_IMPORT_MAX_BYTES,
   STUDENT_IMPORT_PREVIEW_LIMIT,
+  type GuardianImportStatus,
+  type PortalImportStatus,
   type StudentColumnMapping,
   type StudentImportField,
   type StudentImportMode,
   type StudentImportResult,
+  type StudentImportSession,
   type StudentWorkbookInspection,
   type ValidatedStudentImportRow,
 } from "@/lib/website/student-import-shared";
@@ -42,7 +45,7 @@ function mappingStorageKey(inspection: StudentWorkbookInspection): string {
   const signature = inspection.headers
     .map((header) => header.label.trim().toLocaleLowerCase("fa"))
     .join("|");
-  return `student-import-mapping:v1:${signature}`;
+  return `student-import-mapping:v2:${signature}`;
 }
 
 function defaultMapping(
@@ -59,15 +62,6 @@ function defaultMapping(
       return [String(header.column), suggested];
     }),
   );
-}
-
-function classificationLabel(
-  row: ValidatedStudentImportRow,
-): string {
-  if (!row.ok) return "دارای خطا";
-  if (row.classification === "create") return "ایجاد جدید";
-  if (row.classification === "update") return "قابل به‌روزرسانی";
-  return "رکورد تکراری";
 }
 
 function downloadBase64File(base64: string, filename: string) {
@@ -87,15 +81,85 @@ function downloadBase64File(base64: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+function Badge({
+  tone,
+  children,
+}: {
+  tone: "neutral" | "ok" | "warn" | "danger" | "info";
+  children: React.ReactNode;
+}) {
+  const tones = {
+    neutral: "border-border bg-surface text-muted",
+    ok: "border-emerald-200 bg-emerald-50 text-emerald-900",
+    warn: "border-amber-200 bg-amber-50 text-amber-950",
+    danger: "border-red-200 bg-red-50 text-red-800",
+    info: "border-sky-200 bg-sky-50 text-sky-900",
+  } as const;
+  return (
+    <span
+      className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] ${tones[tone]}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function studentBadge(row: ValidatedStudentImportRow) {
+  if (!row.ok) return <Badge tone="danger">دارای خطا</Badge>;
+  if (row.classification === "create") return <Badge tone="ok">ایجاد جدید</Badge>;
+  if (row.classification === "update")
+    return <Badge tone="info">قابل به‌روزرسانی</Badge>;
+  return <Badge tone="warn">دانش‌آموز تکراری</Badge>;
+}
+
+function guardianBadge(status: GuardianImportStatus) {
+  switch (status) {
+    case "new":
+      return <Badge tone="ok">ولی جدید</Badge>;
+    case "existing":
+    case "linked":
+    case "already_linked":
+      return <Badge tone="info">ولی موجود</Badge>;
+    case "conflict_warning":
+      return <Badge tone="warn">نیازمند بررسی</Badge>;
+    case "skipped_no_permission":
+      return <Badge tone="warn">بدون مجوز پرتال</Badge>;
+    case "skipped_incomplete":
+      return <Badge tone="neutral">ولی ناقص</Badge>;
+    default:
+      return <Badge tone="neutral">بدون ولی</Badge>;
+  }
+}
+
+function portalBadge(status: PortalImportStatus) {
+  switch (status) {
+    case "created":
+    case "restored":
+      return <Badge tone="ok">دسترسی ایجاد می‌شود</Badge>;
+    case "existing":
+      return <Badge tone="info">دسترسی موجود</Badge>;
+    case "skipped_no_permission":
+      return <Badge tone="warn">بدون مجوز</Badge>;
+    case "skipped_no_mobile":
+      return <Badge tone="neutral">بدون موبایل</Badge>;
+    case "failed":
+      return <Badge tone="danger">خطای دسترسی</Badge>;
+    default:
+      return <Badge tone="neutral">—</Badge>;
+  }
+}
+
 export function StudentImportWizard() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [phase, setPhase] = useState<Phase>("upload");
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [sheetName, setSheetName] = useState("");
+  const [importSession, setImportSession] =
+    useState<StudentImportSession | null>(null);
   const [inspection, setInspection] =
     useState<StudentWorkbookInspection | null>(null);
+  const [sheetName, setSheetName] = useState("");
   const [mapping, setMapping] = useState<StudentColumnMapping>({});
   const [mode, setMode] = useState<StudentImportMode>("create_only");
   const [confirmUpdate, setConfirmUpdate] = useState(false);
@@ -108,6 +172,7 @@ export function StudentImportWizard() {
   const [createCount, setCreateCount] = useState(0);
   const [updateCount, setUpdateCount] = useState(0);
   const [duplicateCount, setDuplicateCount] = useState(0);
+  const [canManagePortal, setCanManagePortal] = useState(false);
   const [importSubmitted, setImportSubmitted] = useState(false);
   const [importResult, setImportResult] = useState<StudentImportResult | null>(
     null,
@@ -134,32 +199,47 @@ export function StudentImportWizard() {
     [],
   );
 
-  function assignFile(file: File | null) {
+  function clearParsedState() {
+    setImportSession(null);
+    setInspection(null);
+    setSheetName("");
+    setMapping({});
+    setPreviewRows([]);
+    setTotalRows(0);
+    setValidCount(0);
+    setInvalidCount(0);
+    setCreateCount(0);
+    setUpdateCount(0);
+    setDuplicateCount(0);
+    setImportSubmitted(false);
+    setImportResult(null);
+    setReportBase64(null);
+    setReportFilename(null);
+  }
+
+  function resetForNewFile(file: File | null) {
+    clearParsedState();
+    setError(null);
+    setPhase("upload");
+    setFileName(file?.name ?? null);
     if (!file || !fileRef.current) return;
     const transfer = new DataTransfer();
     transfer.items.add(file);
     fileRef.current.files = transfer.files;
-    setFileName(file.name);
-    setError(null);
   }
 
-  function withFile(callback: (file: File, formData: FormData) => void) {
-    const file = fileRef.current?.files?.[0];
-    if (!file) {
-      setError("لطفاً فایل را انتخاب کنید.");
-      return;
-    }
-    if (file.size > STUDENT_IMPORT_MAX_BYTES) {
-      setError("حجم فایل نباید بیشتر از ۵ مگابایت باشد.");
-      return;
+  function buildSessionFormData(): FormData | null {
+    if (!importSession) {
+      setError("لطفاً ابتدا فایل را در مرحله اول بارگذاری کنید.");
+      return null;
     }
     const formData = new FormData();
-    formData.set("file", file);
-    if (sheetName) formData.set("sheetName", sheetName);
+    formData.set("session", JSON.stringify(importSession));
+    formData.set("sheetName", sheetName || importSession.selectedSheet);
     formData.set("mapping", JSON.stringify(mapping));
     formData.set("mode", mode);
     if (confirmUpdate) formData.set("confirmUpdate", "true");
-    callback(file, formData);
+    return formData;
   }
 
   function handleDownloadTemplate() {
@@ -174,76 +254,108 @@ export function StudentImportWizard() {
     });
   }
 
-  function handleInspect() {
+  function handleParse() {
     setError(null);
-    withFile((_file, formData) => {
-      startTransition(async () => {
-        const result = await inspectStudentImportAction(formData);
-        if (!result.ok) {
-          setError(result.error);
-          return;
+    const file = fileRef.current?.files?.[0];
+    if (!file) {
+      setError("لطفاً فایل را انتخاب کنید.");
+      return;
+    }
+    if (file.size > STUDENT_IMPORT_MAX_BYTES) {
+      setError("حجم فایل نباید بیشتر از ۵ مگابایت باشد.");
+      return;
+    }
+    const formData = new FormData();
+    formData.set("file", file);
+    startTransition(async () => {
+      const result = await parseStudentImportAction(formData);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setImportSession(result.session);
+      setInspection(result.inspection);
+      setSheetName(result.inspection.selectedSheet);
+      let nextMapping = defaultMapping(result.inspection);
+      try {
+        const stored = localStorage.getItem(
+          mappingStorageKey(result.inspection),
+        );
+        if (stored) {
+          nextMapping = {
+            ...nextMapping,
+            ...(JSON.parse(stored) as StudentColumnMapping),
+          };
         }
-        setInspection(result.inspection);
-        setSheetName(result.inspection.selectedSheet);
-        let nextMapping = defaultMapping(result.inspection);
-        try {
-          const stored = localStorage.getItem(
-            mappingStorageKey(result.inspection),
-          );
-          if (stored) {
-            nextMapping = {
-              ...nextMapping,
-              ...(JSON.parse(stored) as StudentColumnMapping),
-            };
-          }
-        } catch {
-          /* ignore */
-        }
-        setMapping(nextMapping);
-        setPhase("mapping");
-      });
+      } catch {
+        /* ignore */
+      }
+      setMapping(nextMapping);
+      setPhase("mapping");
     });
+  }
+
+  function handleSheetChange(nextSheet: string) {
+    if (!importSession?.sheetsData[nextSheet]) return;
+    setSheetName(nextSheet);
+    const sheet = importSession.sheetsData[nextSheet]!;
+    const nextInspection: StudentWorkbookInspection = {
+      sheets: importSession.sheets,
+      selectedSheet: nextSheet,
+      headerRowNumber: sheet.headerRowNumber,
+      headers: sheet.headers,
+      previewRows: sheet.rows
+        .slice(0, 8)
+        .map((row) =>
+          sheet.headers.map((header) => row.values[header.column] ?? ""),
+        ),
+      rowCount: sheet.rows.length,
+    };
+    setInspection(nextInspection);
+    setMapping(defaultMapping(nextInspection));
+    setPreviewRows([]);
   }
 
   function handleValidate() {
     setError(null);
-    withFile((_file, formData) => {
-      startTransition(async () => {
-        if (inspection) {
-          localStorage.setItem(
-            mappingStorageKey(inspection),
-            JSON.stringify(mapping),
-          );
-        }
-        const result = await validateStudentImportAction(formData);
-        if (!result.ok) {
-          setError(result.error);
-          return;
-        }
-        setPreviewRows(result.previewRows);
-        setTotalRows(result.totalRows);
-        setValidCount(result.validCount);
-        setInvalidCount(result.invalidCount);
-        setCreateCount(result.createCount);
-        setUpdateCount(result.updateCount);
-        setDuplicateCount(result.duplicateCount);
-        setImportSubmitted(false);
-        setPhase("validation");
-      });
+    const formData = buildSessionFormData();
+    if (!formData) return;
+    startTransition(async () => {
+      if (inspection) {
+        localStorage.setItem(
+          mappingStorageKey(inspection),
+          JSON.stringify(mapping),
+        );
+      }
+      const result = await validateStudentImportAction(formData);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setPreviewRows(result.previewRows);
+      setTotalRows(result.totalRows);
+      setValidCount(result.validCount);
+      setInvalidCount(result.invalidCount);
+      setCreateCount(result.createCount);
+      setUpdateCount(result.updateCount);
+      setDuplicateCount(result.duplicateCount);
+      setCanManagePortal(result.canManagePortal);
+      setImportSubmitted(false);
+      setPhase("validation");
     });
   }
 
   function handleDownloadInvalid() {
     setError(null);
-    withFile((_file, formData) => {
-      startTransition(async () => {
-        const result = await downloadStudentImportInvalidRowsAction(formData);
-        if (!result.ok) {
-          setError(result.error);
-          return;
-        }
-        downloadBase64File(result.base64, result.filename);
-      });
+    const formData = buildSessionFormData();
+    if (!formData) return;
+    startTransition(async () => {
+      const result = await downloadStudentImportInvalidRowsAction(formData);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      downloadBase64File(result.base64, result.filename);
     });
   }
 
@@ -258,20 +370,20 @@ export function StudentImportWizard() {
       setError("برای حالت به‌روزرسانی باید هشدار را تأیید کنید.");
       return;
     }
+    const formData = buildSessionFormData();
+    if (!formData) return;
     setImportSubmitted(true);
-    withFile((_file, formData) => {
-      startTransition(async () => {
-        const result = await executeStudentImportAction(formData);
-        if (!result.ok) {
-          setImportSubmitted(false);
-          setError(result.error);
-          return;
-        }
-        setImportResult(result.result);
-        setReportBase64(result.reportBase64);
-        setReportFilename(result.reportFilename);
-        setPhase("result");
-      });
+    startTransition(async () => {
+      const result = await executeStudentImportAction(formData);
+      if (!result.ok) {
+        setImportSubmitted(false);
+        setError(result.error);
+        return;
+      }
+      setImportResult(result.result);
+      setReportBase64(result.reportBase64);
+      setReportFilename(result.reportFilename);
+      setPhase("result");
     });
   }
 
@@ -302,11 +414,29 @@ export function StudentImportWizard() {
       ) : null}
 
       <div className="admin-card space-y-4 p-5">
+        {/* Keep input mounted so users can pick a replacement file without losing DOM node mid-flow; parsed session is authoritative after step 1. */}
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          className={phase === "upload" ? "sr-only" : "hidden"}
+          onChange={(event) => {
+            const file = event.target.files?.[0] ?? null;
+            if (file) {
+              setFileName(file.name);
+              if (phase !== "upload" || importSession) {
+                clearParsedState();
+                setPhase("upload");
+              }
+            }
+          }}
+        />
+
         {phase === "upload" ? (
           <div className="space-y-4">
             <p className="text-sm leading-7 text-muted">
-              ابتدا نمونه اکسل را دانلود کنید، سپس فایل پرشده را بارگذاری کنید.
-              در این فاز فقط دانش‌آموز وارد می‌شود؛ ولی پرتال ساخته نمی‌شود.
+              فایل را یک‌بار بارگذاری کنید؛ مراحل بعدی از دادهٔ پارس‌شده استفاده
+              می‌کنند و دیگر به فایل نیاز ندارند.
             </p>
 
             <button
@@ -335,7 +465,7 @@ export function StudentImportWizard() {
                 event.preventDefault();
                 setDragActive(false);
                 const file = event.dataTransfer.files?.[0] ?? null;
-                assignFile(file);
+                if (file) resetForNewFile(file);
               }}
               className={`rounded-2xl border border-dashed px-4 py-8 text-center transition ${
                 dragActive
@@ -349,19 +479,16 @@ export function StudentImportWizard() {
               <p className="mb-4 text-xs text-muted">
                 فرمت‌های مجاز: .xlsx و .csv — حداکثر ۵ مگابایت
               </p>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                className="mx-auto block w-full max-w-sm text-sm"
-                onChange={(event) => {
-                  const file = event.target.files?.[0] ?? null;
-                  setFileName(file?.name ?? null);
-                }}
-              />
-              {fileName ? (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="rounded-xl border border-border px-4 py-2.5 text-sm"
+              >
+                انتخاب فایل
+              </button>
+              {fileName || importSession ? (
                 <p className="mt-3 text-sm text-muted">
-                  فایل انتخاب‌شده: {fileName}
+                  فایل: {importSession?.filename ?? fileName ?? "—"}
                 </p>
               ) : null}
             </div>
@@ -398,14 +525,14 @@ export function StudentImportWizard() {
                 />
                 <span>
                   متوجه هستم که رکوردهای موجود با اسلاگ یکسان به‌روزرسانی
-                  می‌شوند و این کار برگشت‌پذیر خودکار نیست.
+                  می‌شوند؛ روابط ولی/پرتال موجود بازنویسی خاموش نمی‌شوند.
                 </span>
               </label>
             ) : null}
 
             <button
               type="button"
-              onClick={handleInspect}
+              onClick={handleParse}
               disabled={pending}
               className="rounded-xl bg-primary px-4 py-2.5 text-sm text-white disabled:opacity-60"
             >
@@ -414,18 +541,26 @@ export function StudentImportWizard() {
           </div>
         ) : null}
 
-        {phase === "mapping" && inspection ? (
+        {phase === "mapping" && inspection && importSession ? (
           <div className="space-y-4">
             <p className="text-sm text-muted">
-              {toPersianDigits(inspection.rowCount)} ردیف داده شناسایی شد.
+              فایل «{importSession.filename}» —{" "}
+              {toPersianDigits(inspection.rowCount)} ردیف داده.
             </p>
+            {importSession.parseWarnings.length > 0 ? (
+              <ul className="space-y-1 text-sm text-amber-900">
+                {importSession.parseWarnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            ) : null}
 
             {inspection.sheets.length > 1 ? (
               <label className="block text-sm">
                 <span className="mb-1 block text-muted">برگه</span>
                 <select
                   value={sheetName}
-                  onChange={(event) => setSheetName(event.target.value)}
+                  onChange={(event) => handleSheetChange(event.target.value)}
                   className="min-h-11 w-full rounded-xl border border-border px-3 py-2 text-sm"
                 >
                   {inspection.sheets.map((sheet) => (
@@ -493,42 +628,130 @@ export function StudentImportWizard() {
               <Stat label="تکراری (رد)" value={duplicateCount} />
             </div>
 
-            <div className="overflow-x-auto">
+            {!canManagePortal ? (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                مجوز students.portal.manage ندارید؛ ولی و دسترسی پرتال ایجاد
+                نمی‌شود.
+              </p>
+            ) : null}
+
+            <div className="space-y-3 md:hidden">
+              {previewRows.slice(0, STUDENT_IMPORT_PREVIEW_LIMIT).map((row) => (
+                <article
+                  key={row.excelRow}
+                  className="rounded-xl border border-border bg-background p-3 text-sm"
+                >
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <span className="text-muted">
+                      ردیف {toPersianDigits(row.excelRow)}
+                    </span>
+                    {studentBadge(row)}
+                    {row.ok ? guardianBadge(row.guardianStatusPreview) : null}
+                    {row.ok
+                      ? portalBadge(row.studentPortalStatusPreview)
+                      : null}
+                    {row.ok
+                      ? portalBadge(row.guardianPortalStatusPreview)
+                      : null}
+                  </div>
+                  <p className="font-medium text-primary">
+                    {row.ok
+                      ? row.fullName
+                      : `${row.data.firstName ?? ""} ${row.data.lastName ?? ""}`.trim() ||
+                        "—"}
+                  </p>
+                  <p className="mt-1 text-muted">
+                    {row.ok ? row.gradeName : row.data.grade || "—"}
+                    {row.ok && row.kanoonStudentId
+                      ? ` · قلم‌چی ${toPersianDigits(row.kanoonStudentId)}`
+                      : ""}
+                    {row.ok && row.studentMobile
+                      ? ` · ${toPersianDigits(row.studentMobile)}`
+                      : ""}
+                  </p>
+                  {row.ok && row.guardianMobile ? (
+                    <p className="mt-1 text-muted">
+                      ولی: {row.guardianFirstName} {row.guardianLastName} ·{" "}
+                      {toPersianDigits(row.guardianMobile)}
+                    </p>
+                  ) : null}
+                  <p className="mt-2 text-xs leading-6">
+                    {row.ok ? row.warning || "معتبر" : row.error}
+                  </p>
+                </article>
+              ))}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-muted">
                     <th className="px-2 py-2 text-start">ردیف</th>
-                    <th className="px-2 py-2 text-start">وضعیت</th>
-                    <th className="px-2 py-2 text-start">نام</th>
+                    <th className="px-2 py-2 text-start">دانش‌آموز</th>
                     <th className="px-2 py-2 text-start">پایه</th>
-                    <th className="px-2 py-2 text-start">اسلاگ</th>
+                    <th className="px-2 py-2 text-start">شناسه قلم‌چی</th>
+                    <th className="px-2 py-2 text-start">موبایل</th>
+                    <th className="px-2 py-2 text-start">ولی</th>
+                    <th className="px-2 py-2 text-start">وضعیت‌ها</th>
                     <th className="px-2 py-2 text-start">پیام</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {previewRows.slice(0, STUDENT_IMPORT_PREVIEW_LIMIT).map((row) => (
-                    <tr key={row.excelRow} className="border-b border-border/70">
-                      <td className="px-2 py-2">
-                        {toPersianDigits(row.excelRow)}
-                      </td>
-                      <td className="px-2 py-2">{classificationLabel(row)}</td>
-                      <td className="px-2 py-2">
-                        {row.ok
-                          ? row.fullName
-                          : `${row.data.firstName ?? ""} ${row.data.lastName ?? ""}`.trim() ||
-                            "—"}
-                      </td>
-                      <td className="px-2 py-2">
-                        {row.ok ? row.gradeName : row.data.grade || "—"}
-                      </td>
-                      <td className="px-2 py-2">
-                        {row.ok ? row.slug : row.data.slug || "—"}
-                      </td>
-                      <td className="px-2 py-2">
-                        {row.ok ? row.warning || "—" : row.error}
-                      </td>
-                    </tr>
-                  ))}
+                  {previewRows
+                    .slice(0, STUDENT_IMPORT_PREVIEW_LIMIT)
+                    .map((row) => (
+                      <tr
+                        key={row.excelRow}
+                        className="border-b border-border/70 align-top"
+                      >
+                        <td className="px-2 py-2">
+                          {toPersianDigits(row.excelRow)}
+                        </td>
+                        <td className="px-2 py-2">
+                          {row.ok
+                            ? row.fullName
+                            : `${row.data.firstName ?? ""} ${row.data.lastName ?? ""}`.trim() ||
+                              "—"}
+                        </td>
+                        <td className="px-2 py-2">
+                          {row.ok ? row.gradeName : row.data.grade || "—"}
+                        </td>
+                        <td className="px-2 py-2" dir="ltr">
+                          {row.ok && row.kanoonStudentId
+                            ? toPersianDigits(row.kanoonStudentId)
+                            : row.data.kanoonStudentIdRaw
+                              ? toPersianDigits(row.data.kanoonStudentIdRaw)
+                              : "—"}
+                        </td>
+                        <td className="px-2 py-2">
+                          {row.ok && row.studentMobile
+                            ? toPersianDigits(row.studentMobile)
+                            : "—"}
+                        </td>
+                        <td className="px-2 py-2">
+                          {row.ok && row.guardianMobile
+                            ? `${row.guardianFirstName} ${row.guardianLastName} · ${toPersianDigits(row.guardianMobile)}`
+                            : "—"}
+                        </td>
+                        <td className="px-2 py-2">
+                          <div className="flex flex-wrap gap-1">
+                            {studentBadge(row)}
+                            {row.ok
+                              ? guardianBadge(row.guardianStatusPreview)
+                              : null}
+                            {row.ok
+                              ? portalBadge(row.studentPortalStatusPreview)
+                              : null}
+                            {row.ok
+                              ? portalBadge(row.guardianPortalStatusPreview)
+                              : null}
+                          </div>
+                        </td>
+                        <td className="px-2 py-2">
+                          {row.ok ? row.warning || "—" : row.error}
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
@@ -605,18 +828,11 @@ export function StudentImportWizard() {
               {toPersianDigits(importResult.created)} ایجاد،{" "}
               {toPersianDigits(importResult.updated)} به‌روزرسانی،{" "}
               {toPersianDigits(importResult.skipped)} رد شده،{" "}
-              {toPersianDigits(importResult.invalidRows)} نامعتبر.
+              {toPersianDigits(importResult.guardiansCreated)} ولی جدید،{" "}
+              {toPersianDigits(importResult.studentPortalsCreated)} پرتال
+              دانش‌آموز، {toPersianDigits(importResult.guardianPortalsCreated)}{" "}
+              پرتال ولی.
             </p>
-            {importResult.errors.length > 0 ? (
-              <ul className="space-y-1 text-sm text-red-800">
-                {importResult.errors.slice(0, 20).map((item) => (
-                  <li key={`${item.excelRow}-${item.error}`}>
-                    ردیف {toPersianDigits(item.excelRow)}
-                    {item.column ? ` (${item.column})` : ""}: {item.error}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
             <div className="flex flex-wrap gap-3">
               {reportBase64 && reportFilename ? (
                 <button

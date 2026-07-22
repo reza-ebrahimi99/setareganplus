@@ -15,6 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { toLatinDigits } from "@/lib/forms/latin-digits";
 import { AssessmentImportError } from "@/lib/assessment/import-errors";
 import { logServerError, logServerInfo } from "@/lib/observability/server-log";
+import { normalizeKanoonStudentId } from "@/lib/website/kanoon-student-id";
 import {
   ASSESSMENT_IMPORT_MAX_BYTES,
   isAllowedAssessmentImportFile,
@@ -24,6 +25,7 @@ import {
   type AssessmentColumnMapping,
   type AssessmentImportField,
   type AssessmentImportResult,
+  type AssessmentStudentMatchMethod,
   type ParsedImportRow,
   type ValidatedImportRow,
   type WorkbookInspection,
@@ -41,12 +43,21 @@ export {
   type AssessmentColumnMapping,
   type AssessmentImportField,
   type AssessmentImportResult,
+  type AssessmentStudentMatchMethod,
   type ParsedImportRow,
   type ValidatedImportRow,
   type WorkbookInspection,
 } from "@/lib/assessment/import-shared";
 
 const FIELD_ALIASES: Record<string, AssessmentImportField> = {
+  counter: "kanoonStudentId",
+  شمارنده: "kanoonStudentId",
+  "شناسه قلم‌چی": "kanoonStudentId",
+  "کد قلم‌چی": "kanoonStudentId",
+  "kanoon id": "kanoonStudentId",
+  "kanoon student id": "kanoonStudentId",
+  kanoonstudentid: "kanoonStudentId",
+  kanoon: "kanoonStudentId",
   slug: "studentSlug",
   "student slug": "studentSlug",
   اسلاگ: "studentSlug",
@@ -55,8 +66,10 @@ const FIELD_ALIASES: Record<string, AssessmentImportField> = {
   name: "fullName",
   نام: "firstName",
   firstname: "firstName",
+  "first name": "firstName",
   "نام خانوادگی": "lastName",
   lastname: "lastName",
+  "last name": "lastName",
   score: "score",
   نمره: "score",
   تراز: "scaledScore",
@@ -232,6 +245,9 @@ function mapRow(
     }
 
     switch (field as AssessmentImportField) {
+      case "kanoonStudentId":
+        data.kanoonStudentId = raw.trim();
+        break;
       case "studentSlug":
         data.studentSlug = raw.trim();
         break;
@@ -380,7 +396,7 @@ export async function validateAssessmentImportRows(params: {
       organizationId: params.organizationId,
       deletedAt: null,
     },
-    select: { id: true },
+    select: { id: true, gradeId: true },
   });
   if (!assessment) {
     throw new AssessmentImportError(
@@ -411,6 +427,8 @@ export async function validateAssessmentImportRows(params: {
         fullName: true,
         firstName: true,
         lastName: true,
+        gradeId: true,
+        kanoonStudentId: true,
       },
     }),
     subjectIds.length > 0
@@ -434,15 +452,28 @@ export async function validateAssessmentImportRows(params: {
   ]);
 
   const allowedSubjects = new Set(subjects.map((subject) => subject.id));
+  const byKanoon = new Map<string, (typeof students)[number]>();
+  for (const student of students) {
+    if (student.kanoonStudentId) {
+      byKanoon.set(student.kanoonStudentId, student);
+    }
+  }
   const bySlug = new Map(
     students.map((student) => [student.slug.toLowerCase(), student]),
   );
+
+  const nameGradeCounts = new Map<string, number>();
+  const byNameGrade = new Map<string, (typeof students)[number]>();
   const fullNameCounts = new Map<string, number>();
   const byFullName = new Map<string, (typeof students)[number]>();
   for (const student of students) {
-    const key = student.fullName.trim().toLocaleLowerCase("fa");
-    fullNameCounts.set(key, (fullNameCounts.get(key) ?? 0) + 1);
-    byFullName.set(key, student);
+    const nameKey = `${student.firstName.trim().toLocaleLowerCase("fa")}|${student.lastName.trim().toLocaleLowerCase("fa")}|${student.gradeId}`;
+    nameGradeCounts.set(nameKey, (nameGradeCounts.get(nameKey) ?? 0) + 1);
+    byNameGrade.set(nameKey, student);
+
+    const fullKey = student.fullName.trim().toLocaleLowerCase("fa");
+    fullNameCounts.set(fullKey, (fullNameCounts.get(fullKey) ?? 0) + 1);
+    byFullName.set(fullKey, student);
   }
 
   const existingByStudent = new Map(
@@ -473,8 +504,61 @@ export async function validateAssessmentImportRows(params: {
       }
     }
 
-    let student =
-      (row.studentSlug && bySlug.get(row.studentSlug.toLowerCase())) || null;
+    let student: (typeof students)[number] | null = null;
+    let matchedBy: AssessmentStudentMatchMethod | null = null;
+    let rowKanoonId: string | null = null;
+
+    if (row.kanoonStudentId?.trim()) {
+      const parsed = normalizeKanoonStudentId(row.kanoonStudentId);
+      if (!parsed.ok) {
+        return {
+          ok: false,
+          excelRow: row.excelRow,
+          error: parsed.error,
+          data: row,
+          code: "INVALID_KANOON_ID",
+          matchedBy: "not_found",
+          kanoonStudentId: row.kanoonStudentId.trim(),
+        };
+      }
+      rowKanoonId = parsed.value;
+      if (rowKanoonId) {
+        student = byKanoon.get(rowKanoonId) ?? null;
+        if (student) {
+          matchedBy = "kanoon";
+        }
+      }
+    }
+
+    if (!student) {
+      const firstName = row.firstName?.trim() ?? "";
+      const lastName = row.lastName?.trim() ?? "";
+      if (firstName && lastName) {
+        const nameKey = `${firstName.toLocaleLowerCase("fa")}|${lastName.toLocaleLowerCase("fa")}|${assessment.gradeId}`;
+        if ((nameGradeCounts.get(nameKey) ?? 0) > 1) {
+          return {
+            ok: false,
+            excelRow: row.excelRow,
+            error:
+              "نام و نام خانوادگی در این پایه مبهم است؛ شناسه قلم‌چی یا اسلاگ وارد کنید.",
+            data: row,
+            code: "AMBIGUOUS_NAME",
+            matchedBy: "not_found",
+            kanoonStudentId: rowKanoonId,
+          };
+        }
+        const hit = byNameGrade.get(nameKey);
+        if (hit && hit.gradeId === assessment.gradeId) {
+          student = hit;
+          matchedBy = "name_grade";
+        }
+      }
+    }
+
+    if (!student && row.studentSlug) {
+      student = bySlug.get(row.studentSlug.toLowerCase()) ?? null;
+      if (student) matchedBy = "slug";
+    }
 
     if (!student) {
       const fullName =
@@ -486,22 +570,27 @@ export async function validateAssessmentImportRows(params: {
           return {
             ok: false,
             excelRow: row.excelRow,
-            error: "نام دانش‌آموز مبهم است؛ از اسلاگ استفاده کنید.",
+            error: "نام دانش‌آموز مبهم است؛ از شناسه قلم‌چی یا اسلاگ استفاده کنید.",
             data: row,
             code: "AMBIGUOUS_NAME",
+            matchedBy: "not_found",
+            kanoonStudentId: rowKanoonId,
           };
         }
         student = byFullName.get(key) ?? null;
+        if (student) matchedBy = "name";
       }
     }
 
-    if (!student) {
+    if (!student || !matchedBy) {
       return {
         ok: false,
         excelRow: row.excelRow,
         error: "دانش‌آموز متناظر یافت نشد.",
         data: row,
         code: "STUDENT_NOT_FOUND",
+        matchedBy: "not_found",
+        kanoonStudentId: rowKanoonId,
       };
     }
 
@@ -516,6 +605,7 @@ export async function validateAssessmentImportRows(params: {
         error: "حداقل یک نمره یا نتیجه درس لازم است.",
         data: row,
         code: "MISSING_SCORE",
+        kanoonStudentId: rowKanoonId ?? student.kanoonStudentId,
       };
     }
 
@@ -525,6 +615,8 @@ export async function validateAssessmentImportRows(params: {
       excelRow: row.excelRow,
       studentId: student.id,
       studentName: student.fullName,
+      kanoonStudentId: student.kanoonStudentId,
+      matchedBy,
       data: row,
       restoresSoftDeleted: Boolean(existing?.deletedAt),
     };

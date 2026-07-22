@@ -35,6 +35,7 @@ const STEPS = [
 
 const FIELD_OPTIONS: Array<{ value: AssessmentImportField; label: string }> = [
   { value: "IGNORE", label: "نادیده گرفتن" },
+  { value: "kanoonStudentId", label: "شناسه قلم‌چی / شمارنده" },
   { value: "studentSlug", label: "اسلاگ دانش‌آموز" },
   { value: "fullName", label: "نام کامل" },
   { value: "firstName", label: "نام" },
@@ -52,6 +53,25 @@ const FIELD_OPTIONS: Array<{ value: AssessmentImportField; label: string }> = [
   { value: "notes", label: "یادداشت" },
   { value: "isFeatured", label: "ویژه" },
 ];
+
+function matchedByLabel(
+  matchedBy: "kanoon" | "name_grade" | "slug" | "name" | "not_found" | undefined,
+): string {
+  switch (matchedBy) {
+    case "kanoon":
+      return "تطبیق با شناسه قلم‌چی";
+    case "name_grade":
+      return "تطبیق با نام + پایه";
+    case "slug":
+      return "تطبیق با اسلاگ";
+    case "name":
+      return "تطبیق با نام";
+    case "not_found":
+      return "یافت نشد";
+    default:
+      return "—";
+  }
+}
 
 function mappingStorageKey(inspection: WorkbookInspection): string {
   const signature = inspection.headers
@@ -382,8 +402,10 @@ export function AssessmentImportWizard({
                 <thead>
                   <tr className="border-b border-border text-muted">
                     <th className="px-2 py-2 text-right">ردیف</th>
+                    <th className="px-2 py-2 text-right">دانش‌آموز</th>
+                    <th className="px-2 py-2 text-right">شناسه قلم‌چی</th>
+                    <th className="px-2 py-2 text-right">نحوه تطبیق</th>
                     <th className="px-2 py-2 text-right">وضعیت</th>
-                    <th className="px-2 py-2 text-right">جزئیات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -393,12 +415,32 @@ export function AssessmentImportWizard({
                         {toPersianDigits(row.excelRow)}
                       </td>
                       <td className="px-2 py-2">
-                        {row.ok ? "معتبر" : "خطا"}
-                      </td>
-                      <td className="px-2 py-2">
                         {row.ok
                           ? row.studentName
-                          : row.error}
+                          : [row.data.firstName, row.data.lastName]
+                              .filter(Boolean)
+                              .join(" ") ||
+                            row.data.fullName ||
+                            "—"}
+                      </td>
+                      <td className="px-2 py-2" dir="ltr">
+                        {row.ok
+                          ? row.kanoonStudentId
+                            ? toPersianDigits(row.kanoonStudentId)
+                            : "—"
+                          : row.kanoonStudentId
+                            ? toPersianDigits(row.kanoonStudentId)
+                            : row.data.kanoonStudentId
+                              ? toPersianDigits(row.data.kanoonStudentId)
+                              : "—"}
+                      </td>
+                      <td className="px-2 py-2">
+                        {matchedByLabel(
+                          row.ok ? row.matchedBy : row.matchedBy ?? "not_found",
+                        )}
+                      </td>
+                      <td className="px-2 py-2">
+                        {row.ok ? "معتبر" : row.error}
                       </td>
                     </tr>
                   ))}

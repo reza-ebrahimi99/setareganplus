@@ -2198,6 +2198,8 @@ model Student {
   lastName         String
   fullName         String
   slug             String
+  /// External Kanoon/Qalamchi counter (شناسه قلم‌چی). Digit string; leading zeros preserved.
+  kanoonStudentId  String?
   biography        String    @default("")
   parentName       String?
   schoolYear       String?
@@ -2223,6 +2225,7 @@ model Student {
   portalAccountLinks PortalAccountLink[]
 
   @@unique([organizationId, slug])
+  @@unique([organizationId, kanoonStudentId])
   @@unique([organizationId, id])
   @@index([organizationId, gradeId, displayOrder])
   @@index([organizationId, majorId])

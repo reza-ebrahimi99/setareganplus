@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { hasPermission } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { logServerError } from "@/lib/observability/server-log";
 import {
@@ -8,8 +9,9 @@ import {
   buildStudentImportResultWorkbook,
   buildStudentImportTemplateWorkbook,
   importStudents,
-  inspectStudentImportFile,
-  parseStudentImportFile,
+  mapRawRowsToParsed,
+  parseStudentImportSession,
+  sessionToInspection,
   summarizeStudentImportRows,
   validateStudentImportRows,
 } from "@/lib/website/student-import";
@@ -20,14 +22,19 @@ import {
   type StudentImportField,
   type StudentImportMode,
   type StudentImportResult,
+  type StudentImportSession,
   type StudentWorkbookInspection,
   type ValidatedStudentImportRow,
 } from "@/lib/website/student-import-shared";
 
 export type ImportActionError = { ok: false; error: string };
 
-export type InspectStudentImportResult =
-  | { ok: true; inspection: StudentWorkbookInspection }
+export type ParseStudentImportResult =
+  | {
+      ok: true;
+      session: StudentImportSession;
+      inspection: StudentWorkbookInspection;
+    }
   | ImportActionError;
 
 export type ValidateStudentImportResult =
@@ -41,6 +48,7 @@ export type ValidateStudentImportResult =
       updateCount: number;
       duplicateCount: number;
       previewRows: ValidatedStudentImportRow[];
+      canManagePortal: boolean;
     }
   | ImportActionError;
 
@@ -70,15 +78,12 @@ function readFile(formData: FormData): File {
   return file;
 }
 
-function readMode(formData: FormData): StudentImportMode {
-  const raw = readString(formData, "mode").trim();
+function readMode(raw: string): StudentImportMode {
   if (raw === "create_and_update") return "create_and_update";
   return "create_only";
 }
 
-function readMapping(formData: FormData): StudentColumnMapping {
-  const raw = formData.get("mapping");
-  if (typeof raw !== "string") throw new Error("تطبیق ستون‌ها نامعتبر است.");
+function readMapping(raw: string): StudentColumnMapping {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -109,6 +114,28 @@ function readMapping(formData: FormData): StudentColumnMapping {
   return mapping;
 }
 
+function readSession(raw: string): StudentImportSession {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("نشست واردسازی نامعتبر است. فایل را دوباره بارگذاری کنید.");
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("نشست واردسازی نامعتبر است. فایل را دوباره بارگذاری کنید.");
+  }
+  const session = parsed as StudentImportSession;
+  if (
+    !session.filename ||
+    !session.selectedSheet ||
+    !session.sheetsData ||
+    typeof session.sheetsData !== "object"
+  ) {
+    throw new Error("نشست واردسازی ناقص است. فایل را دوباره بارگذاری کنید.");
+  }
+  return session;
+}
+
 function importErrorMessage(error: unknown): string {
   if (isStudentImportError(error)) return error.message;
   if (error instanceof Error && error.message) return error.message;
@@ -120,6 +147,18 @@ async function workbookToBase64(
 ): Promise<string> {
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer).toString("base64");
+}
+
+function resolveSheet(session: StudentImportSession, sheetName?: string) {
+  const selected =
+    sheetName && session.sheetsData[sheetName]
+      ? sheetName
+      : session.selectedSheet;
+  const sheet = session.sheetsData[selected];
+  if (!sheet) {
+    throw new Error("برگه انتخاب‌شده در نشست یافت نشد.");
+  }
+  return { selected, sheet };
 }
 
 export async function downloadStudentImportTemplateAction(): Promise<DownloadWorkbookResult> {
@@ -149,23 +188,25 @@ export async function downloadStudentImportTemplateAction(): Promise<DownloadWor
   }
 }
 
-export async function inspectStudentImportAction(
+/** Step 1: parse file once into a serializable session. */
+export async function parseStudentImportAction(
   formData: FormData,
-): Promise<InspectStudentImportResult> {
-  const session = await requirePermission("website.manage");
+): Promise<ParseStudentImportResult> {
+  const admin = await requirePermission("website.manage");
   try {
     const file = readFile(formData);
-    const sheetName = readString(formData, "sheetName").trim() || undefined;
-    const inspection = await inspectStudentImportFile(file, sheetName);
-    return { ok: true, inspection };
+    const preferredSheet = readString(formData, "sheetName").trim() || undefined;
+    const session = await parseStudentImportSession(file, preferredSheet);
+    const inspection = sessionToInspection(session);
+    return { ok: true, session, inspection };
   } catch (error) {
     logServerError(
       {
         module: "website.student-import",
-        action: "inspect",
+        action: "parse",
         category: "import",
-        organizationId: session.organization.id,
-        userId: session.user.id,
+        organizationId: admin.organization.id,
+        userId: admin.user.id,
       },
       error,
     );
@@ -173,20 +214,31 @@ export async function inspectStudentImportAction(
   }
 }
 
+/** @deprecated Prefer parseStudentImportAction */
+export async function inspectStudentImportAction(
+  formData: FormData,
+): Promise<ParseStudentImportResult> {
+  return parseStudentImportAction(formData);
+}
+
 export async function validateStudentImportAction(
   formData: FormData,
 ): Promise<ValidateStudentImportResult> {
-  const session = await requirePermission("website.manage");
+  const admin = await requirePermission("website.manage");
   try {
-    const file = readFile(formData);
-    const mapping = readMapping(formData);
+    const importSession = readSession(readString(formData, "session"));
     const sheetName = readString(formData, "sheetName").trim() || undefined;
-    const mode = readMode(formData);
-    const parsed = await parseStudentImportFile(file, mapping, sheetName);
+    const mapping = readMapping(readString(formData, "mapping"));
+    const mode = readMode(readString(formData, "mode"));
+    const canManagePortal = hasPermission(admin, "students.portal.manage");
+
+    const { sheet } = resolveSheet(importSession, sheetName);
+    const parsed = mapRawRowsToParsed(sheet.rows, mapping);
     const rows = await validateStudentImportRows({
-      organizationId: session.organization.id,
+      organizationId: admin.organization.id,
       rows: parsed,
       mode,
+      canManagePortal,
     });
     const summary = summarizeStudentImportRows(rows);
     return {
@@ -199,6 +251,7 @@ export async function validateStudentImportAction(
       updateCount: summary.updateCount,
       duplicateCount: summary.duplicateCount,
       previewRows: summary.previewRows,
+      canManagePortal,
     };
   } catch (error) {
     logServerError(
@@ -206,8 +259,8 @@ export async function validateStudentImportAction(
         module: "website.student-import",
         action: "validate",
         category: "import",
-        organizationId: session.organization.id,
-        userId: session.user.id,
+        organizationId: admin.organization.id,
+        userId: admin.user.id,
       },
       error,
     );
@@ -218,17 +271,20 @@ export async function validateStudentImportAction(
 export async function downloadStudentImportInvalidRowsAction(
   formData: FormData,
 ): Promise<DownloadWorkbookResult> {
-  const session = await requirePermission("website.manage");
+  const admin = await requirePermission("website.manage");
   try {
-    const file = readFile(formData);
-    const mapping = readMapping(formData);
+    const importSession = readSession(readString(formData, "session"));
     const sheetName = readString(formData, "sheetName").trim() || undefined;
-    const mode = readMode(formData);
-    const parsed = await parseStudentImportFile(file, mapping, sheetName);
+    const mapping = readMapping(readString(formData, "mapping"));
+    const mode = readMode(readString(formData, "mode"));
+    const canManagePortal = hasPermission(admin, "students.portal.manage");
+    const { sheet } = resolveSheet(importSession, sheetName);
+    const parsed = mapRawRowsToParsed(sheet.rows, mapping);
     const rows = await validateStudentImportRows({
-      organizationId: session.organization.id,
+      organizationId: admin.organization.id,
       rows: parsed,
       mode,
+      canManagePortal,
     });
     const workbook = await buildStudentImportInvalidRowsWorkbook(rows);
     const base64 = await workbookToBase64(workbook);
@@ -243,8 +299,8 @@ export async function downloadStudentImportInvalidRowsAction(
         module: "website.student-import",
         action: "invalid-rows",
         category: "import",
-        organizationId: session.organization.id,
-        userId: session.user.id,
+        organizationId: admin.organization.id,
+        userId: admin.user.id,
       },
       error,
     );
@@ -255,39 +311,42 @@ export async function downloadStudentImportInvalidRowsAction(
 export async function executeStudentImportAction(
   formData: FormData,
 ): Promise<ExecuteStudentImportResult> {
-  const session = await requirePermission("website.manage");
+  const admin = await requirePermission("website.manage");
   const startedAt = new Date();
   try {
-    const file = readFile(formData);
-    const mapping = readMapping(formData);
+    const importSession = readSession(readString(formData, "session"));
     const sheetName = readString(formData, "sheetName").trim() || undefined;
-    const mode = readMode(formData);
+    const mapping = readMapping(readString(formData, "mapping"));
+    const mode = readMode(readString(formData, "mode"));
     const confirmUpdate = readString(formData, "confirmUpdate") === "true";
+    const canManagePortal = hasPermission(admin, "students.portal.manage");
 
     if (mode === "create_and_update" && !confirmUpdate) {
       return {
         ok: false,
-        error:
-          "برای حالت به‌روزرسانی باید هشدار تأیید را بپذیرید.",
+        error: "برای حالت به‌روزرسانی باید هشدار تأیید را بپذیرید.",
       };
     }
 
-    const parsed = await parseStudentImportFile(file, mapping, sheetName);
+    const { sheet } = resolveSheet(importSession, sheetName);
+    const parsed = mapRawRowsToParsed(sheet.rows, mapping);
     const rows = await validateStudentImportRows({
-      organizationId: session.organization.id,
+      organizationId: admin.organization.id,
       rows: parsed,
       mode,
+      canManagePortal,
     });
     const result = await importStudents({
-      organizationId: session.organization.id,
+      organizationId: admin.organization.id,
       rows,
       mode,
+      canManagePortal,
     });
     const finishedAt = new Date();
     const reportWorkbook = await buildStudentImportResultWorkbook({
-      filename: file.name || "import.xlsx",
-      importedBy: session.user.email ?? session.user.id,
-      organizationName: session.organization.name ?? session.organization.id,
+      filename: importSession.filename,
+      importedBy: admin.user.email ?? admin.user.id,
+      organizationName: admin.organization.name,
       startedAt,
       finishedAt,
       result,
@@ -296,6 +355,8 @@ export async function executeStudentImportAction(
 
     revalidatePath("/admin/website/students");
     revalidatePath("/admin/website/students/import");
+    revalidatePath("/admin/website/guardians");
+    revalidatePath("/admin/website/portal-access");
 
     return {
       ok: true,
@@ -311,8 +372,8 @@ export async function executeStudentImportAction(
         module: "website.student-import",
         action: "execute",
         category: "import",
-        organizationId: session.organization.id,
-        userId: session.user.id,
+        organizationId: admin.organization.id,
+        userId: admin.user.id,
       },
       error,
     );

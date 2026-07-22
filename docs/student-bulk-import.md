@@ -2,142 +2,88 @@
 
 ## Architecture findings
 
-### Student model (schema-aligned)
+### Models
 
-`Student` fields used by import:
+- **Student**: CMS profile (name, grade, major, slug, `parentName` free text). **No mobile field.** Soft-delete via `deletedAt`.
+- **StudentGuardian**: org-scoped guardian identity with `mobile` + `normalizedMobile` (`@@unique([organizationId, normalizedMobile])`).
+- **StudentGuardianRelation**: many-to-many student↔guardian with `GuardianRelationshipType`.
+- **User**: global OTP identity via `normalizedMobile` (`@unique`).
+- **PortalAccountLink**: XOR link User → Student **or** Guardian for portal login.
+- Portal login (`/portal/login`) matches `User.normalizedMobile` through an active `PortalAccountLink` — same canonical mobile as `normalizeIranianMobile` (`09xxxxxxxxx`).
 
-- Required: `firstName`, `lastName`, `fullName`, `gradeId`, `slug`, `organizationId`
-- Optional: `majorId`, `parentName`, `schoolYear`, `biography`, `isActive`, `isFeatured`, `displayOrder`
-- Soft delete / archive: `deletedAt`, `archivedAt` (live rows = `deletedAt: null`)
-- Unique key: `@@unique([organizationId, slug])` (includes soft-deleted rows)
+### Step-2 file bug (root cause)
 
-**Not on Student (intentionally omitted from template):**
+The file `<input>` lived only inside `phase === "upload"`. Leaving step 1 unmounted the input and discarded the browser `FileList`. Steps 2+ called `withFile()` again and showed «لطفاً فایل را انتخاب کنید».
 
-- national code, student code, birth date, gender, student mobile
-- structured guardian FKs / portal accounts
+**Fix:** parse once in step 1 into a serializable `StudentImportSession` (headers + raw cell rows per sheet). Later steps POST `session` JSON — never the `File`.
 
-`parentName` is free text on the student record, not a `Guardian` link.
+### Schema decision
 
-### Guardian / portal
+**No Prisma migration.** Student mobile is not duplicated on `Student`. When portal permission is present, student mobile creates/reuses `User` + `PortalAccountLink` (STUDENT). Guardian mobile uses `StudentGuardian` + relation + GUARDIAN portal link.
 
-Guardian creation and portal linking live under `students.portal.manage` and use `normalizedMobile` as the canonical guardian key. Importing guardians safely requires that separate permission and workflow.
+### Permissions (RBAC)
 
-**This phase imports students only.** Guardian columns are out of the template; guardian import is deferred to a later phase.
+| Operation | Permission |
+|-----------|------------|
+| Import page / student create-update | `website.manage` |
+| Guardian create/link + portal access | also requires `students.portal.manage` |
 
-### Duplicate policy
-
-Deterministic match key among live students (`deletedAt: null`):
-
-1. **slug** (normalized) — only hard match
-2. Name + grade alone is **never** a destructive overwrite; at most a warning while still creating a new row (unless an explicit slug matches)
-
-Modes:
-
-| Mode | Behavior |
-|------|----------|
-| `create_only` (default) | Create new rows; skip live slug matches |
-| `create_and_update` | Create new; update live slug matches (requires UI confirmation) |
-
-Soft-deleted students are not restored by import. Slug allocation checks the DB unique constraint (including soft-deleted) and suffixes when needed.
-
-### Reused modules
-
-- ExcelJS patterns from assessment import (`lib/assessment/import.ts`)
-- Wizard UX pattern from `AssessmentImportWizard`
-- `toLatinDigits` for Persian/Arabic digits
-- `unique`-style slug allocation aligned with `students/actions.ts` / `student-slug.ts`
-- Grade/major defaults: `ensureDefaultStudentGrades`, `ensureDefaultStudentMajors`, `gradeRequiresMajor`
-- RBAC: `requirePermission("website.manage")` (same as single-student admin)
-- Immediate downloadable Excel report (no new Prisma model / CRM `CrmLeadImportReport` reuse)
-
-### Missing pieces (by design)
-
-- Shared generic Import Wizard package (none exists; student wizard is a sibling of assessment)
-- National ID / mobile on Student
-- Guardian bulk link
-- Persistent import audit table (MVP uses downloadable report)
+If the admin lacks portal permission, students still import; guardian/portal work is skipped with explicit statuses.
 
 ## Supported columns
 
-| Column (FA) | Required | Maps to |
-|-------------|----------|---------|
-| نام | yes | `firstName` |
-| نام خانوادگی | yes | `lastName` |
-| پایه | yes | grade name or slug |
-| رشته | grades 10–12 | major name or slug |
-| اسلاگ | recommended | `slug` |
-| نام ولی | no | `parentName` (text only) |
-| سال تحصیلی | no | `schoolYear` |
-| توضیحات | no | `biography` |
-| وضعیت | no | `isActive` (`فعال` / `غیرفعال`) |
-| ویژه | no | `isFeatured` (`بله` / `خیر`) |
-| ترتیب نمایش | no | `displayOrder` |
+Required: نام، نام خانوادگی، پایه  
+Recommended: اسلاگ، شناسه قلم‌چی  
+Optional: رشته، موبایل دانش‌آموز، …
 
-## Validation rules
+Mobile formats accepted via `normalizeIranianMobile`: `0912…`, `912…`, `+98912…`, `0098912…`, Persian/Arabic digits.
 
-- Trim + Persian/Arabic digit normalization on names
-- Grade must exist, be active, and not archived in the same organization
-- Majors required for grades 10–12 (`gradeRequiresMajor`)
-- Status / featured enums validated when provided
-- In-file duplicate slugs rejected
-- Organization ID always from session — never from Excel
-- Max file size: 5 MB; max rows: 5000
-- Extensions: `.xlsx`, `.csv` (legacy `.xls` not supported)
+## Duplicate / sibling policy
 
-## Transaction strategy
+- Student duplicates: live **slug** only (default skip; update mode with confirmation).
+- Guardian duplicates: org **normalizedMobile**; siblings reuse one guardian.
+- Existing guardian name conflicts: keep existing profile + warning (no silent overwrite).
+- Portal links: create if missing; reactivate soft-deleted; do not send OTP/SMS during import.
 
-- Chunked Prisma `$transaction` writes (50 rows)
-- Grades/majors/duplicate keys preloaded before validation
-- Invalid rows never written; valid create/update rows in the selected mode are written
-- Partial chunk failure aborts that transaction (Prisma)
+## Files
 
-## Security
-
-- `website.manage` on all inspect/validate/execute/template/report actions
-- Tenant isolation via `session.organization.id`
-- Untrusted file bytes parsed only through ExcelJS / CSV reader
-- No public routes for private student payloads
-- Server logs use module/action context; avoid logging full PII payloads
-
-## Files changed
-
-- `lib/website/student-import-shared.ts` (new)
-- `lib/website/student-import-errors.ts` (new)
-- `lib/website/student-import.ts` (new)
-- `app/admin/(dashboard)/website/students/import/actions.ts` (new)
-- `app/admin/(dashboard)/website/students/import/page.tsx` (new)
-- `components/admin/website/StudentImportWizard.tsx` (new)
-- `app/admin/(dashboard)/website/students/page.tsx` (button)
-- `docs/student-bulk-import.md` (this file)
+- `lib/website/student-import-shared.ts`
+- `lib/website/student-import.ts`
+- `lib/website/student-import-errors.ts`
+- `lib/portal/admin/access.ts` (shared portal/guardian domain helpers)
+- `app/admin/(dashboard)/website/students/import/actions.ts`
+- `app/admin/(dashboard)/website/students/import/page.tsx`
+- `components/admin/website/StudentImportWizard.tsx`
+- `app/admin/(dashboard)/website/students/page.tsx`
+- `app/admin/(dashboard)/website/guardians/actions.ts` (uses shared portal helper)
+- `docs/student-bulk-import.md`
 
 ## Migrations
 
-None. Schema already supports all imported fields.
+None.
 
 ## Manual test checklist
 
-1. Download Excel template (sample + «راهنما»)
-2. Import 3 valid students
-3. Import a row with missing surname → Persian error
-4. Import an unknown grade → «پایه واردشده در سامانه تعریف نشده است.»
-5. Import invalid status value → وضعیت error
-6. Import Persian digits in names → normalized
-7. Import duplicate slug (create_only) → skipped
-8. Import same slug with update mode + confirmation → updated
-9. Verify default duplicate behavior is skip
-10. Attempt update mode without confirmation → blocked
-11. Verify no cross-tenant grade/student access
-12. Verify unauthorized user cannot open `/admin/website/students/import`
-13. Guardian columns absent; no portal accounts created
-14. Download invalid-row report
-15. Test wizard on mobile width
-16. Test a file with ≥500 rows (under 5000)
-17. Verify single-student creation at `/admin/website/students/new` still works
+1. Template download opens with mobile/guardian columns + راهنما  
+2. Step 1 → step 2 does **not** ask for file again  
+3. Back to mapping preserves session  
+4. New file clears previous session  
+5. Student without mobiles  
+6. Student mobile → portal link (with portal permission)  
+7. New guardian + link + portal  
+8. Existing guardian reused by mobile  
+9. Two siblings, same guardian mobile  
+10. Invalid student/guardian mobile  
+11. Persian digits / +98 formats  
+12. Duplicate slug skip / update mode  
+13. Existing relation / existing portal  
+14. Tenant isolation  
+15. RBAC: website.manage without portal.manage skips guardian/portal  
+16. Report download statuses  
 
-## Remaining limitations
+## Known limitations
 
-- No national code / mobile / birth date / gender columns (not on Student)
-- No guardian or portal account import
-- No persistent import history table
-- Name+grade overlap only warns; does not merge
-- Soft-deleted students are not restored
+- Without `students.portal.manage`, student mobile is not persisted (no `Student.mobile` column).
+- Update mode does not rewrite existing guardian relations or portal identities silently.
+- Soft-deleted students are not restored.
+- No persistent import-history table (downloadable report only).
