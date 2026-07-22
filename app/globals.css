@@ -364,4 +364,56 @@ body {
   .public-form-spinner {
     animation: none !important;
   }
+
+  .hof-reveal,
+  .hall-of-fame-hero {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+
+  .hof-rank-card:hover {
+    transform: none;
+  }
+
+  /* Keep podium elevation; only suppress hover lift */
+  .hof-podium-card--silver:hover,
+  .hof-podium-card--bronze:hover {
+    transform: none;
+  }
+
+  .hof-podium-card--gold:hover {
+    transform: translateY(-1.25rem);
+  }
 }
+
+/* Assessment Hall of Fame — presentation only */
+.hall-of-fame-shell {
+  background:
+    radial-gradient(ellipse 80% 50% at 100% 0%, rgb(212 175 55 / 0.06), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgb(15 23 42 / 0.03), transparent 55%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 55%, #f1f5f9 100%);
+}
+
+.hall-of-fame-hero {
+  background:
+    radial-gradient(ellipse 55% 70% at 50% -15%, rgb(212 175 55 / 0.22), transparent 58%),
+    linear-gradient(160deg, #0b1220 0%, #0f172a 52%, #152238 100%);
+  box-shadow: inset 0 -1px 0 rgb(255 255 255 / 0.06);
+}
+
+.hof-reveal {
+  animation: hero-reveal 520ms ease-out both;
+}
+
+.hof-podium-card--gold {
+  isolation: isolate;
+}
+
+@media (min-width: 640px) {
+  .hof-podium {
+    /* Room for elevated first-place card without clipping */
+    min-height: 1px;
+  }
+}
+

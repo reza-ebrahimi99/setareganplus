@@ -156,6 +156,13 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
             <AssessmentTopResultsSection
               groups={assessment.topResultsByGrade}
               showEmptyState
+              heroTitle={`برترین‌های آزمون ${assessment.provider.name}`}
+              heroSubtitle="افتخارآفرینان ستارگان آینده"
+              updatedAtLabel={
+                assessment.assessmentDate
+                  ? formatJalaliDateShort(assessment.assessmentDate)
+                  : null
+              }
             />
           </div>
         ) : null}
