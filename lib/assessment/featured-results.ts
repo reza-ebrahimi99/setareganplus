@@ -5,6 +5,7 @@
 
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { toLatinDigits } from "@/lib/forms/latin-digits";
 import { publicLibraryUrl } from "@/lib/media/library-image";
 import { ASSESSMENT_TYPE_LABELS } from "@/lib/assessment/types";
 import type { PublicAssessmentResultCard } from "@/lib/assessment/results";
@@ -23,6 +24,113 @@ export {
 export type FeaturedActionResult =
   | { ok: true; message: string; featuredCount: number }
   | { ok: false; message: string };
+
+/** Public-safe top result row for assessment detail pages. */
+export type PublicAssessmentTopResult = {
+  id: string;
+  rank: number;
+  score: number;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  gradeId: string;
+  gradeName: string;
+  studentPortraitUrl: string | null;
+};
+
+export type PublicAssessmentTopResultsByGrade = {
+  gradeId: string;
+  gradeName: string;
+  gradeSortOrder: number;
+  results: PublicAssessmentTopResult[];
+};
+
+export type RankablePublicResult = {
+  id: string;
+  score: number;
+  fullName: string;
+  firstName: string;
+  lastName: string;
+  gradeId: string;
+  gradeName: string;
+  gradeSortOrder: number;
+  studentPortraitUrl: string | null;
+};
+
+/** Normalize a student name for deterministic tie-breaking. */
+export function normalizeFullNameForSort(fullName: string): string {
+  return toLatinDigits(fullName)
+    .trim()
+    .toLocaleLowerCase("fa")
+    .replace(/\s+/g, " ");
+}
+
+/**
+ * Group by student grade, sort by score desc / name asc / id asc,
+ * then take exactly `limit` per grade (or fewer when a grade has fewer rows).
+ */
+export function selectTopResultsPerGrade(
+  rows: RankablePublicResult[],
+  limit: number,
+): PublicAssessmentTopResultsByGrade[] {
+  const cappedLimit = Math.min(
+    Math.max(limit, FEATURED_RESULTS_LIMIT_MIN),
+    FEATURED_RESULTS_LIMIT_MAX,
+  );
+
+  const byGrade = new Map<string, RankablePublicResult[]>();
+  for (const row of rows) {
+    const bucket = byGrade.get(row.gradeId);
+    if (bucket) {
+      bucket.push(row);
+    } else {
+      byGrade.set(row.gradeId, [row]);
+    }
+  }
+
+  const groups: PublicAssessmentTopResultsByGrade[] = [];
+
+  for (const [gradeId, gradeRows] of byGrade) {
+    gradeRows.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const nameCmp = normalizeFullNameForSort(a.fullName).localeCompare(
+        normalizeFullNameForSort(b.fullName),
+        "fa",
+      );
+      if (nameCmp !== 0) return nameCmp;
+      return a.id.localeCompare(b.id);
+    });
+
+    const top = gradeRows.slice(0, cappedLimit);
+    if (top.length === 0) continue;
+
+    groups.push({
+      gradeId,
+      gradeName: top[0].gradeName,
+      gradeSortOrder: top[0].gradeSortOrder,
+      results: top.map((row, index) => ({
+        id: row.id,
+        rank: index + 1,
+        score: row.score,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        fullName: row.fullName,
+        gradeId: row.gradeId,
+        gradeName: row.gradeName,
+        studentPortraitUrl: row.studentPortraitUrl,
+      })),
+    });
+  }
+
+  groups.sort((a, b) => {
+    if (a.gradeSortOrder !== b.gradeSortOrder) {
+      return a.gradeSortOrder - b.gradeSortOrder;
+    }
+    return a.gradeName.localeCompare(b.gradeName, "fa");
+  });
+
+  return groups;
+}
 
 export function parseFeaturedResultsLimit(raw: string | number | null | undefined): {
   ok: true;
@@ -236,6 +344,110 @@ export async function countFeaturedResultsForAssessment(
       isFeatured: true,
     },
   });
+}
+
+/**
+ * Public top-N-per-grade results for one assessment.
+ * Computed dynamically from scores — does not require `isFeatured`.
+ * Returns [] when publishing gates fail or the assessment is unavailable.
+ */
+export async function getPublicAssessmentTopResults(params: {
+  organizationId: string;
+  assessmentId: string;
+  /** Override stored limit; defaults to assessment.featuredResultsLimit (else 3). */
+  limit?: number;
+}): Promise<PublicAssessmentTopResultsByGrade[]> {
+  const assessment = await prisma.assessment.findFirst({
+    where: {
+      id: params.assessmentId,
+      ...publicFeaturedAssessmentWhere(params.organizationId),
+    },
+    select: {
+      id: true,
+      featuredResultsLimit: true,
+    },
+  });
+
+  if (!assessment) return [];
+
+  const limitParse = parseFeaturedResultsLimit(
+    params.limit ??
+      assessment.featuredResultsLimit ??
+      FEATURED_RESULTS_LIMIT_DEFAULT,
+  );
+  const limit = limitParse.ok
+    ? limitParse.value
+    : FEATURED_RESULTS_LIMIT_DEFAULT;
+
+  const rows = await prisma.assessmentResult.findMany({
+    where: {
+      organizationId: params.organizationId,
+      assessmentId: assessment.id,
+      deletedAt: null,
+      score: { not: null },
+      student: {
+        deletedAt: null,
+        archivedAt: null,
+        isActive: true,
+        grade: {
+          deletedAt: null,
+          archivedAt: null,
+          isActive: true,
+        },
+      },
+    },
+    select: {
+      id: true,
+      score: true,
+      student: {
+        select: {
+          firstName: true,
+          lastName: true,
+          fullName: true,
+          gradeId: true,
+          grade: {
+            select: {
+              id: true,
+              name: true,
+              sortOrder: true,
+            },
+          },
+          portraitMedia: {
+            select: {
+              storageKey: true,
+              deletedAt: true,
+              status: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const rankable: RankablePublicResult[] = [];
+  for (const row of rows) {
+    if (row.score == null) continue;
+    const portrait =
+      row.student.portraitMedia &&
+      row.student.portraitMedia.deletedAt == null &&
+      row.student.portraitMedia.status === "ACTIVE"
+        ? publicLibraryUrl(row.student.portraitMedia.storageKey)
+        : null;
+
+    rankable.push({
+      id: row.id,
+      score: row.score,
+      firstName: row.student.firstName,
+      lastName: row.student.lastName,
+      fullName: row.student.fullName,
+      gradeId: row.student.grade.id,
+      gradeName: row.student.grade.name,
+      gradeSortOrder: row.student.grade.sortOrder,
+      studentPortraitUrl: portrait,
+    });
+  }
+
+  return selectTopResultsPerGrade(rankable, limit);
 }
 
 /**

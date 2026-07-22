@@ -4,7 +4,7 @@ import { getCurrentOrganization } from "@/lib/organizations/get-current-organiza
 import { ensureDefaultAssessmentProviders } from "@/lib/assessment/providers";
 import { ASSESSMENT_TYPE_LABELS } from "@/lib/assessment/types";
 import { listPublicAssessmentProviders } from "@/lib/assessment/providers";
-import { publicLibraryUrl } from "@/lib/media/library-image";
+import { getPublicAssessmentTopResults } from "@/lib/assessment/featured-results";
 
 export { listPublicAssessmentProviders };
 export { ASSESSMENT_TYPE_LABELS };
@@ -146,13 +146,11 @@ export type PublicAssessmentCard = {
   assessmentTypeLabel: string;
   assessmentDate: Date | null;
   schoolYear: string | null;
-  participants: number | null;
   providerName: string;
   providerSlug: string;
   providerColor: string | null;
   gradeName: string;
   gradeSlug: string;
-  resultCount: number;
 };
 
 function publicAssessmentWhere(
@@ -243,10 +241,8 @@ export async function loadPublicAssessmentPage(filters?: {
       assessmentType: true,
       assessmentDate: true,
       schoolYear: true,
-      participants: true,
       provider: { select: { name: true, slug: true, color: true } },
       grade: { select: { name: true, slug: true } },
-      _count: { select: { results: { where: { deletedAt: null } } } },
     },
   });
 
@@ -260,13 +256,11 @@ export async function loadPublicAssessmentPage(filters?: {
         assessmentTypeLabel: ASSESSMENT_TYPE_LABELS[row.assessmentType],
         assessmentDate: row.assessmentDate,
         schoolYear: row.schoolYear,
-        participants: row.participants,
         providerName: row.provider.name,
         providerSlug: row.provider.slug,
         providerColor: row.provider.color,
         gradeName: row.grade.name,
         gradeSlug: row.grade.slug,
-        resultCount: row._count.results,
       }),
     ),
     total,
@@ -301,84 +295,24 @@ export async function loadPublicAssessmentBySlug(slug: string) {
       assessmentType: true,
       assessmentDate: true,
       schoolYear: true,
-      participants: true,
       maxScore: true,
       isPublished: true,
       publishFeaturedResults: true,
       featuredResultsLimit: true,
       provider: { select: { name: true, slug: true, color: true } },
       grade: { select: { name: true, slug: true } },
-      results: {
-        where: {
-          deletedAt: null,
-          isFeatured: true,
-          student: {
-            deletedAt: null,
-            archivedAt: null,
-            isActive: true,
-          },
-        },
-        orderBy: [
-          { scaledScore: { sort: "desc", nulls: "last" } },
-          { rankSchool: { sort: "asc", nulls: "last" } },
-          { score: { sort: "desc", nulls: "last" } },
-          { id: "asc" },
-        ],
-        take: 12,
-        select: {
-          id: true,
-          score: true,
-          scaledScore: true,
-          rankSchool: true,
-          rankCity: true,
-          rankProvince: true,
-          rankCountry: true,
-          percentile: true,
-          student: {
-            select: {
-              fullName: true,
-              slug: true,
-              portraitMedia: {
-                select: {
-                  storageKey: true,
-                  deletedAt: true,
-                  status: true,
-                },
-              },
-            },
-          },
-        },
-      },
-      _count: { select: { results: { where: { deletedAt: null } } } },
     },
   });
 
   if (!row) return null;
 
-  const featuredResults =
-    row.publishFeaturedResults
-      ? row.results.map((result) => {
-          const portrait =
-            result.student.portraitMedia &&
-            result.student.portraitMedia.deletedAt == null &&
-            result.student.portraitMedia.status === "ACTIVE"
-              ? publicLibraryUrl(result.student.portraitMedia.storageKey)
-              : null;
-          return {
-            id: result.id,
-            score: result.score,
-            scaledScore: result.scaledScore,
-            rankSchool: result.rankSchool,
-            rankCity: result.rankCity,
-            rankProvince: result.rankProvince,
-            rankCountry: result.rankCountry,
-            percentile: result.percentile,
-            studentName: result.student.fullName,
-            studentSlug: result.student.slug,
-            studentPortraitUrl: portrait,
-          };
-        })
-      : [];
+  const topResultsByGrade = row.publishFeaturedResults
+    ? await getPublicAssessmentTopResults({
+        organizationId: organization.id,
+        assessmentId: row.id,
+        limit: row.featuredResultsLimit,
+      })
+    : [];
 
   return {
     id: row.id,
@@ -389,14 +323,12 @@ export async function loadPublicAssessmentBySlug(slug: string) {
     assessmentTypeLabel: ASSESSMENT_TYPE_LABELS[row.assessmentType],
     assessmentDate: row.assessmentDate,
     schoolYear: row.schoolYear,
-    participants: row.participants,
     maxScore: row.maxScore,
     isPublished: row.isPublished,
     publishFeaturedResults: row.publishFeaturedResults,
     featuredResultsLimit: row.featuredResultsLimit,
     provider: row.provider,
     grade: row.grade,
-    featuredResults,
-    _count: row._count,
+    topResultsByGrade,
   };
 }
