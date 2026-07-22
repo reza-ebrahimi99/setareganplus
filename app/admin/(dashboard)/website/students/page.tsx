@@ -64,6 +64,12 @@ export default async function AdminStudentsPage({ searchParams }: PageProps) {
           دانش‌آموز جدید
         </Link>
         <Link
+          href="/admin/website/students/import"
+          className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm"
+        >
+          ورود گروهی با اکسل
+        </Link>
+        <Link
           href="/admin/website/students/grades"
           className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm"
         >
