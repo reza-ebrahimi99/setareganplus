@@ -6,16 +6,12 @@ import { requirePermission } from "@/lib/auth/require-admin";
 import { loadAdminAssessment } from "@/lib/assessment/assessments";
 import { listAdminAssessmentProviders } from "@/lib/assessment/providers";
 import { listAdminStudentGrades } from "@/lib/website/student-grades";
+import { FEATURED_RESULTS_LIMIT_DEFAULT } from "@/lib/assessment/featured-constants";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "ویرایش آزمون" };
 
 type PageProps = { params: Promise<{ id: string }> };
-
-function toDateInputValue(date: Date | null): string {
-  if (!date) return "";
-  return date.toISOString().slice(0, 10);
-}
 
 export default async function EditAssessmentPage({ params }: PageProps) {
   const session = await requirePermission("website.manage");
@@ -31,7 +27,7 @@ export default async function EditAssessmentPage({ params }: PageProps) {
     <>
       <AdminPageHeader
         title={assessment.title}
-        description="ویرایش جزئیات آزمون و وضعیت انتشار"
+        description="ویرایش جزئیات آزمون، تاریخ شمسی و انتشار برترین‌ها"
         breadcrumbs={[
           { label: "مدیریت", href: "/admin" },
           { label: "آزمون‌ها", href: "/admin/website/assessments" },
@@ -53,12 +49,18 @@ export default async function EditAssessmentPage({ params }: PageProps) {
           title: assessment.title,
           slug: assessment.slug,
           assessmentType: assessment.assessmentType,
-          assessmentDate: toDateInputValue(assessment.assessmentDate),
+          assessmentDateIso: assessment.assessmentDate
+            ? assessment.assessmentDate.toISOString()
+            : null,
           schoolYear: assessment.schoolYear,
           participants: assessment.participants,
           maxScore: assessment.maxScore,
           description: assessment.description,
           isPublished: assessment.isPublished,
+          publishFeaturedResults: assessment.publishFeaturedResults,
+          featuredResultsLimit:
+            assessment.featuredResultsLimit ?? FEATURED_RESULTS_LIMIT_DEFAULT,
+          featuredCount: assessment.featuredCount,
           archivedAt: assessment.archivedAt,
         }}
       />

@@ -17,6 +17,7 @@ import {
   type WorkbookInspection,
 } from "@/lib/assessment/import-shared";
 import { isAssessmentImportError } from "@/lib/assessment/import-errors";
+import { setAssessmentResultFeatured } from "@/lib/assessment/featured-results";
 import { logServerError } from "@/lib/observability/server-log";
 import {
   isPrismaUniqueConflict,
@@ -71,6 +72,7 @@ function revalidateResults(assessmentSlug?: string) {
   revalidatePath("/admin/website/assessment-results");
   revalidatePath("/admin/website/assessments");
   revalidatePath("/assessments");
+  revalidatePath("/assessments/qalamchi");
   if (assessmentSlug) revalidatePath(`/assessments/${assessmentSlug}`);
 }
 
@@ -301,6 +303,54 @@ export async function deleteAssessmentResult(formData: FormData) {
     data: { deletedAt: new Date(), isFeatured: false },
   });
   revalidateResults(result.assessment.slug);
+}
+
+export async function featureAssessmentResultAction(
+  formData: FormData,
+): Promise<void> {
+  const session = await requirePermission("website.manage");
+  const resultId = readString(formData, "resultId").trim();
+  const outcome = await setAssessmentResultFeatured({
+    organizationId: session.organization.id,
+    resultId,
+    isFeatured: true,
+  });
+  if (!outcome.ok) return;
+
+  const row = await prisma.assessmentResult.findFirst({
+    where: { id: resultId, organizationId: session.organization.id },
+    select: {
+      assessment: { select: { id: true, slug: true } },
+    },
+  });
+  if (row) {
+    revalidateResults(row.assessment.slug);
+    revalidatePath(`/admin/website/assessments/${row.assessment.id}`);
+  }
+}
+
+export async function unfeatureAssessmentResultAction(
+  formData: FormData,
+): Promise<void> {
+  const session = await requirePermission("website.manage");
+  const resultId = readString(formData, "resultId").trim();
+  const outcome = await setAssessmentResultFeatured({
+    organizationId: session.organization.id,
+    resultId,
+    isFeatured: false,
+  });
+  if (!outcome.ok) return;
+
+  const row = await prisma.assessmentResult.findFirst({
+    where: { id: resultId, organizationId: session.organization.id },
+    select: {
+      assessment: { select: { id: true, slug: true } },
+    },
+  });
+  if (row) {
+    revalidateResults(row.assessment.slug);
+    revalidatePath(`/admin/website/assessments/${row.assessment.id}`);
+  }
 }
 
 function readFile(formData: FormData): File {

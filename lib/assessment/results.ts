@@ -17,6 +17,8 @@ export type PublicAssessmentResultCard = {
   isFeatured: boolean;
   studentName: string;
   studentSlug: string;
+  /** Public portrait URL when media is active; never a profile route. */
+  studentPortraitUrl: string | null;
   gradeName: string;
   assessmentTitle: string;
   assessmentSlug: string;
@@ -163,16 +165,23 @@ export async function loadAdminAssessmentResult(
   });
 }
 
-export async function loadFeaturedAssessmentResults(): Promise<
-  PublicAssessmentResultCard[]
-> {
-  /** Privacy: public featured individual results are disabled. */
-  return [];
+export async function loadFeaturedAssessmentResults(
+  options?: {
+    organizationId?: string;
+    assessmentId?: string;
+    providerSlug?: string;
+    limit?: number;
+  },
+): Promise<PublicAssessmentResultCard[]> {
+  const { loadPublicFeaturedAssessmentResults } = await import(
+    "@/lib/assessment/featured-results"
+  );
+  return loadPublicFeaturedAssessmentResults(options);
 }
 
 export async function loadPublicAssessmentHistoryForStudent(
   _studentId: string,
 ): Promise<PublicAssessmentResultCard[]> {
-  /** Privacy: public per-student assessment history is disabled. */
+  /** Privacy: public per-student assessment history remains disabled. */
   return [];
 }

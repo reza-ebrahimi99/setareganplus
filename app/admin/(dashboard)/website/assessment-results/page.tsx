@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import { deleteAssessmentResult } from "@/app/admin/(dashboard)/website/assessment-results/actions";
+import {
+  deleteAssessmentResult,
+  featureAssessmentResultAction,
+  unfeatureAssessmentResultAction,
+} from "@/app/admin/(dashboard)/website/assessment-results/actions";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { listAdminAssessmentOptions } from "@/lib/assessment/assessments";
 import { listAdminAssessmentProviders } from "@/lib/assessment/providers";
@@ -238,15 +242,46 @@ export default async function AdminAssessmentResultsPage({
                     {result.isFeatured ? "بله" : "خیر"}
                   </td>
                   <td className="px-3 py-3">
-                    <form action={deleteAssessmentResult}>
-                      <input type="hidden" name="resultId" value={result.id} />
-                      <button
-                        type="submit"
-                        className="text-xs text-red-700 underline"
-                      >
-                        حذف
-                      </button>
-                    </form>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                      {result.isFeatured ? (
+                        <form action={unfeatureAssessmentResultAction}>
+                          <input
+                            type="hidden"
+                            name="resultId"
+                            value={result.id}
+                          />
+                          <button
+                            type="submit"
+                            className="text-xs text-primary underline"
+                          >
+                            حذف از برترین‌ها
+                          </button>
+                        </form>
+                      ) : (
+                        <form action={featureAssessmentResultAction}>
+                          <input
+                            type="hidden"
+                            name="resultId"
+                            value={result.id}
+                          />
+                          <button
+                            type="submit"
+                            className="text-xs text-primary underline"
+                          >
+                            افزودن به برترین‌ها
+                          </button>
+                        </form>
+                      )}
+                      <form action={deleteAssessmentResult}>
+                        <input type="hidden" name="resultId" value={result.id} />
+                        <button
+                          type="submit"
+                          className="text-xs text-red-700 underline"
+                        >
+                          حذف
+                        </button>
+                      </form>
+                    </div>
                   </td>
                 </tr>
               ))

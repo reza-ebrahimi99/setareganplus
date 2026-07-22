@@ -16,9 +16,18 @@ import {
   normalizeAssessmentSlug,
   slugFromAssessmentTitle,
 } from "@/lib/assessment/slug";
+import {
+  autoSelectFeaturedResults,
+  parseFeaturedResultsLimit,
+  FEATURED_RESULTS_LIMIT_DEFAULT,
+} from "@/lib/assessment/featured-results";
 import { prisma } from "@/lib/prisma";
 import { logServerError } from "@/lib/observability/server-log";
 import { persianPrismaError } from "@/lib/prisma/user-facing-error";
+import {
+  jalaliTehranLocalToUtc,
+  parseJalaliDateInput,
+} from "@/lib/datetime/jalali";
 
 export type AssessmentActionState = {
   formError?: string;
@@ -37,6 +46,7 @@ function revalidateAssessments(slug?: string) {
   revalidatePath("/admin/website/subjects");
   revalidatePath("/admin/website/assessment-results");
   revalidatePath("/assessments");
+  revalidatePath("/assessments/qalamchi");
   if (slug) revalidatePath(`/assessments/${slug}`);
 }
 
@@ -64,12 +74,26 @@ async function uniqueAssessmentSlug(
   return `${base}-${Date.now().toString(36)}`;
 }
 
+/**
+ * Accepts Jalali ASCII `YYYY/MM/DD` (preferred) or legacy ISO date `YYYY-MM-DD`.
+ * Stores noon Tehran local as UTC Gregorian.
+ */
 function parseAssessmentDate(raw: string): Date | null {
   const value = raw.trim();
   if (!value) return null;
-  const date = new Date(`${value}T12:00:00.000Z`);
-  if (Number.isNaN(date.getTime())) return null;
-  return date;
+
+  const jalali = parseJalaliDateInput(value);
+  if (jalali) {
+    return jalaliTehranLocalToUtc(jalali.jy, jalali.jm, jalali.jd, 12, 0);
+  }
+
+  // Legacy ISO calendar date from older forms
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const date = new Date(`${value}T12:00:00.000Z`);
+    if (!Number.isNaN(date.getTime())) return date;
+  }
+
+  return null;
 }
 
 function parseOptionalFloat(raw: string): number | null {
@@ -133,6 +157,25 @@ export async function createAssessment(
     readString(formData, "slug").trim() || slugFromAssessmentTitle(title),
   );
 
+  const limitRaw = readString(formData, "featuredResultsLimit").trim();
+  const limitParse = parseFeaturedResultsLimit(
+    limitRaw || FEATURED_RESULTS_LIMIT_DEFAULT,
+  );
+  if (!limitParse.ok) {
+    return {
+      formError: limitParse.message,
+      fieldErrors: { featuredResultsLimit: limitParse.message },
+    };
+  }
+
+  const assessmentDateRaw = readString(formData, "assessmentDate");
+  if (assessmentDateRaw.trim() && !parseAssessmentDate(assessmentDateRaw)) {
+    return {
+      formError: "تاریخ آزمون نامعتبر است.",
+      fieldErrors: { assessmentDate: "تاریخ شمسی معتبر وارد کنید." },
+    };
+  }
+
   try {
     await prisma.assessment.create({
       data: {
@@ -142,15 +185,16 @@ export async function createAssessment(
         title,
         slug,
         assessmentType: assessmentTypeRaw as AssessmentType,
-        assessmentDate: parseAssessmentDate(
-          readString(formData, "assessmentDate"),
-        ),
+        assessmentDate: parseAssessmentDate(assessmentDateRaw),
         schoolYear:
           readString(formData, "schoolYear").trim().slice(0, 40) || null,
         participants: parseOptionalInt(readString(formData, "participants")),
         maxScore: parseOptionalFloat(readString(formData, "maxScore")),
         description: readString(formData, "description").trim().slice(0, 8000),
         isPublished: readString(formData, "isPublished") === "true",
+        publishFeaturedResults:
+          readString(formData, "publishFeaturedResults") === "true",
+        featuredResultsLimit: limitParse.value,
       },
     });
   } catch (error) {
@@ -220,6 +264,25 @@ export async function updateAssessment(
     existing.id,
   );
 
+  const limitRaw = readString(formData, "featuredResultsLimit").trim();
+  const limitParse = parseFeaturedResultsLimit(
+    limitRaw || FEATURED_RESULTS_LIMIT_DEFAULT,
+  );
+  if (!limitParse.ok) {
+    return {
+      formError: limitParse.message,
+      fieldErrors: { featuredResultsLimit: limitParse.message },
+    };
+  }
+
+  const assessmentDateRaw = readString(formData, "assessmentDate");
+  if (assessmentDateRaw.trim() && !parseAssessmentDate(assessmentDateRaw)) {
+    return {
+      formError: "تاریخ آزمون نامعتبر است.",
+      fieldErrors: { assessmentDate: "تاریخ شمسی معتبر وارد کنید." },
+    };
+  }
+
   await prisma.assessment.update({
     where: { id: existing.id },
     data: {
@@ -228,13 +291,16 @@ export async function updateAssessment(
       title,
       slug,
       assessmentType: assessmentTypeRaw as AssessmentType,
-      assessmentDate: parseAssessmentDate(readString(formData, "assessmentDate")),
+      assessmentDate: parseAssessmentDate(assessmentDateRaw),
       schoolYear:
         readString(formData, "schoolYear").trim().slice(0, 40) || null,
       participants: parseOptionalInt(readString(formData, "participants")),
       maxScore: parseOptionalFloat(readString(formData, "maxScore")),
       description: readString(formData, "description").trim().slice(0, 8000),
       isPublished: readString(formData, "isPublished") === "true",
+      publishFeaturedResults:
+        readString(formData, "publishFeaturedResults") === "true",
+      featuredResultsLimit: limitParse.value,
       archivedAt:
         readString(formData, "archived") === "true" ? new Date() : null,
     },
@@ -307,6 +373,59 @@ export async function deleteAssessment(formData: FormData) {
     },
   });
   revalidateAssessments(assessment.slug);
+}
+
+export type FeaturedSelectActionState = {
+  formError?: string;
+  successMessage?: string;
+};
+
+export async function autoSelectFeaturedResultsFormAction(
+  _prev: FeaturedSelectActionState,
+  formData: FormData,
+): Promise<FeaturedSelectActionState> {
+  const session = await requirePermission("website.manage");
+  const organizationId = session.organization.id;
+  const assessmentId = readString(formData, "assessmentId").trim();
+
+  const assessment = await prisma.assessment.findFirst({
+    where: { id: assessmentId, organizationId, deletedAt: null },
+    select: { id: true, slug: true },
+  });
+  if (!assessment) {
+    return { formError: "آزمون یافت نشد." };
+  }
+
+  try {
+    const result = await autoSelectFeaturedResults({
+      organizationId,
+      assessmentId: assessment.id,
+    });
+    revalidateAssessments(assessment.slug);
+    revalidatePath(`/admin/website/assessments/${assessment.id}`);
+    if (!result.ok) {
+      return { formError: result.message };
+    }
+    return { successMessage: result.message };
+  } catch (error) {
+    logServerError(
+      {
+        module: "assessment.admin",
+        action: "autoSelectFeaturedResults",
+        category: "mutation",
+        organizationId,
+        userId: session.user.id,
+        recordId: assessmentId,
+      },
+      error,
+    );
+    return {
+      formError: persianPrismaError(
+        error,
+        "انتخاب خودکار برترین‌ها ناموفق بود.",
+      ),
+    };
+  }
 }
 
 export async function createAssessmentProvider(formData: FormData) {

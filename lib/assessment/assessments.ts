@@ -4,6 +4,7 @@ import { getCurrentOrganization } from "@/lib/organizations/get-current-organiza
 import { ensureDefaultAssessmentProviders } from "@/lib/assessment/providers";
 import { ASSESSMENT_TYPE_LABELS } from "@/lib/assessment/types";
 import { listPublicAssessmentProviders } from "@/lib/assessment/providers";
+import { publicLibraryUrl } from "@/lib/media/library-image";
 
 export { listPublicAssessmentProviders };
 export { ASSESSMENT_TYPE_LABELS };
@@ -95,7 +96,7 @@ export async function loadAdminAssessment(
   organizationId: string,
   assessmentId: string,
 ) {
-  return prisma.assessment.findFirst({
+  const assessment = await prisma.assessment.findFirst({
     where: { id: assessmentId, organizationId, deletedAt: null },
     select: {
       id: true,
@@ -110,12 +111,31 @@ export async function loadAdminAssessment(
       maxScore: true,
       description: true,
       isPublished: true,
+      publishFeaturedResults: true,
+      featuredResultsLimit: true,
       archivedAt: true,
       provider: { select: { id: true, name: true, slug: true } },
       grade: { select: { id: true, name: true, slug: true } },
-      _count: { select: { results: { where: { deletedAt: null } } } },
+      _count: {
+        select: {
+          results: { where: { deletedAt: null } },
+        },
+      },
     },
   });
+
+  if (!assessment) return null;
+
+  const featuredCount = await prisma.assessmentResult.count({
+    where: {
+      organizationId,
+      assessmentId: assessment.id,
+      deletedAt: null,
+      isFeatured: true,
+    },
+  });
+
+  return { ...assessment, featuredCount };
 }
 
 export type PublicAssessmentCard = {
@@ -283,6 +303,9 @@ export async function loadPublicAssessmentBySlug(slug: string) {
       schoolYear: true,
       participants: true,
       maxScore: true,
+      isPublished: true,
+      publishFeaturedResults: true,
+      featuredResultsLimit: true,
       provider: { select: { name: true, slug: true, color: true } },
       grade: { select: { name: true, slug: true } },
       results: {
@@ -295,7 +318,12 @@ export async function loadPublicAssessmentBySlug(slug: string) {
             isActive: true,
           },
         },
-        orderBy: [{ score: "desc" }, { createdAt: "desc" }],
+        orderBy: [
+          { scaledScore: { sort: "desc", nulls: "last" } },
+          { rankSchool: { sort: "asc", nulls: "last" } },
+          { score: { sort: "desc", nulls: "last" } },
+          { id: "asc" },
+        ],
         take: 12,
         select: {
           id: true,
@@ -306,6 +334,19 @@ export async function loadPublicAssessmentBySlug(slug: string) {
           rankProvince: true,
           rankCountry: true,
           percentile: true,
+          student: {
+            select: {
+              fullName: true,
+              slug: true,
+              portraitMedia: {
+                select: {
+                  storageKey: true,
+                  deletedAt: true,
+                  status: true,
+                },
+              },
+            },
+          },
         },
       },
       _count: { select: { results: { where: { deletedAt: null } } } },
@@ -314,8 +355,48 @@ export async function loadPublicAssessmentBySlug(slug: string) {
 
   if (!row) return null;
 
+  const featuredResults =
+    row.publishFeaturedResults
+      ? row.results.map((result) => {
+          const portrait =
+            result.student.portraitMedia &&
+            result.student.portraitMedia.deletedAt == null &&
+            result.student.portraitMedia.status === "ACTIVE"
+              ? publicLibraryUrl(result.student.portraitMedia.storageKey)
+              : null;
+          return {
+            id: result.id,
+            score: result.score,
+            scaledScore: result.scaledScore,
+            rankSchool: result.rankSchool,
+            rankCity: result.rankCity,
+            rankProvince: result.rankProvince,
+            rankCountry: result.rankCountry,
+            percentile: result.percentile,
+            studentName: result.student.fullName,
+            studentSlug: result.student.slug,
+            studentPortraitUrl: portrait,
+          };
+        })
+      : [];
+
   return {
-    ...row,
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    description: row.description,
+    assessmentType: row.assessmentType,
     assessmentTypeLabel: ASSESSMENT_TYPE_LABELS[row.assessmentType],
+    assessmentDate: row.assessmentDate,
+    schoolYear: row.schoolYear,
+    participants: row.participants,
+    maxScore: row.maxScore,
+    isPublished: row.isPublished,
+    publishFeaturedResults: row.publishFeaturedResults,
+    featuredResultsLimit: row.featuredResultsLimit,
+    provider: row.provider,
+    grade: row.grade,
+    featuredResults,
+    _count: row._count,
   };
 }
