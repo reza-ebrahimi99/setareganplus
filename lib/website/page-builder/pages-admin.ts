@@ -3,6 +3,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 import { publicLibraryUrl } from "@/lib/media/library-image";
 import {
   isPageBuilderSectionType,
@@ -14,15 +15,87 @@ import { getSectionDefinition } from "./registry";
 import type { AnySectionConfig, SectionMediaRole } from "./types";
 import { parseSectionConfig } from "./validate-config";
 
+export type AdminWebsitePageListView =
+  | "active"
+  | "draft"
+  | "published"
+  | "archived"
+  | "deleted";
+
 export type AdminWebsitePageListItem = {
   id: string;
   slug: string;
   title: string;
   status: PageStatus;
   publishedAt: Date | null;
+  archivedAt: Date | null;
+  deletedAt: Date | null;
+  createdAt: Date;
   updatedAt: Date;
   sectionCount: number;
 };
+
+function listWhereForView(
+  organizationId: string,
+  view: AdminWebsitePageListView,
+): Prisma.WebsitePageWhereInput {
+  switch (view) {
+    case "deleted":
+      return { organizationId, deletedAt: { not: null } };
+    case "archived":
+      return { organizationId, deletedAt: null, status: "ARCHIVED" };
+    case "published":
+      return { organizationId, deletedAt: null, status: "PUBLISHED" };
+    case "draft":
+      return { organizationId, deletedAt: null, status: "DRAFT" };
+    case "active":
+    default:
+      return {
+        organizationId,
+        deletedAt: null,
+        status: { not: "ARCHIVED" },
+      };
+  }
+}
+
+export async function listAdminWebsitePages(
+  organizationId: string,
+  view: AdminWebsitePageListView = "active",
+): Promise<AdminWebsitePageListItem[]> {
+  const pages = await prisma.websitePage.findMany({
+    where: listWhereForView(organizationId, view),
+    orderBy: [{ updatedAt: "desc" }],
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      status: true,
+      publishedAt: true,
+      archivedAt: true,
+      deletedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      _count: {
+        select: {
+          sections: { where: { deletedAt: null } },
+        },
+      },
+    },
+  });
+
+  return pages.map((page) => ({
+    id: page.id,
+    slug: page.slug,
+    title: page.title,
+    status: page.status,
+    publishedAt: page.publishedAt,
+    archivedAt: page.archivedAt,
+    deletedAt: page.deletedAt,
+    createdAt: page.createdAt,
+    updatedAt: page.updatedAt,
+    sectionCount: page._count.sections,
+  }));
+}
 
 export type AdminSectionMediaPreview = {
   role: SectionMediaRole;
@@ -56,38 +129,6 @@ export type AdminWebsitePageDetail = {
   sections: AdminWebsitePageSection[];
   publishedSectionCount: number;
 };
-
-export async function listAdminWebsitePages(
-  organizationId: string,
-): Promise<AdminWebsitePageListItem[]> {
-  const pages = await prisma.websitePage.findMany({
-    where: { organizationId, deletedAt: null },
-    orderBy: [{ updatedAt: "desc" }],
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      status: true,
-      publishedAt: true,
-      updatedAt: true,
-      _count: {
-        select: {
-          sections: { where: { deletedAt: null } },
-        },
-      },
-    },
-  });
-
-  return pages.map((page) => ({
-    id: page.id,
-    slug: page.slug,
-    title: page.title,
-    status: page.status,
-    publishedAt: page.publishedAt,
-    updatedAt: page.updatedAt,
-    sectionCount: page._count.sections,
-  }));
-}
 
 export async function getAdminWebsitePage(
   organizationId: string,

@@ -101,18 +101,26 @@ export function PageSettingsForm({ page }: Props) {
 
         <label className="block text-sm">
           <span className="mb-1.5 block text-muted">وضعیت صفحه</span>
-          <select
-            name="status"
-            defaultValue={page.status}
-            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
-          >
-            <option value="DRAFT">پیش‌نویس</option>
-            <option value="PUBLISHED">منتشرشده</option>
-            <option value="ARCHIVED">بایگانی</option>
-          </select>
+          {page.status === "ARCHIVED" ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-7 text-amber-900">
+              این صفحه بایگانی شده است. برای تغییر وضعیت، از عملیات «بازیابی به
+              پیش‌نویس» استفاده کنید.
+            </p>
+          ) : (
+            <select
+              name="status"
+              defaultValue={
+                page.status === "PUBLISHED" ? "PUBLISHED" : "DRAFT"
+              }
+              className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
+            >
+              <option value="DRAFT">پیش‌نویس</option>
+              <option value="PUBLISHED">منتشرشده</option>
+            </select>
+          )}
         </label>
 
-        {page.publishedSectionCount === 0 ? (
+        {page.status !== "ARCHIVED" && page.publishedSectionCount === 0 ? (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-7 text-amber-900">
             هنوز هیچ بخشی با وضعیت «منتشرشده» ندارید. انتشار صفحه، بخش‌های
             پیش‌نویس را منتشر نمی‌کند.
@@ -121,7 +129,7 @@ export function PageSettingsForm({ page }: Props) {
 
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || page.status === "ARCHIVED"}
           className="min-h-11 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
         >
           {pending ? "در حال ذخیره…" : "ذخیره تنظیمات"}
@@ -153,7 +161,11 @@ export function PageSettingsForm({ page }: Props) {
         ) : null}
         <button
           type="submit"
-          disabled={publishPending || page.publishedSectionCount === 0}
+          disabled={
+            publishPending ||
+            page.publishedSectionCount === 0 ||
+            page.status === "ARCHIVED"
+          }
           className="min-h-11 rounded-xl border border-primary bg-white px-4 py-2.5 text-sm font-medium text-primary disabled:opacity-60"
         >
           {publishPending ? "در حال انتشار…" : "انتشار صفحه"}

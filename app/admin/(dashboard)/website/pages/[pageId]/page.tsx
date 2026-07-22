@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AddSectionForm } from "@/components/admin/website/page-builder/AddSectionForm";
+import { PageLifecycleActions } from "@/components/admin/website/page-builder/PageLifecycleActions";
 import { PageSettingsForm } from "@/components/admin/website/page-builder/PageSettingsForm";
 import { SectionList } from "@/components/admin/website/page-builder/SectionList";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -29,6 +30,8 @@ export default async function AdminWebsitePageEditorPage({ params }: Props) {
   if (!page) notFound();
 
   const publicPath = getPublicPagePath(page.slug);
+  const lifecycleState =
+    page.status === "ARCHIVED" ? ("archived" as const) : ("live" as const);
 
   return (
     <>
@@ -44,26 +47,36 @@ export default async function AdminWebsitePageEditorPage({ params }: Props) {
         compact
       />
 
-      <div className="mb-4 flex flex-wrap gap-3">
-        <Link
-          href={`/admin/website/pages/${page.id}/preview`}
-          className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm"
-        >
-          پیش‌نمایش
-        </Link>
-        <Link
-          href={publicPath}
-          target="_blank"
-          className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm"
-        >
-          مسیر عمومی
-        </Link>
-        <Link
-          href="/admin/website/pages"
-          className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm"
-        >
-          بازگشت به فهرست
-        </Link>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href={`/admin/website/pages/${page.id}/preview`}
+            className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm"
+          >
+            پیش‌نمایش
+          </Link>
+          <Link
+            href={publicPath}
+            target="_blank"
+            className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm"
+          >
+            مسیر عمومی
+          </Link>
+          <Link
+            href="/admin/website/pages"
+            className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm"
+          >
+            بازگشت به فهرست
+          </Link>
+        </div>
+        <PageLifecycleActions
+          pageId={page.id}
+          slug={page.slug}
+          status={page.status}
+          lifecycleState={lifecycleState}
+          layout="editor"
+          showNavigation={false}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-12">
