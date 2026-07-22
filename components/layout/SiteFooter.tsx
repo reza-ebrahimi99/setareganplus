@@ -10,6 +10,11 @@ import {
 import { publicNavLinks as navLinks } from "@/content/public-nav";
 import { services } from "@/content/services";
 
+const ENAMAD_TRUST_URL =
+  "https://trustseal.enamad.ir/?id=762691&Code=Jm7HRlnpSah7mgppTajp15hMnQLMeXSI";
+const ENAMAD_LOGO_URL =
+  "https://trustseal.enamad.ir/logo.aspx?id=762691&Code=Jm7HRlnpSah7mgppTajp15hMnQLMeXSI";
+
 export function SiteFooter() {
   const currentYear = new Date().getFullYear();
   const informationLinks = footerLinks;
@@ -115,10 +120,29 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-10 border-t border-white/10 pt-6">
-          <p className="text-center text-sm text-slate-400">
+        <div className="mt-10 flex flex-col items-center justify-between gap-5 border-t border-white/10 pt-6 sm:flex-row sm:items-center">
+          <p className="text-center text-sm text-slate-400 sm:text-start">
             © {currentYear} {siteConfig.name} — {siteConfig.nameEn}
           </p>
+          <a
+            href={ENAMAD_TRUST_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            referrerPolicy="origin"
+            className="inline-flex shrink-0 rounded-xl border border-white/10 bg-white/95 p-2 transition hover:border-secondary/50 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+            aria-label="نماد اعتماد الکترونیکی اینماد"
+          >
+            {/* Native <img> is required for Enamad trust-seal verification. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={ENAMAD_LOGO_URL}
+              alt="نماد اعتماد الکترونیکی (اینماد)"
+              width={125}
+              height={125}
+              referrerPolicy="origin"
+              className="h-16 w-16 object-contain sm:h-[4.5rem] sm:w-[4.5rem]"
+            />
+          </a>
         </div>
       </Container>
     </footer>
