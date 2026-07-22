@@ -132,6 +132,7 @@ enum LeadSourceType {
   BOOKING
   MANUAL
   IMPORT
+  REGISTRATION
   OTHER
 }
 
@@ -175,6 +176,7 @@ enum CrmActivityType {
   SCORE_CHANGED
   CONVERTED
   LOST
+  REGISTRATION_CREATED
 }
 
 enum AutomationExecutionStatus {
@@ -497,9 +499,11 @@ model Organization {
   subjects                 Subject[]
   assessments              Assessment[]
   assessmentResults        AssessmentResult[]
-  studentGuardians         StudentGuardian[]
-  studentGuardianRelations StudentGuardianRelation[]
-  portalAccountLinks       PortalAccountLink[]
+  studentGuardians           StudentGuardian[]
+  studentGuardianRelations   StudentGuardianRelation[]
+  portalAccountLinks         PortalAccountLink[]
+  registrations              Registration[]
+  registrationNumberCounters RegistrationNumberCounter[]
 
   @@map("organizations")
 }
@@ -531,6 +535,7 @@ model Branch {
   bookingAdvisors      BookingAdvisor[]
   bookingSlots         BookingSlot[]
   crmLeadImportReports CrmLeadImportReport[]
+  registrations        Registration[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -737,6 +742,7 @@ model Lead {
   crmActivities       CrmActivity[]
   crmCallLogs         CrmCallLog[]
   bookingReservations BookingReservation[]
+  registrations       Registration[]
 
   @@unique([organizationId, branchId, id])
   @@unique([organizationId, id])
@@ -2549,4 +2555,119 @@ model AssessmentSubjectResult {
   @@unique([assessmentResultId, subjectId])
   @@index([subjectId])
   @@map("assessment_subject_results")
+}
+
+// ─── Registration Engine v1 (reusable multi-product enrollment) ───────────────
+
+enum RegistrationStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PAID
+  COMPLETED
+  CANCELLED
+}
+
+/// Product family — exam is first consumer; not hardcoded in the engine.
+enum RegistrationProductType {
+  EXAM
+  CLASS
+  CAMP
+  WORKSHOP
+  EVENT
+  SCHOOL_ADMISSION
+}
+
+enum RegistrationParentRelationship {
+  FATHER
+  MOTHER
+  GUARDIAN
+  OTHER
+}
+
+/// Per-org Jalali-year sequence for REG-{year}-{seq}.
+model RegistrationNumberCounter {
+  id             String   @id @default(cuid())
+  organizationId String
+  jalaliYear     Int
+  lastSequence   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, jalaliYear])
+  @@index([organizationId])
+  @@map("registration_number_counters")
+}
+
+/// Durable registration application (wizard → payment → CRM).
+model Registration {
+  id                 String                         @id @default(cuid())
+  organizationId     String
+  branchId           String
+  registrationNumber String
+  status             RegistrationStatus             @default(DRAFT)
+  productType        RegistrationProductType
+  /// Stable flow key, e.g. "qalamchi-exam". Drives catalog resolution.
+  flowKey            String
+  leadId             String?
+
+  studentFirstName String
+  studentLastName  String
+  nationalCode     String
+  birthDate        DateTime @db.Date
+  gender           Gender
+  gradeLabel       String
+  majorLabel       String?
+  schoolName       String
+  province         String
+  city             String
+
+  parentName             String
+  parentRelationship     RegistrationParentRelationship
+  parentMobile           String
+  parentMobileNormalized String
+  parentSecondaryMobile  String?
+  parentEmail            String?
+  parentAddress          String?
+
+  /// Selected product option keys + display titles (catalog-driven).
+  productKey        String
+  productTitle      String
+  sessionKey        String?
+  sessionTitle      String?
+  packageKey        String?
+  packageTitle      String?
+  venueBranchKey    String?
+  venueBranchTitle  String?
+  discountCode      String?
+
+  amountRials      Int
+  discountRials    Int     @default(0)
+  finalAmountRials Int
+  currency         String  @default("IRR")
+
+  /// Payment tracking placeholder (filled by PaymentService later).
+  trackingCode    String?
+  paymentProvider String?
+  paymentRef      String?
+
+  metadata  Json?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch       @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  lead         Lead?        @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, registrationNumber])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, flowKey, createdAt])
+  @@index([organizationId, nationalCode])
+  @@index([organizationId, parentMobileNormalized])
+  @@index([organizationId, leadId])
+  @@index([organizationId, deletedAt])
+  @@map("registrations")
 }

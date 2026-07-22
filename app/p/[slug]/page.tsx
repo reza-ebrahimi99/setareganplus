@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { PageSectionsRenderer } from "@/components/website/page-builder/SectionRenderer";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
+import { createPageMetadata } from "@/lib/seo/create-page-metadata";
 import { getPublicPagePath } from "@/lib/website/page-builder/public-path";
 import { loadPublishedPageBySlug } from "@/lib/website/page-builder/pages-public";
 
@@ -14,18 +15,37 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  const path = getPublicPagePath(slug);
   try {
     const organization = await getCurrentOrganization();
     const page = await loadPublishedPageBySlug(organization.id, slug);
     if (!page) {
-      return { title: "صفحه یافت نشد", robots: { index: false } };
+      return createPageMetadata({
+        title: "صفحه یافت نشد | ستارگان پلاس",
+        description: "صفحه درخواستی در سایت ستارگان پلاس یافت نشد.",
+        path,
+        robots: { index: false, follow: false },
+      });
     }
-    return {
-      title: page.seoTitle || page.title,
-      description: page.seoDescription || undefined,
-    };
+
+    const title = page.seoTitle?.trim() || `${page.title} | ستارگان پلاس`;
+    const description =
+      page.seoDescription?.trim() ||
+      `${page.title} — صفحه رسمی ستارگان پلاس.`;
+
+    return createPageMetadata({
+      title,
+      description,
+      path,
+      keywords: [page.title, "ستارگان پلاس"],
+    });
   } catch {
-    return { title: "صفحه یافت نشد", robots: { index: false } };
+    return createPageMetadata({
+      title: "صفحه یافت نشد | ستارگان پلاس",
+      description: "صفحه درخواستی در سایت ستارگان پلاس یافت نشد.",
+      path,
+      robots: { index: false, follow: false },
+    });
   }
 }
 

@@ -4,6 +4,7 @@ import { GalleryMasonry } from "@/components/gallery/GalleryMasonry";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { SiteShell } from "@/components/layout/SiteShell";
+import { createPageMetadata } from "@/lib/seo/create-page-metadata";
 import { loadPublicGalleryAlbumBySlug } from "@/lib/website/gallery-public";
 
 export const revalidate = 120;
@@ -15,14 +16,23 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const album = await loadPublicGalleryAlbumBySlug(slug);
-  if (!album) return { title: "آلبوم یافت نشد" };
+  if (!album) {
+    return createPageMetadata({
+      title: "آلبوم یافت نشد | ستارگان پلاس",
+      description: "آلبوم درخواستی در گالری ستارگان پلاس یافت نشد.",
+      path: `/gallery/${slug}`,
+      robots: { index: false, follow: false },
+    });
+  }
 
-  return {
-    title: `${album.title} | گالری`,
+  return createPageMetadata({
+    title: `${album.title} | گالری ستارگان پلاس`,
     description:
       album.description?.trim() ||
-      `گالری تصاویر «${album.title}» در مجموعه ستارگان.`,
-  };
+      `مجموعه تصاویر «${album.title}» از فعالیت‌ها و فضای آموزشی ستارگان پلاس.`,
+    path: `/gallery/${slug}`,
+    keywords: ["گالری", album.title, "ستارگان پلاس"],
+  });
 }
 
 export default async function GalleryAlbumPage({ params }: PageProps) {

@@ -1,17 +1,14 @@
-import type { Metadata } from "next";
 import { SitePlacementSection } from "@/components/site/SitePlacementSection";
 import { InnerPageLayout } from "@/components/layout/InnerPageLayout";
 import { ContentCard } from "@/components/ui/ContentCard";
 import { registrationNotice } from "@/content/site";
 import { preRegistrationContent } from "@/content/pre-registration";
+import { getPublicPageMetadata } from "@/lib/seo/public-pages";
 import { loadResolvedSitePlacement } from "@/lib/site/load-site-placement";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: preRegistrationContent.title,
-  description: preRegistrationContent.subtitle,
-};
+export const metadata = getPublicPageMetadata("preRegistration");
 
 export default async function PreRegistrationPage() {
   const placement = await loadResolvedSitePlacement("PRE_REGISTRATION_FORM");

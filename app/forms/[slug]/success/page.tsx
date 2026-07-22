@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicFormShell } from "@/components/forms/PublicFormShell";
 import { loadPublicFormBySlug } from "@/lib/forms/load-public-form";
-import { PUBLIC_SITE_ORIGIN } from "@/lib/forms/public-form-url";
+import { getPublicFormPath } from "@/lib/forms/public-form-url";
+import { createPageMetadata } from "@/lib/seo/create-page-metadata";
+import { SITE_NAME } from "@/lib/seo/site-metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -16,12 +18,17 @@ export async function generateMetadata({
 }: SuccessPageProps): Promise<Metadata> {
   const { slug } = await params;
   const result = await loadPublicFormBySlug(slug);
+  const formTitle = result.ok ? result.data.version.title : null;
+  const title = formTitle
+    ? `ثبت موفق · ${formTitle} | ${SITE_NAME}`
+    : `ثبت موفق | ${SITE_NAME}`;
 
-  return {
-    title: result.ok ? `ثبت موفق · ${result.data.version.title}` : "ثبت موفق",
-    metadataBase: new URL(PUBLIC_SITE_ORIGIN),
+  return createPageMetadata({
+    title,
+    description: "تأیید ثبت موفق فرم در ستارگان پلاس.",
+    path: `${getPublicFormPath(slug)}/success`,
     robots: { index: false, follow: false },
-  };
+  });
 }
 
 export default async function PublicFormSuccessPage({

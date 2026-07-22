@@ -6,8 +6,8 @@ import { PublicBookingWizard } from "@/components/booking/PublicBookingWizard";
 import { PublicFormShell } from "@/components/forms/PublicFormShell";
 import { suggestBookingTimes } from "@/lib/ai/booking-assistant";
 import { loadPublicBookingService } from "@/lib/booking/load-public-service";
-import { getPublicBookingUrl } from "@/lib/booking/public-url";
-import { PUBLIC_SITE_ORIGIN } from "@/lib/forms/public-form-url";
+import { getPublicBookingPath } from "@/lib/booking/public-url";
+import { createPageMetadata } from "@/lib/seo/create-page-metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -17,20 +17,26 @@ type PageProps = {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { serviceSlug } = await params;
+  const path = getPublicBookingPath(serviceSlug);
   const result = await loadPublicBookingService(serviceSlug);
   if (!result.ok) {
-    return {
-      title: "رزرو نوبت",
+    return createPageMetadata({
+      title: "رزرو نوبت | ستارگان پلاس",
+      description: "رزرو نوبت در حال حاضر در دسترس نیست.",
+      path,
       robots: { index: false, follow: false },
-    };
+    });
   }
-  return {
-    title: `رزرو · ${result.data.service.title}`,
-    description: result.data.service.description ?? undefined,
-    metadataBase: new URL(PUBLIC_SITE_ORIGIN),
-    alternates: { canonical: getPublicBookingUrl(serviceSlug) },
-    robots: { index: true, follow: true },
-  };
+
+  const service = result.data.service;
+  return createPageMetadata({
+    title: `رزرو ${service.title} | ستارگان پلاس`,
+    description:
+      service.description?.trim() ||
+      `رزرو آنلاین نوبت «${service.title}» در ستارگان پلاس.`,
+    path,
+    keywords: [service.title, "رزرو نوبت", "ستارگان پلاس"],
+  });
 }
 
 export default async function PublicBookingPage({ params }: PageProps) {

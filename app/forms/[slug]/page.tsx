@@ -7,10 +7,9 @@ import { PublicFormHeader } from "@/components/forms/PublicFormHeader";
 import { PublicFormShell } from "@/components/forms/PublicFormShell";
 import { AVAILABILITY_MESSAGES } from "@/lib/forms/evaluate-form-availability";
 import { loadPublicFormBySlug } from "@/lib/forms/load-public-form";
-import {
-  getPublicFormCanonical,
-  PUBLIC_SITE_ORIGIN,
-} from "@/lib/forms/public-form-url";
+import { getPublicFormPath } from "@/lib/forms/public-form-url";
+import { createPageMetadata } from "@/lib/seo/create-page-metadata";
+import { SITE_NAME } from "@/lib/seo/site-metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -87,83 +86,52 @@ function UnavailableState({
   );
 }
 
+function formDocumentTitle(base: string): string {
+  const trimmed = base.trim();
+  if (!trimmed) return `فرم | ${SITE_NAME}`;
+  if (trimmed.includes(SITE_NAME)) return trimmed;
+  return `${trimmed} | ${SITE_NAME}`;
+}
+
 export async function generateMetadata({
   params,
 }: PublicFormPageProps): Promise<Metadata> {
   const { slug } = await params;
   const result = await loadPublicFormBySlug(slug);
-  const canonical = getPublicFormCanonical(slug);
+  const path = getPublicFormPath(slug);
 
   if (!result.ok) {
-    const title = result.meta?.title?.trim() || "فرم در دسترس نیست";
+    const baseTitle = result.meta?.title?.trim() || "فرم در دسترس نیست";
     const description =
       result.meta?.description?.trim() ||
       result.message ||
       "این فرم در حال حاضر برای ثبت‌نام عمومی فعال نیست.";
     const poster = result.meta?.poster?.publicUrl;
 
-    return {
-      title,
+    return createPageMetadata({
+      title: formDocumentTitle(baseTitle),
       description,
-      metadataBase: new URL(PUBLIC_SITE_ORIGIN),
-      alternates: { canonical },
+      path,
       robots: { index: false, follow: false },
-      openGraph: {
-        title,
-        description,
-        url: canonical,
-        siteName: "ستارگان پلاس",
-        locale: "fa_IR",
-        type: "website",
-        ...(poster
-          ? {
-              images: [
-                {
-                  url: poster.startsWith("http")
-                    ? poster
-                    : `${PUBLIC_SITE_ORIGIN}${poster}`,
-                  alt: title,
-                },
-              ],
-            }
-          : {}),
-      },
-    };
+      imageUrl: poster,
+      imageAlt: baseTitle,
+    });
   }
 
-  const title = result.data.version.title;
+  const baseTitle = result.data.version.title;
   const description =
     result.data.version.description?.trim() ||
-    `فرم «${title}» در ستارگان پلاس`;
+    `فرم «${baseTitle}» در ستارگان پلاس`;
   const poster = result.data.poster?.publicUrl;
 
-  return {
-    title,
+  return createPageMetadata({
+    title: formDocumentTitle(baseTitle),
     description,
-    metadataBase: new URL(PUBLIC_SITE_ORIGIN),
-    alternates: { canonical },
-    robots: { index: true, follow: true },
-    openGraph: {
-      title,
-      description,
-      url: canonical,
-      siteName: "ستارگان پلاس",
-      locale: "fa_IR",
-      type: "website",
-      ...(poster
-        ? {
-            images: [
-              {
-                url: poster.startsWith("http")
-                  ? poster
-                  : `${PUBLIC_SITE_ORIGIN}${poster}`,
-                alt: result.data.poster?.altText?.trim() || title,
-              },
-            ],
-          }
-        : {}),
-    },
-  };
+    path,
+    keywords: [baseTitle, "فرم آنلاین", SITE_NAME],
+    imageUrl: poster,
+    imageAlt: result.data.poster?.altText?.trim() || baseTitle,
+  });
 }
 
 export default async function PublicFormPage({ params }: PublicFormPageProps) {

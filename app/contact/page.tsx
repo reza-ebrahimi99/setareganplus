@@ -1,12 +1,9 @@
-import type { Metadata } from "next";
 import { InnerPageLayout } from "@/components/layout/InnerPageLayout";
 import { ContentCard } from "@/components/ui/ContentCard";
 import { contactContent, registrationNotice } from "@/content/site";
+import { getPublicPageMetadata } from "@/lib/seo/public-pages";
 
-export const metadata: Metadata = {
-  title: contactContent.title,
-  description: contactContent.subtitle,
-};
+export const metadata = getPublicPageMetadata("contact");
 
 export default function ContactPage() {
   return (

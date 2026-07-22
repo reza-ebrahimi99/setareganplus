@@ -1,12 +1,9 @@
-import type { Metadata } from "next";
 import { InnerPageLayout } from "@/components/layout/InnerPageLayout";
 import { ContentCard } from "@/components/ui/ContentCard";
 import { aboutContent } from "@/content/site";
+import { getPublicPageMetadata } from "@/lib/seo/public-pages";
 
-export const metadata: Metadata = {
-  title: aboutContent.title,
-  description: aboutContent.subtitle,
-};
+export const metadata = getPublicPageMetadata("about");
 
 export default function AboutPage() {
   return (

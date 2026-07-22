@@ -1,13 +1,10 @@
-import type { Metadata } from "next";
 import { InnerPageLayout } from "@/components/layout/InnerPageLayout";
 import { ContentCard } from "@/components/ui/ContentCard";
 import { registrationNotice } from "@/content/site";
 import { coursesContent } from "@/content/courses";
+import { getPublicPageMetadata } from "@/lib/seo/public-pages";
 
-export const metadata: Metadata = {
-  title: coursesContent.title,
-  description: coursesContent.subtitle,
-};
+export const metadata = getPublicPageMetadata("courses");
 
 export default function CoursesPage() {
   return (

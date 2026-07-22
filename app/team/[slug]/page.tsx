@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { SiteShell } from "@/components/layout/SiteShell";
+import { createPageMetadata } from "@/lib/seo/create-page-metadata";
 import { loadPublicTeamMemberBySlug } from "@/lib/website/load-team";
 import { siteConfig } from "@/content/site";
 
@@ -19,26 +20,29 @@ export async function generateMetadata({
   const { slug } = await params;
   const member = await loadPublicTeamMemberBySlug(slug);
   if (!member) {
-    return { title: "عضو تیم یافت نشد" };
+    return createPageMetadata({
+      title: "عضو تیم یافت نشد | ستارگان پلاس",
+      description: "عضو تیم درخواستی در سایت ستارگان پلاس یافت نشد.",
+      path: `/team/${slug}`,
+      robots: { index: false, follow: false },
+    });
   }
 
-  const title = member.seoTitle?.trim() || `${member.fullName} | تیم ستارگان`;
+  const title =
+    member.seoTitle?.trim() || `${member.fullName} | تیم ستارگان پلاس`;
   const description =
     member.seoDescription?.trim() ||
-    `${member.fullName}، ${member.roleTitle} در ${member.departmentName} — مؤسسه علمی ستارگان`;
+    `${member.fullName}، ${member.roleTitle} در ${member.departmentName} — مجموعه ستارگان پلاس`;
 
-  return {
+  return createPageMetadata({
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      type: "profile",
-      ...(member.portraitUrl
-        ? { images: [{ url: member.portraitUrl, alt: member.portraitAlt }] }
-        : {}),
-    },
-  };
+    path: `/team/${slug}`,
+    keywords: [member.fullName, member.roleTitle, "تیم ستارگان پلاس"],
+    openGraphType: "profile",
+    imageUrl: member.portraitUrl,
+    imageAlt: member.portraitAlt,
+  });
 }
 
 export default async function TeamMemberPage({ params }: PageProps) {

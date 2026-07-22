@@ -1,13 +1,10 @@
-import type { Metadata } from "next";
 import { InnerPageLayout } from "@/components/layout/InnerPageLayout";
 import { ContentCard } from "@/components/ui/ContentCard";
 import { registrationNotice } from "@/content/site";
 import { faqContent } from "@/content/faq";
+import { getPublicPageMetadata } from "@/lib/seo/public-pages";
 
-export const metadata: Metadata = {
-  title: faqContent.title,
-  description: faqContent.subtitle,
-};
+export const metadata = getPublicPageMetadata("faq");
 
 export default function FaqPage() {
   return (

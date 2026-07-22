@@ -7,6 +7,7 @@ import { PageHero } from "@/components/ui/PageHero";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { loadPublicAssessmentBySlug } from "@/lib/assessment/assessments";
 import { formatJalaliDateShort } from "@/lib/datetime/jalali";
+import { createPageMetadata } from "@/lib/seo/create-page-metadata";
 import { siteConfig } from "@/content/site";
 
 export const revalidate = 120;
@@ -18,22 +19,27 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const assessment = await loadPublicAssessmentBySlug(slug);
-  if (!assessment) return { title: "آزمون یافت نشد" };
+  if (!assessment) {
+    return createPageMetadata({
+      title: "آزمون یافت نشد | ستارگان پلاس",
+      description: "آزمون درخواستی در سایت ستارگان پلاس یافت نشد.",
+      path: `/assessments/${slug}`,
+      robots: { index: false, follow: false },
+    });
+  }
 
-  const title = `${assessment.title} | آزمون ستارگان`;
+  const title = `${assessment.title} | آزمون ستارگان پلاس`;
   const description =
     assessment.description?.trim() ||
     `${assessment.title} — ${assessment.provider.name} · ${assessment.grade.name}`;
 
-  return {
+  return createPageMetadata({
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      type: "article",
-    },
-  };
+    path: `/assessments/${slug}`,
+    keywords: [assessment.title, assessment.provider.name, "آزمون"],
+    openGraphType: "article",
+  });
 }
 
 export default async function AssessmentDetailPage({ params }: PageProps) {

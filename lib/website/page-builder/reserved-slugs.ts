@@ -45,6 +45,7 @@ const HARD_CODED_PUBLIC_SLUGS = [
   "achievements",
   "assessments",
   "students",
+  "ghalamchi",
 ] as const;
 
 /**
