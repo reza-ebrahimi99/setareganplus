@@ -146,3 +146,6 @@ export function ClipboardIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export { MedalIcon } from "@/components/icons/MedalIcon";
+

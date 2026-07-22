@@ -14,12 +14,16 @@ import {
   FEATURED_RESULTS_LIMIT_MAX,
   FEATURED_RESULTS_LIMIT_MIN,
 } from "@/lib/assessment/featured-constants";
+import { gradeRequiresMajor } from "@/lib/website/student-grades";
 
 export {
   FEATURED_RESULTS_LIMIT_DEFAULT,
   FEATURED_RESULTS_LIMIT_MAX,
   FEATURED_RESULTS_LIMIT_MIN,
 } from "@/lib/assessment/featured-constants";
+
+/** Fallback label when a grade-10/11/12 student has no major relation. */
+export const UNREGISTERED_MAJOR_LABEL = "رشته ثبت‌نشده";
 
 export type FeaturedActionResult =
   | { ok: true; message: string; featuredCount: number }
@@ -37,14 +41,28 @@ export type PublicAssessmentTopResult = {
   fullName: string;
   gradeId: string;
   gradeName: string;
+  majorId: string | null;
+  majorName: string | null;
   studentPortraitUrl: string | null;
+};
+
+export type PublicAssessmentTopMajorGroup = {
+  /** Null when major is missing («رشته ثبت‌نشده») or when grade does not split by major. */
+  majorId: string | null;
+  /** Null for non-split grades; display label for split grades (including fallback). */
+  majorName: string | null;
+  majorSortOrder: number;
+  results: PublicAssessmentTopResult[];
 };
 
 export type PublicAssessmentTopResultsByGrade = {
   gradeId: string;
   gradeName: string;
+  gradeSlug: string;
   gradeSortOrder: number;
-  results: PublicAssessmentTopResult[];
+  /** True for grade-10/11/12 — UI should show major subheadings. */
+  splitByMajor: boolean;
+  majorGroups: PublicAssessmentTopMajorGroup[];
 };
 
 export type RankablePublicResult = {
@@ -56,14 +74,27 @@ export type RankablePublicResult = {
   lastName: string;
   gradeId: string;
   gradeName: string;
+  gradeSlug: string;
   gradeSortOrder: number;
+  majorId: string | null;
+  majorName: string | null;
+  majorSortOrder: number;
+  splitByMajor: boolean;
   studentPortraitUrl: string | null;
 };
 
 export type ResolvedPublicGrade = {
   gradeId: string;
   gradeName: string;
+  gradeSlug: string;
   gradeSortOrder: number;
+};
+
+export type ResolvedPublicMajor = {
+  majorId: string | null;
+  majorName: string | null;
+  majorSortOrder: number;
+  splitByMajor: boolean;
 };
 
 /** Aggregate-only diagnostics (no PII). Enable via ASSESSMENT_TOP_RESULTS_DEBUG=1. */
@@ -86,6 +117,13 @@ export type PublicTopResultsDiagnostic = {
 };
 
 type GradeRef = {
+  id: string;
+  name: string;
+  slug: string;
+  sortOrder: number;
+};
+
+type MajorRef = {
   id: string;
   name: string;
   sortOrder: number;
@@ -123,6 +161,7 @@ export function resolvePublicResultGrade(
     return {
       gradeId: studentGrade.id,
       gradeName: studentGrade.name,
+      gradeSlug: studentGrade.slug,
       gradeSortOrder: studentGrade.sortOrder,
     };
   }
@@ -130,10 +169,44 @@ export function resolvePublicResultGrade(
     return {
       gradeId: assessmentGrade.id,
       gradeName: assessmentGrade.name,
+      gradeSlug: assessmentGrade.slug,
       gradeSortOrder: assessmentGrade.sortOrder,
     };
   }
   return null;
+}
+
+/**
+ * Resolve رشته grouping for public top results.
+ * Uses Student.major (StudentMajor relation). Only splits for grade-10/11/12.
+ * Missing major → separate «رشته ثبت‌نشده» bucket (never mixed into another major).
+ */
+export function resolvePublicResultMajor(
+  gradeSlug: string,
+  major: MajorRef | null | undefined,
+): ResolvedPublicMajor {
+  if (!gradeRequiresMajor(gradeSlug)) {
+    return {
+      majorId: null,
+      majorName: null,
+      majorSortOrder: 0,
+      splitByMajor: false,
+    };
+  }
+  if (major) {
+    return {
+      majorId: major.id,
+      majorName: major.name,
+      majorSortOrder: major.sortOrder,
+      splitByMajor: true,
+    };
+  }
+  return {
+    majorId: null,
+    majorName: UNREGISTERED_MAJOR_LABEL,
+    majorSortOrder: Number.MAX_SAFE_INTEGER,
+    splitByMajor: true,
+  };
 }
 
 /** Normalize a student name for deterministic tie-breaking. */
@@ -144,9 +217,24 @@ export function normalizeFullNameForSort(fullName: string): string {
     .replace(/\s+/g, " ");
 }
 
+function compareRankableResults(a: RankablePublicResult, b: RankablePublicResult): number {
+  if (b.score !== a.score) return b.score - a.score;
+  const nameCmp = normalizeFullNameForSort(a.fullName).localeCompare(
+    normalizeFullNameForSort(b.fullName),
+    "fa",
+  );
+  if (nameCmp !== 0) return nameCmp;
+  return a.id.localeCompare(b.id);
+}
+
+function rankingGroupKey(row: RankablePublicResult): string {
+  if (!row.splitByMajor) return `grade:${row.gradeId}`;
+  return `grade:${row.gradeId}|major:${row.majorId ?? "__none__"}`;
+}
+
 /**
- * Group by resolved grade, sort by ranking value desc / name asc / id asc,
- * then take exactly `limit` per grade (or fewer when a grade has fewer rows).
+ * Group by grade (and major for grades 10–12), sort, take `limit` per group.
+ * Kept name for call-site compatibility; major-aware.
  */
 export function selectTopResultsPerGrade(
   rows: RankablePublicResult[],
@@ -157,48 +245,80 @@ export function selectTopResultsPerGrade(
     FEATURED_RESULTS_LIMIT_MAX,
   );
 
-  const byGrade = new Map<string, RankablePublicResult[]>();
+  const byBucket = new Map<string, RankablePublicResult[]>();
   for (const row of rows) {
-    const bucket = byGrade.get(row.gradeId);
+    const key = rankingGroupKey(row);
+    const bucket = byBucket.get(key);
     if (bucket) {
       bucket.push(row);
     } else {
-      byGrade.set(row.gradeId, [row]);
+      byBucket.set(key, [row]);
     }
   }
 
-  const groups: PublicAssessmentTopResultsByGrade[] = [];
+  const gradeMap = new Map<
+    string,
+    {
+      gradeId: string;
+      gradeName: string;
+      gradeSlug: string;
+      gradeSortOrder: number;
+      splitByMajor: boolean;
+      majorGroups: PublicAssessmentTopMajorGroup[];
+    }
+  >();
 
-  for (const [gradeId, gradeRows] of byGrade) {
-    gradeRows.sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      const nameCmp = normalizeFullNameForSort(a.fullName).localeCompare(
-        normalizeFullNameForSort(b.fullName),
-        "fa",
-      );
-      if (nameCmp !== 0) return nameCmp;
-      return a.id.localeCompare(b.id);
-    });
-
-    const top = gradeRows.slice(0, cappedLimit);
+  for (const bucketRows of byBucket.values()) {
+    bucketRows.sort(compareRankableResults);
+    const top = bucketRows.slice(0, cappedLimit);
     if (top.length === 0) continue;
 
-    groups.push({
-      gradeId,
-      gradeName: top[0].gradeName,
-      gradeSortOrder: top[0].gradeSortOrder,
-      results: top.map((row, index) => ({
-        id: row.id,
-        rank: index + 1,
-        score: row.score,
-        scoreSource: row.scoreSource,
-        firstName: row.firstName,
-        lastName: row.lastName,
-        fullName: row.fullName,
-        gradeId: row.gradeId,
-        gradeName: row.gradeName,
-        studentPortraitUrl: row.studentPortraitUrl,
-      })),
+    const sample = top[0];
+    const results: PublicAssessmentTopResult[] = top.map((row, index) => ({
+      id: row.id,
+      rank: index + 1,
+      score: row.score,
+      scoreSource: row.scoreSource,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      fullName: row.fullName,
+      gradeId: row.gradeId,
+      gradeName: row.gradeName,
+      majorId: row.splitByMajor ? row.majorId : null,
+      majorName: row.splitByMajor ? row.majorName : null,
+      studentPortraitUrl: row.studentPortraitUrl,
+    }));
+
+    let gradeEntry = gradeMap.get(sample.gradeId);
+    if (!gradeEntry) {
+      gradeEntry = {
+        gradeId: sample.gradeId,
+        gradeName: sample.gradeName,
+        gradeSlug: sample.gradeSlug,
+        gradeSortOrder: sample.gradeSortOrder,
+        splitByMajor: sample.splitByMajor,
+        majorGroups: [],
+      };
+      gradeMap.set(sample.gradeId, gradeEntry);
+    }
+
+    gradeEntry.majorGroups.push({
+      majorId: sample.splitByMajor ? sample.majorId : null,
+      majorName: sample.splitByMajor ? sample.majorName : null,
+      majorSortOrder: sample.splitByMajor ? sample.majorSortOrder : 0,
+      results,
+    });
+  }
+
+  const groups = Array.from(gradeMap.values());
+  for (const grade of groups) {
+    grade.majorGroups.sort((a, b) => {
+      if (a.majorSortOrder !== b.majorSortOrder) {
+        return a.majorSortOrder - b.majorSortOrder;
+      }
+      const nameA = a.majorName ?? "";
+      const nameB = b.majorName ?? "";
+      return nameA.localeCompare(nameB, "fa");
     });
   }
 
@@ -431,6 +551,7 @@ export async function countFeaturedResultsForAssessment(
  * Computed dynamically — does not require `isFeatured`.
  * Ranking value: scaledScore (تراز) when present, else score (نمره).
  * Grade: student.grade when present, else assessment.grade.
+ * Grades 10–12: further split by Student.major (رشته), with «رشته ثبت‌نشده» fallback.
  * Returns [] when publishing gates fail or no rankable rows remain.
  */
 export async function getPublicAssessmentTopResults(params: {
@@ -452,6 +573,7 @@ export async function getPublicAssessmentTopResults(params: {
         select: {
           id: true,
           name: true,
+          slug: true,
           sortOrder: true,
         },
       },
@@ -507,7 +629,16 @@ export async function getPublicAssessmentTopResults(params: {
           lastName: true,
           fullName: true,
           gradeId: true,
+          majorId: true,
           grade: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              sortOrder: true,
+            },
+          },
+          major: {
             select: {
               id: true,
               name: true,
@@ -553,6 +684,8 @@ export async function getPublicAssessmentTopResults(params: {
     }
     gradeResolved += 1;
 
+    const major = resolvePublicResultMajor(grade.gradeSlug, row.student.major);
+
     const portrait =
       row.student.portraitMedia &&
       row.student.portraitMedia.deletedAt == null &&
@@ -569,7 +702,12 @@ export async function getPublicAssessmentTopResults(params: {
       fullName: row.student.fullName,
       gradeId: grade.gradeId,
       gradeName: grade.gradeName,
+      gradeSlug: grade.gradeSlug,
       gradeSortOrder: grade.gradeSortOrder,
+      majorId: major.majorId,
+      majorName: major.majorName,
+      majorSortOrder: major.majorSortOrder,
+      splitByMajor: major.splitByMajor,
       studentPortraitUrl: portrait,
     });
   }
