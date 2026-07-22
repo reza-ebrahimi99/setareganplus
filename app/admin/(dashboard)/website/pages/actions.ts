@@ -10,7 +10,6 @@ import {
   PAGE_SEO_TITLE_MAX,
   PAGE_TITLE_MAX,
   isPageBuilderSectionType,
-  isPageStatus,
   isSectionStatus,
   normalizePageBuilderText,
   type PageBuilderSectionType,
@@ -27,9 +26,20 @@ import {
 import {
   createWebsitePageRecord,
   findLivePageBySlug,
+  type AdminWebsitePageListView,
 } from "@/lib/website/page-builder/pages-admin";
 import { getPublicPagePath } from "@/lib/website/page-builder/public-path";
-import { resolvePagePublishedAt } from "@/lib/website/page-builder/publish";
+import {
+  archiveWebsitePage,
+  duplicateWebsitePage,
+  restoreArchivedWebsitePage,
+  restoreDeletedWebsitePage,
+  softDeleteWebsitePage,
+} from "@/lib/website/page-builder/lifecycle";
+import {
+  resolvePageArchivedAtOnPublish,
+  resolvePagePublishedAt,
+} from "@/lib/website/page-builder/publish";
 import {
   getDefaultSectionConfig,
   getSectionDefinition,
@@ -63,6 +73,32 @@ function revalidatePageBuilder(pageId?: string, slug?: string) {
   }
 }
 
+function readListView(formData: FormData): AdminWebsitePageListView {
+  const raw = readString(formData, "view").trim();
+  if (
+    raw === "draft" ||
+    raw === "published" ||
+    raw === "archived" ||
+    raw === "deleted" ||
+    raw === "active"
+  ) {
+    return raw;
+  }
+  return "active";
+}
+
+function redirectToPageList(
+  view: AdminWebsitePageListView,
+  params: { success?: string; error?: string },
+) {
+  const query = new URLSearchParams();
+  if (view !== "active") query.set("view", view);
+  if (params.success) query.set("success", params.success);
+  if (params.error) query.set("error", params.error);
+  const qs = query.toString();
+  redirect(qs ? `/admin/website/pages?${qs}` : "/admin/website/pages");
+}
+
 async function assertOwnedPage(organizationId: string, pageId: string) {
   return prisma.websitePage.findFirst({
     where: { id: pageId, organizationId, deletedAt: null },
@@ -71,6 +107,7 @@ async function assertOwnedPage(organizationId: string, pageId: string) {
       slug: true,
       status: true,
       publishedAt: true,
+      archivedAt: true,
     },
   });
 }
@@ -251,6 +288,13 @@ export async function updatePageSettingsAction(
     return { formError: "صفحه یافت نشد." };
   }
 
+  if (page.status === "ARCHIVED") {
+    return {
+      formError:
+        "صفحه بایگانی شده است. برای ویرایش وضعیت، ابتدا آن را از بایگانی بازیابی کنید.",
+    };
+  }
+
   const title =
     normalizePageBuilderText(readString(formData, "title"), PAGE_TITLE_MAX) ??
     "";
@@ -293,7 +337,7 @@ export async function updatePageSettingsAction(
   );
 
   const statusRaw = readString(formData, "status").trim();
-  if (!isPageStatus(statusRaw)) {
+  if (statusRaw !== "DRAFT" && statusRaw !== "PUBLISHED") {
     return { formError: "وضعیت صفحه نامعتبر است." };
   }
   const nextStatus: PageStatus = statusRaw;
@@ -317,9 +361,9 @@ export async function updatePageSettingsAction(
 
   const publishedAt = resolvePagePublishedAt({
     nextStatus,
-    previousStatus: page.status,
     previousPublishedAt: page.publishedAt,
   });
+  const archivedAt = resolvePageArchivedAtOnPublish(nextStatus);
 
   const previousSlug = page.slug;
 
@@ -333,6 +377,7 @@ export async function updatePageSettingsAction(
         seoDescription,
         status: nextStatus,
         publishedAt,
+        ...(archivedAt === null ? { archivedAt: null } : {}),
       },
     });
   } catch {
@@ -357,6 +402,13 @@ export async function publishPageAction(
   const page = await assertOwnedPage(organizationId, pageId);
   if (!page) return { formError: "صفحه یافت نشد." };
 
+  if (page.status === "ARCHIVED") {
+    return {
+      formError:
+        "صفحه بایگانی شده است. ابتدا آن را به پیش‌نویس بازگردانید، سپس منتشر کنید.",
+    };
+  }
+
   const publishedCount = await prisma.websitePageSection.count({
     where: {
       organizationId,
@@ -374,7 +426,6 @@ export async function publishPageAction(
 
   const publishedAt = resolvePagePublishedAt({
     nextStatus: "PUBLISHED",
-    previousStatus: page.status,
     previousPublishedAt: page.publishedAt,
   });
 
@@ -384,6 +435,7 @@ export async function publishPageAction(
       data: {
         status: "PUBLISHED",
         publishedAt,
+        archivedAt: null,
       },
     });
   } catch {
@@ -655,4 +707,115 @@ export async function softDeleteSectionAction(formData: FormData): Promise<void>
   }
 
   revalidatePageBuilder(section.pageId, section.page.slug);
+}
+
+export async function archivePageAction(formData: FormData): Promise<void> {
+  const session = await requirePermission("website.manage");
+  const organizationId = session.organization.id;
+  const pageId = readString(formData, "pageId").trim();
+  const view = readListView(formData);
+
+  const result = await archiveWebsitePage({ organizationId, pageId });
+  if (!result.ok) {
+    redirectToPageList(view, { error: result.message });
+    return;
+  }
+
+  revalidatePageBuilder(pageId, result.data.slug);
+  redirectToPageList("archived", { success: "صفحه بایگانی شد." });
+}
+
+export async function restoreArchivedPageAction(
+  formData: FormData,
+): Promise<void> {
+  const session = await requirePermission("website.manage");
+  const organizationId = session.organization.id;
+  const pageId = readString(formData, "pageId").trim();
+  const view = readListView(formData);
+
+  const result = await restoreArchivedWebsitePage({ organizationId, pageId });
+  if (!result.ok) {
+    redirectToPageList(view, { error: result.message });
+    return;
+  }
+
+  revalidatePageBuilder(pageId, result.data.slug);
+  redirectToPageList("draft", { success: "صفحه به پیش‌نویس بازگردانده شد." });
+}
+
+export async function softDeletePageAction(formData: FormData): Promise<void> {
+  const session = await requirePermission("website.manage");
+  const organizationId = session.organization.id;
+  const pageId = readString(formData, "pageId").trim();
+  const view = readListView(formData);
+
+  const page = await prisma.websitePage.findFirst({
+    where: { id: pageId, organizationId, deletedAt: null },
+    select: { slug: true },
+  });
+  if (!page) {
+    redirectToPageList(view, { error: "صفحه یافت نشد." });
+    return;
+  }
+
+  const result = await softDeleteWebsitePage({ organizationId, pageId });
+  if (!result.ok) {
+    redirectToPageList(view, { error: result.message });
+    return;
+  }
+
+  revalidatePageBuilder(pageId, page.slug);
+  redirectToPageList("deleted", { success: "صفحه به سطل حذف‌شده‌ها منتقل شد." });
+}
+
+export async function restoreDeletedPageAction(
+  formData: FormData,
+): Promise<void> {
+  const session = await requirePermission("website.manage");
+  const organizationId = session.organization.id;
+  const pageId = readString(formData, "pageId").trim();
+  const view = readListView(formData);
+
+  const deleted = await prisma.websitePage.findFirst({
+    where: { id: pageId, organizationId, deletedAt: { not: null } },
+    select: { slug: true },
+  });
+
+  const result = await restoreDeletedWebsitePage({ organizationId, pageId });
+  if (!result.ok) {
+    redirectToPageList(view, { error: result.message });
+    return;
+  }
+
+  revalidatePageBuilder(pageId, deleted?.slug ?? result.data.slug);
+  redirectToPageList("draft", { success: "صفحه بازیابی شد." });
+}
+
+export async function duplicatePageAction(formData: FormData): Promise<void> {
+  const session = await requirePermission("website.manage");
+  const organizationId = session.organization.id;
+  const pageId = readString(formData, "pageId").trim();
+  const view = readListView(formData);
+
+  const source = await prisma.websitePage.findFirst({
+    where: { id: pageId, organizationId, deletedAt: null },
+    select: { slug: true },
+  });
+  if (!source) {
+    redirectToPageList(view, { error: "صفحه یافت نشد." });
+    return;
+  }
+
+  const result = await duplicateWebsitePage({
+    organizationId,
+    sourcePageId: pageId,
+  });
+  if (!result.ok) {
+    redirectToPageList(view, { error: result.message });
+    return;
+  }
+
+  revalidatePageBuilder(undefined, source.slug);
+  revalidatePageBuilder(result.data.id, result.data.slug);
+  redirect(`/admin/website/pages/${result.data.id}`);
 }
