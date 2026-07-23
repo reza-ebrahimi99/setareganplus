@@ -330,33 +330,64 @@ export async function createRegistrationFlow(
     throw new Error("TITLE_REQUIRED");
   }
 
-  const slug = await uniqueFlowSlug(
-    input.organizationId,
-    input.slug?.trim() || slugFromRegistrationFlowTitle(title),
-  );
+  const explicitSlug = input.slug?.trim();
+  let slug: string;
 
-  const flow = await prisma.registrationFlow.create({
-    data: {
-      organizationId: input.organizationId,
-      title,
-      slug,
-      description: (input.description ?? "").trim(),
-      lifecycle: RegistrationFlowLifecycle.DRAFT,
-      productType: input.productType ?? RegistrationProductType.EXAM,
-      steps: {
-        create: DEFAULT_FLOW_STEPS.map((step) => ({
-          organizationId: input.organizationId,
-          stepKey: step.stepKey,
-          label: step.label,
-          enabled: step.enabled,
-          sortOrder: step.sortOrder,
-        })),
+  if (explicitSlug) {
+    slug = normalizeRegistrationFlowSlug(explicitSlug);
+    if (slug.length < 2) {
+      throw new Error("SLUG_INVALID");
+    }
+    const taken = await prisma.registrationFlow.findFirst({
+      where: {
+        organizationId: input.organizationId,
+        slug,
+        deletedAt: null,
       },
-    },
-    select: { id: true, slug: true },
-  });
+      select: { id: true },
+    });
+    if (taken) {
+      throw new Error("SLUG_DUPLICATE");
+    }
+  } else {
+    slug = await uniqueFlowSlug(
+      input.organizationId,
+      slugFromRegistrationFlowTitle(title),
+    );
+  }
 
-  return flow;
+  try {
+    const flow = await prisma.registrationFlow.create({
+      data: {
+        organizationId: input.organizationId,
+        title,
+        slug,
+        description: (input.description ?? "").trim(),
+        lifecycle: RegistrationFlowLifecycle.DRAFT,
+        productType: input.productType ?? RegistrationProductType.EXAM,
+        steps: {
+          create: DEFAULT_FLOW_STEPS.map((step) => ({
+            organizationId: input.organizationId,
+            stepKey: step.stepKey,
+            label: step.label,
+            enabled: step.enabled,
+            sortOrder: step.sortOrder,
+          })),
+        },
+      },
+      select: { id: true, slug: true },
+    });
+    return flow;
+  } catch (error) {
+    const code =
+      error && typeof error === "object" && "code" in error
+        ? String((error as { code?: string }).code)
+        : "";
+    if (code === "P2002") {
+      throw new Error("SLUG_DUPLICATE");
+    }
+    throw error;
+  }
 }
 
 export type UpdateRegistrationFlowGeneralInput = {

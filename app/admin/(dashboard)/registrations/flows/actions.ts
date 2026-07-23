@@ -53,6 +53,10 @@ function mapFlowError(error: unknown): string {
   switch (code) {
     case "TITLE_REQUIRED":
       return "عنوان باید حداقل ۲ کاراکتر باشد.";
+    case "SLUG_DUPLICATE":
+      return "این نامک قبلاً استفاده شده است. نامک دیگری انتخاب کنید.";
+    case "SLUG_INVALID":
+      return "نامک معتبر نیست. از حروف انگلیسی، عدد و خط تیره استفاده کنید.";
     case "NOT_FOUND":
       return "جریان ثبت‌نام یافت نشد.";
     case "FORM_NOT_FOUND":
@@ -68,7 +72,7 @@ function mapFlowError(error: unknown): string {
     case "PAYMENT_AMOUNT_REQUIRED":
       return "برای این حالت پرداخت، مبلغ باید بیشتر از صفر باشد.";
     default:
-      return "خطایی رخ داد. دوباره تلاش کنید.";
+      return "ایجاد جریان ثبت‌نام انجام نشد.";
   }
 }
 
@@ -80,9 +84,27 @@ function revalidateRegistrationFlow(slug?: string) {
   }
 }
 
+export type CreateRegistrationFlowState = {
+  success?: boolean;
+  formError?: string;
+  fieldErrors?: {
+    title?: string;
+    slug?: string;
+    description?: string;
+    productType?: string;
+  };
+  values?: {
+    title: string;
+    slug: string;
+    description: string;
+    productType: string;
+  };
+};
+
 export async function createRegistrationFlowAction(
+  _prev: CreateRegistrationFlowState,
   formData: FormData,
-): Promise<void> {
+): Promise<CreateRegistrationFlowState> {
   const session = await requirePermission("registration_flows.manage");
   const organizationId = session.organization.id;
 
@@ -91,9 +113,33 @@ export async function createRegistrationFlowAction(
   const description = readString(formData, "description").trim();
   const productTypeRaw = readString(formData, "productType").trim();
 
+  const submittedValues = {
+    title,
+    slug,
+    description,
+    productType: productTypeRaw || RegistrationProductType.EXAM,
+  };
+
+  const fieldErrors: NonNullable<CreateRegistrationFlowState["fieldErrors"]> =
+    {};
   if (title.length < 2) {
-    return;
+    fieldErrors.title = "عنوان باید حداقل ۲ کاراکتر باشد.";
   }
+  if (productTypeRaw && !isRegistrationProductType(productTypeRaw)) {
+    fieldErrors.productType = "نوع محصول نامعتبر است.";
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
+    return {
+      success: false,
+      formError: "لطفاً خطاهای فرم را برطرف کنید.",
+      fieldErrors,
+      values: submittedValues,
+    };
+  }
+
+  let createdFlowId: string;
+  let createdSlug: string;
 
   try {
     const flow = await createRegistrationFlow({
@@ -105,12 +151,45 @@ export async function createRegistrationFlowAction(
         ? productTypeRaw
         : RegistrationProductType.EXAM,
     });
+    createdFlowId = flow.id;
+    createdSlug = flow.slug;
+  } catch (error) {
+    console.error("CREATE_REGISTRATION_FLOW_FAILED", {
+      error,
+      submittedValues,
+    });
 
-    revalidateRegistrationFlow(flow.slug);
-    redirect(`/admin/registrations/flows/${flow.id}`);
-  } catch {
-    return;
+    const code = error instanceof Error ? error.message : "UNKNOWN";
+    if (code === "SLUG_DUPLICATE" || code === "SLUG_INVALID") {
+      return {
+        success: false,
+        formError: mapFlowError(error),
+        fieldErrors: {
+          slug: mapFlowError(error),
+        },
+        values: submittedValues,
+      };
+    }
+    if (code === "TITLE_REQUIRED") {
+      return {
+        success: false,
+        formError: mapFlowError(error),
+        fieldErrors: { title: mapFlowError(error) },
+        values: submittedValues,
+      };
+    }
+
+    return {
+      success: false,
+      formError: "ایجاد جریان ثبت‌نام انجام نشد.",
+      values: submittedValues,
+    };
   }
+
+  revalidatePath("/admin/registrations/flows");
+  revalidateRegistrationFlow(createdSlug);
+  // redirect() throws NEXT_REDIRECT — must stay outside catch.
+  redirect(`/admin/registrations/flows/${createdFlowId}`);
 }
 
 function parseFlowUpdateInput(
