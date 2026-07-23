@@ -21,8 +21,7 @@ export function RegistrationReceipt({
       <div className="rounded-2xl bg-gradient-to-l from-primary/10 to-secondary/10 px-5 py-6 text-center">
         <p className="text-xs font-medium text-secondary">رسید ثبت‌نام</p>
         <h1 className="mt-2 text-xl font-bold text-primary sm:text-2xl">
-          {registration.status === RegistrationStatus.COMPLETED ||
-          registration.status === RegistrationStatus.PAID
+          {registration.status === RegistrationStatus.APPROVED
             ? "ثبت‌نام تکمیل شد"
             : "ثبت‌نام ایجاد شد"}
         </h1>

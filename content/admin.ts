@@ -75,7 +75,13 @@ export const adminNavGroups: ReadonlyArray<{
         enabled: true,
         permission: "booking.view_all",
       },
-      { label: "ثبت‌نام‌ها", icon: "enrollments", enabled: false },
+      {
+        href: "/admin/registrations",
+        label: "ثبت‌نام‌ها",
+        icon: "enrollments",
+        enabled: true,
+        permission: "registrations.view",
+      },
     ],
   },
   {
@@ -241,6 +247,20 @@ export const adminBreadcrumbs = {
     { label: "مدیریت", href: "/admin" },
     { label: "رزرو نوبت" },
   ],
+  registrations: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "ثبت‌نام‌ها" },
+  ],
+  registrationDetail: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "ثبت‌نام‌ها", href: "/admin/registrations" },
+    { label: "پرونده ثبت‌نام" },
+  ],
+  registrationAbandoned: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "ثبت‌نام‌ها", href: "/admin/registrations" },
+    { label: "ثبت‌نام‌های ناقص" },
+  ],
   bookingServices: [
     { label: "مدیریت", href: "/admin" },
     { label: "رزرو نوبت", href: "/admin/bookings" },
@@ -327,8 +347,9 @@ export const dashboardQuickActions: readonly AdminQuickActionItem[] = [
   },
   {
     label: "مدیریت ثبت‌نام‌ها",
-    description: "در نقشه توسعه — پس از اتصال ماژول ثبت‌نام",
-    enabled: false,
+    description: "مرکز مدیریت ثبت‌نام‌های آنلاین",
+    href: "/admin/registrations",
+    enabled: true,
   },
 ];
 

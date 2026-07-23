@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { PublicFormShell } from "@/components/forms/PublicFormShell";
 import { RegistrationWizard } from "@/components/registration/RegistrationWizard";
 import { qalamchiExamCatalog } from "@/lib/registration/catalogs/qalamchi-exam";
@@ -12,10 +13,28 @@ export const metadata = createPageMetadata({
   robots: { index: false, follow: true },
 });
 
-export default function GhalamchiRegisterWizardPage() {
+type PageProps = {
+  searchParams: Promise<{ token?: string }>;
+};
+
+export default async function GhalamchiRegisterWizardPage({
+  searchParams,
+}: PageProps) {
+  const params = await searchParams;
   return (
     <PublicFormShell>
-      <RegistrationWizard catalog={qalamchiExamCatalog} />
+      <Suspense
+        fallback={
+          <div className="rounded-3xl border border-white/60 bg-white/80 p-8 text-sm text-muted shadow-[0_20px_50px_rgb(15_23_42_/_0.08)] backdrop-blur-md">
+            در حال آماده‌سازی فرم ثبت‌نام…
+          </div>
+        }
+      >
+        <RegistrationWizard
+          catalog={qalamchiExamCatalog}
+          initialResumeToken={params.token ?? null}
+        />
+      </Suspense>
     </PublicFormShell>
   );
 }

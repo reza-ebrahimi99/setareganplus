@@ -16,7 +16,6 @@ export type RegistrationCatalogOption = {
   key: string;
   title: string;
   description?: string;
-  /** Base amount in Rials before package/discount. */
   amountRials?: number;
 };
 
@@ -33,7 +32,6 @@ export type RegistrationFlowCatalog = {
   sessions: RegistrationCatalogOption[];
   packages: RegistrationCatalogPackage[];
   venueBranches: RegistrationCatalogOption[];
-  /** Uppercase discount code → amount off in Rials. */
   discountCodes: Record<string, number>;
 };
 
@@ -76,7 +74,8 @@ export type RegistrationWizardState = {
 };
 
 export type CreateRegistrationInput = {
-  flowKey: RegistrationFlowKey;
+  flowKey: string;
+  resumeToken?: string | null;
   student: {
     firstName: string;
     lastName: string;
@@ -124,13 +123,13 @@ export type RegistrationPublicView = {
   paymentMessage: string | null;
 };
 
-export const REGISTRATION_STATUS_LABELS: Record<RegistrationStatus, string> = {
-  DRAFT: "پیش‌نویس",
-  PENDING_PAYMENT: "در انتظار پرداخت",
-  PAID: "پرداخت‌شده",
-  COMPLETED: "تکمیل‌شده",
-  CANCELLED: "لغو شده",
-};
+export {
+  REGISTRATION_STATUS_LABELS,
+  REGISTRATION_PAYMENT_LABELS,
+  REGISTRATION_DOCUMENT_TYPE_LABELS,
+  WIZARD_STEP_LABELS,
+  WIZARD_TOTAL_STEPS,
+} from "@/lib/registration/status";
 
 export const PARENT_RELATIONSHIP_LABELS: Record<
   RegistrationParentRelationship,

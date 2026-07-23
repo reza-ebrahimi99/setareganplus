@@ -520,6 +520,9 @@ model Organization {
   paymentIntents             PaymentIntent[]
   paymentSessions            PaymentSession[]
   paymentEventLogs           PaymentEventLog[]
+  registrationDocuments      RegistrationDocument[]
+  registrationNotes          RegistrationNote[]
+  registrationActivities     RegistrationActivity[]
 
   @@map("organizations")
 }
@@ -586,9 +589,12 @@ model User {
   ownedLeads           Lead[]                   @relation("LeadOwner")
   assignedCrmTasks     CrmTask[]                @relation("CrmTaskAssignee")
   createdCrmTasks      CrmTask[]                @relation("CrmTaskCreator")
-  crmActivities        CrmActivity[]            @relation("CrmActivityActor")
-  crmLeadImportReports CrmLeadImportReport[]    @relation("CrmLeadImportActor")
-  portalAccountLinks   PortalAccountLink[]
+  crmActivities              CrmActivity[]              @relation("CrmActivityActor")
+  crmLeadImportReports       CrmLeadImportReport[]      @relation("CrmLeadImportActor")
+  portalAccountLinks         PortalAccountLink[]
+  registrationDocumentReviews RegistrationDocument[]    @relation("RegistrationDocumentReviewer")
+  registrationNotes          RegistrationNote[]         @relation("RegistrationNoteActor")
+  registrationActivities     RegistrationActivity[]     @relation("RegistrationActivityActor")
 
   @@index([status])
   @@index([deletedAt])
@@ -947,6 +953,7 @@ model MediaAsset {
   websiteMarketingCards   WebsiteMarketingCard[]    @relation("WebsiteMarketingCardImage")
   websitePageSectionMedia WebsitePageSectionMedia[] @relation("WebsitePageSectionMediaAsset")
   websitePageSeoImages    WebsitePage[]             @relation("WebsitePageSeoImage")
+  registrationDocuments   RegistrationDocument[]
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])
@@ -2609,12 +2616,25 @@ model AssessmentSubjectResult {
 
 // ─── Registration Engine v1 (reusable multi-product enrollment) ───────────────
 
+/// Operational status for Registration Management Center (admin + wizard lifecycle).
 enum RegistrationStatus {
-  DRAFT
-  PENDING_PAYMENT
-  PAID
-  COMPLETED
+  NEW
+  INCOMPLETE
+  NEEDS_CALL
+  WAITING_PAYMENT
+  WAITING_DOCUMENTS
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
   CANCELLED
+}
+
+enum RegistrationPaymentStatus {
+  UNPAID
+  AWAITING
+  PAID
+  FAILED
+  WAIVED
 }
 
 /// Product family — exam is first consumer; not hardcoded in the engine.
@@ -2634,6 +2654,34 @@ enum RegistrationParentRelationship {
   OTHER
 }
 
+enum RegistrationDocumentType {
+  STUDENT_PHOTO
+  NATIONAL_CARD
+  BIRTH_CERTIFICATE
+  PARENT_CONSENT
+  OTHER
+}
+
+enum RegistrationDocumentReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RegistrationActivityType {
+  CREATED
+  PROGRESS_SAVED
+  STATUS_CHANGED
+  DOCUMENT_UPLOADED
+  DOCUMENT_REVIEWED
+  NOTE_ADDED
+  CALL_LOGGED
+  SMS_QUEUED
+  PAYMENT_STARTED
+  RESUMED
+  SYSTEM
+}
+
 /// Per-org Jalali-year sequence for REG-{year}-{seq}.
 model RegistrationNumberCounter {
   id             String   @id @default(cuid())
@@ -2650,51 +2698,64 @@ model RegistrationNumberCounter {
   @@map("registration_number_counters")
 }
 
-/// Durable registration application (wizard → payment → CRM).
+/// Durable registration application (wizard → payment → CRM → admin ops).
 model Registration {
   id                 String                         @id @default(cuid())
   organizationId     String
   branchId           String
   registrationNumber String
-  status             RegistrationStatus             @default(DRAFT)
+  status             RegistrationStatus             @default(NEW)
+  paymentStatus      RegistrationPaymentStatus      @default(UNPAID)
   productType        RegistrationProductType
   /// Stable flow key, e.g. "qalamchi-exam". Drives catalog resolution.
   flowKey            String
   leadId             String?
 
-  studentFirstName String
-  studentLastName  String
-  nationalCode     String
-  birthDate        DateTime @db.Date
-  gender           Gender
-  gradeLabel       String
-  majorLabel       String?
-  schoolName       String
-  province         String
-  city             String
+  /// Wizard progress (1-based step index).
+  currentStep       Int       @default(1)
+  lastCompletedStep Int       @default(0)
+  completionPercent Int       @default(0)
+  totalSteps        Int       @default(6)
+  lastActivityAt    DateTime  @default(now())
+  /// Opaque token for public resume links.
+  resumeToken       String?
+  abandonedReason   String?
+  /// Full wizard draft JSON for autosave / resume.
+  wizardDraft       Json?
 
-  parentName             String
-  parentRelationship     RegistrationParentRelationship
-  parentMobile           String
-  parentMobileNormalized String
+  studentFirstName String?
+  studentLastName  String?
+  nationalCode     String?
+  birthDate        DateTime? @db.Date
+  gender           Gender?
+  gradeLabel       String?
+  majorLabel       String?
+  schoolName       String?
+  province         String?
+  city             String?
+
+  parentName             String?
+  parentRelationship     RegistrationParentRelationship?
+  parentMobile           String?
+  parentMobileNormalized String?
   parentSecondaryMobile  String?
   parentEmail            String?
   parentAddress          String?
 
   /// Selected product option keys + display titles (catalog-driven).
-  productKey        String
-  productTitle      String
-  sessionKey        String?
-  sessionTitle      String?
-  packageKey        String?
-  packageTitle      String?
-  venueBranchKey    String?
-  venueBranchTitle  String?
-  discountCode      String?
+  productKey       String?
+  productTitle     String?
+  sessionKey       String?
+  sessionTitle     String?
+  packageKey       String?
+  packageTitle     String?
+  venueBranchKey   String?
+  venueBranchTitle String?
+  discountCode     String?
 
-  amountRials      Int
+  amountRials      Int     @default(0)
   discountRials    Int     @default(0)
-  finalAmountRials Int
+  finalAmountRials Int     @default(0)
   currency         String  @default("IRR")
 
   /// Payment tracking placeholder (filled by PaymentService later).
@@ -2702,23 +2763,31 @@ model Registration {
   paymentProvider String?
   paymentRef      String?
 
-  metadata  Json?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  adminNotesSummary String?
+  metadata          Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch       Branch       @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  lead         Lead?        @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  organization Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch                  @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  lead         Lead?                   @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
   paymentIntents PaymentIntent[]
+  documents    RegistrationDocument[]
+  notes        RegistrationNote[]
+  activities   RegistrationActivity[]
 
   @@unique([organizationId, registrationNumber])
   @@unique([organizationId, id])
+  @@unique([resumeToken])
   @@index([organizationId, status, createdAt])
+  @@index([organizationId, paymentStatus, createdAt])
   @@index([organizationId, flowKey, createdAt])
   @@index([organizationId, nationalCode])
   @@index([organizationId, parentMobileNormalized])
   @@index([organizationId, leadId])
+  @@index([organizationId, lastActivityAt])
+  @@index([organizationId, completionPercent])
   @@index([organizationId, deletedAt])
   @@map("registrations")
 }
@@ -2817,4 +2886,69 @@ model PaymentEventLog {
 
   @@index([organizationId, paymentIntentId, createdAt])
   @@map("payment_event_logs")
+}
+
+model RegistrationDocument {
+  id               String                           @id @default(cuid())
+  organizationId   String
+  registrationId   String
+  mediaAssetId     String
+  documentType     RegistrationDocumentType
+  reviewStatus     RegistrationDocumentReviewStatus @default(PENDING)
+  reviewNote       String?
+  reviewedAt       DateTime?
+  reviewedByUserId String?
+  sortOrder        Int                              @default(0)
+  createdAt        DateTime                         @default(now())
+  updatedAt        DateTime                         @updatedAt
+  deletedAt        DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  registration Registration @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+  reviewedBy   User?        @relation("RegistrationDocumentReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, registrationId, documentType])
+  @@index([organizationId, reviewStatus])
+  @@index([mediaAssetId])
+  @@index([organizationId, deletedAt])
+  @@map("registration_documents")
+}
+
+model RegistrationNote {
+  id             String   @id @default(cuid())
+  organizationId String
+  registrationId String
+  body           String
+  actorUserId    String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  registration Registration @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
+  actor        User?        @relation("RegistrationNoteActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, registrationId, createdAt])
+  @@map("registration_notes")
+}
+
+model RegistrationActivity {
+  id             String                   @id @default(cuid())
+  organizationId String
+  registrationId String
+  activityType   RegistrationActivityType
+  title          String
+  summary        String?
+  actorUserId    String?
+  metadata       Json?
+  occurredAt     DateTime                 @default(now())
+  createdAt      DateTime                 @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  registration Registration @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
+  actor        User?        @relation("RegistrationActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, registrationId, occurredAt])
+  @@index([organizationId, activityType, occurredAt])
+  @@map("registration_activities")
 }

@@ -7,6 +7,7 @@ import { randomBytes } from "node:crypto";
 import {
   CrmActivityType,
   PaymentStatus,
+  RegistrationPaymentStatus,
   RegistrationStatus,
 } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
@@ -115,8 +116,8 @@ export async function startCheckoutForRegistration(params: {
   }
 
   if (
-    registration.status === RegistrationStatus.PAID ||
-    registration.status === RegistrationStatus.COMPLETED
+    registration.status === RegistrationStatus.APPROVED ||
+    registration.status === RegistrationStatus.UNDER_REVIEW
   ) {
     return { ok: false, error: "این ثبت‌نام قبلاً پرداخت شده است." };
   }
@@ -250,7 +251,8 @@ export async function startCheckoutForRegistration(params: {
         paymentProvider: provider.id,
         trackingCode: requested.trackingCode,
         paymentRef: requested.providerSessionId,
-        status: RegistrationStatus.PENDING_PAYMENT,
+        status: RegistrationStatus.WAITING_PAYMENT,
+        paymentStatus: RegistrationPaymentStatus.AWAITING,
       },
     });
 
@@ -431,7 +433,8 @@ export async function verifyPaymentCallback(params: {
       await tx.registration.update({
         where: { id: registration.id },
         data: {
-          status: RegistrationStatus.COMPLETED,
+          status: RegistrationStatus.APPROVED,
+          paymentStatus: RegistrationPaymentStatus.PAID,
           trackingCode,
           paymentRef: verified.providerRef,
           paymentProvider: provider.id,
@@ -441,7 +444,8 @@ export async function verifyPaymentCallback(params: {
       await tx.registration.update({
         where: { id: registration.id },
         data: {
-          status: RegistrationStatus.PENDING_PAYMENT,
+          status: RegistrationStatus.WAITING_PAYMENT,
+          paymentStatus: RegistrationPaymentStatus.FAILED,
           trackingCode,
           paymentRef: verified.providerRef,
         },

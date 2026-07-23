@@ -5,9 +5,18 @@ type AdminStatCardProps = {
   label: string;
   icon?: AdminStatIcon;
   compact?: boolean;
+  value?: string | number | null;
+  hint?: string | null;
 };
 
-export function AdminStatCard({ label, icon, compact = false }: AdminStatCardProps) {
+export function AdminStatCard({
+  label,
+  icon,
+  compact = false,
+  value,
+  hint,
+}: AdminStatCardProps) {
+  const hasValue = value !== undefined && value !== null && value !== "";
   return (
     <article className={`admin-card ${compact ? "p-4" : "p-5"}`}>
       <div className="flex items-start justify-between gap-3">
@@ -23,12 +32,14 @@ export function AdminStatCard({ label, icon, compact = false }: AdminStatCardPro
       </div>
       <p
         className={`font-bold tracking-tight text-primary ${compact ? "mt-2 text-2xl" : "mt-3 text-3xl"}`}
-        aria-label={`${label}: داده‌ای موجود نیست`}
+        aria-label={
+          hasValue ? `${label}: ${value}` : `${label}: داده‌ای موجود نیست`
+        }
       >
-        —
+        {hasValue ? value : "—"}
       </p>
       <p className="mt-2 text-xs text-muted">
-        پس از اتصال داده نمایش داده می‌شود
+        {hint ?? (hasValue ? "\u00a0" : "پس از اتصال داده نمایش داده می‌شود")}
       </p>
     </article>
   );

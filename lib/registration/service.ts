@@ -1,11 +1,13 @@
 /**
- * RegistrationService — create registration, CRM lead, payment intent boundary.
+ * RegistrationService — create/finalize registration, CRM lead, payment intent.
  */
 
 import {
   CrmActivityType,
   LeadSourceType,
+  RegistrationActivityType,
   RegistrationParentRelationship,
+  RegistrationPaymentStatus,
   RegistrationStatus,
   ServiceInterest,
 } from "@/generated/prisma/enums";
@@ -16,14 +18,19 @@ import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { validateIranianNationalId } from "@/lib/forms/validate-national-id";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { prisma } from "@/lib/prisma";
+import { recordRegistrationActivity } from "@/lib/registration/activity";
 import { getRegistrationCatalog } from "@/lib/registration/catalog-registry";
 import { nextRegistrationNumber } from "@/lib/registration/number-generator";
 import { startCheckoutForRegistration } from "@/lib/payment/service";
+import { computeCompletionPercent } from "@/lib/registration/progress";
+import {
+  REGISTRATION_STATUS_LABELS,
+  WIZARD_TOTAL_STEPS,
+} from "@/lib/registration/status";
 import type {
   CreateRegistrationInput,
   RegistrationPublicView,
 } from "@/lib/registration/types";
-import { REGISTRATION_STATUS_LABELS } from "@/lib/registration/types";
 import {
   birthDateToUtcDate,
   resolvePricing,
@@ -51,6 +58,7 @@ export type CreateRegistrationResult =
       paymentMessage: string;
       checkoutUrl: string | null;
       trackingCode: string | null;
+      resumeToken: string | null;
     }
   | { ok: false; error: string; fieldErrors?: Record<string, string> };
 
@@ -125,59 +133,115 @@ export async function createRegistration(
   const organization = await getCurrentOrganization();
   const branchId = await resolvePublicBranchId(organization.id);
   const birthDate = birthDateToUtcDate(input.student.birthDate);
+  const now = new Date();
+  const completionPercent = computeCompletionPercent(WIZARD_TOTAL_STEPS);
 
-  const registration = await prisma.$transaction(async (tx) => {
-    const number = await nextRegistrationNumber({
-      organizationId: organization.id,
-      tx,
-    });
+  const payload = {
+    status: RegistrationStatus.WAITING_PAYMENT,
+    paymentStatus: RegistrationPaymentStatus.AWAITING,
+    productType: catalog.productType,
+    flowKey: catalog.flowKey,
+    studentFirstName: input.student.firstName.trim(),
+    studentLastName: input.student.lastName.trim(),
+    nationalCode: national.normalized,
+    birthDate,
+    gender: input.student.gender,
+    gradeLabel: input.student.gradeLabel.trim(),
+    majorLabel: input.student.majorLabel?.trim() || null,
+    schoolName: input.student.schoolName.trim(),
+    province: input.student.province.trim(),
+    city: input.student.city.trim(),
+    parentName: input.parent.parentName.trim(),
+    parentRelationship: input.parent.relationship,
+    parentMobile: mobile.normalized,
+    parentMobileNormalized: mobile.normalized,
+    parentSecondaryMobile: secondaryNormalized,
+    parentEmail: email.email,
+    parentAddress: input.parent.address?.trim() || null,
+    productKey: input.details.productKey,
+    productTitle: pricing.productTitle,
+    sessionKey: input.details.sessionKey,
+    sessionTitle: pricing.sessionTitle,
+    packageKey: input.details.packageKey,
+    packageTitle: pricing.packageTitle,
+    venueBranchKey: input.details.venueBranchKey,
+    venueBranchTitle: pricing.venueBranchTitle,
+    discountCode: pricing.discountCode,
+    amountRials: pricing.amountRials,
+    discountRials: pricing.discountRials,
+    finalAmountRials: pricing.finalAmountRials,
+    currentStep: WIZARD_TOTAL_STEPS,
+    lastCompletedStep: WIZARD_TOTAL_STEPS,
+    completionPercent,
+    totalSteps: WIZARD_TOTAL_STEPS,
+    lastActivityAt: now,
+    abandonedReason: null,
+  };
 
-    return tx.registration.create({
-      data: {
-        organizationId: organization.id,
-        branchId,
-        registrationNumber: number.registrationNumber,
-        status: RegistrationStatus.PENDING_PAYMENT,
-        productType: catalog.productType,
-        flowKey: catalog.flowKey,
-        studentFirstName: input.student.firstName.trim(),
-        studentLastName: input.student.lastName.trim(),
-        nationalCode: national.normalized,
-        birthDate,
-        gender: input.student.gender,
-        gradeLabel: input.student.gradeLabel.trim(),
-        majorLabel: input.student.majorLabel?.trim() || null,
-        schoolName: input.student.schoolName.trim(),
-        province: input.student.province.trim(),
-        city: input.student.city.trim(),
-        parentName: input.parent.parentName.trim(),
-        parentRelationship: input.parent.relationship,
-        parentMobile: mobile.normalized,
-        parentMobileNormalized: mobile.normalized,
-        parentSecondaryMobile: secondaryNormalized,
-        parentEmail: email.email,
-        parentAddress: input.parent.address?.trim() || null,
-        productKey: input.details.productKey,
-        productTitle: pricing.productTitle,
-        sessionKey: input.details.sessionKey,
-        sessionTitle: pricing.sessionTitle,
-        packageKey: input.details.packageKey,
-        packageTitle: pricing.packageTitle,
-        venueBranchKey: input.details.venueBranchKey,
-        venueBranchTitle: pricing.venueBranchTitle,
-        discountCode: pricing.discountCode,
-        amountRials: pricing.amountRials,
-        discountRials: pricing.discountRials,
-        finalAmountRials: pricing.finalAmountRials,
-      },
+  let registration: {
+    id: string;
+    registrationNumber: string;
+    status: RegistrationStatus;
+    finalAmountRials: number;
+    productTitle: string | null;
+    resumeToken: string | null;
+  };
+
+  const existingDraft = input.resumeToken
+    ? await prisma.registration.findFirst({
+        where: {
+          organizationId: organization.id,
+          resumeToken: input.resumeToken,
+          deletedAt: null,
+        },
+        select: { id: true, registrationNumber: true, resumeToken: true },
+      })
+    : null;
+
+  if (existingDraft) {
+    registration = await prisma.registration.update({
+      where: { id: existingDraft.id },
+      data: payload,
       select: {
         id: true,
         registrationNumber: true,
         status: true,
         finalAmountRials: true,
         productTitle: true,
+        resumeToken: true,
       },
     });
+  } else {
+    registration = await prisma.$transaction(async (tx) => {
+      const number = await nextRegistrationNumber({
+        organizationId: organization.id,
+        tx,
+      });
+      return tx.registration.create({
+        data: {
+          organizationId: organization.id,
+          branchId,
+          registrationNumber: number.registrationNumber,
+          ...payload,
+        },
+        select: {
+          id: true,
+          registrationNumber: true,
+          status: true,
+          finalAmountRials: true,
+          productTitle: true,
+          resumeToken: true,
+        },
+      });
+    });
+  }
+
+  await recordRegistrationActivity({
+    organizationId: organization.id,
+    registrationId: registration.id,
+    activityType: RegistrationActivityType.PAYMENT_STARTED,
+    title: "آماده پرداخت",
+    summary: registration.registrationNumber,
   });
 
   const leadResult = await upsertLead({
@@ -255,6 +319,7 @@ export async function createRegistration(
     paymentMessage: "در حال انتقال به درگاه پرداخت…",
     checkoutUrl: payment.checkoutUrl,
     trackingCode: payment.trackingCode,
+    resumeToken: registration.resumeToken,
   };
 }
 
@@ -271,12 +336,16 @@ export async function getRegistrationByNumber(
   });
   if (!row) return null;
 
+  const studentFullName =
+    `${row.studentFirstName ?? ""} ${row.studentLastName ?? ""}`.trim() ||
+    "—";
+
   return {
     id: row.id,
     registrationNumber: row.registrationNumber,
     status: row.status,
-    studentFullName: `${row.studentFirstName} ${row.studentLastName}`.trim(),
-    productTitle: row.productTitle,
+    studentFullName,
+    productTitle: row.productTitle ?? "—",
     sessionTitle: row.sessionTitle,
     packageTitle: row.packageTitle,
     venueBranchTitle: row.venueBranchTitle,
@@ -286,11 +355,8 @@ export async function getRegistrationByNumber(
     trackingCode: row.trackingCode,
     createdAt: row.createdAt,
     paymentMessage:
-      row.status === RegistrationStatus.PENDING_PAYMENT
+      row.status === RegistrationStatus.WAITING_PAYMENT
         ? `وضعیت: ${REGISTRATION_STATUS_LABELS[row.status]} — در صورت نیاز می‌توانید پرداخت را از صفحه خطا دوباره انجام دهید.`
-        : row.status === RegistrationStatus.COMPLETED ||
-            row.status === RegistrationStatus.PAID
-          ? `وضعیت: ${REGISTRATION_STATUS_LABELS[row.status]}`
-          : `وضعیت: ${REGISTRATION_STATUS_LABELS[row.status]}`,
+        : `وضعیت: ${REGISTRATION_STATUS_LABELS[row.status]}`,
   };
 }
