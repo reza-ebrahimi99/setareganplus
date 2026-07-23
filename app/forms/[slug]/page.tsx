@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FormFieldType } from "@/generated/prisma/enums";
-import { PublicForm } from "@/components/forms/PublicForm";
+import { PublicFormEntry } from "@/components/forms/PublicFormEntry";
 import { PublicFormHeader } from "@/components/forms/PublicFormHeader";
 import { PublicFormShell } from "@/components/forms/PublicFormShell";
 import { AVAILABILITY_MESSAGES } from "@/lib/forms/evaluate-form-availability";
@@ -242,7 +242,7 @@ export default async function PublicFormPage({ params }: PublicFormPageProps) {
           aria-label="فرم"
           className="public-form-section public-form-section-delay rounded-2xl border border-border bg-surface p-5 shadow-[0_8px_24px_rgb(15_23_42_/_0.06)] sm:p-8"
         >
-          <PublicForm data={result.data} />
+          <PublicFormEntry data={result.data} />
         </section>
       </article>
     </PublicFormShell>

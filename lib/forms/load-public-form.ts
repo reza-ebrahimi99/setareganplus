@@ -1,5 +1,6 @@
 import {
   FormVersionStatus,
+  type FormMode as FormModeValue,
   type FormPurpose,
   type FormFieldType,
 } from "@/generated/prisma/enums";
@@ -19,6 +20,7 @@ import { prisma } from "@/lib/prisma";
 
 export type PublicFormField = {
   id: string;
+  formStepId: string | null;
   fieldKey: string;
   sortOrder: number;
   type: FormFieldType;
@@ -28,6 +30,14 @@ export type PublicFormField = {
   required: boolean;
   config: unknown;
   visibilityConditions: unknown;
+};
+
+export type PublicFormStep = {
+  id: string;
+  stepKey: string;
+  sortOrder: number;
+  title: string;
+  description: string | null;
 };
 
 export type PublicFormPoster = {
@@ -40,6 +50,7 @@ export type PublicFormData = {
     id: string;
     slug: string;
     purpose: FormPurpose;
+    mode: FormModeValue;
   };
   version: {
     id: string;
@@ -52,6 +63,7 @@ export type PublicFormData = {
     capacity: number | null;
   };
   poster: PublicFormPoster | null;
+  steps: PublicFormStep[];
   fields: PublicFormField[];
   availability: {
     status: FormAvailabilityStatus;
@@ -111,6 +123,7 @@ export async function loadPublicFormBySlug(
         id: true,
         slug: true,
         purpose: true,
+        mode: true,
         publishedVersionId: true,
       },
     });
@@ -147,10 +160,21 @@ export async function loadPublicFormBySlug(
             deletedAt: true,
           },
         },
+        steps: {
+          orderBy: { sortOrder: "asc" },
+          select: {
+            id: true,
+            stepKey: true,
+            sortOrder: true,
+            title: true,
+            description: true,
+          },
+        },
         fields: {
           orderBy: { sortOrder: "asc" },
           select: {
             id: true,
+            formStepId: true,
             fieldKey: true,
             sortOrder: true,
             type: true,
@@ -260,6 +284,7 @@ export async function loadPublicFormBySlug(
           id: form.id,
           slug: form.slug,
           purpose: form.purpose,
+          mode: form.mode,
         },
         version: {
           id: version.id,
@@ -272,8 +297,16 @@ export async function loadPublicFormBySlug(
           capacity: version.capacity,
         },
         poster,
+        steps: version.steps.map((step) => ({
+          id: step.id,
+          stepKey: step.stepKey,
+          sortOrder: step.sortOrder,
+          title: step.title,
+          description: step.description,
+        })),
         fields: version.fields.map((field) => ({
           id: field.id,
+          formStepId: field.formStepId,
           fieldKey: field.fieldKey,
           sortOrder: field.sortOrder,
           type: field.type,
