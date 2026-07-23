@@ -1,0 +1,25 @@
+-- Phase 1: add enum values ONLY.
+-- PostgreSQL requires these values to be committed before use (error 55P04).
+-- Do NOT SET DEFAULT / UPDATE / INSERT with these values in this migration.
+
+ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'SCHOOL_REGISTRATION';
+ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'BOOK';
+ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'WORKBOOK';
+ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'SCHOOL_UNIFORM';
+ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'SCHOOL_SUPPLIES';
+ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'TRANSPORT';
+ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'MEAL_PLAN';
+ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'SUMMER_CAMP';
+ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'COURSE';
+ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'TUITION_PAYMENT';
+ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'CERTIFICATE';
+ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'CONSULTATION';
+ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'DIGITAL_PRODUCT';
+ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'OTHER';
+
+ALTER TYPE "RegistrationFlowStepKey" ADD VALUE IF NOT EXISTS 'CONFIRMATION';
+
+ALTER TYPE "RegistrationFlowPaymentMode" ADD VALUE IF NOT EXISTS 'FIXED_PRICE';
+ALTER TYPE "RegistrationFlowPaymentMode" ADD VALUE IF NOT EXISTS 'OPTIONAL';
+ALTER TYPE "RegistrationFlowPaymentMode" ADD VALUE IF NOT EXISTS 'VARIABLE_PRICE';
+ALTER TYPE "RegistrationFlowPaymentMode" ADD VALUE IF NOT EXISTS 'INSTALLMENT';

@@ -1,30 +1,5 @@
--- Product & Service Flow foundation (extends Registration Flow; keeps table names / routes).
--- Does NOT edit 20260724013000_registration_flow_management.
-
--- Product types
-ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'SCHOOL_REGISTRATION';
-ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'BOOK';
-ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'WORKBOOK';
-ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'SCHOOL_UNIFORM';
-ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'SCHOOL_SUPPLIES';
-ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'TRANSPORT';
-ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'MEAL_PLAN';
-ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'SUMMER_CAMP';
-ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'COURSE';
-ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'TUITION_PAYMENT';
-ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'CERTIFICATE';
-ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'CONSULTATION';
-ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'DIGITAL_PRODUCT';
-ALTER TYPE "RegistrationProductType" ADD VALUE IF NOT EXISTS 'OTHER';
-
--- Workflow step
-ALTER TYPE "RegistrationFlowStepKey" ADD VALUE IF NOT EXISTS 'CONFIRMATION';
-
--- Payment modes (keep FIXED_AMOUNT / OPTIONAL_PAYMENT for existing rows)
-ALTER TYPE "RegistrationFlowPaymentMode" ADD VALUE IF NOT EXISTS 'FIXED_PRICE';
-ALTER TYPE "RegistrationFlowPaymentMode" ADD VALUE IF NOT EXISTS 'OPTIONAL';
-ALTER TYPE "RegistrationFlowPaymentMode" ADD VALUE IF NOT EXISTS 'VARIABLE_PRICE';
-ALTER TYPE "RegistrationFlowPaymentMode" ADD VALUE IF NOT EXISTS 'INSTALLMENT';
+-- Phase 2: safely use enum values committed in 20260724023000_add_registration_product_types.
+-- Also creates Product & Service Flow foundation tables.
 
 CREATE TYPE "RegistrationFlowFulfillmentMode" AS ENUM (
   'NONE',
@@ -52,6 +27,7 @@ CREATE TYPE "RegistrationFlowVariantKind" AS ENUM (
 ALTER TABLE "registration_flows"
   ADD COLUMN IF NOT EXISTS "fulfillmentMode" "RegistrationFlowFulfillmentMode" NOT NULL DEFAULT 'NONE';
 
+-- Uses enum values added + committed in the previous migration.
 ALTER TABLE "registration_flows"
   ALTER COLUMN "productType" SET DEFAULT 'SCHOOL_REGISTRATION'::"RegistrationProductType";
 
