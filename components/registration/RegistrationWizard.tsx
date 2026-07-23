@@ -15,8 +15,8 @@ import {
 import { PersianDobSelect } from "@/components/registration/PersianDobSelect";
 import { RegistrationStepper } from "@/components/registration/RegistrationStepper";
 import {
-  saveRegistrationProgressAction,
-  submitRegistrationAction,
+  saveRegistrationProgressAction as defaultSaveProgressAction,
+  submitRegistrationAction as defaultSubmitAction,
 } from "@/app/ghalamchi/register/actions";
 import { formatRials } from "@/lib/registration/format";
 import { IRAN_PROVINCES } from "@/lib/registration/iran-locations";
@@ -77,7 +77,15 @@ type RegistrationWizardProps = {
   catalog: RegistrationFlowCatalog;
   initialResumeToken?: string | null;
   initialDraft?: RegistrationWizardInitialDraft | null;
+  receiptBasePath?: string;
+  saveProgressAction?: typeof defaultSaveProgressAction;
+  submitAction?: typeof defaultSubmitAction;
+  uploadDocumentAction?: ComponentProps<
+    typeof DocumentUploadStep
+  >["uploadDocumentAction"];
 };
+
+const DEFAULT_RECEIPT_BASE_PATH = "/ghalamchi/register/receipt";
 
 function resumeStorageKey(flowKey: string) {
   return `reg-resume-${flowKey}`;
@@ -135,6 +143,10 @@ export function RegistrationWizard({
   catalog,
   initialResumeToken = null,
   initialDraft = null,
+  receiptBasePath = DEFAULT_RECEIPT_BASE_PATH,
+  saveProgressAction = defaultSaveProgressAction,
+  submitAction = defaultSubmitAction,
+  uploadDocumentAction,
 }: RegistrationWizardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -168,8 +180,8 @@ export function RegistrationWizard({
   const [tokenHydrated, setTokenHydrated] = useState(false);
 
   const pricing = useMemo(
-    () => resolvePricing(catalog.flowKey, details),
-    [catalog.flowKey, details],
+    () => resolvePricing(catalog, details),
+    [catalog, details],
   );
 
   const majorRequired = registrationGradeRequiresMajor(student.gradeSlug);
@@ -218,7 +230,7 @@ export function RegistrationWizard({
     setSaving(true);
     setFormError(null);
     try {
-      const result = await saveRegistrationProgressAction({
+      const result = await saveProgressAction({
         flowKey: catalog.flowKey,
         resumeToken,
         currentStep: nextStep,
@@ -325,7 +337,7 @@ export function RegistrationWizard({
     }
 
     startTransition(async () => {
-      const result = await submitRegistrationAction({
+      const result = await submitAction({
         flowKey: catalog.flowKey,
         resumeToken,
         honeypot,
@@ -372,7 +384,7 @@ export function RegistrationWizard({
       }
 
       router.push(
-        `/ghalamchi/register/receipt/${encodeURIComponent(result.registrationNumber)}`,
+        `${receiptBasePath}/${encodeURIComponent(result.registrationNumber)}`,
       );
     });
   }
@@ -457,6 +469,7 @@ export function RegistrationWizard({
           <DocumentUploadStep
             resumeToken={resumeToken}
             documents={documents}
+            uploadDocumentAction={uploadDocumentAction}
             onUploaded={(doc) =>
               setDocuments((current) => {
                 if (current.some((item) => item.documentId === doc.documentId)) {

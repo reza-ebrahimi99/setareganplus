@@ -76,6 +76,8 @@ export type RegistrationWizardState = {
 export type CreateRegistrationInput = {
   flowKey: string;
   resumeToken?: string | null;
+  /** When flow paymentMode is OPTIONAL_PAYMENT, skip checkout and finalize as waived. */
+  skipOptionalPayment?: boolean;
   student: {
     firstName: string;
     lastName: string;
@@ -110,6 +112,7 @@ export type RegistrationPublicView = {
   id: string;
   registrationNumber: string;
   status: RegistrationStatus;
+  paymentStatus: import("@/generated/prisma/enums").RegistrationPaymentStatus;
   studentFullName: string;
   productTitle: string;
   sessionTitle: string | null;
@@ -119,6 +122,8 @@ export type RegistrationPublicView = {
   discountRials: number;
   finalAmountRials: number;
   trackingCode: string | null;
+  paymentReceiptNumber: string | null;
+  paymentProvider: string | null;
   createdAt: Date;
   paymentMessage: string | null;
 };

@@ -6,6 +6,7 @@ import {
   CrmActivityType,
   LeadSourceType,
   RegistrationActivityType,
+  RegistrationFlowPaymentMode,
   RegistrationParentRelationship,
   RegistrationPaymentStatus,
   RegistrationStatus,
@@ -19,7 +20,13 @@ import { validateIranianNationalId } from "@/lib/forms/validate-national-id";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { prisma } from "@/lib/prisma";
 import { recordRegistrationActivity } from "@/lib/registration/activity";
-import { getRegistrationCatalog } from "@/lib/registration/catalog-registry";
+import { resolveRegistrationCatalog } from "@/lib/registration/flows/resolve-catalog";
+import {
+  findRegistrationFlowBySlug,
+} from "@/lib/registration/flows/public";
+import {
+  flowRequiresCheckout,
+} from "@/lib/registration/flows/constants";
 import { nextRegistrationNumber } from "@/lib/registration/number-generator";
 import { startCheckoutForRegistration } from "@/lib/payment/service";
 import { computeCompletionPercent } from "@/lib/registration/progress";
@@ -65,7 +72,12 @@ export type CreateRegistrationResult =
 export async function createRegistration(
   input: CreateRegistrationInput,
 ): Promise<CreateRegistrationResult> {
-  const validated = validateCreateRegistrationInput(input);
+  const catalog = await resolveRegistrationCatalog(input.flowKey);
+  if (!catalog) {
+    return { ok: false, error: "جریان ثبت‌نام یافت نشد." };
+  }
+
+  const validated = validateCreateRegistrationInput(input, catalog);
   if (!validated.ok) {
     return {
       ok: false,
@@ -74,12 +86,7 @@ export async function createRegistration(
     };
   }
 
-  const catalog = getRegistrationCatalog(input.flowKey);
-  if (!catalog) {
-    return { ok: false, error: "جریان ثبت‌نام یافت نشد." };
-  }
-
-  const pricing = resolvePricing(input.flowKey, {
+  const pricing = resolvePricing(catalog, {
     productKey: input.details.productKey,
     sessionKey: input.details.sessionKey,
     packageKey: input.details.packageKey,
@@ -136,11 +143,36 @@ export async function createRegistration(
   const now = new Date();
   const completionPercent = computeCompletionPercent(WIZARD_TOTAL_STEPS);
 
+  const dbFlow = await findRegistrationFlowBySlug(
+    organization.id,
+    catalog.flowKey,
+  );
+  const paymentMode =
+    dbFlow?.paymentMode ?? RegistrationFlowPaymentMode.FIXED_AMOUNT;
+  const skipOptional = Boolean(input.skipOptionalPayment);
+  const needsCheckout = flowRequiresCheckout(paymentMode, {
+    skipOptionalPayment: skipOptional,
+  });
+
+  // DB-managed flows pin amount from flow config; coded catalogs keep package pricing.
+  const amountRials = dbFlow
+    ? needsCheckout
+      ? dbFlow.paymentAmountRials
+      : 0
+    : pricing.amountRials;
+  const discountRials = dbFlow ? 0 : pricing.discountRials;
+  const finalAmountRials = Math.max(0, amountRials - discountRials);
+
   const payload = {
-    status: RegistrationStatus.WAITING_PAYMENT,
-    paymentStatus: RegistrationPaymentStatus.AWAITING,
+    status: needsCheckout
+      ? RegistrationStatus.WAITING_PAYMENT
+      : RegistrationStatus.UNDER_REVIEW,
+    paymentStatus: needsCheckout
+      ? RegistrationPaymentStatus.AWAITING
+      : RegistrationPaymentStatus.WAIVED,
     productType: catalog.productType,
     flowKey: catalog.flowKey,
+    registrationFlowId: dbFlow?.id ?? null,
     studentFirstName: input.student.firstName.trim(),
     studentLastName: input.student.lastName.trim(),
     nationalCode: national.normalized,
@@ -163,13 +195,13 @@ export async function createRegistration(
     sessionKey: input.details.sessionKey,
     sessionTitle: pricing.sessionTitle,
     packageKey: input.details.packageKey,
-    packageTitle: pricing.packageTitle,
+    packageTitle: dbFlow?.paymentTitle ?? pricing.packageTitle,
     venueBranchKey: input.details.venueBranchKey,
     venueBranchTitle: pricing.venueBranchTitle,
     discountCode: pricing.discountCode,
-    amountRials: pricing.amountRials,
-    discountRials: pricing.discountRials,
-    finalAmountRials: pricing.finalAmountRials,
+    amountRials,
+    discountRials,
+    finalAmountRials,
     currentStep: WIZARD_TOTAL_STEPS,
     lastCompletedStep: WIZARD_TOTAL_STEPS,
     completionPercent,
@@ -302,6 +334,34 @@ export async function createRegistration(
     });
   }
 
+  if (!needsCheckout) {
+    await recordRegistrationActivity({
+      organizationId: organization.id,
+      registrationId: registration.id,
+      activityType: RegistrationActivityType.SYSTEM,
+      title: "ثبت‌نام بدون پرداخت",
+      summary:
+        paymentMode === RegistrationFlowPaymentMode.FREE
+          ? "جریان رایگان — پرداخت الزامی نیست"
+          : "پرداخت اختیاری رد شد — ثبت‌نام قابل پیگیری است",
+      metadata: { paymentMode, finalAmountRials },
+    });
+
+    return {
+      ok: true,
+      registrationId: registration.id,
+      registrationNumber: registration.registrationNumber,
+      status: registration.status,
+      paymentMessage:
+        paymentMode === RegistrationFlowPaymentMode.FREE
+          ? "ثبت‌نام رایگان با موفقیت ثبت شد."
+          : "ثبت‌نام بدون پرداخت ثبت شد؛ در صورت نیاز می‌توانید بعداً پرداخت کنید.",
+      checkoutUrl: null,
+      trackingCode: null,
+      resumeToken: registration.resumeToken,
+    };
+  }
+
   const payment = await startCheckoutForRegistration({
     organizationId: organization.id,
     registrationId: registration.id,
@@ -333,17 +393,30 @@ export async function getRegistrationByNumber(
       registrationNumber: registrationNumber.trim(),
       deletedAt: null,
     },
+    include: {
+      paymentIntents: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: {
+          receiptNumber: true,
+          trackingCode: true,
+          provider: true,
+        },
+      },
+    },
   });
   if (!row) return null;
 
   const studentFullName =
     `${row.studentFirstName ?? ""} ${row.studentLastName ?? ""}`.trim() ||
     "—";
+  const latestIntent = row.paymentIntents[0] ?? null;
 
   return {
     id: row.id,
     registrationNumber: row.registrationNumber,
     status: row.status,
+    paymentStatus: row.paymentStatus,
     studentFullName,
     productTitle: row.productTitle ?? "—",
     sessionTitle: row.sessionTitle,
@@ -352,11 +425,13 @@ export async function getRegistrationByNumber(
     amountRials: row.amountRials,
     discountRials: row.discountRials,
     finalAmountRials: row.finalAmountRials,
-    trackingCode: row.trackingCode,
+    trackingCode: row.trackingCode ?? latestIntent?.trackingCode ?? null,
+    paymentReceiptNumber: latestIntent?.receiptNumber ?? null,
+    paymentProvider: row.paymentProvider ?? latestIntent?.provider ?? null,
     createdAt: row.createdAt,
     paymentMessage:
       row.status === RegistrationStatus.WAITING_PAYMENT
-        ? `وضعیت: ${REGISTRATION_STATUS_LABELS[row.status]} — در صورت نیاز می‌توانید پرداخت را از صفحه خطا دوباره انجام دهید.`
+        ? `وضعیت: ${REGISTRATION_STATUS_LABELS[row.status]} — در صورت نیاز می‌توانید پرداخت را دوباره انجام دهید.`
         : `وضعیت: ${REGISTRATION_STATUS_LABELS[row.status]}`,
   };
 }

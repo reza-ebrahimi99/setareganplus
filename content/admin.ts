@@ -16,12 +16,19 @@ export type AdminNavIcon =
   | "reports"
   | "settings";
 
+type AdminNavChildItem = {
+  href: string;
+  label: string;
+  permission?: Permission;
+};
+
 type AdminNavItemEnabled = {
   href: string;
   label: string;
   icon: AdminNavIcon;
   enabled: true;
   permission?: Permission;
+  children?: readonly AdminNavChildItem[];
 };
 
 type AdminNavItemDisabled = {
@@ -81,6 +88,23 @@ export const adminNavGroups: ReadonlyArray<{
         icon: "enrollments",
         enabled: true,
         permission: "registrations.view",
+        children: [
+          {
+            href: "/admin/registrations",
+            label: "همه ثبت‌نام‌ها",
+            permission: "registrations.view",
+          },
+          {
+            href: "/admin/registrations/abandoned",
+            label: "ثبت‌نام‌های ناقص",
+            permission: "registrations.view",
+          },
+          {
+            href: "/admin/registrations/flows",
+            label: "فرم‌ها و جریان‌های ثبت‌نام",
+            permission: "registration_flows.view",
+          },
+        ],
       },
     ],
   },
@@ -260,6 +284,23 @@ export const adminBreadcrumbs = {
     { label: "مدیریت", href: "/admin" },
     { label: "ثبت‌نام‌ها", href: "/admin/registrations" },
     { label: "ثبت‌نام‌های ناقص" },
+  ],
+  registrationFlows: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "ثبت‌نام‌ها", href: "/admin/registrations" },
+    { label: "جریان‌های ثبت‌نام" },
+  ],
+  registrationFlowsNew: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "ثبت‌نام‌ها", href: "/admin/registrations" },
+    { label: "جریان‌های ثبت‌نام", href: "/admin/registrations/flows" },
+    { label: "جریان جدید" },
+  ],
+  registrationFlowDetail: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "ثبت‌نام‌ها", href: "/admin/registrations" },
+    { label: "جریان‌های ثبت‌نام", href: "/admin/registrations/flows" },
+    { label: "ویرایش جریان" },
   ],
   bookingServices: [
     { label: "مدیریت", href: "/admin" },

@@ -12,7 +12,8 @@ import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { prisma } from "@/lib/prisma";
 import { recordRegistrationActivity } from "@/lib/registration/activity";
-import { getRegistrationCatalog } from "@/lib/registration/catalog-registry";
+import { findRegistrationFlowBySlug } from "@/lib/registration/flows/public";
+import { resolveRegistrationCatalog } from "@/lib/registration/flows/resolve-catalog";
 import { nextRegistrationNumber } from "@/lib/registration/number-generator";
 import {
   computeCompletionPercent,
@@ -111,7 +112,7 @@ function mapFieldsFromDraft(input: SaveProgressInput) {
 export async function saveRegistrationProgress(
   input: SaveProgressInput,
 ): Promise<SaveProgressResult> {
-  const catalog = getRegistrationCatalog(input.flowKey);
+  const catalog = await resolveRegistrationCatalog(input.flowKey);
   if (!catalog) return { ok: false, error: "جریان ثبت‌نام یافت نشد." };
 
   const currentStep = Math.max(
@@ -125,9 +126,13 @@ export async function saveRegistrationProgress(
   const completionPercent = computeCompletionPercent(lastCompletedStep);
   const organization = await getCurrentOrganization();
   const branchId = await resolvePublicBranchId(organization.id);
+  const dbFlow = await findRegistrationFlowBySlug(
+    organization.id,
+    catalog.flowKey,
+  );
   const fields = mapFieldsFromDraft(input);
   const now = touchActivityNow();
-
+  const flowLink = { registrationFlowId: dbFlow?.id ?? null };
   const existing = input.resumeToken
     ? await prisma.registration.findFirst({
         where: {
@@ -161,6 +166,7 @@ export async function saveRegistrationProgress(
       where: { id: existing.id },
       data: {
         ...fields,
+        ...flowLink,
         productType: catalog.productType,
         flowKey: catalog.flowKey,
         currentStep,
@@ -223,6 +229,7 @@ export async function saveRegistrationProgress(
             : RegistrationStatus.NEW,
         productType: catalog.productType,
         flowKey: catalog.flowKey,
+        registrationFlowId: dbFlow?.id ?? null,
         resumeToken,
         currentStep,
         lastCompletedStep,

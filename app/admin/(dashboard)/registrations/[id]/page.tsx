@@ -89,10 +89,21 @@ export default async function AdminRegistrationDetailPage({
           status: true,
         },
       },
+      paymentIntents: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: {
+          receiptNumber: true,
+          trackingCode: true,
+          provider: true,
+        },
+      },
     },
   });
 
   if (!registration) notFound();
+
+  const latestPaymentIntent = registration.paymentIntents[0] ?? null;
 
   const applicant =
     `${registration.studentFirstName ?? ""} ${registration.studentLastName ?? ""}`.trim() ||
@@ -257,8 +268,21 @@ export default async function AdminRegistrationDetailPage({
           />
           <Info
             label="کد پیگیری"
-            value={registration.trackingCode ?? "هنوز تنظیم نشده"}
+            value={
+              registration.trackingCode ??
+              latestPaymentIntent?.trackingCode ??
+              "هنوز تنظیم نشده"
+            }
           />
+          {latestPaymentIntent?.receiptNumber ? (
+            <Info
+              label="شماره رسید پرداخت"
+              value={toPersianDigits(latestPaymentIntent.receiptNumber)}
+            />
+          ) : null}
+          {latestPaymentIntent?.provider ? (
+            <Info label="درگاه" value={latestPaymentIntent.provider} />
+          ) : null}
         </section>
 
         <section className="admin-card space-y-3 p-5">

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { RegistrationDocumentType } from "@/generated/prisma/enums";
 import { REGISTRATION_DOCUMENT_TYPE_LABELS } from "@/lib/registration/status";
-import { uploadRegistrationDocumentAction } from "@/app/ghalamchi/register/actions";
+import { uploadRegistrationDocumentAction as defaultUploadDocumentAction } from "@/app/ghalamchi/register/actions";
 
 type DocItem = {
   documentId: string;
@@ -16,6 +16,7 @@ type DocumentUploadStepProps = {
   documents: DocItem[];
   onUploaded: (doc: DocItem) => void;
   onNeedSaveFirst: () => Promise<string | null>;
+  uploadDocumentAction?: typeof defaultUploadDocumentAction;
 };
 
 const REQUIRED_TYPES: RegistrationDocumentType[] = [
@@ -30,6 +31,7 @@ export function DocumentUploadStep({
   documents,
   onUploaded,
   onNeedSaveFirst,
+  uploadDocumentAction = defaultUploadDocumentAction,
 }: DocumentUploadStepProps) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export function DocumentUploadStep({
       formData.set("resumeToken", token);
       formData.set("documentType", documentType);
       formData.set("file", file);
-      const result = await uploadRegistrationDocumentAction(formData);
+      const result = await uploadDocumentAction(formData);
       setProgressType(null);
       if (!result.ok) {
         setError(result.error);

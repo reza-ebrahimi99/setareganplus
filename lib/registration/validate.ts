@@ -16,6 +16,7 @@ import type {
   CreateRegistrationInput,
   DetailsStepInput,
   ParentStepInput,
+  RegistrationFlowCatalog,
   StudentStepInput,
 } from "@/lib/registration/types";
 import { registrationGradeRequiresMajor } from "@/lib/registration/options";
@@ -123,9 +124,10 @@ export function validateParentStep(
 export function validateDetailsStep(
   flowKey: string,
   input: DetailsStepInput,
+  catalogOverride?: RegistrationFlowCatalog | null,
 ): { ok: true } | { ok: false; errors: FieldErrors } {
   const errors: FieldErrors = {};
-  const catalog = getRegistrationCatalog(flowKey);
+  const catalog = catalogOverride ?? getRegistrationCatalog(flowKey);
   if (!catalog) {
     return { ok: false, errors: { productKey: "جریان ثبت‌نام یافت نشد." } };
   }
@@ -158,7 +160,7 @@ export function validateDetailsStep(
 }
 
 export function resolvePricing(
-  flowKey: string,
+  flowKeyOrCatalog: string | RegistrationFlowCatalog,
   details: DetailsStepInput,
 ):
   | {
@@ -173,7 +175,10 @@ export function resolvePricing(
       discountCode: string | null;
     }
   | { ok: false; error: string } {
-  const catalog = getRegistrationCatalog(flowKey);
+  const catalog =
+    typeof flowKeyOrCatalog === "string"
+      ? getRegistrationCatalog(flowKeyOrCatalog)
+      : flowKeyOrCatalog;
   if (!catalog) return { ok: false, error: "جریان ثبت‌نام یافت نشد." };
 
   const product = catalog.products.find((item) => item.key === details.productKey);
@@ -218,6 +223,7 @@ export function birthDateToUtcDate(birthDate: JalaliDate): Date {
 
 export function validateCreateRegistrationInput(
   input: CreateRegistrationInput,
+  catalogOverride?: RegistrationFlowCatalog | null,
 ):
   | { ok: true }
   | { ok: false; error: string; fieldErrors?: FieldErrors } {
@@ -267,13 +273,17 @@ export function validateCreateRegistrationInput(
     address: input.parent.address ?? "",
   });
 
-  const detailsCheck = validateDetailsStep(input.flowKey, {
-    productKey: input.details.productKey,
-    sessionKey: input.details.sessionKey,
-    packageKey: input.details.packageKey,
-    venueBranchKey: input.details.venueBranchKey,
-    discountCode: input.details.discountCode ?? "",
-  });
+  const detailsCheck = validateDetailsStep(
+    input.flowKey,
+    {
+      productKey: input.details.productKey,
+      sessionKey: input.details.sessionKey,
+      packageKey: input.details.packageKey,
+      venueBranchKey: input.details.venueBranchKey,
+      discountCode: input.details.discountCode ?? "",
+    },
+    catalogOverride,
+  );
 
   const fieldErrors: FieldErrors = {
     ...studentErrors,

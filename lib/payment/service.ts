@@ -4,13 +4,14 @@
  */
 
 import { randomBytes } from "node:crypto";
+import type { Prisma } from "@/generated/prisma/client";
 import {
   CrmActivityType,
   PaymentStatus,
+  RegistrationActivityType,
   RegistrationPaymentStatus,
   RegistrationStatus,
 } from "@/generated/prisma/enums";
-import type { Prisma } from "@/generated/prisma/client";
 import { recordCrmActivity } from "@/lib/crm/activity";
 import { getPaymentProvider } from "@/lib/payment/get-provider";
 import { logPaymentEvent } from "@/lib/payment/logger";
@@ -20,6 +21,7 @@ import {
   isTerminalPaymentStatus,
 } from "@/lib/payment/status-machine";
 import { prisma } from "@/lib/prisma";
+import { recordRegistrationActivity } from "@/lib/registration/activity";
 
 const INTENT_TTL_MS = 60 * 60 * 1000;
 
@@ -259,6 +261,20 @@ export async function startCheckoutForRegistration(params: {
     return createdSession;
   });
 
+  await recordRegistrationActivity({
+    organizationId: params.organizationId,
+    registrationId: registration.id,
+    activityType: RegistrationActivityType.PAYMENT_STARTED,
+    title: "شروع پرداخت",
+    summary: `${registration.registrationNumber} · ${intent.finalAmountRials} ریال`,
+    metadata: {
+      paymentIntentId: intent.id,
+      paymentSessionId: session.id,
+      amountRials: intent.finalAmountRials,
+      provider: provider.id,
+    },
+  });
+
   await recordPaymentCrm({
     organizationId: params.organizationId,
     leadId: registration.leadId,
@@ -482,49 +498,91 @@ export async function verifyPaymentCallback(params: {
     select: { id: true },
   });
 
-  if (!crmAlready && registration.leadId) {
+  if (!crmAlready) {
     if (fresh.status === PaymentStatus.PAID) {
-      await recordPaymentCrm({
+      if (registration.leadId) {
+        await recordPaymentCrm({
+          organizationId: params.organizationId,
+          leadId: registration.leadId,
+          activityType: CrmActivityType.PAYMENT_SUCCEEDED,
+          title: "Payment Succeeded",
+          summary: `${registration.registrationNumber} · پرداخت موفق`,
+          metadata: {
+            registrationId: registration.id,
+            paymentIntentId: intent.id,
+            amountRials: intent.finalAmountRials,
+            provider: provider.id,
+            receiptNumber,
+            trackingCode,
+          },
+        });
+      }
+      await recordRegistrationActivity({
         organizationId: params.organizationId,
-        leadId: registration.leadId,
-        activityType: CrmActivityType.PAYMENT_SUCCEEDED,
-        title: "Payment Succeeded",
-        summary: `${registration.registrationNumber} · پرداخت موفق`,
+        registrationId: registration.id,
+        activityType: RegistrationActivityType.SYSTEM,
+        title: "پرداخت موفق",
+        summary: receiptNumber
+          ? `رسید ${receiptNumber}`
+          : registration.registrationNumber,
         metadata: {
-          registrationId: registration.id,
           paymentIntentId: intent.id,
+          trackingCode: trackingCode ?? null,
           amountRials: intent.finalAmountRials,
-          provider: provider.id,
-          receiptNumber,
-          trackingCode,
         },
       });
     } else if (fresh.status === PaymentStatus.CANCELLED) {
-      await recordPaymentCrm({
+      if (registration.leadId) {
+        await recordPaymentCrm({
+          organizationId: params.organizationId,
+          leadId: registration.leadId,
+          activityType: CrmActivityType.PAYMENT_CANCELLED,
+          title: "Payment Cancelled",
+          summary: `${registration.registrationNumber} · پرداخت لغو شد`,
+          metadata: {
+            registrationId: registration.id,
+            paymentIntentId: intent.id,
+            amountRials: intent.finalAmountRials,
+            provider: provider.id,
+          },
+        });
+      }
+      await recordRegistrationActivity({
         organizationId: params.organizationId,
-        leadId: registration.leadId,
-        activityType: CrmActivityType.PAYMENT_CANCELLED,
-        title: "Payment Cancelled",
-        summary: `${registration.registrationNumber} · پرداخت لغو شد`,
+        registrationId: registration.id,
+        activityType: RegistrationActivityType.SYSTEM,
+        title: "پرداخت لغو شد",
+        summary: "ثبت‌نام قابل ادامه است؛ می‌توانید دوباره پرداخت کنید.",
         metadata: {
-          registrationId: registration.id,
           paymentIntentId: intent.id,
-          amountRials: intent.finalAmountRials,
-          provider: provider.id,
+          status: fresh.status,
         },
       });
     } else if (fresh.status === PaymentStatus.FAILED) {
-      await recordPaymentCrm({
+      if (registration.leadId) {
+        await recordPaymentCrm({
+          organizationId: params.organizationId,
+          leadId: registration.leadId,
+          activityType: CrmActivityType.PAYMENT_FAILED,
+          title: "Payment Failed",
+          summary: `${registration.registrationNumber} · پرداخت ناموفق`,
+          metadata: {
+            registrationId: registration.id,
+            paymentIntentId: intent.id,
+            amountRials: intent.finalAmountRials,
+            provider: provider.id,
+          },
+        });
+      }
+      await recordRegistrationActivity({
         organizationId: params.organizationId,
-        leadId: registration.leadId,
-        activityType: CrmActivityType.PAYMENT_FAILED,
-        title: "Payment Failed",
-        summary: `${registration.registrationNumber} · پرداخت ناموفق`,
+        registrationId: registration.id,
+        activityType: RegistrationActivityType.SYSTEM,
+        title: "پرداخت ناموفق",
+        summary: "ثبت‌نام قابل ادامه است؛ می‌توانید دوباره پرداخت کنید.",
         metadata: {
-          registrationId: registration.id,
           paymentIntentId: intent.id,
-          amountRials: intent.finalAmountRials,
-          provider: provider.id,
+          status: fresh.status,
         },
       });
     }

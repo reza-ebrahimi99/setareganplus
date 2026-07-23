@@ -26,6 +26,8 @@ export const PERMISSIONS = [
   "students.portal.manage",
   "registrations.view",
   "registrations.manage",
+  "registration_flows.view",
+  "registration_flows.manage",
   "portal.student.access",
   "portal.guardian.access",
 ] as const;
@@ -52,6 +54,8 @@ const CRM_MANAGER = new Set<Permission>([
   "reports.view",
   "registrations.view",
   "registrations.manage",
+  "registration_flows.view",
+  "registration_flows.manage",
 ]);
 const CRM_AGENT = new Set<Permission>([
   "crm.view_assigned",
@@ -64,6 +68,7 @@ const CRM_AGENT = new Set<Permission>([
   "crm.send_sms",
   "booking.view_assigned",
   "registrations.view",
+  "registration_flows.view",
 ]);
 
 export const ROLE_LABELS: Readonly<Record<SystemRoleValue, string>> = {
@@ -125,6 +130,8 @@ const ROLE_PERMISSIONS: Readonly<Partial<Record<SystemRoleValue, ReadonlySet<Per
     "students.portal.manage",
     "registrations.view",
     "registrations.manage",
+    "registration_flows.view",
+    "registration_flows.manage",
   ]),
   SUPPORT: new Set(["crm.view_assigned", "crm.add_note", "crm.call", "crm.send_sms"]),
   CONTENT_MANAGER: new Set([

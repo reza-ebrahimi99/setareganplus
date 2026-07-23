@@ -4,7 +4,10 @@ import Link from "next/link";
 import { RegistrationStatus } from "@/generated/prisma/enums";
 import { formatRegistrationDate, formatRials } from "@/lib/registration/format";
 import type { RegistrationPublicView } from "@/lib/registration/types";
-import { REGISTRATION_STATUS_LABELS } from "@/lib/registration/types";
+import {
+  REGISTRATION_PAYMENT_LABELS,
+  REGISTRATION_STATUS_LABELS,
+} from "@/lib/registration/types";
 import { toPersianDigits } from "@/lib/persian";
 
 type RegistrationReceiptProps = {
@@ -44,6 +47,10 @@ export function RegistrationReceipt({
           label="وضعیت"
           value={REGISTRATION_STATUS_LABELS[registration.status]}
         />
+        <ReceiptRow
+          label="وضعیت پرداخت"
+          value={REGISTRATION_PAYMENT_LABELS[registration.paymentStatus]}
+        />
         <ReceiptRow label="نام دانش‌آموز" value={registration.studentFullName} />
         <ReceiptRow label="آزمون" value={registration.productTitle} />
         <ReceiptRow label="نوبت" value={registration.sessionTitle ?? "—"} />
@@ -65,6 +72,15 @@ export function RegistrationReceipt({
               : "پس از اتصال درگاه تکمیل می‌شود"
           }
         />
+        {registration.paymentReceiptNumber ? (
+          <ReceiptRow
+            label="شماره رسید پرداخت"
+            value={toPersianDigits(registration.paymentReceiptNumber)}
+          />
+        ) : null}
+        {registration.paymentProvider ? (
+          <ReceiptRow label="درگاه پرداخت" value={registration.paymentProvider} />
+        ) : null}
       </dl>
 
       <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap print:hidden">

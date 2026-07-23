@@ -5,15 +5,41 @@ import { usePathname } from "next/navigation";
 import { adminNavGroups } from "@/content/admin";
 import { AdminNavIconComponent } from "./AdminIcons";
 
-function getLinkClassName(isActive: boolean) {
-  const base =
-    "admin-nav-link flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary";
+function getLinkClassName(isActive: boolean, nested = false) {
+  const base = nested
+    ? "admin-nav-link flex items-center gap-2 rounded-lg py-1.5 pe-3 ps-9 text-[13px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+    : "admin-nav-link flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary";
 
   if (isActive) {
     return `${base} admin-nav-link-active font-semibold text-white`;
   }
 
   return `${base} text-slate-300 hover:bg-white/5 hover:text-white`;
+}
+
+function isRegistrationsListActive(pathname: string): boolean {
+  if (pathname === "/admin/registrations") return true;
+  if (!pathname.startsWith("/admin/registrations/")) return false;
+  if (pathname.startsWith("/admin/registrations/abandoned")) return false;
+  if (pathname.startsWith("/admin/registrations/flows")) return false;
+  return true;
+}
+
+function isChildNavActive(pathname: string, href: string): boolean {
+  if (href === "/admin/registrations") {
+    return isRegistrationsListActive(pathname);
+  }
+  if (href === "/admin") {
+    return pathname === "/admin";
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function isNavGroupOpen(pathname: string, href: string): boolean {
+  if (href === "/admin") {
+    return pathname === "/admin";
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export function AdminNavigation({ permissions }: { permissions: readonly string[] }) {
@@ -31,6 +57,48 @@ export function AdminNavigation({ permissions }: { permissions: readonly string[
               !item.enabled || !item.permission || permissions.includes(item.permission),
             ).map((item) => {
               if (item.enabled) {
+                const children = item.children?.filter(
+                  (child) =>
+                    !child.permission || permissions.includes(child.permission),
+                );
+
+                if (children && children.length > 0) {
+                  const groupOpen = isNavGroupOpen(pathname, item.href);
+
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        className={getLinkClassName(groupOpen && pathname === item.href)}
+                        aria-current={
+                          groupOpen && pathname === item.href ? "page" : undefined
+                        }
+                      >
+                        <AdminNavIconComponent name={item.icon} className="size-[18px]" />
+                        <span className="flex-1">{item.label}</span>
+                      </Link>
+                      {groupOpen ? (
+                        <ul className="mt-0.5 space-y-0.5">
+                          {children.map((child) => {
+                            const childActive = isChildNavActive(pathname, child.href);
+                            return (
+                              <li key={child.href}>
+                                <Link
+                                  href={child.href}
+                                  className={getLinkClassName(childActive, true)}
+                                  aria-current={childActive ? "page" : undefined}
+                                >
+                                  <span className="flex-1">{child.label}</span>
+                                </Link>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : null}
+                    </li>
+                  );
+                }
+
                 const isActive =
                   item.href === "/admin"
                     ? pathname === "/admin"

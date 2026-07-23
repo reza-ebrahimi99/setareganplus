@@ -523,6 +523,9 @@ model Organization {
   registrationDocuments      RegistrationDocument[]
   registrationNotes          RegistrationNote[]
   registrationActivities     RegistrationActivity[]
+  registrationFlows          RegistrationFlow[]
+  registrationFlowSteps      RegistrationFlowStep[]
+  registrationFlowDocumentRequirements RegistrationFlowDocumentRequirement[]
 
   @@map("organizations")
 }
@@ -954,6 +957,7 @@ model MediaAsset {
   websitePageSectionMedia WebsitePageSectionMedia[] @relation("WebsitePageSectionMediaAsset")
   websitePageSeoImages    WebsitePage[]             @relation("WebsitePageSeoImage")
   registrationDocuments   RegistrationDocument[]
+  registrationFlowCovers  RegistrationFlow[] @relation("RegistrationFlowCover")
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])
@@ -1178,6 +1182,7 @@ model Form {
   analyticsDaily   FormAnalyticsDaily[]
   bookingServices  BookingService[]
   sitePlacements   SitePlacement[]
+  registrationFlows RegistrationFlow[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -2698,6 +2703,124 @@ model RegistrationNumberCounter {
   @@map("registration_number_counters")
 }
 
+/// Admin-configurable registration flow (orchestration). Does NOT replace Form Builder.
+enum RegistrationFlowLifecycle {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum RegistrationFlowStepKey {
+  APPLICANT
+  STUDENT
+  FORM
+  DOCUMENTS
+  PAYMENT
+  REVIEW
+}
+
+/// How a registration flow charges applicants — amounts still settle via Payment Foundation.
+enum RegistrationFlowPaymentMode {
+  FREE
+  FIXED_AMOUNT
+  OPTIONAL_PAYMENT
+  DEPOSIT
+}
+
+model RegistrationFlow {
+  id             String                   @id @default(cuid())
+  organizationId String
+  title          String
+  slug           String
+  description    String                   @default("")
+  coverMediaId   String?
+  lifecycle      RegistrationFlowLifecycle @default(DRAFT)
+  productType    RegistrationProductType  @default(EXAM)
+  /// Optional link to an existing Form Builder form (questions live there).
+  formId         String?
+  opensAt        DateTime?
+  closesAt       DateTime?
+  academicYear   String?
+  /// Comma-separated or free-text grade targeting (e.g. "پایه دهم,پایه یازدهم").
+  gradeTargets   String?
+  /// Course / class / service label for targeting.
+  courseTarget   String?
+  capacity       Int?
+  /// FREE | FIXED_AMOUNT | OPTIONAL_PAYMENT | DEPOSIT — uses existing PaymentIntent checkout.
+  paymentMode    RegistrationFlowPaymentMode @default(FIXED_AMOUNT)
+  /// Configured amount in Rials (required for FIXED_AMOUNT / DEPOSIT; optional for OPTIONAL_PAYMENT).
+  paymentAmountRials Int                  @default(0)
+  paymentTitle   String?
+  paymentDeadlineAt DateTime?
+  publishedAt    DateTime?
+  metadata       Json?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  coverMedia   MediaAsset?  @relation("RegistrationFlowCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  form         Form?        @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
+  steps        RegistrationFlowStep[]
+  documentRequirements RegistrationFlowDocumentRequirement[]
+  registrations Registration[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, lifecycle, deletedAt])
+  @@index([organizationId, formId])
+  @@index([coverMediaId])
+  @@map("registration_flows")
+}
+
+model RegistrationFlowStep {
+  id             String                 @id @default(cuid())
+  organizationId String
+  flowId         String
+  stepKey        RegistrationFlowStepKey
+  label          String
+  enabled        Boolean                @default(true)
+  sortOrder      Int                    @default(0)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  flow         RegistrationFlow @relation(fields: [organizationId, flowId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([flowId, stepKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, flowId, sortOrder])
+  @@map("registration_flow_steps")
+}
+
+model RegistrationFlowDocumentRequirement {
+  id               String                    @id @default(cuid())
+  organizationId   String
+  flowId           String
+  /// Stable machine key within the flow.
+  requirementKey   String
+  title            String
+  helpText         String                    @default("")
+  documentType     RegistrationDocumentType  @default(OTHER)
+  required         Boolean                   @default(true)
+  /// Comma-separated MIME allowlist, e.g. "image/jpeg,image/png,application/pdf"
+  acceptedMimeTypes String                   @default("image/jpeg,image/png,image/webp")
+  maxSizeBytes     Int                       @default(5242880)
+  sortOrder        Int                       @default(0)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  deletedAt        DateTime?
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  flow         RegistrationFlow @relation(fields: [organizationId, flowId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([flowId, requirementKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, flowId, sortOrder])
+  @@index([organizationId, deletedAt])
+  @@map("registration_flow_document_requirements")
+}
+
 /// Durable registration application (wizard → payment → CRM → admin ops).
 model Registration {
   id                 String                         @id @default(cuid())
@@ -2709,6 +2832,8 @@ model Registration {
   productType        RegistrationProductType
   /// Stable flow key, e.g. "qalamchi-exam". Drives catalog resolution.
   flowKey            String
+  /// Optional FK to admin-configured RegistrationFlow (nullable for legacy rows).
+  registrationFlowId String?
   leadId             String?
 
   /// Wizard progress (1-based step index).
@@ -2772,6 +2897,7 @@ model Registration {
   organization Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   branch       Branch                  @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
   lead         Lead?                   @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  registrationFlow RegistrationFlow?   @relation(fields: [organizationId, registrationFlowId], references: [organizationId, id], onDelete: Restrict)
   paymentIntents PaymentIntent[]
   documents    RegistrationDocument[]
   notes        RegistrationNote[]
@@ -2783,6 +2909,7 @@ model Registration {
   @@index([organizationId, status, createdAt])
   @@index([organizationId, paymentStatus, createdAt])
   @@index([organizationId, flowKey, createdAt])
+  @@index([organizationId, registrationFlowId])
   @@index([organizationId, nationalCode])
   @@index([organizationId, parentMobileNormalized])
   @@index([organizationId, leadId])
