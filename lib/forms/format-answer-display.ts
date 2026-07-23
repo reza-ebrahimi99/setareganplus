@@ -55,6 +55,24 @@ export function formatAnswerDisplay(
     }
     case FormFieldType.CONSENT:
       return answer.valueJson === true ? "بله" : "خیر";
+    case FormFieldType.FILE_UPLOAD: {
+      const payload = answer.valueJson;
+      if (
+        !payload ||
+        typeof payload !== "object" ||
+        Array.isArray(payload) ||
+        !Array.isArray((payload as { files?: unknown }).files)
+      ) {
+        return "—";
+      }
+      const names = (payload as { files: Array<{ originalName?: unknown }> })
+        .files
+        .map((file) =>
+          typeof file.originalName === "string" ? file.originalName : null,
+        )
+        .filter((name): name is string => Boolean(name));
+      return names.length > 0 ? names.join("، ") : "—";
+    }
     case FormFieldType.NATIONAL_ID:
       // TODO(privacy): mask national IDs by permission level before wider staff access.
       return answer.valueText?.trim() || "—";

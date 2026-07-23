@@ -1,6 +1,7 @@
-import { FormMode, FormVersionStatus } from "@/generated/prisma/enums";
+import { FormVersionStatus } from "@/generated/prisma/enums";
 import { getAdminSession } from "@/lib/auth/require-admin";
 import { hasPermission } from "@/lib/auth/permissions";
+import { requireRegistrationFormMode } from "@/lib/forms/require-registration-mode";
 import { prisma } from "@/lib/prisma";
 
 export type EditableDraftContext = {
@@ -47,12 +48,9 @@ export async function resolveEditableDraft(
     return { ok: false, formError: "فرم مورد نظر یافت نشد." };
   }
 
-  if (form.mode !== FormMode.REGISTRATION) {
-    return {
-      ok: false,
-      formError:
-        "عملیات مراحل فقط برای فرم‌های حالت «ثبت‌نام» مجاز است. این فرم در حالت استاندارد است.",
-    };
+  const modeCheck = requireRegistrationFormMode(form.mode);
+  if (!modeCheck.ok) {
+    return modeCheck;
   }
 
   const draft = await prisma.formVersion.findFirst({

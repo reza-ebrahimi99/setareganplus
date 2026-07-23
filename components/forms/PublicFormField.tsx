@@ -1,9 +1,14 @@
 import { FormFieldType } from "@/generated/prisma/enums";
+import { PublicFormFileUpload } from "@/components/forms/PublicFormFileUpload";
 import {
   readChoiceConfig,
   type ChoiceOption,
 } from "@/lib/forms/choice-options";
 import { resolveFieldDisplayHints } from "@/lib/forms/field-display-config";
+import {
+  parseFormFileUploadAnswer,
+  parseFormFileUploadAnswerFromFormValue,
+} from "@/lib/forms/file-upload-config";
 import type { PublicFormField as PublicFormFieldData } from "@/lib/forms/load-public-form";
 import type { PreservedFieldValue } from "@/lib/forms/validate-public-submission";
 
@@ -263,6 +268,7 @@ type PublicFormFieldProps = {
   defaultValue?: PreservedFieldValue;
   disabled?: boolean;
   idPrefix?: string;
+  formSlug?: string;
 };
 
 export function PublicFormField({
@@ -271,6 +277,7 @@ export function PublicFormField({
   defaultValue,
   disabled = false,
   idPrefix = "pf",
+  formSlug,
 }: PublicFormFieldProps) {
   const display = resolveFieldDisplayHints(field);
   const { helpText, placeholder, prefix } = display;
@@ -286,6 +293,36 @@ export function PublicFormField({
           <p className="mt-1.5 text-sm leading-7 text-muted">{helpText}</p>
         ) : null}
       </div>
+    );
+  }
+
+  if (field.type === FormFieldType.FILE_UPLOAD) {
+    const uploadDefault =
+      (typeof defaultValue === "string"
+        ? parseFormFileUploadAnswerFromFormValue(defaultValue)
+        : parseFormFileUploadAnswer(defaultValue)) ?? undefined;
+    return (
+      <FieldChrome
+        field={field}
+        helpText={helpText}
+        error={error}
+        idPrefix={idPrefix}
+      >
+        {formSlug ? (
+          <PublicFormFileUpload
+            field={field}
+            formSlug={formSlug}
+            error={error}
+            defaultValue={uploadDefault}
+            disabled={disabled}
+            idPrefix={idPrefix}
+          />
+        ) : (
+          <p className="text-sm text-red-700" role="alert">
+            بارگذاری فایل در این زمینه در دسترس نیست.
+          </p>
+        )}
+      </FieldChrome>
     );
   }
 

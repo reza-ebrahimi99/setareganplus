@@ -31,7 +31,7 @@ export default async function RegistrationReceiptPage({ params }: PageProps) {
         registration={registration}
         paymentMessage={
           registration.paymentMessage ??
-          "درگاه پرداخت هنوز فعال نشده است. وضعیت ثبت‌نام «در انتظار پرداخت» است."
+          "وضعیت ثبت‌نام را از روی رسید پیگیری کنید."
         }
       />
     </PublicFormShell>

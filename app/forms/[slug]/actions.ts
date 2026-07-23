@@ -27,6 +27,7 @@ import {
   validatePublicSubmission,
   type PreservedFieldValue,
 } from "@/lib/forms/validate-public-submission";
+import { assertFormFileUploadAnswers } from "@/lib/forms/assert-form-file-uploads";
 import { prisma } from "@/lib/prisma";
 
 export type SubmitPublicFormState = {
@@ -206,6 +207,21 @@ export async function submitPublicFormAction(
     return {
       formError: validated.formError,
       fieldErrors: validated.fieldErrors,
+      values: validated.values,
+    };
+  }
+
+  const fileAssert = await assertFormFileUploadAnswers({
+    organizationId: organization.id,
+    formId: form.id,
+    formVersionId: version.id,
+    fields: version.fields,
+    answers: validated.answers,
+  });
+  if (!fileAssert.ok) {
+    return {
+      formError: "لطفاً خطاهای بارگذاری فایل را بررسی کنید.",
+      fieldErrors: fileAssert.fieldErrors,
       values: validated.values,
     };
   }

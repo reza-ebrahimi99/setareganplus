@@ -177,6 +177,10 @@ enum CrmActivityType {
   CONVERTED
   LOST
   REGISTRATION_CREATED
+  PAYMENT_STARTED
+  PAYMENT_SUCCEEDED
+  PAYMENT_FAILED
+  PAYMENT_CANCELLED
 }
 
 enum AutomationExecutionStatus {
@@ -322,6 +326,7 @@ enum FormFieldType {
   CONSENT
   INFORMATIONAL
   NATIONAL_ID
+  FILE_UPLOAD
 }
 
 enum FormFieldSemantic {
@@ -512,6 +517,9 @@ model Organization {
   portalAccountLinks         PortalAccountLink[]
   registrations              Registration[]
   registrationNumberCounters RegistrationNumberCounter[]
+  paymentIntents             PaymentIntent[]
+  paymentSessions            PaymentSession[]
+  paymentEventLogs           PaymentEventLog[]
 
   @@map("organizations")
 }
@@ -2702,6 +2710,7 @@ model Registration {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   branch       Branch       @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
   lead         Lead?        @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  paymentIntents PaymentIntent[]
 
   @@unique([organizationId, registrationNumber])
   @@unique([organizationId, id])
@@ -2712,4 +2721,100 @@ model Registration {
   @@index([organizationId, leadId])
   @@index([organizationId, deletedAt])
   @@map("registrations")
+}
+
+// ─── Payment Foundation (Sprint 4A) ───────────────────────────────────────────
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+  EXPIRED
+  REFUNDED
+}
+
+/// Payable unit for one Registration checkout (amounts snapshotted at create).
+model PaymentIntent {
+  id               String        @id @default(cuid())
+  organizationId   String
+  registrationId   String
+  idempotencyKey   String
+  status           PaymentStatus @default(PENDING)
+  provider         String
+  amountRials      Int
+  discountRials    Int           @default(0)
+  finalAmountRials Int
+  currency         String        @default("IRR")
+  description      String?
+  trackingCode     String?
+  receiptNumber    String?
+  expiresAt        DateTime?
+  paidAt           DateTime?
+  failedAt         DateTime?
+  cancelledAt      DateTime?
+  metadata         Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  registration Registration    @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
+  sessions     PaymentSession[]
+  eventLogs    PaymentEventLog[]
+
+  @@unique([organizationId, idempotencyKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, registrationId, status])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, trackingCode])
+  @@index([organizationId, receiptNumber])
+  @@map("payment_intents")
+}
+
+/// One provider checkout attempt under a PaymentIntent.
+model PaymentSession {
+  id               String        @id @default(cuid())
+  organizationId   String
+  paymentIntentId  String
+  provider         String
+  providerSessionId String
+  status           PaymentStatus @default(PROCESSING)
+  checkoutUrl      String?
+  callbackToken    String
+  rawRequestJson   Json?
+  rawCallbackJson  Json?
+  expiresAt        DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  paymentIntent PaymentIntent @relation(fields: [organizationId, paymentIntentId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, callbackToken])
+  @@unique([organizationId, provider, providerSessionId])
+  @@unique([organizationId, id])
+  @@index([organizationId, paymentIntentId, createdAt])
+  @@index([organizationId, status])
+  @@map("payment_sessions")
+}
+
+/// Append-only payment transition log.
+model PaymentEventLog {
+  id              String         @id @default(cuid())
+  organizationId  String
+  paymentIntentId String
+  fromStatus      PaymentStatus?
+  toStatus        PaymentStatus
+  event           String
+  message         String?
+  metadata        Json?
+  createdAt       DateTime       @default(now())
+
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  paymentIntent PaymentIntent @relation(fields: [organizationId, paymentIntentId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([organizationId, paymentIntentId, createdAt])
+  @@map("payment_event_logs")
 }

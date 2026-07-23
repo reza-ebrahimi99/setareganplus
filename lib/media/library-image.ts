@@ -19,7 +19,7 @@ import {
   type PosterValidationResult,
   validatePosterFile,
 } from "@/lib/media/validate-poster";
-import { publicUrlForStorageKey } from "@/lib/media/storage";
+import { publicUrlForStorageKey, isPrivateMediaStorageKey } from "@/lib/media/storage";
 
 export {
   LIBRARY_IMAGE_MAX_BYTES,
@@ -118,6 +118,11 @@ export function libraryMediaMetadataToJson(): Prisma.InputJsonValue {
 }
 
 export function publicLibraryUrl(storageKey: string): string {
+  if (isPrivateMediaStorageKey(storageKey)) {
+    throw new Error(
+      "Private media storage keys must not be exposed as public library URLs.",
+    );
+  }
   return publicUrlForStorageKey(storageKey);
 }
 

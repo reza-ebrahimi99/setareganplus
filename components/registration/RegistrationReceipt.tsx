@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { RegistrationStatus } from "@/generated/prisma/enums";
 import { formatRegistrationDate, formatRials } from "@/lib/registration/format";
 import type { RegistrationPublicView } from "@/lib/registration/types";
 import { REGISTRATION_STATUS_LABELS } from "@/lib/registration/types";
@@ -20,7 +21,10 @@ export function RegistrationReceipt({
       <div className="rounded-2xl bg-gradient-to-l from-primary/10 to-secondary/10 px-5 py-6 text-center">
         <p className="text-xs font-medium text-secondary">رسید ثبت‌نام</p>
         <h1 className="mt-2 text-xl font-bold text-primary sm:text-2xl">
-          ثبت‌نام با موفقیت ایجاد شد
+          {registration.status === RegistrationStatus.COMPLETED ||
+          registration.status === RegistrationStatus.PAID
+            ? "ثبت‌نام تکمیل شد"
+            : "ثبت‌نام ایجاد شد"}
         </h1>
         <p className="mt-2 text-sm text-muted">
           شماره ثبت‌نام:{" "}

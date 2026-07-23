@@ -8,8 +8,15 @@ import {
 } from "@/generated/prisma/enums";
 import {
   isChoiceFieldType,
+  isFileUploadFieldType,
   isFormFieldType,
 } from "@/lib/forms/form-field-type-labels";
+import {
+  FORM_FILE_UPLOAD_DEFAULT_MAX_BYTES,
+  FORM_FILE_UPLOAD_HARD_MAX_BYTES,
+  FORM_FILE_UPLOAD_HARD_MAX_FILES,
+  buildFileUploadConfigJson,
+} from "@/lib/forms/file-upload-config";
 import { parseChoiceOptionsText } from "@/lib/forms/choice-options";
 import {
   detectVisibilityCycles,
@@ -33,6 +40,8 @@ export type FieldFormFieldErrors = {
   helpText?: string;
   placeholder?: string;
   visibility?: string;
+  uploadMaxBytes?: string;
+  uploadMaxFiles?: string;
 };
 
 export type FieldFormValues = {
@@ -47,6 +56,11 @@ export type FieldFormValues = {
   visibilitySourceFieldKey: string;
   visibilityOperator: string;
   visibilityValue: string;
+  uploadMultiple: boolean;
+  uploadMaxFiles: string;
+  uploadMaxBytesMb: string;
+  uploadAllowPdf: boolean;
+  uploadAllowImages: boolean;
 };
 
 export type FieldActionState = {
@@ -160,6 +174,11 @@ function parseFieldInputs(formData: FormData): {
   ).trim();
   const visibilityOperator = readString(formData, "visibilityOperator").trim();
   const visibilityValue = readString(formData, "visibilityValue");
+  const uploadMultiple = readCheckbox(formData, "uploadMultiple");
+  const uploadMaxFiles = readString(formData, "uploadMaxFiles").trim();
+  const uploadMaxBytesMb = readString(formData, "uploadMaxBytesMb").trim();
+  const uploadAllowPdf = readCheckbox(formData, "uploadAllowPdf");
+  const uploadAllowImages = readCheckbox(formData, "uploadAllowImages");
 
   const values: FieldFormValues = {
     label,
@@ -173,6 +192,11 @@ function parseFieldInputs(formData: FormData): {
     visibilitySourceFieldKey,
     visibilityOperator,
     visibilityValue,
+    uploadMultiple,
+    uploadMaxFiles,
+    uploadMaxBytesMb,
+    uploadAllowPdf,
+    uploadAllowImages,
   };
 
   const fieldErrors: FieldFormFieldErrors = {};
@@ -213,6 +237,51 @@ function parseFieldInputs(formData: FormData): {
       fieldErrors.optionsText = parsed.error;
     } else {
       config = parsed.config;
+    }
+  }
+
+  if (type && isFileUploadFieldType(type)) {
+    const maxFilesParsed = Number.parseInt(uploadMaxFiles || "1", 10);
+    const maxMbParsed = Number.parseFloat(uploadMaxBytesMb || "5");
+    if (
+      uploadMultiple &&
+      (!Number.isFinite(maxFilesParsed) ||
+        maxFilesParsed < 1 ||
+        maxFilesParsed > FORM_FILE_UPLOAD_HARD_MAX_FILES)
+    ) {
+      fieldErrors.uploadMaxFiles = `تعداد فایل باید بین ۱ تا ${FORM_FILE_UPLOAD_HARD_MAX_FILES} باشد.`;
+    }
+    if (
+      !Number.isFinite(maxMbParsed) ||
+      maxMbParsed < 1 ||
+      maxMbParsed * 1024 * 1024 > FORM_FILE_UPLOAD_HARD_MAX_BYTES
+    ) {
+      fieldErrors.uploadMaxBytes = "حداکثر حجم فایل نامعتبر است.";
+    }
+    if (!uploadAllowPdf && !uploadAllowImages) {
+      fieldErrors.type = "حداقل یک نوع فایل مجاز را انتخاب کنید.";
+    }
+
+    const allowedMimeTypes = [
+      ...(uploadAllowImages
+        ? (["image/jpeg", "image/png", "image/webp"] as const)
+        : []),
+      ...(uploadAllowPdf ? (["application/pdf"] as const) : []),
+    ];
+
+    if (
+      !fieldErrors.uploadMaxFiles &&
+      !fieldErrors.uploadMaxBytes &&
+      allowedMimeTypes.length > 0
+    ) {
+      config = buildFileUploadConfigJson({
+        multiple: uploadMultiple,
+        maxFiles: uploadMultiple ? maxFilesParsed : 1,
+        maxBytes: Number.isFinite(maxMbParsed)
+          ? Math.round(maxMbParsed * 1024 * 1024)
+          : FORM_FILE_UPLOAD_DEFAULT_MAX_BYTES,
+        allowedMimeTypes: [...allowedMimeTypes],
+      }) as Prisma.InputJsonValue;
     }
   }
 

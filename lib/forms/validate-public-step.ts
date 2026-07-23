@@ -7,6 +7,10 @@ import {
   evaluateAllFieldVisibility,
   type VisibilityAnswerValue,
 } from "@/lib/forms/field-visibility";
+import {
+  parseFormFileUploadAnswerFromFormValue,
+  readFileUploadConfig,
+} from "@/lib/forms/file-upload-config";
 import { normalizeEmail } from "@/lib/forms/normalize-email";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { validateIranianNationalId } from "@/lib/forms/validate-national-id";
@@ -76,6 +80,11 @@ function readRawAnswerForVisibility(
 ): VisibilityAnswerValue {
   if (field.type === FormFieldType.INFORMATIONAL) {
     return undefined;
+  }
+  if (field.type === FormFieldType.FILE_UPLOAD) {
+    const raw = readSingle(formData, field.fieldKey).trim();
+    const parsed = parseFormFileUploadAnswerFromFormValue(raw);
+    return parsed && parsed.files.length > 0 ? raw : "";
   }
   if (field.type === FormFieldType.MULTIPLE_CHOICE) {
     return Array.from(new Set(readMany(formData, field.fieldKey)));
@@ -172,6 +181,26 @@ export function validatePublicStepFields(params: {
       if (field.required && !checked) {
         fieldErrors[field.fieldKey] = `پذیرش «${field.label}» الزامی است.`;
       }
+      continue;
+    }
+
+    if (field.type === FormFieldType.FILE_UPLOAD) {
+      const raw = readSingle(formData, field.fieldKey);
+      const parsed = parseFormFileUploadAnswerFromFormValue(raw);
+      const uploadConfig = readFileUploadConfig(field.config);
+      if (!parsed || parsed.files.length === 0) {
+        values[field.fieldKey] = { files: [] };
+        if (field.required) {
+          fieldErrors[field.fieldKey] =
+            `بارگذاری فایل برای «${field.label}» الزامی است.`;
+        }
+        continue;
+      }
+      if (parsed.files.length > uploadConfig.maxFiles) {
+        fieldErrors[field.fieldKey] =
+          `حداکثر ${uploadConfig.maxFiles} فایل برای «${field.label}» مجاز است.`;
+      }
+      values[field.fieldKey] = parsed;
       continue;
     }
 

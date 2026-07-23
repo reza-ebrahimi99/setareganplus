@@ -12,6 +12,7 @@ import {
   type VisibilityAnswerValue,
 } from "@/lib/forms/field-visibility";
 import type { PublicFormData } from "@/lib/forms/load-public-form";
+import { parseFormFileUploadAnswerFromFormValue } from "@/lib/forms/file-upload-config";
 import type { PreservedFieldValue } from "@/lib/forms/validate-public-submission";
 import { toPersianDigits } from "@/lib/persian";
 import { FormFieldType } from "@/generated/prisma/enums";
@@ -50,6 +51,16 @@ function readFormAnswers(
       const raw = formData.get(field.fieldKey);
       answers[field.fieldKey] =
         raw === "yes" || raw === "on" || raw === "true";
+      continue;
+    }
+    if (field.type === FormFieldType.FILE_UPLOAD) {
+      const raw = formData.get(field.fieldKey);
+      const parsed =
+        typeof raw === "string"
+          ? parseFormFileUploadAnswerFromFormValue(raw)
+          : null;
+      answers[field.fieldKey] =
+        parsed && parsed.files.length > 0 ? JSON.stringify(parsed) : "";
       continue;
     }
     const raw = formData.get(field.fieldKey);
@@ -225,6 +236,7 @@ export function PublicForm({
                 }
                 disabled={pending}
                 idPrefix={idPrefix}
+                formSlug={data.form.slug}
               />
             </div>
           );

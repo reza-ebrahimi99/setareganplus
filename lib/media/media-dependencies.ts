@@ -40,6 +40,7 @@ export async function getMediaAssetDependencies(
     marketingCards,
     pageSectionMedia,
     pageSeoImages,
+    formAnswers,
   ] = await Promise.all([
     prisma.galleryAlbumItem.findMany({
       where: {
@@ -125,6 +126,20 @@ export async function getMediaAssetDependencies(
         deletedAt: null,
       },
       select: { id: true, title: true, slug: true },
+      take: 50,
+    }),
+    prisma.formAnswer.findMany({
+      where: {
+        organizationId,
+        valueJson: {
+          string_contains: mediaId,
+        },
+      },
+      select: {
+        id: true,
+        fieldKey: true,
+        submission: { select: { id: true, formId: true } },
+      },
       take: 50,
     }),
   ]);
@@ -227,6 +242,15 @@ export async function getMediaAssetDependencies(
       label: "تصویر سئو صفحه",
       detail: `صفحه «${page.title}» (${page.slug})`,
       href: `/admin/website/pages/${page.id}`,
+    });
+  }
+
+  for (const answer of formAnswers) {
+    dependencies.push({
+      kind: "form_answer_file",
+      label: "پاسخ بارگذاری فایل فرم",
+      detail: `فیلد «${answer.fieldKey}» · ارسال ${answer.submission.id}`,
+      href: `/admin/forms/${answer.submission.formId}/responses`,
     });
   }
 

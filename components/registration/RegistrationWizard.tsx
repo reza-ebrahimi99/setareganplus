@@ -101,6 +101,7 @@ export function RegistrationWizard({ catalog }: RegistrationWizardProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
+  const [agreed, setAgreed] = useState(false);
 
   const pricing = useMemo(
     () => resolvePricing(catalog.flowKey, details),
@@ -153,6 +154,11 @@ export function RegistrationWizard({ catalog }: RegistrationWizardProps) {
   }
 
   function submitPayment() {
+    if (!agreed) {
+      setFormError("برای ادامه، پذیرش قوانین و شرایط الزامی است.");
+      return;
+    }
+
     const birthDate = student.birthDate;
     const gender = student.gender;
     const relationship = parent.relationship;
@@ -267,9 +273,15 @@ export function RegistrationWizard({ catalog }: RegistrationWizardProps) {
 
         {step === 5 ? (
           <PaymentStep
+            student={student}
+            parent={parent}
+            details={details}
             pricing={pricing}
             pending={pending}
+            agreed={agreed}
+            onAgreedChange={setAgreed}
             onPay={submitPayment}
+            onEdit={setStep}
           />
         ) : null}
       </div>
@@ -922,40 +934,145 @@ function SummaryCard({
 }
 
 function PaymentStep({
+  student,
+  parent,
+  details,
   pricing,
   pending,
+  agreed,
+  onAgreedChange,
   onPay,
+  onEdit,
 }: {
+  student: StudentStepInput;
+  parent: ParentStepInput;
+  details: DetailsStepInput;
   pricing: ReturnType<typeof resolvePricing>;
   pending: boolean;
+  agreed: boolean;
+  onAgreedChange: (value: boolean) => void;
   onPay: () => void;
+  onEdit: (step: number) => void;
 }) {
   return (
     <section aria-labelledby="payment-step-title" className="space-y-5">
-      <h2 id="payment-step-title" className="text-base font-semibold text-primary">
-        پرداخت
-      </h2>
-      <div className="rounded-2xl border border-border bg-white p-5">
-        <p className="text-sm leading-7 text-muted">
-          در این نسخه، درگاه زرین‌پال هنوز متصل نشده است. با ادامه، ثبت‌نام شما
-          با وضعیت «در انتظار پرداخت» ذخیره می‌شود و پس از فعال‌سازی درگاه،
-          پرداخت تکمیل خواهد شد.
+      <div className="rounded-2xl bg-gradient-to-l from-primary/10 via-secondary/5 to-white px-5 py-5">
+        <p className="text-xs font-medium text-secondary">خلاصه نهایی</p>
+        <h2
+          id="payment-step-title"
+          className="mt-1 text-lg font-bold text-primary sm:text-xl"
+        >
+          بازبینی و پرداخت
+        </h2>
+        <p className="mt-2 text-sm leading-7 text-muted">
+          قبل از انتقال به درگاه، اطلاعات و مبلغ قابل پرداخت را تأیید کنید.
         </p>
-        {pricing.ok ? (
-          <p className="mt-4 text-lg font-bold text-primary">
-            مبلغ قابل پرداخت: {formatRials(pricing.finalAmountRials)}
-          </p>
-        ) : null}
       </div>
+
+      <SummaryCard
+        title="دانش‌آموز"
+        onEdit={() => onEdit(1)}
+        rows={[
+          ["نام", `${student.firstName} ${student.lastName}`],
+          ["پایه", student.gradeLabel || "—"],
+          ["رشته", student.majorLabel || "—"],
+          ["مدرسه", student.schoolName || "—"],
+        ]}
+      />
+
+      <SummaryCard
+        title="ولی"
+        onEdit={() => onEdit(2)}
+        rows={[
+          ["نام", parent.parentName],
+          [
+            "نسبت",
+            parent.relationship
+              ? PARENT_RELATIONSHIP_LABELS[parent.relationship]
+              : "—",
+          ],
+          ["موبایل", toPersianDigits(parent.mobile)],
+        ]}
+      />
+
+      <SummaryCard
+        title="انتخاب ثبت‌نام"
+        onEdit={() => onEdit(3)}
+        rows={[
+          [
+            "آزمون",
+            pricing.ok ? pricing.productTitle : details.productKey || "—",
+          ],
+          [
+            "نوبت",
+            pricing.ok ? pricing.sessionTitle : details.sessionKey || "—",
+          ],
+          [
+            "بسته",
+            pricing.ok ? pricing.packageTitle : details.packageKey || "—",
+          ],
+          [
+            "شعبه",
+            pricing.ok
+              ? pricing.venueBranchTitle
+              : details.venueBranchKey || "—",
+          ],
+        ]}
+      />
+
+      <div className="rounded-2xl border border-border bg-white px-5 py-5">
+        <h3 className="text-sm font-semibold text-primary">اسناد و مدارک</h3>
+        <p className="mt-2 text-sm leading-7 text-muted">
+          در این جریان، اطلاعات هویتی دانش‌آموز و ولی به‌عنوان مدارک ثبت‌نام
+          ذخیره می‌شود. بارگذاری فایل جداگانه در نسخه بعدی فعال می‌شود.
+        </p>
+      </div>
+
+      {pricing.ok ? (
+        <div className="rounded-2xl border border-secondary/30 bg-gradient-to-l from-secondary/10 to-white px-5 py-5">
+          <h3 className="text-sm font-semibold text-primary">هزینه‌ها</h3>
+          <dl className="mt-3 space-y-2 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">مبلغ بسته</dt>
+              <dd>{formatRials(pricing.amountRials)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">تخفیف</dt>
+              <dd>
+                {pricing.discountRials > 0
+                  ? formatRials(pricing.discountRials)
+                  : "—"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3 border-t border-border pt-2 text-base font-bold text-primary">
+              <dt>مبلغ قابل پرداخت</dt>
+              <dd>{formatRials(pricing.finalAmountRials)}</dd>
+            </div>
+          </dl>
+        </div>
+      ) : null}
+
+      <label className="flex items-start gap-3 rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-foreground">
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(event) => onAgreedChange(event.target.checked)}
+          className="mt-1 size-4 rounded border-border"
+        />
+        <span>
+          قوانین ثبت‌نام، صحت اطلاعات واردشده و مبلغ نهایی را می‌پذیرم و با
+          انتقال به درگاه پرداخت موافقم.
+        </span>
+      </label>
 
       <div className="public-form-submit-bar flex flex-col gap-3">
         <button
           type="button"
           onClick={onPay}
-          disabled={pending || !pricing.ok}
+          disabled={pending || !pricing.ok || !agreed}
           className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/92 disabled:opacity-60"
         >
-          {pending ? "در حال ثبت…" : "ادامه به پرداخت"}
+          {pending ? "در حال انتقال به درگاه…" : "پرداخت و تکمیل ثبت‌نام"}
         </button>
       </div>
     </section>

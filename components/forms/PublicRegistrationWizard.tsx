@@ -19,6 +19,10 @@ import { PublicFormField } from "@/components/forms/PublicFormField";
 import { FormFieldType } from "@/generated/prisma/enums";
 import { buildRegistrationWizardPanels } from "@/lib/forms/build-registration-wizard-panels";
 import {
+  parseFormFileUploadAnswer,
+  parseFormFileUploadAnswerFromFormValue,
+} from "@/lib/forms/file-upload-config";
+import {
   evaluateAllFieldVisibility,
   type VisibilityAnswerValue,
 } from "@/lib/forms/field-visibility";
@@ -60,6 +64,16 @@ function readFormAnswers(
         raw === "yes" || raw === "on" || raw === "true";
       continue;
     }
+    if (field.type === FormFieldType.FILE_UPLOAD) {
+      const raw = formData.get(field.fieldKey);
+      const parsed =
+        typeof raw === "string"
+          ? parseFormFileUploadAnswerFromFormValue(raw)
+          : null;
+      answers[field.fieldKey] =
+        parsed && parsed.files.length > 0 ? JSON.stringify(parsed) : "";
+      continue;
+    }
     const raw = formData.get(field.fieldKey);
     answers[field.fieldKey] = typeof raw === "string" ? raw.trim() : "";
   }
@@ -78,6 +92,10 @@ function preservedToHiddenValues(
   }
   if (Array.isArray(value)) {
     return value.filter((item) => typeof item === "string" && item.length > 0);
+  }
+  const upload = parseFormFileUploadAnswer(value);
+  if (upload) {
+    return [JSON.stringify(upload)];
   }
   if (typeof value === "string" && value.length > 0) {
     return [value];
@@ -273,7 +291,24 @@ export function PublicRegistrationWizard({
 
     setStepErrors({});
     setStepFormError(null);
-    setAnswers((prev) => ({ ...prev, ...result.values }));
+    setAnswers((prev) => {
+      const next: Record<string, VisibilityAnswerValue> = { ...prev };
+      for (const [key, value] of Object.entries(result.values)) {
+        if (
+          value &&
+          typeof value === "object" &&
+          !Array.isArray(value) &&
+          "files" in value
+        ) {
+          const upload = parseFormFileUploadAnswer(value);
+          next[key] =
+            upload && upload.files.length > 0 ? JSON.stringify(upload) : "";
+          continue;
+        }
+        next[key] = value as VisibilityAnswerValue;
+      }
+      return next;
+    });
 
     const nextIndex = Math.min(safeIndex + 1, panels.length - 1);
     setAckedServerErrorKey(serverErrorKey);
@@ -489,9 +524,6 @@ export function PublicRegistrationWizard({
           if (!isVisible) {
             return null;
           }
-          const preserved = effectiveAnswers[field.fieldKey] as
-            | PreservedFieldValue
-            | undefined;
 
           return (
             <div
@@ -502,9 +534,26 @@ export function PublicRegistrationWizard({
               <PublicFormField
                 field={field}
                 error={mergedFieldErrors[field.fieldKey]}
-                defaultValue={preserved ?? state.values?.[field.fieldKey]}
+                defaultValue={
+                  (() => {
+                    const raw =
+                      effectiveAnswers[field.fieldKey] ??
+                      state.values?.[field.fieldKey];
+                    if (field.type === FormFieldType.FILE_UPLOAD) {
+                      if (typeof raw === "string") {
+                        return (
+                          parseFormFileUploadAnswerFromFormValue(raw) ??
+                          undefined
+                        );
+                      }
+                      return parseFormFileUploadAnswer(raw) ?? undefined;
+                    }
+                    return raw as PreservedFieldValue | undefined;
+                  })()
+                }
                 disabled={pending}
                 idPrefix={idPrefix}
+                formSlug={data.form.slug}
               />
             </div>
           );

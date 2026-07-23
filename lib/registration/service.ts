@@ -18,7 +18,7 @@ import { getCurrentOrganization } from "@/lib/organizations/get-current-organiza
 import { prisma } from "@/lib/prisma";
 import { getRegistrationCatalog } from "@/lib/registration/catalog-registry";
 import { nextRegistrationNumber } from "@/lib/registration/number-generator";
-import { getPaymentService } from "@/lib/registration/payment-service";
+import { startCheckoutForRegistration } from "@/lib/payment/service";
 import type {
   CreateRegistrationInput,
   RegistrationPublicView,
@@ -238,27 +238,13 @@ export async function createRegistration(
     });
   }
 
-  const payment = await getPaymentService().startPayment({
+  const payment = await startCheckoutForRegistration({
     organizationId: organization.id,
     registrationId: registration.id,
-    registrationNumber: registration.registrationNumber,
-    amountRials: registration.finalAmountRials,
-    description: `ثبت‌نام ${pricing.productTitle} — ${registration.registrationNumber}`,
-    callbackPath: `/ghalamchi/register/receipt/${registration.registrationNumber}`,
   });
 
   if (!payment.ok) {
     return { ok: false, error: payment.error };
-  }
-
-  if (payment.trackingCode || payment.provider) {
-    await prisma.registration.update({
-      where: { id: registration.id },
-      data: {
-        trackingCode: payment.trackingCode,
-        paymentProvider: payment.provider,
-      },
-    });
   }
 
   return {
@@ -266,7 +252,7 @@ export async function createRegistration(
     registrationId: registration.id,
     registrationNumber: registration.registrationNumber,
     status: registration.status,
-    paymentMessage: payment.message,
+    paymentMessage: "در حال انتقال به درگاه پرداخت…",
     checkoutUrl: payment.checkoutUrl,
     trackingCode: payment.trackingCode,
   };
@@ -301,7 +287,10 @@ export async function getRegistrationByNumber(
     createdAt: row.createdAt,
     paymentMessage:
       row.status === RegistrationStatus.PENDING_PAYMENT
-        ? `وضعیت: ${REGISTRATION_STATUS_LABELS[row.status]}`
-        : null,
+        ? `وضعیت: ${REGISTRATION_STATUS_LABELS[row.status]} — در صورت نیاز می‌توانید پرداخت را از صفحه خطا دوباره انجام دهید.`
+        : row.status === RegistrationStatus.COMPLETED ||
+            row.status === RegistrationStatus.PAID
+          ? `وضعیت: ${REGISTRATION_STATUS_LABELS[row.status]}`
+          : `وضعیت: ${REGISTRATION_STATUS_LABELS[row.status]}`,
   };
 }
