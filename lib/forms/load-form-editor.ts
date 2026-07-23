@@ -1,5 +1,6 @@
 import {
   FormVersionStatus,
+  type FormMode,
   type FormPurpose,
   type FormFieldType,
 } from "@/generated/prisma/enums";
@@ -14,6 +15,7 @@ import { redirect } from "next/navigation";
 
 export type EditorField = {
   id: string;
+  formStepId: string | null;
   fieldKey: string;
   sortOrder: number;
   type: FormFieldType;
@@ -44,6 +46,7 @@ export type FormEditorData = {
     id: string;
     slug: string;
     purpose: FormPurpose;
+    mode: FormMode;
     publishedVersionId: string | null;
   };
   draft: {
@@ -130,6 +133,7 @@ export async function loadFormEditor(
         id: true,
         slug: true,
         purpose: true,
+        mode: true,
         publishedVersionId: true,
       },
     });
@@ -168,6 +172,7 @@ export async function loadFormEditor(
           orderBy: { sortOrder: "asc" },
           select: {
             id: true,
+            formStepId: true,
             fieldKey: true,
             sortOrder: true,
             type: true,
@@ -252,6 +257,7 @@ export async function loadFormEditor(
           id: form.id,
           slug: form.slug,
           purpose: form.purpose,
+          mode: form.mode,
           publishedVersionId: form.publishedVersionId,
         },
         draft: draft
@@ -268,6 +274,7 @@ export async function loadFormEditor(
         publishedVersion,
         fields: (draft?.fields ?? []).map((field) => ({
           id: field.id,
+          formStepId: field.formStepId,
           fieldKey: field.fieldKey,
           sortOrder: field.sortOrder,
           type: field.type,

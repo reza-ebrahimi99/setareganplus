@@ -291,6 +291,13 @@ enum FormPurpose {
   PARENT_MEETING
 }
 
+/// Builder mode for a Form. STANDARD keeps current single-page behaviour.
+/// REGISTRATION unlocks multi-step registration settings in the admin editor.
+enum FormMode {
+  STANDARD
+  REGISTRATION
+}
+
 enum FormVersionStatus {
   DRAFT
   PUBLISHED
@@ -454,6 +461,7 @@ model Organization {
   auditLogs                AuditLog[]
   forms                    Form[]
   formVersions             FormVersion[]
+  formSteps                FormStep[]
   formFields               FormField[]
   formSubmissions          FormSubmission[]
   formAnswers              FormAnswer[]
@@ -1137,6 +1145,7 @@ model Form {
   branchId           String?
   slug               String
   purpose            FormPurpose
+  mode               FormMode    @default(STANDARD)
   isAdmissionForm    Boolean     @default(false)
   publishedVersionId String?
   createdAt          DateTime    @default(now())
@@ -1158,6 +1167,7 @@ model Form {
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
   @@index([organizationId, purpose])
+  @@index([organizationId, mode])
   @@index([organizationId, isAdmissionForm])
   @@index([organizationId, deletedAt])
   @@map("forms")
@@ -1207,6 +1217,7 @@ model FormVersion {
   form             Form                 @relation("FormVersions", fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
   sourceTemplate   FormTemplate?        @relation(fields: [sourceTemplateId], references: [id], onDelete: Restrict)
   posterMedia      MediaAsset?          @relation("FormVersionPoster", fields: [posterMediaId], references: [id], onDelete: SetNull)
+  steps            FormStep[]
   fields           FormField[]
   submissions      FormSubmission[]
   formsAsPublished Form[]               @relation("FormPublishedVersion")
@@ -1220,10 +1231,39 @@ model FormVersion {
   @@map("form_versions")
 }
 
+// ─── Ordered wizard steps within a FormVersion ───────────────────────────────
+//
+// Fields may optionally belong to a step via FormField.formStepId.
+// Existing forms keep formStepId null and continue to render as a flat list.
+
+model FormStep {
+  id             String   @id @default(cuid())
+  organizationId String
+  formVersionId  String
+  stepKey        String
+  sortOrder      Int
+  title          String
+  description    String?
+  settings       Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  formVersion  FormVersion  @relation(fields: [organizationId, formVersionId], references: [organizationId, id], onDelete: Cascade)
+  fields       FormField[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, formVersionId, stepKey])
+  @@unique([organizationId, formVersionId, sortOrder])
+  @@index([organizationId, formVersionId, sortOrder])
+  @@map("form_steps")
+}
+
 model FormField {
   id                   String            @id @default(cuid())
   organizationId       String
   formVersionId        String
+  formStepId           String?
   fieldKey             String
   sortOrder            Int
   type                 FormFieldType
@@ -1239,12 +1279,14 @@ model FormField {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   formVersion  FormVersion  @relation(fields: [organizationId, formVersionId], references: [organizationId, id], onDelete: Cascade)
+  formStep     FormStep?    @relation(fields: [organizationId, formStepId], references: [organizationId, id], onDelete: Restrict)
   answers      FormAnswer[]
 
   @@unique([organizationId, formVersionId, fieldKey])
   @@unique([organizationId, formVersionId, sortOrder])
   @@unique([organizationId, id])
   @@index([organizationId, formVersionId, sortOrder])
+  @@index([organizationId, formStepId, sortOrder])
   @@map("form_fields")
 }
 

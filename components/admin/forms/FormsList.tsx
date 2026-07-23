@@ -1,13 +1,19 @@
 import Link from "next/link";
+import { getFormModeLabel } from "@/lib/forms/form-mode-labels";
 import { getFormPurposeLabel } from "@/lib/forms/form-purpose-labels";
 import { getFormVersionStatusLabel } from "@/lib/forms/form-version-status-labels";
 import { toPersianDigits } from "@/lib/persian";
-import type { FormPurpose, FormVersionStatus } from "@/generated/prisma/enums";
+import type {
+  FormMode,
+  FormPurpose,
+  FormVersionStatus,
+} from "@/generated/prisma/enums";
 
 export type AdminFormListItem = {
   id: string;
   slug: string;
   purpose: FormPurpose;
+  mode: FormMode;
   publishedVersionId: string | null;
   updatedAt: Date;
   latestVersion: {
@@ -71,6 +77,12 @@ export function FormsList({ forms }: { forms: AdminFormListItem[] }) {
                     <dt className="inline text-slate-500">هدف: </dt>
                     <dd className="inline text-foreground">
                       {getFormPurposeLabel(form.purpose)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="inline text-slate-500">حالت: </dt>
+                    <dd className="inline text-foreground">
+                      {getFormModeLabel(form.mode)}
                     </dd>
                   </div>
                   <div>

@@ -55,6 +55,7 @@ function asNullableInputJson(
 /**
  * Publishes the exact submitted draft and creates its editable successor atomically.
  * Public readers continue to use only Form.publishedVersionId.
+ * Steps (when present) are cloned with remapped FormField.formStepId links.
  */
 export async function publishFormDraft(
   params: PublishFormDraftParams,
@@ -102,9 +103,21 @@ export async function publishFormDraft(
               settings: true,
               sourceTemplateId: true,
               posterMediaId: true,
+              steps: {
+                orderBy: { sortOrder: "asc" },
+                select: {
+                  id: true,
+                  stepKey: true,
+                  sortOrder: true,
+                  title: true,
+                  description: true,
+                  settings: true,
+                },
+              },
               fields: {
                 orderBy: { sortOrder: "asc" },
                 select: {
+                  formStepId: true,
                   fieldKey: true,
                   sortOrder: true,
                   type: true,
@@ -221,11 +234,32 @@ export async function publishFormDraft(
             select: { id: true },
           });
 
+          const stepIdBySource = new Map<string, string>();
+
+          for (const step of draft.steps) {
+            const createdStep = await tx.formStep.create({
+              data: {
+                organizationId: params.organizationId,
+                formVersionId: freshDraft.id,
+                stepKey: step.stepKey,
+                sortOrder: step.sortOrder,
+                title: step.title,
+                description: step.description,
+                settings: asRequiredInputJson(step.settings),
+              },
+              select: { id: true },
+            });
+            stepIdBySource.set(step.id, createdStep.id);
+          }
+
           if (draft.fields.length > 0) {
             await tx.formField.createMany({
               data: draft.fields.map((field) => ({
                 organizationId: params.organizationId,
                 formVersionId: freshDraft.id,
+                formStepId: field.formStepId
+                  ? (stepIdBySource.get(field.formStepId) ?? null)
+                  : null,
                 fieldKey: field.fieldKey,
                 sortOrder: field.sortOrder,
                 type: field.type,

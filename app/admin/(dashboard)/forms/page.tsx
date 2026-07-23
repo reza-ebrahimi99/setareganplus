@@ -31,6 +31,7 @@ async function loadForms(
       id: true,
       slug: true,
       purpose: true,
+      mode: true,
       publishedVersionId: true,
       updatedAt: true,
       versions: {
@@ -49,6 +50,7 @@ async function loadForms(
     id: form.id,
     slug: form.slug,
     purpose: form.purpose,
+    mode: form.mode,
     publishedVersionId: form.publishedVersionId,
     updatedAt: form.updatedAt,
     latestVersion: form.versions[0] ?? null,
