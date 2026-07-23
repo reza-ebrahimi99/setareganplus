@@ -78,6 +78,7 @@ export default async function AdminFormEditorPage({
     draft,
     publishedVersion,
     fields,
+    steps,
     displayStatus,
     headerTitle,
   } = result.data;
@@ -286,7 +287,14 @@ export default async function AdminFormEditorPage({
         />
       </div>
 
-      <FormEditorWorkspace mode={form.mode} formContent={formTabContent} />
+      <FormEditorWorkspace
+        mode={form.mode}
+        formId={form.id}
+        editable={Boolean(draft)}
+        steps={steps}
+        fields={fields}
+        formContent={formTabContent}
+      />
     </>
   );
 }

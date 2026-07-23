@@ -3,16 +3,25 @@
 import { useId, useState, type ReactNode } from "react";
 import type { FormMode } from "@/generated/prisma/enums";
 import { RegistrationFormPanel } from "@/components/admin/forms/RegistrationFormPanel";
+import type { EditorField, EditorStep } from "@/lib/forms/load-form-editor";
 
 type EditorTabId = "form" | "registration";
 
 type FormEditorWorkspaceProps = {
   mode: FormMode;
+  formId: string;
+  editable: boolean;
+  steps: EditorStep[];
+  fields: EditorField[];
   formContent: ReactNode;
 };
 
 export function FormEditorWorkspace({
   mode,
+  formId,
+  editable,
+  steps,
+  fields,
   formContent,
 }: FormEditorWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<EditorTabId>("form");
@@ -60,7 +69,13 @@ export function FormEditorWorkspace({
         aria-labelledby={`${tabsId}-tab-registration`}
         hidden={activeTab !== "registration"}
       >
-        <RegistrationFormPanel mode={mode} />
+        <RegistrationFormPanel
+          mode={mode}
+          formId={formId}
+          editable={editable}
+          steps={steps}
+          fields={fields}
+        />
       </div>
     </div>
   );

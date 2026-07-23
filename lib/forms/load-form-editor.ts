@@ -27,6 +27,14 @@ export type EditorField = {
   visibilityConditions: unknown;
 };
 
+export type EditorStep = {
+  id: string;
+  stepKey: string;
+  sortOrder: number;
+  title: string;
+  description: string | null;
+};
+
 export type EditorDisplayStatus = "DRAFT" | "PUBLISHED" | "PAUSED";
 
 export type EditorPoster = {
@@ -67,6 +75,7 @@ export type FormEditorData = {
     schedule: EditorScheduleSettings;
   } | null;
   fields: EditorField[];
+  steps: EditorStep[];
   displayStatus: EditorDisplayStatus;
   headerTitle: string;
 };
@@ -166,6 +175,16 @@ export async function loadFormEditor(
             storageKey: true,
             altText: true,
             deletedAt: true,
+          },
+        },
+        steps: {
+          orderBy: { sortOrder: "asc" },
+          select: {
+            id: true,
+            stepKey: true,
+            sortOrder: true,
+            title: true,
+            description: true,
           },
         },
         fields: {
@@ -284,6 +303,13 @@ export async function loadFormEditor(
           required: field.required,
           config: field.config,
           visibilityConditions: field.visibilityConditions,
+        })),
+        steps: (draft?.steps ?? []).map((step) => ({
+          id: step.id,
+          stepKey: step.stepKey,
+          sortOrder: step.sortOrder,
+          title: step.title,
+          description: step.description,
         })),
         displayStatus,
         headerTitle,

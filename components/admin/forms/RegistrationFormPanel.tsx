@@ -1,15 +1,27 @@
 import { FormMode } from "@/generated/prisma/enums";
+import { RegistrationStepBuilder } from "@/components/admin/forms/RegistrationStepBuilder";
 import { getFormModeLabel } from "@/lib/forms/form-mode-labels";
+import type { EditorField, EditorStep } from "@/lib/forms/load-form-editor";
 
 type RegistrationFormPanelProps = {
   mode: FormMode;
+  formId: string;
+  editable: boolean;
+  steps: EditorStep[];
+  fields: EditorField[];
 };
 
 /**
- * Foundation panel for Registration Mode inside the Form Builder.
- * Settings and step editing land in later sprint tasks.
+ * Registration Mode panel inside the Form Builder.
+ * Hosts the admin Step Builder for REGISTRATION forms.
  */
-export function RegistrationFormPanel({ mode }: RegistrationFormPanelProps) {
+export function RegistrationFormPanel({
+  mode,
+  formId,
+  editable,
+  steps,
+  fields,
+}: RegistrationFormPanelProps) {
   const isRegistration = mode === FormMode.REGISTRATION;
 
   return (
@@ -27,7 +39,8 @@ export function RegistrationFormPanel({ mode }: RegistrationFormPanelProps) {
               حالت ثبت‌نام
             </h2>
             <p className="text-sm leading-7 text-muted">
-              این بخش پایهٔ معماری ثبت‌نام چندمرحله‌ای روی فرم‌ساز موجود است.
+              مدیریت مراحل چندصفحه‌ای ثبت‌نام روی همین فرم‌ساز، بدون تغییر رفتار
+              عمومی فرم‌های استاندارد.
             </p>
           </div>
           <span
@@ -42,16 +55,24 @@ export function RegistrationFormPanel({ mode }: RegistrationFormPanelProps) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-dashed border-border bg-background px-4 py-8 sm:px-6">
-        <div className="mx-auto max-w-xl space-y-3 text-center">
-          <p className="text-sm font-medium text-primary">چیدمان ثبت‌نام</p>
-          <p className="text-sm leading-7 text-muted">
-            {isRegistration
-              ? "تنظیمات مراحل، فیلدها و جریان ثبت‌نام در این‌جا اضافه می‌شود. فعلاً فقط زیرساخت فعال است."
-              : "برای فعال‌سازی این بخش، هنگام ساخت فرم حالت «ثبت‌نام» را انتخاب کنید. فرم‌های استاندارد بدون تغییر کار می‌کنند."}
-          </p>
+      {isRegistration ? (
+        <RegistrationStepBuilder
+          formId={formId}
+          editable={editable}
+          steps={steps}
+          fields={fields}
+        />
+      ) : (
+        <div className="rounded-xl border border-dashed border-border bg-background px-4 py-8 sm:px-6">
+          <div className="mx-auto max-w-xl space-y-3 text-center">
+            <p className="text-sm font-medium text-primary">چیدمان ثبت‌نام</p>
+            <p className="text-sm leading-7 text-muted">
+              برای فعال‌سازی سازنده مراحل، هنگام ساخت فرم حالت «ثبت‌نام» را انتخاب
+              کنید. فرم‌های استاندارد بدون تغییر کار می‌کنند.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <section
         aria-labelledby="registration-settings-heading"
@@ -64,8 +85,8 @@ export function RegistrationFormPanel({ mode }: RegistrationFormPanelProps) {
           تنظیمات ثبت‌نام
         </h3>
         <p className="mt-2 text-sm leading-7 text-muted">
-          هنوز تنظیماتی تعریف نشده است. این ناحیه برای گزینه‌های آیندهٔ ثبت‌نام
-          آماده شده و روی رفتار عمومی فرم‌ها اثری ندارد.
+          تنظیمات پیشرفتهٔ ثبت‌نام (پرداخت، مدارک و ظرفیت) در وظایف بعدی اضافه
+          می‌شود و روی رفتار عمومی فرم‌ها اثری ندارد.
         </p>
       </section>
     </section>
