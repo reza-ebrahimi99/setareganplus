@@ -25,7 +25,6 @@ import {
 import { MediaPickerField } from "@/components/admin/media/MediaPickerField";
 import {
   RegistrationDocumentType,
-  RegistrationFlowPaymentMode,
   RegistrationProductType,
 } from "@/generated/prisma/enums";
 import { getFormFieldTypeLabel } from "@/lib/forms/form-field-type-labels";
@@ -36,6 +35,7 @@ import {
   FLOW_LIFECYCLE_LABELS,
   FLOW_PAYMENT_MODE_LABELS,
   FLOW_STEP_LABELS,
+  PRIMARY_FLOW_PAYMENT_MODES,
   PRODUCT_TYPE_LABELS,
 } from "@/lib/registration/flows/constants";
 import {
@@ -396,7 +396,12 @@ export function RegistrationFlowEditor({
                 disabled={!canManage}
                 className={inputClass}
               >
-                {Object.values(RegistrationFlowPaymentMode).map((mode) => (
+                {[
+                  ...PRIMARY_FLOW_PAYMENT_MODES,
+                  ...(PRIMARY_FLOW_PAYMENT_MODES.includes(flow.paymentMode)
+                    ? []
+                    : [flow.paymentMode]),
+                ].map((mode) => (
                   <option key={mode} value={mode}>
                     {FLOW_PAYMENT_MODE_LABELS[mode]}
                   </option>

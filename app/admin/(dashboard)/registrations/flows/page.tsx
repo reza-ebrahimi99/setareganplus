@@ -38,8 +38,8 @@ export default async function AdminRegistrationFlowsPage() {
   return (
     <>
       <AdminPageHeader
-        title="فرم‌ها و جریان‌های ثبت‌نام"
-        description="مدیریت جریان‌های ثبت‌نام عمومی، اتصال فرم، پرداخت و انتشار"
+        title="محصولات و جریان‌های ثبت‌نام"
+        description="مدیریت جریان محصول/خدمت (ثبت‌نام، کتاب، لباس فرم، اردو و …)، اتصال فرم، پرداخت و انتشار"
         breadcrumbs={adminBreadcrumbs.registrationFlows}
         compact
       />

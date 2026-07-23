@@ -101,7 +101,7 @@ export const adminNavGroups: ReadonlyArray<{
           },
           {
             href: "/admin/registrations/flows",
-            label: "فرم‌ها و جریان‌های ثبت‌نام",
+            label: "محصولات و جریان‌های ثبت‌نام",
             permission: "registration_flows.view",
           },
         ],

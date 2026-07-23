@@ -460,72 +460,75 @@ model Organization {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  branches                 Branch[]
-  leads                    Lead[]
-  memberships              OrganizationMembership[]
-  auditLogs                AuditLog[]
-  forms                    Form[]
-  formVersions             FormVersion[]
-  formSteps                FormStep[]
-  formFields               FormField[]
-  formSubmissions          FormSubmission[]
-  formAnswers              FormAnswer[]
-  formTemplates            FormTemplate[]
-  formTemplateFields       FormTemplateField[]
-  tags                     Tag[]
-  formTags                 FormTag[]
-  formSubmissionTags       FormSubmissionTag[]
-  automationRules          AutomationRule[]
-  domainEvents             DomainEventOutbox[]
-  formAnalyticsEvents      FormAnalyticsEvent[]
-  formAnalyticsDaily       FormAnalyticsDaily[]
-  mediaAssets              MediaAsset[]
-  galleryAlbums            GalleryAlbum[]
-  mediaPlacements          MediaPlacement[]
-  websiteMarketingCards    WebsiteMarketingCard[]
-  websitePages             WebsitePage[]
-  websitePageSections      WebsitePageSection[]
-  websitePageSectionMedia  WebsitePageSectionMedia[]
-  bookingServices          BookingService[]
-  bookingAdvisors          BookingAdvisor[]
-  bookingSlots             BookingSlot[]
-  bookingReservations      BookingReservation[]
-  sitePlacements           SitePlacement[]
-  smsTemplates             SmsTemplate[]
-  smsMessages              SmsMessage[]
-  otpChallenges            OtpChallenge[]
-  crmPipelines             CrmPipeline[]
-  crmPipelineStages        CrmPipelineStage[]
-  crmTasks                 CrmTask[]
-  crmActivities            CrmActivity[]
-  crmCallLogs              CrmCallLog[]
-  crmLeadImportReports     CrmLeadImportReport[]
-  automationExecutions     AutomationExecution[]
-  teamDepartments          TeamDepartment[]
-  teamMembers              TeamMember[]
-  studentGrades            StudentGrade[]
-  studentMajors            StudentMajor[]
-  students                 Student[]
-  achievementCategories    AchievementCategory[]
-  achievements             Achievement[]
-  assessmentProviders      AssessmentProvider[]
-  subjects                 Subject[]
-  assessments              Assessment[]
-  assessmentResults        AssessmentResult[]
-  studentGuardians           StudentGuardian[]
-  studentGuardianRelations   StudentGuardianRelation[]
-  portalAccountLinks         PortalAccountLink[]
-  registrations              Registration[]
-  registrationNumberCounters RegistrationNumberCounter[]
-  paymentIntents             PaymentIntent[]
-  paymentSessions            PaymentSession[]
-  paymentEventLogs           PaymentEventLog[]
-  registrationDocuments      RegistrationDocument[]
-  registrationNotes          RegistrationNote[]
-  registrationActivities     RegistrationActivity[]
-  registrationFlows          RegistrationFlow[]
-  registrationFlowSteps      RegistrationFlowStep[]
+  branches                             Branch[]
+  leads                                Lead[]
+  memberships                          OrganizationMembership[]
+  auditLogs                            AuditLog[]
+  forms                                Form[]
+  formVersions                         FormVersion[]
+  formSteps                            FormStep[]
+  formFields                           FormField[]
+  formSubmissions                      FormSubmission[]
+  formAnswers                          FormAnswer[]
+  formTemplates                        FormTemplate[]
+  formTemplateFields                   FormTemplateField[]
+  tags                                 Tag[]
+  formTags                             FormTag[]
+  formSubmissionTags                   FormSubmissionTag[]
+  automationRules                      AutomationRule[]
+  domainEvents                         DomainEventOutbox[]
+  formAnalyticsEvents                  FormAnalyticsEvent[]
+  formAnalyticsDaily                   FormAnalyticsDaily[]
+  mediaAssets                          MediaAsset[]
+  galleryAlbums                        GalleryAlbum[]
+  mediaPlacements                      MediaPlacement[]
+  websiteMarketingCards                WebsiteMarketingCard[]
+  websitePages                         WebsitePage[]
+  websitePageSections                  WebsitePageSection[]
+  websitePageSectionMedia              WebsitePageSectionMedia[]
+  bookingServices                      BookingService[]
+  bookingAdvisors                      BookingAdvisor[]
+  bookingSlots                         BookingSlot[]
+  bookingReservations                  BookingReservation[]
+  sitePlacements                       SitePlacement[]
+  smsTemplates                         SmsTemplate[]
+  smsMessages                          SmsMessage[]
+  otpChallenges                        OtpChallenge[]
+  crmPipelines                         CrmPipeline[]
+  crmPipelineStages                    CrmPipelineStage[]
+  crmTasks                             CrmTask[]
+  crmActivities                        CrmActivity[]
+  crmCallLogs                          CrmCallLog[]
+  crmLeadImportReports                 CrmLeadImportReport[]
+  automationExecutions                 AutomationExecution[]
+  teamDepartments                      TeamDepartment[]
+  teamMembers                          TeamMember[]
+  studentGrades                        StudentGrade[]
+  studentMajors                        StudentMajor[]
+  students                             Student[]
+  achievementCategories                AchievementCategory[]
+  achievements                         Achievement[]
+  assessmentProviders                  AssessmentProvider[]
+  subjects                             Subject[]
+  assessments                          Assessment[]
+  assessmentResults                    AssessmentResult[]
+  studentGuardians                     StudentGuardian[]
+  studentGuardianRelations             StudentGuardianRelation[]
+  portalAccountLinks                   PortalAccountLink[]
+  registrations                        Registration[]
+  registrationNumberCounters           RegistrationNumberCounter[]
+  paymentIntents                       PaymentIntent[]
+  paymentSessions                      PaymentSession[]
+  paymentEventLogs                     PaymentEventLog[]
+  registrationDocuments                RegistrationDocument[]
+  registrationNotes                    RegistrationNote[]
+  registrationActivities               RegistrationActivity[]
+  registrationFlows                    RegistrationFlow[]
+  registrationFlowSteps                RegistrationFlowStep[]
   registrationFlowDocumentRequirements RegistrationFlowDocumentRequirement[]
+  registrationFlowGalleryItems         RegistrationFlowGalleryItem[]
+  registrationFlowItems                RegistrationFlowItem[]
+  registrationFlowItemVariants         RegistrationFlowItemVariant[]
 
   @@map("organizations")
 }
@@ -583,21 +586,21 @@ model User {
   updatedAt        DateTime   @updatedAt
   deletedAt        DateTime?
 
-  memberships          OrganizationMembership[]
-  auditLogs            AuditLog[]               @relation("AuditLogActor")
-  adminSessions        AdminSession[]
-  mediaAssets          MediaAsset[]             @relation("MediaAssetCreator")
-  bookingAdvisors      BookingAdvisor[]
-  bookingCheckIns      BookingCheckIn[]
-  ownedLeads           Lead[]                   @relation("LeadOwner")
-  assignedCrmTasks     CrmTask[]                @relation("CrmTaskAssignee")
-  createdCrmTasks      CrmTask[]                @relation("CrmTaskCreator")
-  crmActivities              CrmActivity[]              @relation("CrmActivityActor")
-  crmLeadImportReports       CrmLeadImportReport[]      @relation("CrmLeadImportActor")
-  portalAccountLinks         PortalAccountLink[]
-  registrationDocumentReviews RegistrationDocument[]    @relation("RegistrationDocumentReviewer")
-  registrationNotes          RegistrationNote[]         @relation("RegistrationNoteActor")
-  registrationActivities     RegistrationActivity[]     @relation("RegistrationActivityActor")
+  memberships                 OrganizationMembership[]
+  auditLogs                   AuditLog[]               @relation("AuditLogActor")
+  adminSessions               AdminSession[]
+  mediaAssets                 MediaAsset[]             @relation("MediaAssetCreator")
+  bookingAdvisors             BookingAdvisor[]
+  bookingCheckIns             BookingCheckIn[]
+  ownedLeads                  Lead[]                   @relation("LeadOwner")
+  assignedCrmTasks            CrmTask[]                @relation("CrmTaskAssignee")
+  createdCrmTasks             CrmTask[]                @relation("CrmTaskCreator")
+  crmActivities               CrmActivity[]            @relation("CrmActivityActor")
+  crmLeadImportReports        CrmLeadImportReport[]    @relation("CrmLeadImportActor")
+  portalAccountLinks          PortalAccountLink[]
+  registrationDocumentReviews RegistrationDocument[]   @relation("RegistrationDocumentReviewer")
+  registrationNotes           RegistrationNote[]       @relation("RegistrationNoteActor")
+  registrationActivities      RegistrationActivity[]   @relation("RegistrationActivityActor")
 
   @@index([status])
   @@index([deletedAt])
@@ -943,21 +946,23 @@ model MediaAsset {
   updatedAt       DateTime         @updatedAt
   deletedAt       DateTime?
 
-  organization            Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  createdBy               User?                     @relation("MediaAssetCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  formPosters             FormVersion[]             @relation("FormVersionPoster")
-  teamPortraits           TeamMember[]              @relation("TeamMemberPortrait")
-  studentPortraits        Student[]                 @relation("StudentPortrait")
-  achievementCertificates Achievement[]             @relation("AchievementCertificate")
-  achievementCovers       Achievement[]             @relation("AchievementCover")
-  galleryAlbumCovers      GalleryAlbum[]            @relation("GalleryAlbumCover")
-  galleryAlbumItems       GalleryAlbumItem[]
-  mediaPlacements         MediaPlacement[]
-  websiteMarketingCards   WebsiteMarketingCard[]    @relation("WebsiteMarketingCardImage")
-  websitePageSectionMedia WebsitePageSectionMedia[] @relation("WebsitePageSectionMediaAsset")
-  websitePageSeoImages    WebsitePage[]             @relation("WebsitePageSeoImage")
-  registrationDocuments   RegistrationDocument[]
-  registrationFlowCovers  RegistrationFlow[] @relation("RegistrationFlowCover")
+  organization                 Organization                  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdBy                    User?                         @relation("MediaAssetCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  formPosters                  FormVersion[]                 @relation("FormVersionPoster")
+  teamPortraits                TeamMember[]                  @relation("TeamMemberPortrait")
+  studentPortraits             Student[]                     @relation("StudentPortrait")
+  achievementCertificates      Achievement[]                 @relation("AchievementCertificate")
+  achievementCovers            Achievement[]                 @relation("AchievementCover")
+  galleryAlbumCovers           GalleryAlbum[]                @relation("GalleryAlbumCover")
+  galleryAlbumItems            GalleryAlbumItem[]
+  mediaPlacements              MediaPlacement[]
+  websiteMarketingCards        WebsiteMarketingCard[]        @relation("WebsiteMarketingCardImage")
+  websitePageSectionMedia      WebsitePageSectionMedia[]     @relation("WebsitePageSectionMediaAsset")
+  websitePageSeoImages         WebsitePage[]                 @relation("WebsitePageSeoImage")
+  registrationDocuments        RegistrationDocument[]
+  registrationFlowCovers       RegistrationFlow[]            @relation("RegistrationFlowCover")
+  registrationFlowGalleryItems RegistrationFlowGalleryItem[]
+  registrationFlowItemImages   RegistrationFlowItem[]        @relation("RegistrationFlowItemImage")
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])
@@ -1171,17 +1176,17 @@ model Form {
   updatedAt          DateTime    @updatedAt
   deletedAt          DateTime?
 
-  organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch           Branch?              @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  versions         FormVersion[]        @relation("FormVersions")
-  publishedVersion FormVersion?         @relation("FormPublishedVersion", fields: [organizationId, publishedVersionId], references: [organizationId, id], onDelete: Restrict)
-  submissions      FormSubmission[]
-  tags             FormTag[]
-  automationRules  AutomationRule[]
-  analyticsEvents  FormAnalyticsEvent[]
-  analyticsDaily   FormAnalyticsDaily[]
-  bookingServices  BookingService[]
-  sitePlacements   SitePlacement[]
+  organization      Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch            Branch?              @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  versions          FormVersion[]        @relation("FormVersions")
+  publishedVersion  FormVersion?         @relation("FormPublishedVersion", fields: [organizationId, publishedVersionId], references: [organizationId, id], onDelete: Restrict)
+  submissions       FormSubmission[]
+  tags              FormTag[]
+  automationRules   AutomationRule[]
+  analyticsEvents   FormAnalyticsEvent[]
+  analyticsDaily    FormAnalyticsDaily[]
+  bookingServices   BookingService[]
+  sitePlacements    SitePlacement[]
   registrationFlows RegistrationFlow[]
 
   @@unique([organizationId, slug])
@@ -2642,7 +2647,7 @@ enum RegistrationPaymentStatus {
   WAIVED
 }
 
-/// Product family — exam is first consumer; not hardcoded in the engine.
+/// Product / service family for Product & Service Flows (Registration Engine).
 enum RegistrationProductType {
   EXAM
   CLASS
@@ -2650,6 +2655,20 @@ enum RegistrationProductType {
   WORKSHOP
   EVENT
   SCHOOL_ADMISSION
+  SCHOOL_REGISTRATION
+  BOOK
+  WORKBOOK
+  SCHOOL_UNIFORM
+  SCHOOL_SUPPLIES
+  TRANSPORT
+  MEAL_PLAN
+  SUMMER_CAMP
+  COURSE
+  TUITION_PAYMENT
+  CERTIFICATE
+  CONSULTATION
+  DIGITAL_PRODUCT
+  OTHER
 }
 
 enum RegistrationParentRelationship {
@@ -2717,72 +2736,108 @@ enum RegistrationFlowStepKey {
   DOCUMENTS
   PAYMENT
   REVIEW
+  CONFIRMATION
 }
 
-/// How a registration flow charges applicants — amounts still settle via Payment Foundation.
+/// How a flow charges applicants — amounts still settle via Payment Foundation.
 enum RegistrationFlowPaymentMode {
   FREE
+  /// @deprecated Prefer FIXED_PRICE for new flows.
   FIXED_AMOUNT
+  /// @deprecated Prefer OPTIONAL for new flows.
   OPTIONAL_PAYMENT
   DEPOSIT
+  FIXED_PRICE
+  OPTIONAL
+  VARIABLE_PRICE
+  INSTALLMENT
 }
 
-model RegistrationFlow {
-  id             String                   @id @default(cuid())
-  organizationId String
-  title          String
-  slug           String
-  description    String                   @default("")
-  coverMediaId   String?
-  lifecycle      RegistrationFlowLifecycle @default(DRAFT)
-  productType    RegistrationProductType  @default(EXAM)
-  /// Optional link to an existing Form Builder form (questions live there).
-  formId         String?
-  opensAt        DateTime?
-  closesAt       DateTime?
-  academicYear   String?
-  /// Comma-separated or free-text grade targeting (e.g. "پایه دهم,پایه یازدهم").
-  gradeTargets   String?
-  /// Course / class / service label for targeting.
-  courseTarget   String?
-  capacity       Int?
-  /// FREE | FIXED_AMOUNT | OPTIONAL_PAYMENT | DEPOSIT — uses existing PaymentIntent checkout.
-  paymentMode    RegistrationFlowPaymentMode @default(FIXED_AMOUNT)
-  /// Configured amount in Rials (required for FIXED_AMOUNT / DEPOSIT; optional for OPTIONAL_PAYMENT).
-  paymentAmountRials Int                  @default(0)
-  paymentTitle   String?
-  paymentDeadlineAt DateTime?
-  publishedAt    DateTime?
-  metadata       Json?
-  createdAt      DateTime                 @default(now())
-  updatedAt      DateTime                 @updatedAt
-  deletedAt      DateTime?
+enum RegistrationFlowFulfillmentMode {
+  NONE
+  PICKUP_AT_SCHOOL
+  COURIER
+  CLASSROOM_DELIVERY
+  DIGITAL_DOWNLOAD
+}
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  coverMedia   MediaAsset?  @relation("RegistrationFlowCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
-  form         Form?        @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
-  steps        RegistrationFlowStep[]
+enum RegistrationFlowInventoryMode {
+  UNLIMITED
+  TRACKED
+}
+
+enum RegistrationFlowVariantKind {
+  SIZE
+  COLOR
+  GRADE
+  PACKAGE
+  EDITION
+  GENDER
+  CUSTOM
+}
+
+/// Product & Service Flow — admin-configurable catalog entry for the Registration Engine.
+/// Public route remains /register/[slug]; admin remains /admin/registrations/flows.
+model RegistrationFlow {
+  id                 String                          @id @default(cuid())
+  organizationId     String
+  title              String
+  slug               String
+  description        String                          @default("")
+  coverMediaId       String?
+  lifecycle          RegistrationFlowLifecycle       @default(DRAFT)
+  productType        RegistrationProductType         @default(SCHOOL_REGISTRATION)
+  /// Optional link to an existing Form Builder form (questions live there).
+  formId             String?
+  opensAt            DateTime?
+  closesAt           DateTime?
+  academicYear       String?
+  /// Comma-separated or free-text grade targeting (e.g. "پایه دهم,پایه یازدهم").
+  gradeTargets       String?
+  /// Course / class / service label for targeting.
+  courseTarget       String?
+  capacity           Int?
+  /// Settles only via existing Payment Foundation (PaymentIntent).
+  paymentMode        RegistrationFlowPaymentMode     @default(FIXED_PRICE)
+  /// Configured amount in Rials (FIXED_PRICE / DEPOSIT / INSTALLMENT base).
+  paymentAmountRials Int                             @default(0)
+  paymentTitle       String?
+  paymentDeadlineAt  DateTime?
+  fulfillmentMode    RegistrationFlowFulfillmentMode @default(NONE)
+  publishedAt        DateTime?
+  metadata           Json?
+  createdAt          DateTime                        @default(now())
+  updatedAt          DateTime                        @updatedAt
+  deletedAt          DateTime?
+
+  organization         Organization                          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  coverMedia           MediaAsset?                           @relation("RegistrationFlowCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  form                 Form?                                 @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
+  steps                RegistrationFlowStep[]
   documentRequirements RegistrationFlowDocumentRequirement[]
-  registrations Registration[]
+  galleryItems         RegistrationFlowGalleryItem[]
+  items                RegistrationFlowItem[]
+  registrations        Registration[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
   @@index([organizationId, lifecycle, deletedAt])
+  @@index([organizationId, productType, deletedAt])
   @@index([organizationId, formId])
   @@index([coverMediaId])
   @@map("registration_flows")
 }
 
 model RegistrationFlowStep {
-  id             String                 @id @default(cuid())
+  id             String                  @id @default(cuid())
   organizationId String
   flowId         String
   stepKey        RegistrationFlowStepKey
   label          String
-  enabled        Boolean                @default(true)
-  sortOrder      Int                    @default(0)
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
+  enabled        Boolean                 @default(true)
+  sortOrder      Int                     @default(0)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
 
   organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   flow         RegistrationFlow @relation(fields: [organizationId, flowId], references: [organizationId, id], onDelete: Restrict)
@@ -2794,22 +2849,23 @@ model RegistrationFlowStep {
 }
 
 model RegistrationFlowDocumentRequirement {
-  id               String                    @id @default(cuid())
-  organizationId   String
-  flowId           String
+  id                String                   @id @default(cuid())
+  organizationId    String
+  flowId            String
   /// Stable machine key within the flow.
-  requirementKey   String
-  title            String
-  helpText         String                    @default("")
-  documentType     RegistrationDocumentType  @default(OTHER)
-  required         Boolean                   @default(true)
-  /// Comma-separated MIME allowlist, e.g. "image/jpeg,image/png,application/pdf"
-  acceptedMimeTypes String                   @default("image/jpeg,image/png,image/webp")
-  maxSizeBytes     Int                       @default(5242880)
-  sortOrder        Int                       @default(0)
-  createdAt        DateTime                  @default(now())
-  updatedAt        DateTime                  @updatedAt
-  deletedAt        DateTime?
+  requirementKey    String
+  title             String
+  helpText          String                   @default("")
+  documentType      RegistrationDocumentType @default(OTHER)
+  required          Boolean                  @default(true)
+  /// Comma-separated MIME allowlist, e.g. "image/jpeg,image/png,application/pdf,application/zip"
+  acceptedMimeTypes String                   @default("image/jpeg,image/png,image/webp,application/pdf")
+  maxSizeBytes      Int                      @default(5242880)
+  maxFiles          Int                      @default(1)
+  sortOrder         Int                      @default(0)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  deletedAt         DateTime?
 
   organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   flow         RegistrationFlow @relation(fields: [organizationId, flowId], references: [organizationId, id], onDelete: Restrict)
@@ -2821,14 +2877,102 @@ model RegistrationFlowDocumentRequirement {
   @@map("registration_flow_document_requirements")
 }
 
+model RegistrationFlowGalleryItem {
+  id             String   @id @default(cuid())
+  organizationId String
+  flowId         String
+  mediaId        String
+  sortOrder      Int      @default(0)
+  caption        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  flow         RegistrationFlow @relation(fields: [organizationId, flowId], references: [organizationId, id], onDelete: Restrict)
+  media        MediaAsset       @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, flowId, sortOrder])
+  @@index([mediaId])
+  @@map("registration_flow_gallery_items")
+}
+
+/// Optional sellable line items attached to a Product & Service Flow (books, uniforms, …).
+model RegistrationFlowItem {
+  id               String                        @id @default(cuid())
+  organizationId   String
+  flowId           String
+  title            String
+  description      String                        @default("")
+  imageMediaId     String?
+  sku              String?
+  barcode          String?
+  isActive         Boolean                       @default(true)
+  isHidden         Boolean                       @default(false)
+  basePriceRials   Int                           @default(0)
+  discountRials    Int                           @default(0)
+  taxRials         Int                           @default(0)
+  depositRials     Int                           @default(0)
+  inventoryMode    RegistrationFlowInventoryMode @default(UNLIMITED)
+  stockQuantity    Int                           @default(0)
+  reservedQuantity Int                           @default(0)
+  soldQuantity     Int                           @default(0)
+  sortOrder        Int                           @default(0)
+  metadata         Json?
+  createdAt        DateTime                      @default(now())
+  updatedAt        DateTime                      @updatedAt
+  deletedAt        DateTime?
+
+  organization Organization                  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  flow         RegistrationFlow              @relation(fields: [organizationId, flowId], references: [organizationId, id], onDelete: Restrict)
+  imageMedia   MediaAsset?                   @relation("RegistrationFlowItemImage", fields: [imageMediaId], references: [id], onDelete: SetNull)
+  variants     RegistrationFlowItemVariant[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, flowId, sortOrder])
+  @@index([organizationId, flowId, isActive, deletedAt])
+  @@index([organizationId, sku])
+  @@index([imageMediaId])
+  @@map("registration_flow_items")
+}
+
+model RegistrationFlowItemVariant {
+  id               String                        @id @default(cuid())
+  organizationId   String
+  itemId           String
+  kind             RegistrationFlowVariantKind   @default(CUSTOM)
+  label            String
+  valueKey         String
+  sku              String?
+  priceDeltaRials  Int                           @default(0)
+  inventoryMode    RegistrationFlowInventoryMode @default(UNLIMITED)
+  stockQuantity    Int                           @default(0)
+  reservedQuantity Int                           @default(0)
+  soldQuantity     Int                           @default(0)
+  isActive         Boolean                       @default(true)
+  sortOrder        Int                           @default(0)
+  createdAt        DateTime                      @default(now())
+  updatedAt        DateTime                      @updatedAt
+  deletedAt        DateTime?
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  item         RegistrationFlowItem @relation(fields: [organizationId, itemId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([itemId, kind, valueKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, itemId, sortOrder])
+  @@index([organizationId, deletedAt])
+  @@map("registration_flow_item_variants")
+}
+
 /// Durable registration application (wizard → payment → CRM → admin ops).
 model Registration {
-  id                 String                         @id @default(cuid())
+  id                 String                    @id @default(cuid())
   organizationId     String
   branchId           String
   registrationNumber String
-  status             RegistrationStatus             @default(NEW)
-  paymentStatus      RegistrationPaymentStatus      @default(UNPAID)
+  status             RegistrationStatus        @default(NEW)
+  paymentStatus      RegistrationPaymentStatus @default(UNPAID)
   productType        RegistrationProductType
   /// Stable flow key, e.g. "qalamchi-exam". Drives catalog resolution.
   flowKey            String
@@ -2837,11 +2981,11 @@ model Registration {
   leadId             String?
 
   /// Wizard progress (1-based step index).
-  currentStep       Int       @default(1)
-  lastCompletedStep Int       @default(0)
-  completionPercent Int       @default(0)
-  totalSteps        Int       @default(6)
-  lastActivityAt    DateTime  @default(now())
+  currentStep       Int      @default(1)
+  lastCompletedStep Int      @default(0)
+  completionPercent Int      @default(0)
+  totalSteps        Int      @default(6)
+  lastActivityAt    DateTime @default(now())
   /// Opaque token for public resume links.
   resumeToken       String?
   abandonedReason   String?
@@ -2878,10 +3022,10 @@ model Registration {
   venueBranchTitle String?
   discountCode     String?
 
-  amountRials      Int     @default(0)
-  discountRials    Int     @default(0)
-  finalAmountRials Int     @default(0)
-  currency         String  @default("IRR")
+  amountRials      Int    @default(0)
+  discountRials    Int    @default(0)
+  finalAmountRials Int    @default(0)
+  currency         String @default("IRR")
 
   /// Payment tracking placeholder (filled by PaymentService later).
   trackingCode    String?
@@ -2894,14 +3038,14 @@ model Registration {
   updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?
 
-  organization Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch       Branch                  @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  lead         Lead?                   @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
-  registrationFlow RegistrationFlow?   @relation(fields: [organizationId, registrationFlowId], references: [organizationId, id], onDelete: Restrict)
-  paymentIntents PaymentIntent[]
-  documents    RegistrationDocument[]
-  notes        RegistrationNote[]
-  activities   RegistrationActivity[]
+  organization     Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch           Branch                 @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  lead             Lead?                  @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  registrationFlow RegistrationFlow?      @relation(fields: [organizationId, registrationFlowId], references: [organizationId, id], onDelete: Restrict)
+  paymentIntents   PaymentIntent[]
+  documents        RegistrationDocument[]
+  notes            RegistrationNote[]
+  activities       RegistrationActivity[]
 
   @@unique([organizationId, registrationNumber])
   @@unique([organizationId, id])
@@ -2954,8 +3098,8 @@ model PaymentIntent {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  registration Registration    @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  registration Registration      @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
   sessions     PaymentSession[]
   eventLogs    PaymentEventLog[]
 
@@ -2970,22 +3114,22 @@ model PaymentIntent {
 
 /// One provider checkout attempt under a PaymentIntent.
 model PaymentSession {
-  id               String        @id @default(cuid())
-  organizationId   String
-  paymentIntentId  String
-  provider         String
+  id                String        @id @default(cuid())
+  organizationId    String
+  paymentIntentId   String
+  provider          String
   providerSessionId String
-  status           PaymentStatus @default(PROCESSING)
-  checkoutUrl      String?
-  callbackToken    String
-  rawRequestJson   Json?
-  rawCallbackJson  Json?
-  expiresAt        DateTime?
-  completedAt      DateTime?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  status            PaymentStatus @default(PROCESSING)
+  checkoutUrl       String?
+  callbackToken     String
+  rawRequestJson    Json?
+  rawCallbackJson   Json?
+  expiresAt         DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
-  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   paymentIntent PaymentIntent @relation(fields: [organizationId, paymentIntentId], references: [organizationId, id], onDelete: Restrict)
 
   @@unique([organizationId, callbackToken])

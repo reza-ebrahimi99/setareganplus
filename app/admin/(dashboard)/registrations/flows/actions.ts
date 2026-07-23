@@ -117,7 +117,7 @@ export async function createRegistrationFlowAction(
     title,
     slug,
     description,
-    productType: productTypeRaw || RegistrationProductType.EXAM,
+    productType: productTypeRaw || RegistrationProductType.SCHOOL_REGISTRATION,
   };
 
   const fieldErrors: NonNullable<CreateRegistrationFlowState["fieldErrors"]> =
@@ -149,7 +149,7 @@ export async function createRegistrationFlowAction(
       description,
       productType: isRegistrationProductType(productTypeRaw)
         ? productTypeRaw
-        : RegistrationProductType.EXAM,
+        : RegistrationProductType.SCHOOL_REGISTRATION,
     });
     createdFlowId = flow.id;
     createdSlug = flow.slug;

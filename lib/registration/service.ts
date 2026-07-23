@@ -148,7 +148,7 @@ export async function createRegistration(
     catalog.flowKey,
   );
   const paymentMode =
-    dbFlow?.paymentMode ?? RegistrationFlowPaymentMode.FIXED_AMOUNT;
+    dbFlow?.paymentMode ?? RegistrationFlowPaymentMode.FIXED_PRICE;
   const skipOptional = Boolean(input.skipOptionalPayment);
   const needsCheckout = flowRequiresCheckout(paymentMode, {
     skipOptionalPayment: skipOptional,

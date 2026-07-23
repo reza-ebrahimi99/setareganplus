@@ -357,21 +357,25 @@ export async function createRegistrationFlow(
   }
 
   try {
+    // Use relation-style create (project convention). Nested steps must NOT
+    // pass scalar organizationId — Prisma's CreateWithoutFlowInput only
+    // accepts organization.connect; tenant is tied via compound FK.
     const flow = await prisma.registrationFlow.create({
       data: {
-        organizationId: input.organizationId,
+        organization: { connect: { id: input.organizationId } },
         title,
         slug,
         description: (input.description ?? "").trim(),
         lifecycle: RegistrationFlowLifecycle.DRAFT,
-        productType: input.productType ?? RegistrationProductType.EXAM,
+        productType:
+          input.productType ?? RegistrationProductType.SCHOOL_REGISTRATION,
         steps: {
           create: DEFAULT_FLOW_STEPS.map((step) => ({
-            organizationId: input.organizationId,
             stepKey: step.stepKey,
             label: step.label,
             enabled: step.enabled,
             sortOrder: step.sortOrder,
+            organization: { connect: { id: input.organizationId } },
           })),
         },
       },
@@ -491,7 +495,8 @@ export async function updateRegistrationFlowGeneral(
           ? null
           : input.paymentTitle,
       paymentDeadlineAt:
-        input.paymentMode === RegistrationFlowPaymentMode.FREE
+        input.paymentMode === RegistrationFlowPaymentMode.FREE ||
+        input.paymentMode === RegistrationFlowPaymentMode.VARIABLE_PRICE
           ? null
           : input.paymentDeadlineAt,
       formId: input.formId,
@@ -686,7 +691,9 @@ export async function publishRegistrationFlow(input: {
 
   if (
     (flow.paymentMode === RegistrationFlowPaymentMode.FIXED_AMOUNT ||
-      flow.paymentMode === RegistrationFlowPaymentMode.DEPOSIT) &&
+      flow.paymentMode === RegistrationFlowPaymentMode.FIXED_PRICE ||
+      flow.paymentMode === RegistrationFlowPaymentMode.DEPOSIT ||
+      flow.paymentMode === RegistrationFlowPaymentMode.INSTALLMENT) &&
     flow.paymentAmountRials <= 0
   ) {
     throw new Error("PAYMENT_AMOUNT_REQUIRED");

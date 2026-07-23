@@ -105,7 +105,9 @@ export function CreateRegistrationFlowForm() {
         <span className="mb-1.5 block text-muted">نوع محصول</span>
         <select
           name="productType"
-          defaultValue={values?.productType ?? RegistrationProductType.EXAM}
+          defaultValue={
+            values?.productType ?? RegistrationProductType.SCHOOL_REGISTRATION
+          }
           aria-invalid={errors?.productType ? true : undefined}
           className={fieldClassName(Boolean(errors?.productType))}
         >
