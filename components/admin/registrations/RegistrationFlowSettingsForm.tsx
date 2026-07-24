@@ -5,6 +5,7 @@ import {
   updateRegistrationFlowAction,
   type RegistrationFlowActionState,
 } from "@/app/admin/(dashboard)/registrations/actions";
+import { JalaliDateTimeFields } from "@/components/datetime/JalaliDateTimeFields";
 import { formatDateTimeLocalInTehran } from "@/lib/forms/tehran-datetime";
 import type { RegistrationFlowConfig } from "@/lib/registration/flow-config-shared";
 
@@ -170,41 +171,47 @@ export function RegistrationFlowSettingsForm({ flow }: Props) {
             <label htmlFor="discountStartsAt" className="text-sm font-medium">
               شروع تخفیف
             </label>
-            <input
+            <JalaliDateTimeFields
               id="discountStartsAt"
               name="discountStartsAt"
-              type="datetime-local"
-              dir="ltr"
-              className={fieldClass(
-                Boolean(state.fieldErrors?.discountStartsAt),
-              )}
-              defaultValue={value(
+              defaultValueIso={value(
                 "discountStartsAt",
                 flow.discountStartsAt
                   ? formatDateTimeLocalInTehran(flow.discountStartsAt)
                   : "",
               )}
               disabled={pending}
+              hasError={Boolean(state.fieldErrors?.discountStartsAt)}
+              timeOptional
             />
+            {state.fieldErrors?.discountStartsAt ? (
+              <p className="mt-1 text-sm text-red-700">
+                {state.fieldErrors.discountStartsAt}
+              </p>
+            ) : null}
           </div>
           <div>
             <label htmlFor="discountEndsAt" className="text-sm font-medium">
               پایان تخفیف
             </label>
-            <input
+            <JalaliDateTimeFields
               id="discountEndsAt"
               name="discountEndsAt"
-              type="datetime-local"
-              dir="ltr"
-              className={fieldClass(Boolean(state.fieldErrors?.discountEndsAt))}
-              defaultValue={value(
+              defaultValueIso={value(
                 "discountEndsAt",
                 flow.discountEndsAt
                   ? formatDateTimeLocalInTehran(flow.discountEndsAt)
                   : "",
               )}
               disabled={pending}
+              hasError={Boolean(state.fieldErrors?.discountEndsAt)}
+              timeOptional
             />
+            {state.fieldErrors?.discountEndsAt ? (
+              <p className="mt-1 text-sm text-red-700">
+                {state.fieldErrors.discountEndsAt}
+              </p>
+            ) : null}
           </div>
         </div>
         <label className="flex items-center gap-2 text-sm">
@@ -230,43 +237,47 @@ export function RegistrationFlowSettingsForm({ flow }: Props) {
             >
               شروع ثبت‌نام
             </label>
-            <input
+            <JalaliDateTimeFields
               id="registrationStartsAt"
               name="registrationStartsAt"
-              type="datetime-local"
-              dir="ltr"
-              className={fieldClass(
-                Boolean(state.fieldErrors?.registrationStartsAt),
-              )}
-              defaultValue={value(
+              defaultValueIso={value(
                 "registrationStartsAt",
                 flow.registrationStartsAt
                   ? formatDateTimeLocalInTehran(flow.registrationStartsAt)
                   : "",
               )}
               disabled={pending}
+              hasError={Boolean(state.fieldErrors?.registrationStartsAt)}
+              timeOptional
             />
+            {state.fieldErrors?.registrationStartsAt ? (
+              <p className="mt-1 text-sm text-red-700">
+                {state.fieldErrors.registrationStartsAt}
+              </p>
+            ) : null}
           </div>
           <div>
             <label htmlFor="registrationEndsAt" className="text-sm font-medium">
               پایان ثبت‌نام
             </label>
-            <input
+            <JalaliDateTimeFields
               id="registrationEndsAt"
               name="registrationEndsAt"
-              type="datetime-local"
-              dir="ltr"
-              className={fieldClass(
-                Boolean(state.fieldErrors?.registrationEndsAt),
-              )}
-              defaultValue={value(
+              defaultValueIso={value(
                 "registrationEndsAt",
                 flow.registrationEndsAt
                   ? formatDateTimeLocalInTehran(flow.registrationEndsAt)
                   : "",
               )}
               disabled={pending}
+              hasError={Boolean(state.fieldErrors?.registrationEndsAt)}
+              timeOptional
             />
+            {state.fieldErrors?.registrationEndsAt ? (
+              <p className="mt-1 text-sm text-red-700">
+                {state.fieldErrors.registrationEndsAt}
+              </p>
+            ) : null}
           </div>
         </div>
         <div>

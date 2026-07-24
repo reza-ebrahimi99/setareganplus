@@ -1,4 +1,5 @@
 import { FormFieldType } from "@/generated/prisma/enums";
+import { JalaliDateField } from "@/components/datetime/JalaliDateField";
 import { PublicFormFileUpload } from "@/components/forms/PublicFormFileUpload";
 import {
   readChoiceConfig,
@@ -546,17 +547,19 @@ export function PublicFormField({
           idPrefix={idPrefix}
         />
       ) : field.type === FormFieldType.DATE ? (
-        <TextInput
-          field={field}
-          type="date"
-          dir="ltr"
-          defaultValue={value}
-          error={error}
-          helpText={helpText}
-          placeholder={placeholder}
-          prefix={prefix}
+        <JalaliDateField
+          id={inputId(idPrefix, field.fieldKey)}
+          name={field.fieldKey}
+          defaultValue={value || null}
           disabled={disabled}
-          idPrefix={idPrefix}
+          hasError={Boolean(error)}
+          required={field.required}
+          aria-describedby={describedBy(
+            field.fieldKey,
+            helpText,
+            error,
+            idPrefix,
+          )}
         />
       ) : (
         <TextInput

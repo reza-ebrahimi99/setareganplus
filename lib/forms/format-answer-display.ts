@@ -1,4 +1,5 @@
 import { FormFieldType, type FormFieldType as FormFieldTypeValue } from "@/generated/prisma/enums";
+import { formatJalaliDateShort } from "@/lib/datetime/jalali";
 import { readChoiceConfig } from "@/lib/forms/choice-options";
 import { toPersianDigits } from "@/lib/persian";
 
@@ -35,15 +36,7 @@ export function formatAnswerDisplay(
         ? toPersianDigits(answer.valueNumber.toString())
         : "—";
     case FormFieldType.DATE:
-      return answer.valueDate
-        ? toPersianDigits(
-            answer.valueDate.toLocaleDateString("fa-IR", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            }),
-          )
-        : "—";
+      return answer.valueDate ? formatJalaliDateShort(answer.valueDate) : "—";
     case FormFieldType.MULTIPLE_CHOICE: {
       if (!Array.isArray(answer.valueJson)) {
         return "—";

@@ -5,6 +5,8 @@ import {
   updateDraftFormSettingsAction,
   type FormSettingsActionState,
 } from "@/app/admin/(dashboard)/forms/settings-actions";
+import { JalaliDateTimeFields } from "@/components/datetime/JalaliDateTimeFields";
+import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import type { EditorScheduleSettings } from "@/lib/forms/load-form-editor";
 import { formatDateTimeLocalInTehran } from "@/lib/forms/tehran-datetime";
 import { toPersianDigits } from "@/lib/persian";
@@ -27,7 +29,7 @@ function readOnlyValue(label: string, value: string) {
   return (
     <div>
       <p className="text-xs font-medium text-muted">{label}</p>
-      <p className="mt-1 text-sm text-foreground" dir="ltr">
+      <p className="mt-1 text-sm text-foreground">
         {value}
       </p>
     </div>
@@ -116,15 +118,13 @@ export function FormScheduleSettings({
               >
                 تاریخ و ساعت شروع ثبت‌نام
               </label>
-              <input
+              <JalaliDateTimeFields
                 id="opensAt"
                 name="opensAt"
-                type="datetime-local"
-                dir="ltr"
-                defaultValue={opensAtDefault}
+                defaultValueIso={opensAtDefault || null}
                 disabled={pending}
-                aria-invalid={state.fieldErrors?.opensAt ? true : undefined}
-                className={fieldClass(Boolean(state.fieldErrors?.opensAt))}
+                hasError={Boolean(state.fieldErrors?.opensAt)}
+                timeOptional
               />
               {state.fieldErrors?.opensAt ? (
                 <p className="mt-1 text-sm text-red-700" role="alert">
@@ -140,19 +140,13 @@ export function FormScheduleSettings({
               >
                 تاریخ و ساعت پایان ثبت‌نام
               </label>
-              <input
+              <JalaliDateTimeFields
                 id="registrationDeadline"
                 name="registrationDeadline"
-                type="datetime-local"
-                dir="ltr"
-                defaultValue={deadlineDefault}
+                defaultValueIso={deadlineDefault || null}
                 disabled={pending}
-                aria-invalid={
-                  state.fieldErrors?.registrationDeadline ? true : undefined
-                }
-                className={fieldClass(
-                  Boolean(state.fieldErrors?.registrationDeadline),
-                )}
+                hasError={Boolean(state.fieldErrors?.registrationDeadline)}
+                timeOptional
               />
               {state.fieldErrors?.registrationDeadline ? (
                 <p className="mt-1 text-sm text-red-700" role="alert">
@@ -300,13 +294,13 @@ export function FormScheduleSettings({
           {readOnlyValue(
             "شروع ثبت‌نام",
             schedule.opensAt
-              ? formatDateTimeLocalInTehran(schedule.opensAt)
+              ? formatJalaliDateTimeShort(schedule.opensAt)
               : "—",
           )}
           {readOnlyValue(
             "پایان ثبت‌نام",
             schedule.registrationDeadline
-              ? formatDateTimeLocalInTehran(schedule.registrationDeadline)
+              ? formatJalaliDateTimeShort(schedule.registrationDeadline)
               : "—",
           )}
           {readOnlyValue(

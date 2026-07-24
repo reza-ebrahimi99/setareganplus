@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatJalaliDateShort } from "@/lib/datetime/jalali";
 import { getFormModeLabel } from "@/lib/forms/form-mode-labels";
 import { getFormPurposeLabel } from "@/lib/forms/form-purpose-labels";
 import { getFormVersionStatusLabel } from "@/lib/forms/form-version-status-labels";
@@ -24,13 +25,7 @@ export type AdminFormListItem = {
 };
 
 function formatAdminDate(value: Date): string {
-  return toPersianDigits(
-    value.toLocaleDateString("fa-IR", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }),
-  );
+  return formatJalaliDateShort(value);
 }
 
 export function FormsList({ forms }: { forms: AdminFormListItem[] }) {

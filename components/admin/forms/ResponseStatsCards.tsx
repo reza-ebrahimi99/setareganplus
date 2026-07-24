@@ -1,3 +1,4 @@
+import { formatJalaliDateShort } from "@/lib/datetime/jalali";
 import type { FormResponseStats } from "@/lib/forms/load-form-response-stats";
 import { toPersianDigits } from "@/lib/persian";
 
@@ -5,13 +6,7 @@ function formatDate(value: Date | null): string {
   if (!value) {
     return "—";
   }
-  return toPersianDigits(
-    value.toLocaleDateString("fa-IR", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }),
-  );
+  return formatJalaliDateShort(value);
 }
 
 export function ResponseStatsCards({ stats }: { stats: FormResponseStats }) {
