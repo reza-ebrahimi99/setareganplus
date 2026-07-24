@@ -8,17 +8,25 @@ import {
   RegistrationParentRelationship,
 } from "@/generated/prisma/enums";
 import { DocumentUploadStep } from "@/components/registration/DocumentUploadStep";
+import { JalaliBirthDateSelects } from "@/components/registration/JalaliBirthDateSelects";
 import {
   RegistrationField,
   registrationControlClass,
 } from "@/components/registration/Field";
-import { PersianDobSelect } from "@/components/registration/PersianDobSelect";
+import { DiscountCountdown } from "@/components/registration/DiscountCountdown";
+import { RegistrationPricingCard } from "@/components/registration/RegistrationPricingCard";
+import { RegistrationStatusBanners } from "@/components/registration/RegistrationStatusBanners";
 import { RegistrationStepper } from "@/components/registration/RegistrationStepper";
 import {
   saveRegistrationProgressAction as defaultSaveProgressAction,
   submitRegistrationAction as defaultSubmitAction,
 } from "@/app/ghalamchi/register/actions";
-import { formatRials } from "@/lib/registration/format";
+import { formatTomansFromRials } from "@/lib/registration/format";
+import {
+  hydrateRegistrationFlow,
+  type RegistrationFlowPublicView,
+  type RegistrationFlowSnapshot,
+} from "@/lib/registration/flow-config-shared";
 import { IRAN_PROVINCES } from "@/lib/registration/iran-locations";
 import {
   REGISTRATION_GRADES,
@@ -26,6 +34,10 @@ import {
   registrationGradeRequiresMajor,
 } from "@/lib/registration/options";
 import { computeCompletionPercent } from "@/lib/registration/progress";
+import {
+  resolveRegistrationPricing,
+  type ResolvedRegistrationPricing,
+} from "@/lib/registration/pricing";
 import {
   WIZARD_STEP_LABELS,
   WIZARD_TOTAL_STEPS,
@@ -38,23 +50,27 @@ import {
   type StudentStepInput,
 } from "@/lib/registration/types";
 import {
-  resolvePricing,
+  studentBirthDateFromParts,
   validateDetailsStep,
   validateParentStep,
   validateStudentStep,
 } from "@/lib/registration/validate";
 import { toPersianDigits } from "@/lib/persian";
+import { formatJalaliDate } from "@/lib/datetime/jalali";
 
 const STEPS = Array.from({ length: WIZARD_TOTAL_STEPS }, (_, index) => {
   const id = index + 1;
   return { id, label: WIZARD_STEP_LABELS[id] ?? `مرحله ${id}` };
 });
 
-const GENDER_LABELS: Record<Gender, string> = {
+const GENDER_LABELS = {
   MALE: "پسر",
   FEMALE: "دختر",
-  UNSPECIFIED: "ترجیح می‌دهم نگویم",
-};
+} as const;
+
+type WizardPricing =
+  | ResolvedRegistrationPricing
+  | { ok: false; error: string };
 
 const GLASS_CARD =
   "rounded-3xl border border-white/60 bg-white/80 backdrop-blur-md shadow-[0_20px_50px_rgb(15_23_42_/_0.08)]";
@@ -83,6 +99,8 @@ type RegistrationWizardProps = {
   uploadDocumentAction?: ComponentProps<
     typeof DocumentUploadStep
   >["uploadDocumentAction"];
+  flowSnapshot?: RegistrationFlowSnapshot;
+  flowPublic?: RegistrationFlowPublicView;
 };
 
 const DEFAULT_RECEIPT_BASE_PATH = "/ghalamchi/register/receipt";
@@ -96,7 +114,9 @@ function emptyStudent(): StudentStepInput {
     firstName: "",
     lastName: "",
     nationalCode: "",
-    birthDate: null,
+    birthYear: "",
+    birthMonth: "",
+    birthDay: "",
     gender: "",
     gradeSlug: "",
     gradeLabel: "",
@@ -139,6 +159,43 @@ function clampCompletedStep(value: number | undefined, fallback: number) {
   return Math.max(0, Math.min(WIZARD_TOTAL_STEPS, Math.floor(value)));
 }
 
+function WizardPricingBlock({
+  pricing,
+  showDiscountCountdown,
+  onDiscountExpired,
+}: {
+  pricing: WizardPricing;
+  showDiscountCountdown: boolean;
+  onDiscountExpired: () => void;
+}) {
+  if (!pricing.ok) return null;
+
+  const endsAtIso = pricing.discountEndsAt
+    ? pricing.discountEndsAt.toISOString()
+    : null;
+
+  return (
+    <div className="space-y-3">
+      <RegistrationPricingCard
+        amountRials={pricing.amountRials}
+        finalAmountRials={pricing.finalAmountRials}
+        discountRials={pricing.discountRials}
+        discountPercent={pricing.discountPercent}
+        isFree={pricing.isFree}
+        discountActive={pricing.discountActive}
+        pricingBadge={pricing.pricingBadge}
+      />
+      {showDiscountCountdown && endsAtIso && pricing.discountActive ? (
+        <DiscountCountdown
+          endsAtIso={endsAtIso}
+          enabled
+          onExpired={onDiscountExpired}
+        />
+      ) : null}
+    </div>
+  );
+}
+
 export function RegistrationWizard({
   catalog,
   initialResumeToken = null,
@@ -147,6 +204,8 @@ export function RegistrationWizard({
   saveProgressAction = defaultSaveProgressAction,
   submitAction = defaultSubmitAction,
   uploadDocumentAction,
+  flowSnapshot,
+  flowPublic,
 }: RegistrationWizardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -178,14 +237,37 @@ export function RegistrationWizard({
   const [honeypot, setHoneypot] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [tokenHydrated, setTokenHydrated] = useState(false);
+  const [discountExpired, setDiscountExpired] = useState(false);
 
-  const pricing = useMemo(
-    () => resolvePricing(catalog, details),
-    [catalog, details],
+  const flow = useMemo(
+    () =>
+      flowSnapshot ? hydrateRegistrationFlow(flowSnapshot) : null,
+    [flowSnapshot],
   );
+
+  const showDiscountCountdown = flow?.showDiscountCountdown ?? false;
+
+  const pricing = useMemo(() => {
+    const effectiveFlow =
+      discountExpired && flow
+        ? {
+            ...flow,
+            saleAmountRials: null,
+            discountEndsAt: new Date(0),
+          }
+        : flow;
+    return resolveRegistrationPricing({
+      flowKey: catalog.flowKey,
+      details,
+      flow: effectiveFlow,
+    });
+  }, [catalog.flowKey, details, discountExpired, flow]);
 
   const majorRequired = registrationGradeRequiresMajor(student.gradeSlug);
   const completionPercent = computeCompletionPercent(lastCompletedStep);
+  const registrationBlocked =
+    flowPublic != null &&
+    (!flowPublic.window.open || flowPublic.remainingCapacity === 0);
 
   useEffect(() => {
     if (tokenHydrated) return;
@@ -253,7 +335,7 @@ export function RegistrationWizard({
   }
 
   async function goNext() {
-    setFormError(null);
+    if (registrationBlocked) return;
 
     if (step === 1) {
       const result = validateStudentStep(student);
@@ -323,12 +405,13 @@ export function RegistrationWizard({
   }
 
   function submitPayment() {
+    if (registrationBlocked) return;
     if (!agreed) {
       setFormError("برای ادامه، پذیرش قوانین و شرایط الزامی است.");
       return;
     }
 
-    const birthDate = student.birthDate;
+    const birthDate = studentBirthDateFromParts(student);
     const gender = student.gender;
     const relationship = parent.relationship;
     if (!birthDate || !gender || !relationship) {
@@ -393,7 +476,7 @@ export function RegistrationWizard({
 
   return (
     <div
-      className={`registration-wizard relative p-5 sm:p-8 ${GLASS_CARD}`}
+      className={`registration-wizard relative w-full min-w-0 max-w-full overflow-x-hidden p-4 sm:p-8 ${GLASS_CARD}`}
       dir="rtl"
     >
       <div className="mb-6">
@@ -403,159 +486,191 @@ export function RegistrationWizard({
         <p className="mt-2 text-sm leading-7 text-muted">{catalog.subtitle}</p>
       </div>
 
-      <div className="mb-5 space-y-2">
-        <div className="flex items-center justify-between gap-3 text-xs text-muted">
-          <span>
-            پیشرفت ثبت‌نام
-            {saving ? (
-              <span className="ms-2 text-secondary">ذخیره پیشرفت…</span>
-            ) : null}
-          </span>
-          <span className="font-medium text-primary tabular-nums">
-            {toPersianDigits(String(completionPercent))}٪
-          </span>
-        </div>
-        <div
-          className="h-2 overflow-hidden rounded-full bg-slate-100/90"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={completionPercent}
-          aria-label="درصد تکمیل ثبت‌نام"
-        >
-          <div
-            className="h-full rounded-full bg-gradient-to-l from-primary to-secondary transition-[width] duration-500 ease-out"
-            style={{ width: `${completionPercent}%` }}
-          />
-        </div>
-      </div>
-
-      <RegistrationStepper steps={STEPS} currentStep={step} />
-
-      {formError ? (
-        <div
-          className="mb-4 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-danger backdrop-blur-sm"
-          role="alert"
-        >
-          {formError}
+      {flowPublic ? (
+        <div className="mb-6">
+          <RegistrationStatusBanners flow={flowPublic} />
         </div>
       ) : null}
 
-      <div className="registration-step-panel space-y-5" key={step}>
-        {step === 1 ? (
-          <StudentStep
-            value={student}
-            errors={errors}
-            majorRequired={majorRequired}
-            onChange={setStudent}
-          />
-        ) : null}
+      {registrationBlocked ? (
+        <p className="text-sm leading-7 text-muted">
+          در حال حاضر امکان ادامه ثبت‌نام وجود ندارد. لطفاً بعداً دوباره تلاش
+          کنید یا با پشتیبانی تماس بگیرید.
+        </p>
+      ) : (
+        <>
+          <div className="mb-5 space-y-2">
+            <div className="flex items-center justify-between gap-3 text-xs text-muted">
+              <span>
+                پیشرفت ثبت‌نام
+                {saving ? (
+                  <span className="ms-2 text-secondary">ذخیره پیشرفت…</span>
+                ) : null}
+              </span>
+              <span className="font-medium text-primary tabular-nums">
+                {toPersianDigits(String(completionPercent))}٪
+              </span>
+            </div>
+            <div
+              className="h-2 overflow-hidden rounded-full bg-slate-100/90"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={completionPercent}
+              aria-label="درصد تکمیل ثبت‌نام"
+            >
+              <div
+                className="h-full rounded-full bg-gradient-to-l from-primary to-secondary transition-[width] duration-500 ease-out"
+                style={{ width: `${completionPercent}%` }}
+              />
+            </div>
+          </div>
 
-        {step === 2 ? (
-          <ParentStep value={parent} errors={errors} onChange={setParent} />
-        ) : null}
+          <RegistrationStepper steps={STEPS} currentStep={step} />
 
-        {step === 3 ? (
-          <DetailsStep
-            catalog={catalog}
-            value={details}
-            errors={errors}
-            pricing={pricing}
-            onChange={setDetails}
-          />
-        ) : null}
+          {formError ? (
+            <div
+              className="mb-4 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-danger backdrop-blur-sm"
+              role="alert"
+            >
+              {formError}
+            </div>
+          ) : null}
 
-        {step === 4 ? (
-          <DocumentUploadStep
-            resumeToken={resumeToken}
-            documents={documents}
-            uploadDocumentAction={uploadDocumentAction}
-            onUploaded={(doc) =>
-              setDocuments((current) => {
-                if (current.some((item) => item.documentId === doc.documentId)) {
-                  return current;
+          <div className="registration-step-panel space-y-5" key={step}>
+            {step === 1 ? (
+              <StudentStep
+                value={student}
+                errors={errors}
+                majorRequired={majorRequired}
+                onChange={(next) => {
+                  setStudent(next);
+                  if (errors.birthDate && studentBirthDateFromParts(next)) {
+                    setErrors((current) => {
+                      const { birthDate: _removed, ...rest } = current;
+                      return rest;
+                    });
+                  }
+                }}
+              />
+            ) : null}
+
+            {step === 2 ? (
+              <ParentStep value={parent} errors={errors} onChange={setParent} />
+            ) : null}
+
+            {step === 3 ? (
+              <DetailsStep
+                catalog={catalog}
+                flowSnapshot={flowSnapshot}
+                value={details}
+                errors={errors}
+                pricing={pricing}
+                showDiscountCountdown={showDiscountCountdown}
+                onDiscountExpired={() => setDiscountExpired(true)}
+                onChange={setDetails}
+              />
+            ) : null}
+
+            {step === 4 ? (
+              <DocumentUploadStep
+                resumeToken={resumeToken}
+                documents={documents}
+                uploadDocumentAction={uploadDocumentAction}
+                onUploaded={(doc) =>
+                  setDocuments((current) => {
+                    if (
+                      current.some((item) => item.documentId === doc.documentId)
+                    ) {
+                      return current;
+                    }
+                    return [...current, doc];
+                  })
                 }
-                return [...current, doc];
-              })
-            }
-            onNeedSaveFirst={ensureSavedForUpload}
-          />
-        ) : null}
+                onNeedSaveFirst={ensureSavedForUpload}
+              />
+            ) : null}
 
-        {step === 5 ? (
-          <ReviewStep
-            student={student}
-            parent={parent}
-            details={details}
-            documents={documents}
-            pricing={pricing}
-            onEdit={setStep}
-          />
-        ) : null}
+            {step === 5 ? (
+              <ReviewStep
+                student={student}
+                parent={parent}
+                details={details}
+                documents={documents}
+                pricing={pricing}
+                showDiscountCountdown={showDiscountCountdown}
+                onDiscountExpired={() => setDiscountExpired(true)}
+                onEdit={setStep}
+              />
+            ) : null}
 
-        {step === 6 ? (
-          <PaymentStep
-            student={student}
-            parent={parent}
-            details={details}
-            pricing={pricing}
-            pending={pending}
-            agreed={agreed}
-            onAgreedChange={setAgreed}
-            onPay={submitPayment}
-            onEdit={setStep}
-          />
-        ) : null}
-      </div>
+            {step === 6 ? (
+              <PaymentStep
+                student={student}
+                parent={parent}
+                details={details}
+                pricing={pricing}
+                showDiscountCountdown={showDiscountCountdown}
+                onDiscountExpired={() => setDiscountExpired(true)}
+                pending={pending}
+                agreed={agreed}
+                onAgreedChange={setAgreed}
+                onPay={submitPayment}
+                onEdit={setStep}
+              />
+            ) : null}
+          </div>
 
-      <div className="absolute -left-[9999px] opacity-0" aria-hidden="true">
-        <label htmlFor="company_url">Company</label>
-        <input
-          id="company_url"
-          name="company_url"
-          tabIndex={-1}
-          autoComplete="off"
-          value={honeypot}
-          onChange={(event) => setHoneypot(event.target.value)}
-        />
-      </div>
+          <div className="absolute -left-[9999px] opacity-0" aria-hidden="true">
+            <label htmlFor="company_url">Company</label>
+            <input
+              id="company_url"
+              name="company_url"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypot}
+              onChange={(event) => setHoneypot(event.target.value)}
+            />
+          </div>
 
-      <div className="public-form-submit-bar mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="button"
-          onClick={goBack}
-          disabled={step === 1 || busy}
-          className={`inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-white/90 px-5 text-sm font-medium text-foreground disabled:opacity-40 ${BUTTON_MICRO}`}
-        >
-          مرحله قبل
-        </button>
+          <div className="public-form-submit-bar mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              onClick={goBack}
+              disabled={step === 1 || busy}
+              className={`inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-border bg-white/90 px-5 text-sm font-medium text-foreground disabled:opacity-40 sm:w-auto ${BUTTON_MICRO}`}
+            >
+              مرحله قبل
+            </button>
 
-        {step < WIZARD_TOTAL_STEPS ? (
-          <button
-            type="button"
-            onClick={() => {
-              void goNext();
-            }}
-            disabled={busy}
-            className={`inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-sm disabled:opacity-60 ${BUTTON_MICRO}`}
-          >
-            {saving
-              ? "ذخیره پیشرفت…"
-              : step === 5
-                ? "ادامه به پرداخت"
-                : "مرحله بعد"}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={submitPayment}
-            disabled={busy || !pricing.ok || !agreed}
-            className={`inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-sm disabled:opacity-60 ${BUTTON_MICRO}`}
-          >
-            {pending ? "در حال انتقال به درگاه…" : "پرداخت و تکمیل ثبت‌نام"}
-          </button>
-        )}
-      </div>
+            {step < WIZARD_TOTAL_STEPS ? (
+              <button
+                type="button"
+                onClick={() => {
+                  void goNext();
+                }}
+                disabled={busy}
+                className={`inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-sm disabled:opacity-60 sm:w-auto ${BUTTON_MICRO}`}
+              >
+                {saving
+                  ? "ذخیره پیشرفت…"
+                  : step === 5
+                    ? "ادامه به پرداخت"
+                    : "مرحله بعد"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={submitPayment}
+                disabled={busy || !pricing.ok || !agreed}
+                className={`inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-sm disabled:opacity-60 sm:w-auto ${BUTTON_MICRO}`}
+              >
+                {pending ? "در حال انتقال به درگاه…" : "پرداخت و تکمیل ثبت‌نام"}
+              </button>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -620,15 +735,35 @@ function StudentStep({
         />
       </RegistrationField>
 
-      <PersianDobSelect
-        value={value.birthDate}
-        onChange={(birthDate) => onChange({ ...value, birthDate })}
+      <RegistrationField
+        id="birthDate"
+        label="تاریخ تولد"
+        required
         error={errors.birthDate}
-      />
+      >
+        <JalaliBirthDateSelects
+          id="birthDate"
+          hasError={Boolean(errors.birthDate)}
+          value={{
+            birthYear: value.birthYear,
+            birthMonth: value.birthMonth,
+            birthDay: value.birthDay,
+          }}
+          onChange={(parts) =>
+            onChange({
+              ...value,
+              birthYear: parts.birthYear,
+              birthMonth: parts.birthMonth,
+              birthDay: parts.birthDay,
+            })
+          }
+        />
+      </RegistrationField>
 
       <RegistrationField id="gender" label="جنسیت" required error={errors.gender}>
-        <div className="grid gap-2 sm:grid-cols-3">
-          {(Object.keys(GENDER_LABELS) as Gender[]).map((key) => {
+        <div className="grid gap-2 sm:grid-cols-2">
+          {(Object.keys(GENDER_LABELS) as Array<keyof typeof GENDER_LABELS>).map(
+            (key) => {
             const selected = value.gender === key;
             return (
               <button
@@ -647,7 +782,8 @@ function StudentStep({
                 {GENDER_LABELS[key]}
               </button>
             );
-          })}
+          },
+          )}
         </div>
       </RegistrationField>
 
@@ -892,15 +1028,21 @@ function ParentStep({
 
 function DetailsStep({
   catalog,
+  flowSnapshot: _flowSnapshot,
   value,
   errors,
   pricing,
+  showDiscountCountdown,
+  onDiscountExpired,
   onChange,
 }: {
   catalog: RegistrationFlowCatalog;
+  flowSnapshot?: RegistrationFlowSnapshot;
   value: DetailsStepInput;
   errors: Record<string, string>;
-  pricing: ReturnType<typeof resolvePricing>;
+  pricing: WizardPricing;
+  showDiscountCountdown: boolean;
+  onDiscountExpired: () => void;
   onChange: (value: DetailsStepInput) => void;
 }) {
   return (
@@ -934,7 +1076,7 @@ function DetailsStep({
         error={errors.packageKey}
         options={catalog.packages.map((pkg) => ({
           ...pkg,
-          description: `${pkg.description ?? ""} · ${formatRials(pkg.amountRials)}`,
+          description: `${pkg.description ?? ""} · ${formatTomansFromRials(pkg.amountRials)}`,
         }))}
         value={value.packageKey}
         onSelect={(packageKey) => onChange({ ...value, packageKey })}
@@ -963,21 +1105,11 @@ function DetailsStep({
         />
       </RegistrationField>
 
-      {pricing.ok ? (
-        <div className="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 text-sm">
-          <p>
-            مبلغ پایه: <strong>{formatRials(pricing.amountRials)}</strong>
-          </p>
-          {pricing.discountRials > 0 ? (
-            <p className="mt-1 text-primary">
-              تخفیف: {formatRials(pricing.discountRials)}
-            </p>
-          ) : null}
-          <p className="mt-1 font-semibold text-primary">
-            مبلغ نهایی: {formatRials(pricing.finalAmountRials)}
-          </p>
-        </div>
-      ) : null}
+      <WizardPricingBlock
+        pricing={pricing}
+        showDiscountCountdown={showDiscountCountdown}
+        onDiscountExpired={onDiscountExpired}
+      />
     </section>
   );
 }
@@ -1042,15 +1174,24 @@ function ReviewStep({
   details,
   documents,
   pricing,
+  showDiscountCountdown,
+  onDiscountExpired,
   onEdit,
 }: {
   student: StudentStepInput;
   parent: ParentStepInput;
   details: DetailsStepInput;
   documents: UploadedDocument[];
-  pricing: ReturnType<typeof resolvePricing>;
+  pricing: WizardPricing;
+  showDiscountCountdown: boolean;
+  onDiscountExpired: () => void;
   onEdit: (step: number) => void;
 }) {
+  const genderLabel =
+    student.gender === "MALE" || student.gender === "FEMALE"
+      ? GENDER_LABELS[student.gender]
+      : "—";
+
   return (
     <section aria-labelledby="review-step-title" className="space-y-4">
       <h2 id="review-step-title" className="text-base font-semibold text-primary">
@@ -1065,13 +1206,14 @@ function ReviewStep({
           ["کد ملی", toPersianDigits(student.nationalCode)],
           [
             "تاریخ تولد",
-            student.birthDate
-              ? toPersianDigits(
-                  `${student.birthDate.jy}/${student.birthDate.jm}/${student.birthDate.jd}`,
-                )
-              : "—",
+            (() => {
+              const birthDate = studentBirthDateFromParts(student);
+              return birthDate
+                ? formatJalaliDate(birthDate.jy, birthDate.jm, birthDate.jd)
+                : "—";
+            })(),
           ],
-          ["جنسیت", student.gender ? GENDER_LABELS[student.gender] : "—"],
+          ["جنسیت", genderLabel],
           ["پایه", student.gradeLabel],
           ["رشته", student.majorLabel || "—"],
           ["مدرسه", student.schoolName],
@@ -1140,24 +1282,11 @@ function ReviewStep({
         ]}
       />
 
-      {pricing.ok ? (
-        <div
-          className={`bg-gradient-to-l from-primary/5 to-white/80 px-5 py-4 ${GLASS_CARD}`}
-        >
-          <p className="text-sm text-muted">
-            مبلغ: {formatRials(pricing.amountRials)}
-          </p>
-          <p className="mt-1 text-sm text-muted">
-            تخفیف:{" "}
-            {pricing.discountRials > 0
-              ? formatRials(pricing.discountRials)
-              : "—"}
-          </p>
-          <p className="mt-2 text-lg font-bold text-primary">
-            مبلغ نهایی: {formatRials(pricing.finalAmountRials)}
-          </p>
-        </div>
-      ) : null}
+      <WizardPricingBlock
+        pricing={pricing}
+        showDiscountCountdown={showDiscountCountdown}
+        onDiscountExpired={onDiscountExpired}
+      />
     </section>
   );
 }
@@ -1205,6 +1334,8 @@ function PaymentStep({
   parent,
   details,
   pricing,
+  showDiscountCountdown,
+  onDiscountExpired,
   pending,
   agreed,
   onAgreedChange,
@@ -1214,7 +1345,9 @@ function PaymentStep({
   student: StudentStepInput;
   parent: ParentStepInput;
   details: DetailsStepInput;
-  pricing: ReturnType<typeof resolvePricing>;
+  pricing: WizardPricing;
+  showDiscountCountdown: boolean;
+  onDiscountExpired: () => void;
   pending: boolean;
   agreed: boolean;
   onAgreedChange: (value: boolean) => void;
@@ -1297,29 +1430,11 @@ function PaymentStep({
         </p>
       </div>
 
-      {pricing.ok ? (
-        <div className="rounded-2xl border border-secondary/30 bg-gradient-to-l from-secondary/10 to-white px-5 py-5">
-          <h3 className="text-sm font-semibold text-primary">هزینه‌ها</h3>
-          <dl className="mt-3 space-y-2 text-sm">
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">مبلغ بسته</dt>
-              <dd>{formatRials(pricing.amountRials)}</dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">تخفیف</dt>
-              <dd>
-                {pricing.discountRials > 0
-                  ? formatRials(pricing.discountRials)
-                  : "—"}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-3 border-t border-border pt-2 text-base font-bold text-primary">
-              <dt>مبلغ قابل پرداخت</dt>
-              <dd>{formatRials(pricing.finalAmountRials)}</dd>
-            </div>
-          </dl>
-        </div>
-      ) : null}
+      <WizardPricingBlock
+        pricing={pricing}
+        showDiscountCountdown={showDiscountCountdown}
+        onDiscountExpired={onDiscountExpired}
+      />
 
       <label className="flex items-start gap-3 rounded-2xl border border-border bg-background/80 px-4 py-3 text-sm leading-7 text-foreground backdrop-blur-sm">
         <input

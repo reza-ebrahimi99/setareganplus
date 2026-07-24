@@ -26,7 +26,10 @@ import type {
   RegistrationFlowKey,
   StudentStepInput,
 } from "@/lib/registration/types";
-import { birthDateToUtcDate } from "@/lib/registration/validate";
+import {
+  birthDateToUtcDate,
+  studentBirthDateFromParts,
+} from "@/lib/registration/validate";
 
 export type SaveProgressInput = {
   flowKey: RegistrationFlowKey;
@@ -85,9 +88,10 @@ function mapFieldsFromDraft(input: SaveProgressInput) {
     studentFirstName: input.student.firstName.trim() || null,
     studentLastName: input.student.lastName.trim() || null,
     nationalCode: input.student.nationalCode.trim() || null,
-    birthDate: input.student.birthDate
-      ? birthDateToUtcDate(input.student.birthDate)
-      : null,
+    birthDate: (() => {
+      const parts = studentBirthDateFromParts(input.student);
+      return parts ? birthDateToUtcDate(parts) : null;
+    })(),
     gender: input.student.gender || null,
     gradeLabel: input.student.gradeLabel.trim() || null,
     majorLabel: input.student.majorLabel.trim() || null,

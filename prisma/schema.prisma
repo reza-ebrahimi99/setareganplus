@@ -2801,9 +2801,22 @@ model RegistrationFlow {
   paymentMode        RegistrationFlowPaymentMode     @default(FIXED_PRICE)
   /// Configured amount in Rials (FIXED_PRICE / DEPOSIT / INSTALLMENT base).
   paymentAmountRials Int                             @default(0)
+  /// Optional promotional / sale amount in Rials (UX pricing card + countdown).
+  saleAmountRials    Int?
+  pricingBadge       String?
+  discountStartsAt   DateTime?
+  discountEndsAt     DateTime?
+  showDiscountCountdown Boolean                      @default(true)
+  showRemainingCapacity Boolean                      @default(true)
   paymentTitle       String?
   paymentDeadlineAt  DateTime?
   fulfillmentMode    RegistrationFlowFulfillmentMode @default(NONE)
+  /// Registration confirmation SMS (SMS.ir pattern / SmsTemplate.code).
+  confirmationSmsEnabled      Boolean @default(false)
+  adminNotificationSmsEnabled Boolean @default(false)
+  smsTemplateCode             String?
+  /// JSON string[] of normalized mobile numbers for admin alerts.
+  adminSmsRecipients          Json    @default("[]")
   publishedAt        DateTime?
   metadata           Json?
   createdAt          DateTime                        @default(now())

@@ -19,16 +19,18 @@ import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { validateIranianNationalId } from "@/lib/forms/validate-national-id";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { prisma } from "@/lib/prisma";
+import { startCheckoutForRegistration } from "@/lib/payment/service";
 import { recordRegistrationActivity } from "@/lib/registration/activity";
+import { flowRequiresCheckout } from "@/lib/registration/flows/constants";
+import { findRegistrationFlowBySlug } from "@/lib/registration/flows/public";
 import { resolveRegistrationCatalog } from "@/lib/registration/flows/resolve-catalog";
 import {
-  findRegistrationFlowBySlug,
-} from "@/lib/registration/flows/public";
-import {
-  flowRequiresCheckout,
-} from "@/lib/registration/flows/constants";
+  ensureRegistrationFlowConfig,
+  isRegistrationWindowOpen,
+  remainingCapacity,
+} from "@/lib/registration/flow-config";
 import { nextRegistrationNumber } from "@/lib/registration/number-generator";
-import { startCheckoutForRegistration } from "@/lib/payment/service";
+import { resolveRegistrationPricing } from "@/lib/registration/pricing";
 import { computeCompletionPercent } from "@/lib/registration/progress";
 import {
   REGISTRATION_STATUS_LABELS,
@@ -40,7 +42,6 @@ import type {
 } from "@/lib/registration/types";
 import {
   birthDateToUtcDate,
-  resolvePricing,
   validateCreateRegistrationInput,
 } from "@/lib/registration/validate";
 
@@ -86,17 +87,6 @@ export async function createRegistration(
     };
   }
 
-  const pricing = resolvePricing(catalog, {
-    productKey: input.details.productKey,
-    sessionKey: input.details.sessionKey,
-    packageKey: input.details.packageKey,
-    venueBranchKey: input.details.venueBranchKey,
-    discountCode: input.details.discountCode ?? "",
-  });
-  if (!pricing.ok) {
-    return { ok: false, error: pricing.error };
-  }
-
   const national = validateIranianNationalId(input.student.nationalCode);
   if (!national.ok) {
     return {
@@ -140,8 +130,46 @@ export async function createRegistration(
   const organization = await getCurrentOrganization();
   const branchId = await resolvePublicBranchId(organization.id);
   const birthDate = birthDateToUtcDate(input.student.birthDate);
+
+  const flow = await ensureRegistrationFlowConfig({
+    organizationId: organization.id,
+    flowKey: catalog.flowKey,
+  });
+
+  const window = isRegistrationWindowOpen(flow);
+  if (!window.open) {
+    if (window.reason === "not_started") {
+      return {
+        ok: false,
+        error: "ثبت‌نام هنوز آغاز نشده است.",
+      };
+    }
+    if (window.reason === "ended") {
+      return { ok: false, error: "مهلت ثبت‌نام به پایان رسیده است." };
+    }
+    return { ok: false, error: "ثبت‌نام در حال حاضر غیرفعال است." };
+  }
+
+  if (flow.capacity != null && remainingCapacity(flow) === 0) {
+    return { ok: false, error: "ظرفیت تکمیل شده است." };
+  }
+
   const now = new Date();
-  const completionPercent = computeCompletionPercent(WIZARD_TOTAL_STEPS);
+  const pricing = resolveRegistrationPricing({
+    flowKey: input.flowKey,
+    details: {
+      productKey: input.details.productKey,
+      sessionKey: input.details.sessionKey,
+      packageKey: input.details.packageKey,
+      venueBranchKey: input.details.venueBranchKey,
+      discountCode: input.details.discountCode ?? "",
+    },
+    flow,
+    now,
+  });
+  if (!pricing.ok) {
+    return { ok: false, error: pricing.error };
+  }
 
   const dbFlow = await findRegistrationFlowBySlug(
     organization.id,
@@ -154,14 +182,14 @@ export async function createRegistration(
     skipOptionalPayment: skipOptional,
   });
 
-  // DB-managed flows pin amount from flow config; coded catalogs keep package pricing.
-  const amountRials = dbFlow
-    ? needsCheckout
-      ? dbFlow.paymentAmountRials
-      : 0
-    : pricing.amountRials;
-  const discountRials = dbFlow ? 0 : pricing.discountRials;
-  const finalAmountRials = Math.max(0, amountRials - discountRials);
+  const amountRials =
+    dbFlow && !needsCheckout ? 0 : pricing.amountRials;
+  const discountRials =
+    dbFlow && !needsCheckout ? 0 : pricing.discountRials;
+  const finalAmountRials =
+    dbFlow && !needsCheckout ? 0 : pricing.finalAmountRials;
+
+  const completionPercent = computeCompletionPercent(WIZARD_TOTAL_STEPS);
 
   const payload = {
     status: needsCheckout
@@ -172,7 +200,7 @@ export async function createRegistration(
       : RegistrationPaymentStatus.WAIVED,
     productType: catalog.productType,
     flowKey: catalog.flowKey,
-    registrationFlowId: dbFlow?.id ?? null,
+    registrationFlowId: flow.id,
     studentFirstName: input.student.firstName.trim(),
     studentLastName: input.student.lastName.trim(),
     nationalCode: national.normalized,
@@ -267,14 +295,6 @@ export async function createRegistration(
       });
     });
   }
-
-  await recordRegistrationActivity({
-    organizationId: organization.id,
-    registrationId: registration.id,
-    activityType: RegistrationActivityType.PAYMENT_STARTED,
-    title: "آماده پرداخت",
-    summary: registration.registrationNumber,
-  });
 
   const leadResult = await upsertLead({
     organizationId: organization.id,

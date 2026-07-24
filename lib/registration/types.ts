@@ -39,7 +39,10 @@ export type StudentStepInput = {
   firstName: string;
   lastName: string;
   nationalCode: string;
-  birthDate: JalaliDate | null;
+  /** Jalali select parts (string option values). Final date is built on validate/submit. */
+  birthYear: string;
+  birthMonth: string;
+  birthDay: string;
   gender: Gender | "";
   gradeSlug: string;
   gradeLabel: string;

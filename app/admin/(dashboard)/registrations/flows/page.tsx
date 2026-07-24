@@ -7,6 +7,8 @@ import { adminBreadcrumbs } from "@/content/admin";
 import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { toPersianDigits } from "@/lib/persian";
+import { listRegistrationCatalogs } from "@/lib/registration/catalog-registry";
+import { ensureRegistrationFlowConfig } from "@/lib/registration/flow-config";
 import { listRegistrationFlows } from "@/lib/registration/flows/admin";
 import {
   FLOW_LIFECYCLE_LABELS,
@@ -25,6 +27,16 @@ export default async function AdminRegistrationFlowsPage() {
   const session = await requirePermission("registration_flows.view");
   const canManage = hasPermission(session, "registration_flows.manage");
   const flows = await listRegistrationFlows(session.organization.id);
+  const catalogs = listRegistrationCatalogs();
+  const catalogFlows = await Promise.all(
+    catalogs.map(async (catalog) => {
+      const flow = await ensureRegistrationFlowConfig({
+        organizationId: session.organization.id,
+        flowKey: catalog.flowKey,
+      });
+      return { catalog, flow };
+    }),
+  );
 
   const createAction = canManage ? (
     <Link
@@ -54,6 +66,48 @@ export default async function AdminRegistrationFlowsPage() {
         </p>
         {createAction}
       </div>
+
+      {catalogFlows.length > 0 ? (
+        <AdminSection
+          title="تنظیمات تجاری کاتالوگ"
+          headingId="admin-registration-catalog-flows-heading"
+          description="قیمت، تخفیف، ظرفیت و پیامک جریان‌های کاتالوگی (مثل آزمون قلمچی)."
+        >
+          <ul className="mb-8 divide-y divide-border rounded-xl border border-border bg-surface">
+            {catalogFlows.map(({ catalog, flow }) => (
+              <li
+                key={flow.flowKey}
+                className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <p className="font-semibold text-primary">{flow.title}</p>
+                  <p className="mt-1 text-xs text-muted" dir="ltr">
+                    {flow.flowKey}
+                  </p>
+                  <p className="mt-2 text-sm text-muted">
+                    ظرفیت:{" "}
+                    {flow.capacity == null
+                      ? "نامحدود"
+                      : toPersianDigits(
+                          `${flow.bookedCount} / ${flow.capacity}`,
+                        )}
+                    {" · "}
+                    {flow.isActive ? "فعال" : "غیرفعال"}
+                  </p>
+                </div>
+                {canManage ? (
+                  <Link
+                    href={`/admin/registrations/flows/catalog/${encodeURIComponent(catalog.flowKey)}`}
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-medium text-white"
+                  >
+                    تنظیمات
+                  </Link>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </AdminSection>
+      ) : null}
 
       <AdminSection
         title="جریان‌ها"

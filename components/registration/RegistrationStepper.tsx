@@ -15,8 +15,8 @@ export function RegistrationStepper({
   currentStep,
 }: RegistrationStepperProps) {
   return (
-    <nav aria-label="مراحل ثبت‌نام" className="mb-6 sm:mb-8">
-      <ol className="flex items-center gap-1 overflow-x-auto pb-1 sm:gap-2">
+    <nav aria-label="مراحل ثبت‌نام" className="mb-6 min-w-0 sm:mb-8">
+      <ol className="flex min-w-0 items-center gap-1 overflow-x-hidden pb-1 sm:gap-2">
         {steps.map((step, index) => {
           const isActive = step.id === currentStep;
           const isDone = step.id < currentStep;

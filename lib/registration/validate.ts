@@ -6,12 +6,17 @@ import {
   Gender,
   RegistrationParentRelationship,
 } from "@/generated/prisma/enums";
-import { jalaliToGregorian, type JalaliDate } from "@/lib/datetime/jalali";
+import {
+  buildJalaliDateFromParts,
+  jalaliToGregorian,
+  type JalaliDate,
+} from "@/lib/datetime/jalali";
 import { normalizeEmail } from "@/lib/forms/normalize-email";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { validateIranianNationalId } from "@/lib/forms/validate-national-id";
 import { getRegistrationCatalog } from "@/lib/registration/catalog-registry";
 import { IRAN_PROVINCES } from "@/lib/registration/iran-locations";
+import { resolveRegistrationPricing } from "@/lib/registration/pricing";
 import type {
   CreateRegistrationInput,
   DetailsStepInput,
@@ -20,6 +25,17 @@ import type {
   StudentStepInput,
 } from "@/lib/registration/types";
 import { registrationGradeRequiresMajor } from "@/lib/registration/options";
+import type { RegistrationFlowConfig } from "@/lib/registration/flow-config-shared";
+
+export function studentBirthDateFromParts(
+  input: Pick<StudentStepInput, "birthYear" | "birthMonth" | "birthDay">,
+): JalaliDate | null {
+  return buildJalaliDateFromParts(
+    input.birthYear,
+    input.birthMonth,
+    input.birthDay,
+  );
+}
 
 export type FieldErrors = Record<string, string>;
 
@@ -38,13 +54,14 @@ export function validateStudentStep(
   const national = validateIranianNationalId(input.nationalCode);
   if (!national.ok) errors.nationalCode = national.error;
 
-  if (!input.birthDate) {
+  const birthDate = studentBirthDateFromParts(input);
+  if (!birthDate) {
     errors.birthDate = "تاریخ تولد الزامی است.";
   } else {
     const { gy, gm, gd } = jalaliToGregorian(
-      input.birthDate.jy,
-      input.birthDate.jm,
-      input.birthDate.jd,
+      birthDate.jy,
+      birthDate.jm,
+      birthDate.jd,
     );
     const birth = new Date(Date.UTC(gy, gm - 1, gd));
     if (Number.isNaN(birth.getTime()) || birth > new Date()) {
@@ -52,11 +69,7 @@ export function validateStudentStep(
     }
   }
 
-  if (
-    input.gender !== Gender.MALE &&
-    input.gender !== Gender.FEMALE &&
-    input.gender !== Gender.UNSPECIFIED
-  ) {
+  if (input.gender !== Gender.MALE && input.gender !== Gender.FEMALE) {
     errors.gender = "جنسیت را انتخاب کنید.";
   }
 
@@ -162,54 +175,13 @@ export function validateDetailsStep(
 export function resolvePricing(
   flowKeyOrCatalog: string | RegistrationFlowCatalog,
   details: DetailsStepInput,
-):
-  | {
-      ok: true;
-      amountRials: number;
-      discountRials: number;
-      finalAmountRials: number;
-      productTitle: string;
-      sessionTitle: string;
-      packageTitle: string;
-      venueBranchTitle: string;
-      discountCode: string | null;
-    }
-  | { ok: false; error: string } {
-  const catalog =
+  flow: RegistrationFlowConfig | null = null,
+): ReturnType<typeof resolveRegistrationPricing> {
+  const flowKey =
     typeof flowKeyOrCatalog === "string"
-      ? getRegistrationCatalog(flowKeyOrCatalog)
-      : flowKeyOrCatalog;
-  if (!catalog) return { ok: false, error: "جریان ثبت‌نام یافت نشد." };
-
-  const product = catalog.products.find((item) => item.key === details.productKey);
-  const session = catalog.sessions.find((item) => item.key === details.sessionKey);
-  const pkg = catalog.packages.find((item) => item.key === details.packageKey);
-  const venue = catalog.venueBranches.find(
-    (item) => item.key === details.venueBranchKey,
-  );
-
-  if (!product || !session || !pkg || !venue) {
-    return { ok: false, error: "جزئیات ثبت‌نام ناقص است." };
-  }
-
-  const amountRials = pkg.amountRials;
-  const code = trim(details.discountCode).toUpperCase();
-  const discountRials =
-    code && code in catalog.discountCodes
-      ? Math.min(catalog.discountCodes[code]!, amountRials)
-      : 0;
-
-  return {
-    ok: true,
-    amountRials,
-    discountRials,
-    finalAmountRials: Math.max(0, amountRials - discountRials),
-    productTitle: product.title,
-    sessionTitle: session.title,
-    packageTitle: pkg.title,
-    venueBranchTitle: venue.title,
-    discountCode: discountRials > 0 ? code : null,
-  };
+      ? flowKeyOrCatalog
+      : flowKeyOrCatalog.flowKey;
+  return resolveRegistrationPricing({ flowKey, details, flow });
 }
 
 export function birthDateToUtcDate(birthDate: JalaliDate): Date {
@@ -245,8 +217,7 @@ export function validateCreateRegistrationInput(
   }
   if (
     input.student.gender !== Gender.MALE &&
-    input.student.gender !== Gender.FEMALE &&
-    input.student.gender !== Gender.UNSPECIFIED
+    input.student.gender !== Gender.FEMALE
   ) {
     studentErrors.gender = "جنسیت را انتخاب کنید.";
   }

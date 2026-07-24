@@ -10,7 +10,7 @@ type PublicFormShellProps = {
 
 export function PublicFormShell({ children }: PublicFormShellProps) {
   return (
-    <div className="flex min-h-full flex-col bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_55%,#f8fafc_100%)]">
+    <div className="flex min-h-full w-full min-w-0 flex-col overflow-x-hidden bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_55%,#f8fafc_100%)]">
       <header className="border-b border-border/80 bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-3">
@@ -36,7 +36,7 @@ export function PublicFormShell({ children }: PublicFormShellProps) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+      <main className="mx-auto w-full min-w-0 max-w-3xl flex-1 overflow-x-hidden px-4 py-8 sm:px-6 sm:py-10">
         {children}
       </main>
 

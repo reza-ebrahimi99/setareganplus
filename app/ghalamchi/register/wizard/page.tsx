@@ -1,7 +1,13 @@
 import { Suspense } from "react";
 import { PublicFormShell } from "@/components/forms/PublicFormShell";
 import { RegistrationWizard } from "@/components/registration/RegistrationWizard";
+import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { qalamchiExamCatalog } from "@/lib/registration/catalogs/qalamchi-exam";
+import {
+  ensureRegistrationFlowConfig,
+  serializeRegistrationFlow,
+  toRegistrationFlowPublicView,
+} from "@/lib/registration/flow-config";
 import { createPageMetadata } from "@/lib/seo/create-page-metadata";
 
 export const metadata = createPageMetadata({
@@ -21,6 +27,12 @@ export default async function GhalamchiRegisterWizardPage({
   searchParams,
 }: PageProps) {
   const params = await searchParams;
+  const org = await getCurrentOrganization();
+  const flow = await ensureRegistrationFlowConfig({
+    organizationId: org.id,
+    flowKey: qalamchiExamCatalog.flowKey,
+  });
+
   return (
     <PublicFormShell>
       <Suspense
@@ -33,6 +45,8 @@ export default async function GhalamchiRegisterWizardPage({
         <RegistrationWizard
           catalog={qalamchiExamCatalog}
           initialResumeToken={params.token ?? null}
+          flowSnapshot={serializeRegistrationFlow(flow)}
+          flowPublic={toRegistrationFlowPublicView(flow)}
         />
       </Suspense>
     </PublicFormShell>

@@ -147,3 +147,38 @@ export function parseJalaliDateInput(raw: string): JalaliDate | null {
 export function todayJalaliInTehran(now = new Date()): JalaliDate {
   return utcToJalaliInTehran(now);
 }
+
+/** Build a valid Jalali date from string select parts, or null if incomplete/invalid. */
+export function buildJalaliDateFromParts(
+  year: string,
+  month: string,
+  day: string,
+): JalaliDate | null {
+  if (!year || !month || !day) {
+    return null;
+  }
+  const jy = Number(year);
+  const jm = Number(month);
+  const jd = Number(day);
+  if (
+    !Number.isInteger(jy) ||
+    !Number.isInteger(jm) ||
+    !Number.isInteger(jd) ||
+    jm < 1 ||
+    jm > 12 ||
+    jd < 1
+  ) {
+    return null;
+  }
+  const maxDay = jalaliMonthLength(jy, jm);
+  if (jd > maxDay) {
+    return null;
+  }
+  if (
+    typeof jalaali.isValidJalaaliDate === "function" &&
+    !jalaali.isValidJalaaliDate(jy, jm, jd)
+  ) {
+    return null;
+  }
+  return { jy, jm, jd };
+}
