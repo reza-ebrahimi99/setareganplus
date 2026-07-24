@@ -1,9 +1,13 @@
 /**
  * Form submission confirmation SMS enqueue (optional).
- * Failures never fail form submission. Idempotent per submission.
+ * Failures never fail form submission. Idempotent per submission + recipient.
  */
 
 import { enqueueSms, renderSmsTemplate } from "@/lib/communication/queue";
+import {
+  truncateSmsParam,
+} from "@/lib/communication/sms-params";
+import { formatJalaliDateShort } from "@/lib/datetime/jalali";
 import {
   FormFieldSemantic,
   SmsTemplatePurpose,
@@ -12,7 +16,10 @@ import { parseFormVersionSettings } from "@/lib/forms/form-version-settings";
 import { prisma } from "@/lib/prisma";
 
 const DEFAULT_FORM_BODY =
-  "پاسخ شما با موفقیت ثبت شد. از همراهی شما سپاسگزاریم.";
+  "پاسخ شما با موفقیت ثبت شد. کد پیگیری: {{trackingCode}} — {{date}}";
+
+const DEFAULT_ADMIN_FORM_BODY =
+  "ثبت فرم جدید: {{formTitle}} — کد: {{trackingCode}} — {{date}}";
 
 export async function enqueueFormConfirmationSms(params: {
   organizationId: string;
@@ -30,7 +37,12 @@ export async function enqueueFormConfirmationSms(params: {
     if (!version) return;
 
     const settings = parseFormVersionSettings(version.settings);
-    if (!settings.confirmationSmsEnabled) return;
+    if (
+      !settings.confirmationSmsEnabled &&
+      !settings.adminNotificationSmsEnabled
+    ) {
+      return;
+    }
 
     const submission = await prisma.formSubmission.findFirst({
       where: {
@@ -42,6 +54,7 @@ export async function enqueueFormConfirmationSms(params: {
         id: true,
         trackingCode: true,
         normalizedMobile: true,
+        submittedAt: true,
         formVersion: { select: { title: true } },
         answers: {
           where: {
@@ -57,7 +70,8 @@ export async function enqueueFormConfirmationSms(params: {
       },
     });
 
-    if (!submission?.normalizedMobile) return;
+    if (!submission) return;
+
     // Public submission validation never stores hidden-field answers. Restricting
     // this lookup to the field semantic prevents arbitrary answer values from
     // becoming template parameters.
@@ -66,9 +80,11 @@ export async function enqueueFormConfirmationSms(params: {
       submission.answers[0]?.valueLongText ??
       ""
     ).trim();
-    if (!firstName) return;
-
     const trackingCode = submission.trackingCode?.trim() || submission.id;
+    const submittedAtJalali = formatJalaliDateShort(submission.submittedAt);
+    const formTitle = truncateSmsParam(submission.formVersion.title);
+    const nameParam = truncateSmsParam(firstName);
+    const trackingParam = truncateSmsParam(trackingCode);
 
     const template = await prisma.smsTemplate.findFirst({
       where: {
@@ -81,29 +97,88 @@ export async function enqueueFormConfirmationSms(params: {
       select: { id: true, body: true },
     });
 
-    const body = renderSmsTemplate(template?.body ?? DEFAULT_FORM_BODY, {
-      formTitle: submission.formVersion.title,
-    });
+    const bodyVariables: Record<string, string> = {
+      formTitle,
+      trackingCode: trackingParam,
+      date: submittedAtJalali,
+      name: nameParam,
+    };
 
-    await enqueueSms({
-      organizationId: params.organizationId,
-      toMobile: submission.normalizedMobile,
-      body,
-      purpose: "form_confirmation",
-      idempotencyKey: `form_confirmation:${submission.id}`,
-      templateId: template?.id ?? null,
-      relatedType: "FormSubmission",
-      relatedId: submission.id,
-      templateDelivery: {
-        version: 1,
-        kind: "form",
-        variables: {
-          name: firstName,
-          tracking: trackingCode,
+    if (
+      settings.confirmationSmsEnabled &&
+      submission.normalizedMobile &&
+      firstName
+    ) {
+      const body = renderSmsTemplate(
+        template?.body ?? DEFAULT_FORM_BODY,
+        bodyVariables,
+      );
+
+      await enqueueSms({
+        organizationId: params.organizationId,
+        toMobile: submission.normalizedMobile,
+        body,
+        purpose: "form_submitted",
+        idempotencyKey: `form_submitted:${submission.id}:user`,
+        templateId: template?.id ?? null,
+        relatedType: "FormSubmission",
+        relatedId: submission.id,
+        templateDelivery: {
+          version: 1,
+          kind: "form",
+          variables: {
+            name: nameParam,
+            tracking: trackingParam,
+          },
         },
-      },
-    });
-  } catch {
-    // SMS must never fail the form submission path.
+        metadata: {
+          ...(settings.smsTemplateCode
+            ? { smsTemplateCode: settings.smsTemplateCode }
+            : {}),
+        },
+      });
+    }
+
+    if (
+      settings.adminNotificationSmsEnabled &&
+      settings.adminSmsRecipients.length > 0
+    ) {
+      const adminBody = renderSmsTemplate(
+        DEFAULT_ADMIN_FORM_BODY,
+        bodyVariables,
+      );
+
+      for (const recipient of settings.adminSmsRecipients) {
+        await enqueueSms({
+          organizationId: params.organizationId,
+          toMobile: recipient,
+          body: adminBody,
+          purpose: "form_submitted",
+          idempotencyKey: `form_submitted:${submission.id}:admin:${recipient}`,
+          templateId: template?.id ?? null,
+          relatedType: "FormSubmission",
+          relatedId: submission.id,
+          templateDelivery: {
+            version: 1,
+            kind: "form",
+            variables: {
+              name: nameParam || formTitle,
+              tracking: trackingParam,
+            },
+          },
+          metadata: {
+            recipientRole: "admin",
+            ...(settings.smsTemplateCode
+              ? { smsTemplateCode: settings.smsTemplateCode }
+              : {}),
+          },
+        });
+      }
+    }
+  } catch (error) {
+    console.error(
+      "[form-sms] enqueue failed",
+      error instanceof Error ? error.message : "unknown",
+    );
   }
 }

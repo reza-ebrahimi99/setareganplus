@@ -58,6 +58,17 @@ export function FormScheduleSettings({
   const showRemainingDefault =
     state.values?.showRemainingCapacity ??
     schedule.settings.showRemainingCapacity;
+  const confirmationSmsDefault =
+    state.values?.confirmationSmsEnabled ??
+    schedule.settings.confirmationSmsEnabled;
+  const adminSmsDefault =
+    state.values?.adminNotificationSmsEnabled ??
+    schedule.settings.adminNotificationSmsEnabled;
+  const adminRecipientsDefault =
+    state.values?.adminSmsRecipients ??
+    schedule.settings.adminSmsRecipients.join("\n");
+  const smsTemplateCodeDefault =
+    state.values?.smsTemplateCode ?? schedule.settings.smsTemplateCode ?? "";
 
   return (
     <section
@@ -194,6 +205,88 @@ export function FormScheduleSettings({
             <span>نمایش ظرفیت باقی‌مانده در فرم عمومی</span>
           </label>
 
+          <div className="space-y-3 rounded-xl border border-border bg-background px-3 py-3">
+            <p className="text-sm font-medium text-primary">پیامک</p>
+            <label className="flex items-start gap-3 text-sm leading-7 text-foreground">
+              <input
+                type="checkbox"
+                name="confirmationSmsEnabled"
+                value="true"
+                defaultChecked={confirmationSmsDefault}
+                disabled={pending}
+                className="mt-1 size-4 shrink-0 rounded border-border text-primary"
+              />
+              <span>پیامک تأیید برای کاربر پس از ثبت فرم</span>
+            </label>
+            <label className="flex items-start gap-3 text-sm leading-7 text-foreground">
+              <input
+                type="checkbox"
+                name="adminNotificationSmsEnabled"
+                value="true"
+                defaultChecked={adminSmsDefault}
+                disabled={pending}
+                className="mt-1 size-4 shrink-0 rounded border-border text-primary"
+              />
+              <span>پیامک اطلاع به مدیر</span>
+            </label>
+            <div>
+              <label
+                htmlFor="smsTemplateCode"
+                className="text-sm font-medium text-primary"
+              >
+                کد الگوی SMS.ir / قالب (اختیاری)
+              </label>
+              <input
+                id="smsTemplateCode"
+                name="smsTemplateCode"
+                type="text"
+                dir="ltr"
+                defaultValue={smsTemplateCodeDefault}
+                disabled={pending}
+                aria-invalid={
+                  state.fieldErrors?.smsTemplateCode ? true : undefined
+                }
+                className={fieldClass(Boolean(state.fieldErrors?.smsTemplateCode))}
+              />
+              {state.fieldErrors?.smsTemplateCode ? (
+                <p className="mt-1 text-sm text-red-700" role="alert">
+                  {state.fieldErrors.smsTemplateCode}
+                </p>
+              ) : null}
+            </div>
+            <div>
+              <label
+                htmlFor="adminSmsRecipients"
+                className="text-sm font-medium text-primary"
+              >
+                شماره‌های مدیر (هر خط یا با ویرگول)
+              </label>
+              <textarea
+                id="adminSmsRecipients"
+                name="adminSmsRecipients"
+                rows={3}
+                dir="ltr"
+                defaultValue={adminRecipientsDefault}
+                disabled={pending}
+                aria-invalid={
+                  state.fieldErrors?.adminSmsRecipients ? true : undefined
+                }
+                className={fieldClass(
+                  Boolean(state.fieldErrors?.adminSmsRecipients),
+                )}
+              />
+              {state.fieldErrors?.adminSmsRecipients ? (
+                <p className="mt-1 text-sm text-red-700" role="alert">
+                  {state.fieldErrors.adminSmsRecipients}
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-muted">
+                  فقط وقتی پیامک مدیر فعال باشد استفاده می‌شود.
+                </p>
+              )}
+            </div>
+          </div>
+
           <button
             type="submit"
             disabled={pending}
@@ -225,6 +318,26 @@ export function FormScheduleSettings({
           {readOnlyValue(
             "نمایش ظرفیت باقی‌مانده",
             schedule.settings.showRemainingCapacity ? "فعال" : "غیرفعال",
+          )}
+          {readOnlyValue(
+            "پیامک تأیید کاربر",
+            schedule.settings.confirmationSmsEnabled ? "فعال" : "غیرفعال",
+          )}
+          {readOnlyValue(
+            "پیامک اطلاع مدیر",
+            schedule.settings.adminNotificationSmsEnabled
+              ? "فعال"
+              : "غیرفعال",
+          )}
+          {readOnlyValue(
+            "کد الگوی پیامک",
+            schedule.settings.smsTemplateCode ?? "—",
+          )}
+          {readOnlyValue(
+            "شماره‌های مدیر",
+            schedule.settings.adminSmsRecipients.length > 0
+              ? schedule.settings.adminSmsRecipients.join("، ")
+              : "—",
           )}
         </div>
       )}

@@ -93,7 +93,13 @@ export default async function AdminFormEditorPage({
         opensAt: null,
         registrationDeadline: null,
         capacity: null,
-        settings: { showRemainingCapacity: false, confirmationSmsEnabled: false },
+        settings: {
+          showRemainingCapacity: false,
+          confirmationSmsEnabled: false,
+          adminNotificationSmsEnabled: false,
+          adminSmsRecipients: [],
+          smsTemplateCode: null,
+        },
       };
 
   const sharePoster = isPublished

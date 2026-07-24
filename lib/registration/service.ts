@@ -2,8 +2,10 @@
  * RegistrationService — create/finalize registration, CRM lead, payment intent.
  */
 
+import type { Prisma } from "@/generated/prisma/client";
 import {
   CrmActivityType,
+  DomainEventType,
   LeadSourceType,
   RegistrationActivityType,
   RegistrationFlowPaymentMode,
@@ -12,6 +14,7 @@ import {
   RegistrationStatus,
   ServiceInterest,
 } from "@/generated/prisma/enums";
+import { enqueueRegistrationCompletedSms } from "@/lib/communication/registration-sms";
 import { recordCrmActivity } from "@/lib/crm/activity";
 import { upsertLead } from "@/lib/crm/leads";
 import { normalizeEmail } from "@/lib/forms/normalize-email";
@@ -410,6 +413,44 @@ export async function createRegistration(
       },
     });
   }
+
+  try {
+    const existingEvent = await prisma.domainEventOutbox.findFirst({
+      where: {
+        organizationId: organization.id,
+        eventType: DomainEventType.REGISTRATION_COMPLETED,
+        aggregateType: "Registration",
+        aggregateId: registration.id,
+      },
+      select: { id: true },
+    });
+    if (!existingEvent) {
+      await prisma.domainEventOutbox.create({
+        data: {
+          organizationId: organization.id,
+          branchId,
+          eventType: DomainEventType.REGISTRATION_COMPLETED,
+          aggregateType: "Registration",
+          aggregateId: registration.id,
+          payload: {
+            registrationId: registration.id,
+            registrationNumber: registration.registrationNumber,
+            flowKey: catalog.flowKey,
+          } satisfies Prisma.InputJsonObject,
+        },
+      });
+    }
+  } catch (error) {
+    console.error(
+      "[registration] domain event outbox failed",
+      error instanceof Error ? error.message : "unknown",
+    );
+  }
+
+  void enqueueRegistrationCompletedSms({
+    organizationId: organization.id,
+    registrationId: registration.id,
+  }).catch(() => {});
 
   if (!needsCheckout) {
     await recordRegistrationActivity({

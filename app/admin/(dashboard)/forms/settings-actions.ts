@@ -7,13 +7,13 @@ import { getAdminSession } from "@/lib/auth/require-admin";
 import { hasPermission } from "@/lib/auth/permissions";
 import { CAPACITY_MAX } from "@/lib/forms/capacity";
 import {
-  parseFormVersionSettings,
   serializeFormVersionSettings,
 } from "@/lib/forms/form-version-settings";
 import {
   mergeFormSettingsWithBooking,
   type FormBookingSettings,
 } from "@/lib/booking/form-booking-settings";
+import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { parseTehranDateTimeLocal } from "@/lib/forms/tehran-datetime";
 import { prisma } from "@/lib/prisma";
 
@@ -23,6 +23,8 @@ export type FormSettingsActionState = {
     opensAt?: string;
     registrationDeadline?: string;
     capacity?: string;
+    adminSmsRecipients?: string;
+    smsTemplateCode?: string;
   };
   successMessage?: string;
   values?: {
@@ -30,12 +32,24 @@ export type FormSettingsActionState = {
     registrationDeadline: string;
     capacity: string;
     showRemainingCapacity: boolean;
+    confirmationSmsEnabled: boolean;
+    adminNotificationSmsEnabled: boolean;
+    adminSmsRecipients: string;
+    smsTemplateCode: string;
   };
 };
 
 function readString(formData: FormData, key: string): string {
   const value = formData.get(key);
   return typeof value === "string" ? value : "";
+}
+
+function readCheckbox(formData: FormData, key: string): boolean {
+  return (
+    formData.get(key) === "on" ||
+    formData.get(key) === "true" ||
+    formData.get(key) === "yes"
+  );
 }
 
 export async function updateDraftFormSettingsAction(
@@ -51,16 +65,27 @@ export async function updateDraftFormSettingsAction(
   const opensAtRaw = readString(formData, "opensAt").trim();
   const deadlineRaw = readString(formData, "registrationDeadline").trim();
   const capacityRaw = readString(formData, "capacity").trim();
-  const showRemainingCapacity =
-    formData.get("showRemainingCapacity") === "on" ||
-    formData.get("showRemainingCapacity") === "true" ||
-    formData.get("showRemainingCapacity") === "yes";
+  const showRemainingCapacity = readCheckbox(formData, "showRemainingCapacity");
+  const confirmationSmsEnabled = readCheckbox(
+    formData,
+    "confirmationSmsEnabled",
+  );
+  const adminNotificationSmsEnabled = readCheckbox(
+    formData,
+    "adminNotificationSmsEnabled",
+  );
+  const adminSmsRecipientsRaw = readString(formData, "adminSmsRecipients");
+  const smsTemplateCode = readString(formData, "smsTemplateCode").trim();
 
   const values = {
     opensAt: opensAtRaw,
     registrationDeadline: deadlineRaw,
     capacity: capacityRaw,
     showRemainingCapacity,
+    confirmationSmsEnabled,
+    adminNotificationSmsEnabled,
+    adminSmsRecipients: adminSmsRecipientsRaw,
+    smsTemplateCode,
   };
 
   if (!formId) {
@@ -112,6 +137,23 @@ export async function updateDraftFormSettingsAction(
       "زمان پایان باید بعد از زمان شروع باشد.";
   }
 
+  const recipientsRaw = adminSmsRecipientsRaw
+    .split(/[\n,]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const adminSmsRecipients: string[] = [];
+  for (const recipient of recipientsRaw) {
+    const normalized = normalizeIranianMobile(recipient);
+    if (!normalized.ok) {
+      fieldErrors.adminSmsRecipients =
+        "یکی از شماره‌های مدیر نامعتبر است.";
+      break;
+    }
+    if (!adminSmsRecipients.includes(normalized.normalized)) {
+      adminSmsRecipients.push(normalized.normalized);
+    }
+  }
+
   if (Object.keys(fieldErrors).length > 0) {
     return {
       formError: "لطفاً خطاهای تنظیمات را بررسی کنید.",
@@ -152,7 +194,6 @@ export async function updateDraftFormSettingsAction(
   }
 
   try {
-    const existingSettings = parseFormVersionSettings(draft.settings);
     await prisma.formVersion.update({
       where: { id: draft.id },
       data: {
@@ -163,7 +204,10 @@ export async function updateDraftFormSettingsAction(
           ...(draft.settings as Record<string, unknown>),
           ...serializeFormVersionSettings({
             showRemainingCapacity,
-            confirmationSmsEnabled: existingSettings.confirmationSmsEnabled,
+            confirmationSmsEnabled,
+            adminNotificationSmsEnabled,
+            adminSmsRecipients,
+            smsTemplateCode: smsTemplateCode || null,
           }),
         } as Prisma.InputJsonValue,
       },
