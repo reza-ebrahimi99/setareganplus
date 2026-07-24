@@ -23,7 +23,7 @@ export async function updateRegistrationStatus(params: {
       organizationId: params.organizationId,
       deletedAt: null,
     },
-    select: { id: true, status: true },
+    select: { id: true, status: true, leadId: true },
   });
   if (!row) return { ok: false, error: "ثبت‌نام یافت نشد." };
 
@@ -43,6 +43,27 @@ export async function updateRegistrationStatus(params: {
       abandonedReason: params.reason?.trim() || null,
     },
   });
+
+  if (
+    params.status === RegistrationStatus.CANCELLED &&
+    row.leadId
+  ) {
+    try {
+      const { advanceLeadStageForRegistration } = await import(
+        "@/lib/registration/lead-link"
+      );
+      await advanceLeadStageForRegistration({
+        organizationId: params.organizationId,
+        leadId: row.leadId,
+        phase: "cancelled",
+      });
+    } catch (error) {
+      console.warn(
+        "[registration] cancel stage advance failed",
+        error instanceof Error ? error.message : "unknown",
+      );
+    }
+  }
 
   await recordRegistrationActivity({
     organizationId: params.organizationId,

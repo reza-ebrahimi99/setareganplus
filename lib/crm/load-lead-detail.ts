@@ -16,6 +16,12 @@ import {
 } from "@/lib/datetime/jalali";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { prisma } from "@/lib/prisma";
+import { parseAttributionFromUnknown } from "@/lib/registration/attribution";
+import {
+  REGISTRATION_PAYMENT_LABELS,
+  REGISTRATION_STATUS_LABELS,
+} from "@/lib/registration/status";
+import { formatRials } from "@/lib/registration/format";
 
 function maskMobile(mobile: string): string {
   if (mobile.length < 7) return "••••";
@@ -63,6 +69,23 @@ export async function loadLeadDetail(leadId: string) {
             status: true,
             createdAt: true,
             slot: { select: { startsAt: true, endsAt: true } },
+          },
+        },
+        registrations: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          select: {
+            id: true,
+            registrationNumber: true,
+            status: true,
+            paymentStatus: true,
+            flowKey: true,
+            productTitle: true,
+            discountCode: true,
+            finalAmountRials: true,
+            createdAt: true,
+            metadata: true,
           },
         },
         crmTasks: {
@@ -211,6 +234,37 @@ export async function loadLeadDetail(leadId: string) {
           status: b.status,
           whenLabel: formatJalaliDateTimeLabel(b.slot.startsAt, b.slot.endsAt),
         })),
+        registrations: lead.registrations.map((r) => {
+          const attr = parseAttributionFromUnknown(r.metadata);
+          const meta =
+            r.metadata && typeof r.metadata === "object" && !Array.isArray(r.metadata)
+              ? (r.metadata as Record<string, unknown>)
+              : {};
+          const applied = Array.isArray(meta.appliedPromotions)
+            ? (meta.appliedPromotions as Array<{ title?: string; type?: string; code?: string }>)
+            : [];
+          return {
+            id: r.id,
+            registrationNumber: r.registrationNumber,
+            status: r.status,
+            statusLabel: REGISTRATION_STATUS_LABELS[r.status] ?? r.status,
+            paymentStatus: r.paymentStatus,
+            paymentLabel:
+              REGISTRATION_PAYMENT_LABELS[r.paymentStatus] ?? r.paymentStatus,
+            flowKey: r.flowKey,
+            productTitle: r.productTitle,
+            discountCode: r.discountCode,
+            finalAmountLabel: formatRials(r.finalAmountRials),
+            createdAtLabel: formatJalaliDateShort(r.createdAt),
+            promotionUsed: applied.map((p) => p.title || p.code).filter(Boolean).join("، ") || null,
+            referralUsed:
+              attr?.referralCode ||
+              applied.find((p) => p.type === "REFERRAL")?.code ||
+              null,
+            acquisitionSource: attr?.acquisitionSource ?? null,
+            campaign: attr?.campaign ?? attr?.utmCampaign ?? null,
+          };
+        }),
         tasks: lead.crmTasks.map((t) => ({
           id: t.id,
           title: t.title,

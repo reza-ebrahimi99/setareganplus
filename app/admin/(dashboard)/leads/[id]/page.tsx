@@ -221,10 +221,43 @@ export default async function LeadDetailPage({ params }: PageProps) {
               ))}
               {lead.bookings.length === 0 ? <li className="text-muted">رزروی ثبت نشده</li> : null}
             </ul>
-            <ul className="space-y-1 text-sm text-muted">
+            <ul className="mb-4 space-y-1 text-sm text-muted">
               {lead.submissions.map((s) => (
                 <li key={s.id}>پاسخ فرم · {s.submittedAtLabel}</li>
               ))}
+            </ul>
+            <h3 className="mb-2 text-xs font-semibold text-muted">وضعیت ثبت‌نام متصل</h3>
+            <ul className="space-y-2 text-sm">
+              {lead.registrations.map((r) => (
+                <li key={r.id} className="rounded-lg border border-border/80 px-3 py-2">
+                  <Link
+                    href={`/admin/registrations/${r.id}`}
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    {r.registrationNumber}
+                  </Link>
+                  <p className="mt-1 text-xs text-muted">
+                    وضعیت: {r.statusLabel} · پرداخت: {r.paymentLabel}
+                  </p>
+                  <p className="text-xs text-muted">
+                    جریان: {r.flowKey}
+                    {r.productTitle ? ` · ${r.productTitle}` : ""}
+                  </p>
+                  <p className="text-xs text-muted">تاریخ ثبت‌نام: {r.createdAtLabel}</p>
+                  {r.promotionUsed ? (
+                    <p className="text-xs">پروموشن استفاده‌شده: {r.promotionUsed}</p>
+                  ) : null}
+                  {r.referralUsed ? (
+                    <p className="text-xs">معرف: {r.referralUsed}</p>
+                  ) : null}
+                  {r.acquisitionSource ? (
+                    <p className="text-xs text-muted">منبع ثبت‌نام: {r.acquisitionSource}</p>
+                  ) : null}
+                </li>
+              ))}
+              {lead.registrations.length === 0 ? (
+                <li className="text-muted">ثبت‌نامی متصل نیست</li>
+              ) : null}
             </ul>
           </div>
 

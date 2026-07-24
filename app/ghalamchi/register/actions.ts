@@ -49,8 +49,23 @@ export async function saveRegistrationProgressAction(input: {
   parent: ParentStepInput;
   details: DetailsStepInput;
   documentIds?: string[];
+  formAnswers?: CreateRegistrationInput["formAnswers"];
+  attribution?: CreateRegistrationInput["attribution"];
+  leadId?: string | null;
 }) {
   return saveRegistrationProgress(input);
+}
+
+export async function previewPromotionCodeAction(input: {
+  flowKey: string;
+  details: DetailsStepInput;
+  redeemCode: string;
+  nationalCode?: string | null;
+}) {
+  const { previewRegistrationPromotionCode } = await import(
+    "@/lib/promotions/preview"
+  );
+  return previewRegistrationPromotionCode(input);
 }
 
 export async function uploadRegistrationDocumentAction(formData: FormData) {

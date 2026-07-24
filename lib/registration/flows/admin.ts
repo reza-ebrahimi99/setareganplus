@@ -12,6 +12,7 @@ import {
   type RegistrationProductType as RegistrationProductTypeValue,
 } from "@/generated/prisma/enums";
 import { publicUrlForStorageKey } from "@/lib/media/storage";
+import { syncTimedPromotionFromRegistrationFlow } from "@/lib/promotions/sync-timed";
 import { prisma } from "@/lib/prisma";
 import {
   DEFAULT_ACCEPTED_MIME,
@@ -533,6 +534,36 @@ export async function updateRegistrationFlowGeneral(
       showDiscountCountdown: input.showDiscountCountdown,
       formId: input.formId,
     },
+  });
+
+  const paymentAmountRials =
+    input.paymentMode === RegistrationFlowPaymentMode.FREE
+      ? 0
+      : Math.max(0, Math.floor(input.paymentAmountRials));
+  const saleAmountRials =
+    input.paymentMode === RegistrationFlowPaymentMode.FREE
+      ? null
+      : input.saleAmountRials;
+
+  await syncTimedPromotionFromRegistrationFlow({
+    organizationId: input.organizationId,
+    registrationFlowId: input.flowId,
+    title,
+    paymentAmountRials,
+    saleAmountRials,
+    pricingBadge:
+      input.paymentMode === RegistrationFlowPaymentMode.FREE
+        ? null
+        : input.pricingBadge,
+    discountStartsAt:
+      input.paymentMode === RegistrationFlowPaymentMode.FREE
+        ? null
+        : input.discountStartsAt,
+    discountEndsAt:
+      input.paymentMode === RegistrationFlowPaymentMode.FREE
+        ? null
+        : input.discountEndsAt,
+    isFree: input.paymentMode === RegistrationFlowPaymentMode.FREE,
   });
 }
 

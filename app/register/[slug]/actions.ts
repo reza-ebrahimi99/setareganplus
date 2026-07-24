@@ -3,6 +3,7 @@
 import { RegistrationDocumentType } from "@/generated/prisma/enums";
 import { saveRegistrationProgress } from "@/lib/registration/draft";
 import { uploadRegistrationDocument } from "@/lib/registration/documents";
+import { previewRegistrationPromotionCode } from "@/lib/promotions/preview";
 import { createRegistration } from "@/lib/registration/service";
 import type {
   CreateRegistrationInput,
@@ -10,6 +11,19 @@ import type {
   ParentStepInput,
   StudentStepInput,
 } from "@/lib/registration/types";
+
+export type PreviewPromotionActionResult = Awaited<
+  ReturnType<typeof previewRegistrationPromotionCode>
+>;
+
+export async function previewPromotionCodeAction(input: {
+  flowKey: string;
+  details: DetailsStepInput;
+  redeemCode: string;
+  nationalCode?: string | null;
+}): Promise<PreviewPromotionActionResult> {
+  return previewRegistrationPromotionCode(input);
+}
 
 export type SubmitRegistrationActionResult =
   | {
@@ -49,6 +63,9 @@ export async function saveRegistrationProgressAction(input: {
   parent: ParentStepInput;
   details: DetailsStepInput;
   documentIds?: string[];
+  formAnswers?: CreateRegistrationInput["formAnswers"];
+  attribution?: CreateRegistrationInput["attribution"];
+  leadId?: string | null;
 }) {
   return saveRegistrationProgress(input);
 }

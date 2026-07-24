@@ -1,15 +1,16 @@
 /**
- * Server-authoritative registration pricing.
- * Client may preview; createRegistration always re-resolves with DB flow config + now.
- * Timed-discount math lives in `timed-discount.ts` (single source of truth).
+ * Sync registration pricing preview (Client + Server safe).
+ * Server checkout uses resolveRegistrationPricingAsync in pricing-async.ts.
  */
 
+import type { AppliedPromotionLine } from "@/lib/promotions/types";
 import { getRegistrationCatalog } from "@/lib/registration/catalog-registry";
 import type { RegistrationFlowConfig } from "@/lib/registration/flow-config-shared";
-import {
-  resolveTimedDiscountPricing,
-} from "@/lib/registration/timed-discount";
-import type { DetailsStepInput } from "@/lib/registration/types";
+import { resolveTimedDiscountPricing } from "@/lib/registration/timed-discount";
+import type {
+  DetailsStepInput,
+  RegistrationFlowCatalog,
+} from "@/lib/registration/types";
 
 export type ResolvedRegistrationPricing = {
   ok: true;
@@ -27,22 +28,21 @@ export type ResolvedRegistrationPricing = {
   discountEndsAt: Date | null;
   savingsRials: number;
   discountPercent: number | null;
+  appliedPromotions?: AppliedPromotionLine[];
+  referralPromotionId?: string | null;
+  referralOwnerStaffId?: string | null;
 };
 
 export type ResolvePricingFailure = { ok: false; error: string };
 
-function trim(value: string): string {
-  return value.trim();
-}
-
-export function resolveRegistrationPricing(params: {
+function resolveCatalogSelections(params: {
   flowKey: string;
   details: DetailsStepInput;
-  flow: RegistrationFlowConfig | null;
-  now?: Date;
-}): ResolvedRegistrationPricing | ResolvePricingFailure {
-  const catalog = getRegistrationCatalog(params.flowKey);
-  if (!catalog) return { ok: false, error: "جریان ثبت‌نام یافت نشد." };
+  catalog?: RegistrationFlowCatalog | null;
+}) {
+  const catalog =
+    params.catalog ?? getRegistrationCatalog(params.flowKey);
+  if (!catalog) return null;
 
   const product = catalog.products.find(
     (item) => item.key === params.details.productKey,
@@ -57,20 +57,51 @@ export function resolveRegistrationPricing(params: {
     (item) => item.key === params.details.venueBranchKey,
   );
 
-  if (!product || !session || !pkg || !venue) {
+  if (!product || !session || !pkg || !venue) return null;
+  return { catalog, product, session, pkg, venue };
+}
+
+function resolveBaseAmountRials(params: {
+  flow: RegistrationFlowConfig | null;
+  packageKey: string;
+  catalogPackageAmount: number;
+}): number {
+  const packageOverride =
+    params.flow?.settings.packagePricing[params.packageKey] ?? null;
+  return (
+    packageOverride?.baseAmountRials ??
+    params.flow?.baseAmountRials ??
+    params.catalogPackageAmount
+  );
+}
+
+/**
+ * Sync preview (wizard UI): timed discount + legacy catalog coupon map.
+ * Does not hit Promotion DB (use resolveRegistrationPricingAsync on server).
+ */
+export function resolveRegistrationPricing(params: {
+  flowKey: string;
+  details: DetailsStepInput;
+  flow: RegistrationFlowConfig | null;
+  now?: Date;
+  catalog?: RegistrationFlowCatalog | null;
+}): ResolvedRegistrationPricing | ResolvePricingFailure {
+  const selected = resolveCatalogSelections(params);
+  if (!selected) {
     return { ok: false, error: "جزئیات ثبت‌نام ناقص است." };
   }
+  const { product, session, pkg, venue } = selected;
 
   const now = params.now ?? new Date();
   const flow = params.flow;
   const packageOverride =
     flow?.settings.packagePricing[params.details.packageKey] ?? null;
 
-  const catalogBase = pkg.amountRials;
-  const amountRials =
-    packageOverride?.baseAmountRials ??
-    flow?.baseAmountRials ??
-    catalogBase;
+  const amountRials = resolveBaseAmountRials({
+    flow,
+    packageKey: params.details.packageKey,
+    catalogPackageAmount: pkg.amountRials,
+  });
 
   if (!Number.isInteger(amountRials) || amountRials < 0) {
     return { ok: false, error: "مبلغ پایه نامعتبر است." };
@@ -78,10 +109,8 @@ export function resolveRegistrationPricing(params: {
 
   const saleCandidate =
     packageOverride?.saleAmountRials ?? flow?.saleAmountRials ?? null;
-
   const isFree = Boolean(flow?.isFree);
 
-  // Free flow: pay nothing (not a timed-sale window).
   if (isFree) {
     return {
       ok: true,
@@ -98,8 +127,8 @@ export function resolveRegistrationPricing(params: {
       discountActive: false,
       discountEndsAt: null,
       savingsRials: amountRials,
-      discountPercent:
-        amountRials > 0 ? 100 : null,
+      discountPercent: amountRials > 0 ? 100 : null,
+      appliedPromotions: [],
     };
   }
 
@@ -116,48 +145,24 @@ export function resolveRegistrationPricing(params: {
     now,
   );
 
-  let discountRials = timed.discountRials;
-  let discountCode: string | null = null;
-  let discountActive = timed.discountActive;
-  let finalAmountRials = timed.finalAmountRials;
-  let pricingBadge = timed.pricingBadge;
-  let discountEndsAt = timed.discountActive
-    ? (flow?.discountEndsAt ?? null)
-    : null;
-  let discountPercent = timed.discountPercent;
-
-  // Promo codes only when timed sale is not active.
-  if (!timed.discountActive) {
-    const code = trim(params.details.discountCode).toUpperCase();
-    if (code && code in catalog.discountCodes) {
-      discountRials = Math.min(catalog.discountCodes[code]!, amountRials);
-      discountCode = discountRials > 0 ? code : null;
-      finalAmountRials = Math.max(0, amountRials - discountRials);
-      discountActive = discountRials > 0;
-      pricingBadge = null;
-      discountEndsAt = null;
-      discountPercent =
-        amountRials > 0 && discountRials > 0
-          ? Math.round((discountRials / amountRials) * 100)
-          : null;
-    }
-  }
-
   return {
     ok: true,
     amountRials,
-    discountRials,
-    finalAmountRials,
+    discountRials: timed.discountRials,
+    finalAmountRials: timed.finalAmountRials,
     productTitle: product.title,
     sessionTitle: session.title,
     packageTitle: pkg.title,
     venueBranchTitle: venue.title,
-    discountCode,
-    pricingBadge,
-    isFree: finalAmountRials === 0,
-    discountActive,
-    discountEndsAt,
-    savingsRials: discountRials,
-    discountPercent,
+    discountCode: null,
+    pricingBadge: timed.pricingBadge,
+    isFree: timed.finalAmountRials === 0,
+    discountActive: timed.discountActive,
+    discountEndsAt: timed.discountActive
+      ? (flow?.discountEndsAt ?? null)
+      : null,
+    savingsRials: timed.discountRials,
+    discountPercent: timed.discountPercent,
+    appliedPromotions: [],
   };
 }

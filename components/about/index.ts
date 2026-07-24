@@ -1,0 +1,17 @@
+export { AboutHero } from "./AboutHero";
+export { BrandStorySection } from "./BrandStorySection";
+export { AboutTimeline } from "./AboutTimeline";
+export { PhilosophySection } from "./PhilosophySection";
+export { AboutServicesSection } from "./AboutServicesSection";
+export { WhySetareganSection } from "./WhySetareganSection";
+export { AboutStatsSection } from "./AboutStatsSection";
+export { AboutGallerySection } from "./AboutGallerySection";
+export { FounderMessageSection } from "./FounderMessageSection";
+export { VisionSection } from "./VisionSection";
+export { AboutContactSection } from "./AboutContactSection";
+export { AboutMapSection } from "./AboutMapSection";
+export { AboutFooterCta } from "./AboutFooterCta";
+export { FloatingContactBar } from "./FloatingContactBar";
+export { ScrollReveal } from "./ScrollReveal";
+export { AnimatedCounter } from "./AnimatedCounter";
+export { ParallaxBackground } from "./ParallaxBackground";

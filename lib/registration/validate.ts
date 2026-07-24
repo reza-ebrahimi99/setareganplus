@@ -43,16 +43,32 @@ function trim(value: string): string {
   return value.trim();
 }
 
+export type ValidateStepOptions = {
+  /**
+   * When Form Builder is linked: only system identity fields are required
+   * (first/last name, national id / parent mobile). Other profile fields live on the form.
+   */
+  systemOnly?: boolean;
+};
+
 export function validateStudentStep(
   input: StudentStepInput,
+  options: ValidateStepOptions = {},
 ): { ok: true } | { ok: false; errors: FieldErrors } {
   const errors: FieldErrors = {};
+  const systemOnly = Boolean(options.systemOnly);
 
   if (!trim(input.firstName)) errors.firstName = "نام الزامی است.";
   if (!trim(input.lastName)) errors.lastName = "نام خانوادگی الزامی است.";
 
   const national = validateIranianNationalId(input.nationalCode);
   if (!national.ok) errors.nationalCode = national.error;
+
+  if (systemOnly) {
+    return Object.keys(errors).length === 0
+      ? { ok: true }
+      : { ok: false, errors };
+  }
 
   const birthDate = studentBirthDateFromParts(input);
   if (!birthDate) {
@@ -100,18 +116,22 @@ export function validateStudentStep(
 
 export function validateParentStep(
   input: ParentStepInput,
+  options: ValidateStepOptions = {},
 ): { ok: true } | { ok: false; errors: FieldErrors } {
   const errors: FieldErrors = {};
+  const systemOnly = Boolean(options.systemOnly);
 
-  if (!trim(input.parentName)) errors.parentName = "نام ولی الزامی است.";
+  if (!systemOnly) {
+    if (!trim(input.parentName)) errors.parentName = "نام ولی الزامی است.";
 
-  if (
-    input.relationship !== RegistrationParentRelationship.FATHER &&
-    input.relationship !== RegistrationParentRelationship.MOTHER &&
-    input.relationship !== RegistrationParentRelationship.GUARDIAN &&
-    input.relationship !== RegistrationParentRelationship.OTHER
-  ) {
-    errors.relationship = "نسبت را انتخاب کنید.";
+    if (
+      input.relationship !== RegistrationParentRelationship.FATHER &&
+      input.relationship !== RegistrationParentRelationship.MOTHER &&
+      input.relationship !== RegistrationParentRelationship.GUARDIAN &&
+      input.relationship !== RegistrationParentRelationship.OTHER
+    ) {
+      errors.relationship = "نسبت را انتخاب کنید.";
+    }
   }
 
   const mobile = normalizeIranianMobile(input.mobile);
@@ -125,8 +145,6 @@ export function validateParentStep(
   if (trim(input.email)) {
     const email = normalizeEmail(input.email);
     if (!email.ok) errors.email = email.error;
-  } else {
-    errors.email = "ایمیل الزامی است.";
   }
 
   return Object.keys(errors).length === 0
@@ -160,12 +178,8 @@ export function validateDetailsStep(
     errors.venueBranchKey = "شعبه را انتخاب کنید.";
   }
 
-  if (trim(input.discountCode)) {
-    const code = trim(input.discountCode).toUpperCase();
-    if (!(code in catalog.discountCodes)) {
-      errors.discountCode = "کد تخفیف معتبر نیست.";
-    }
-  }
+  // Discount / referral codes are validated by Promotion Engine on preview & submit.
+  // Legacy catalog map remains a fallback at pricing time.
 
   return Object.keys(errors).length === 0
     ? { ok: true }
@@ -177,11 +191,19 @@ export function resolvePricing(
   details: DetailsStepInput,
   flow: RegistrationFlowConfig | null = null,
 ): ReturnType<typeof resolveRegistrationPricing> {
-  const flowKey =
-    typeof flowKeyOrCatalog === "string"
-      ? flowKeyOrCatalog
-      : flowKeyOrCatalog.flowKey;
-  return resolveRegistrationPricing({ flowKey, details, flow });
+  if (typeof flowKeyOrCatalog === "string") {
+    return resolveRegistrationPricing({
+      flowKey: flowKeyOrCatalog,
+      details,
+      flow,
+    });
+  }
+  return resolveRegistrationPricing({
+    flowKey: flowKeyOrCatalog.flowKey,
+    details,
+    flow,
+    catalog: flowKeyOrCatalog,
+  });
 }
 
 export function birthDateToUtcDate(birthDate: JalaliDate): Date {
@@ -203,6 +225,7 @@ export function validateCreateRegistrationInput(
     return { ok: false, error: "درخواست نامعتبر است." };
   }
 
+  const formDriven = Boolean(input.linkedForm?.formId);
   const studentErrors: FieldErrors = {};
   if (!trim(input.student.firstName)) {
     studentErrors.firstName = "نام الزامی است.";
@@ -212,49 +235,59 @@ export function validateCreateRegistrationInput(
   }
   const national = validateIranianNationalId(input.student.nationalCode);
   if (!national.ok) studentErrors.nationalCode = national.error;
-  if (!input.student.birthDate) {
-    studentErrors.birthDate = "تاریخ تولد الزامی است.";
-  }
-  if (
-    input.student.gender !== Gender.MALE &&
-    input.student.gender !== Gender.FEMALE
-  ) {
-    studentErrors.gender = "جنسیت را انتخاب کنید.";
-  }
-  if (!trim(input.student.gradeLabel)) {
-    studentErrors.gradeSlug = "پایه تحصیلی الزامی است.";
-  }
-  if (!trim(input.student.schoolName)) {
-    studentErrors.schoolName = "نام مدرسه الزامی است.";
-  }
-  if (
-    !trim(input.student.province) ||
-    !(IRAN_PROVINCES as readonly string[]).includes(input.student.province)
-  ) {
-    studentErrors.province = "استان را از فهرست انتخاب کنید.";
-  }
-  if (!trim(input.student.city)) studentErrors.city = "شهر الزامی است.";
 
-  const parentCheck = validateParentStep({
-    parentName: input.parent.parentName,
-    relationship: input.parent.relationship,
-    mobile: input.parent.mobile,
-    secondaryMobile: input.parent.secondaryMobile ?? "",
-    email: input.parent.email ?? "",
-    address: input.parent.address ?? "",
-  });
+  if (!formDriven) {
+    if (!input.student.birthDate) {
+      studentErrors.birthDate = "تاریخ تولد الزامی است.";
+    }
+    if (
+      input.student.gender !== Gender.MALE &&
+      input.student.gender !== Gender.FEMALE
+    ) {
+      studentErrors.gender = "جنسیت را انتخاب کنید.";
+    }
+    if (!trim(input.student.gradeLabel ?? "")) {
+      studentErrors.gradeSlug = "پایه تحصیلی الزامی است.";
+    }
+    if (!trim(input.student.schoolName ?? "")) {
+      studentErrors.schoolName = "نام مدرسه الزامی است.";
+    }
+    if (
+      !trim(input.student.province ?? "") ||
+      !(IRAN_PROVINCES as readonly string[]).includes(
+        input.student.province ?? "",
+      )
+    ) {
+      studentErrors.province = "استان را از فهرست انتخاب کنید.";
+    }
+    if (!trim(input.student.city ?? "")) studentErrors.city = "شهر الزامی است.";
+  }
 
-  const detailsCheck = validateDetailsStep(
-    input.flowKey,
+  const parentCheck = validateParentStep(
     {
-      productKey: input.details.productKey,
-      sessionKey: input.details.sessionKey,
-      packageKey: input.details.packageKey,
-      venueBranchKey: input.details.venueBranchKey,
-      discountCode: input.details.discountCode ?? "",
+      parentName: input.parent.parentName ?? "",
+      relationship: input.parent.relationship ?? ("" as ParentStepInput["relationship"]),
+      mobile: input.parent.mobile,
+      secondaryMobile: input.parent.secondaryMobile ?? "",
+      email: input.parent.email ?? "",
+      address: input.parent.address ?? "",
     },
-    catalogOverride,
+    { systemOnly: formDriven },
   );
+
+  const detailsCheck = formDriven
+    ? ({ ok: true } as const)
+    : validateDetailsStep(
+        input.flowKey,
+        {
+          productKey: input.details.productKey,
+          sessionKey: input.details.sessionKey,
+          packageKey: input.details.packageKey,
+          venueBranchKey: input.details.venueBranchKey,
+          discountCode: input.details.discountCode ?? "",
+        },
+        catalogOverride,
+      );
 
   const fieldErrors: FieldErrors = {
     ...studentErrors,

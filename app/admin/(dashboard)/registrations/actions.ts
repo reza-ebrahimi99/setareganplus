@@ -9,6 +9,7 @@ import {
 import { requirePermission } from "@/lib/auth/require-admin";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { parseTehranDateTimeLocal } from "@/lib/forms/tehran-datetime";
+import { syncTimedPromotionFromRegistrationFlow } from "@/lib/promotions/sync-timed";
 import { prisma } from "@/lib/prisma";
 import {
   addRegistrationNote,
@@ -212,7 +213,7 @@ export async function updateRegistrationFlowAction(
   const description =
     String(formData.get("subtitle") ?? "").trim() || catalog.subtitle || "";
 
-  await prisma.registrationFlow.update({
+  const updated = await prisma.registrationFlow.update({
     where: {
       organizationId_slug: {
         organizationId: session.organization.id,
@@ -245,10 +246,24 @@ export async function updateRegistrationFlowAction(
         String(formData.get("smsTemplateCode") ?? "").trim() || null,
       adminSmsRecipients,
     },
+    select: { id: true },
+  });
+
+  await syncTimedPromotionFromRegistrationFlow({
+    organizationId: session.organization.id,
+    registrationFlowId: updated.id,
+    title,
+    paymentAmountRials: baseAmount.ok ? (baseAmount.value ?? 0) : 0,
+    saleAmountRials: saleAmount.ok ? saleAmount.value : null,
+    pricingBadge: String(formData.get("pricingBadge") ?? "").trim() || null,
+    discountStartsAt: discountStartsAt.ok ? discountStartsAt.value : null,
+    discountEndsAt: discountEndsAt.ok ? discountEndsAt.value : null,
+    isFree,
   });
 
   revalidatePath("/admin/registrations");
   revalidatePath("/admin/registrations/flows");
+  revalidatePath("/admin/promotions");
   revalidatePath(
     `/admin/registrations/flows/catalog/${encodeURIComponent(flowKey)}`,
   );

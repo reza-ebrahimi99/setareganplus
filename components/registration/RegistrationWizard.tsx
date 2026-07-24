@@ -5,6 +5,7 @@ import type { ComponentProps } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Gender,
+  FormFieldType,
   RegistrationParentRelationship,
 } from "@/generated/prisma/enums";
 import { DocumentUploadStep } from "@/components/registration/DocumentUploadStep";
@@ -20,7 +21,8 @@ import { RegistrationStepper } from "@/components/registration/RegistrationStepp
 import {
   saveRegistrationProgressAction as defaultSaveProgressAction,
   submitRegistrationAction as defaultSubmitAction,
-} from "@/app/ghalamchi/register/actions";
+  previewPromotionCodeAction as defaultPreviewPromotionAction,
+} from "@/app/register/[slug]/actions";
 import { formatTomansFromRials } from "@/lib/registration/format";
 import {
   hydrateRegistrationFlow,
@@ -38,6 +40,28 @@ import {
   resolveRegistrationPricing,
   type ResolvedRegistrationPricing,
 } from "@/lib/registration/pricing";
+import {
+  RegistrationFormQuestionsStep,
+  validateRegistrationFormAnswers,
+} from "@/components/registration/RegistrationFormQuestionsStep";
+import {
+  initialFormAnswerDefaults,
+  type RegistrationLinkedFormView,
+} from "@/lib/registration/form-bridge";
+import type { PreservedFieldValue } from "@/lib/forms/validate-public-submission";
+import {
+  attributionStorageKey,
+  detectAttributionFromUrl,
+  mergeAttributionFirstTouch,
+  parseAttributionFromUnknown,
+  resolveAcquisitionSource,
+  type RegistrationAttribution,
+} from "@/lib/registration/attribution";
+import {
+  normalizeReferralCode,
+  referralStorageKey,
+  resolveRedeemCodePriority,
+} from "@/lib/promotions/referral-link";
 import {
   WIZARD_STEP_LABELS,
   WIZARD_TOTAL_STEPS,
@@ -58,7 +82,7 @@ import {
 import { toPersianDigits } from "@/lib/persian";
 import { formatJalaliDate } from "@/lib/datetime/jalali";
 
-const STEPS = Array.from({ length: WIZARD_TOTAL_STEPS }, (_, index) => {
+const STEPS_BASE = Array.from({ length: WIZARD_TOTAL_STEPS }, (_, index) => {
   const id = index + 1;
   return { id, label: WIZARD_STEP_LABELS[id] ?? `مرحله ${id}` };
 });
@@ -84,6 +108,9 @@ export type RegistrationWizardInitialDraft = {
   student?: StudentStepInput;
   parent?: ParentStepInput;
   details?: DetailsStepInput;
+  formAnswers?: Record<string, PreservedFieldValue>;
+  attribution?: RegistrationAttribution | null;
+  leadId?: string | null;
   currentStep?: number;
   lastCompletedStep?: number;
   documents?: UploadedDocument[];
@@ -96,11 +123,14 @@ type RegistrationWizardProps = {
   receiptBasePath?: string;
   saveProgressAction?: typeof defaultSaveProgressAction;
   submitAction?: typeof defaultSubmitAction;
+  previewPromotionAction?: typeof defaultPreviewPromotionAction;
   uploadDocumentAction?: ComponentProps<
     typeof DocumentUploadStep
   >["uploadDocumentAction"];
   flowSnapshot?: RegistrationFlowSnapshot;
   flowPublic?: RegistrationFlowPublicView;
+  /** Linked Form Builder form — custom questions replace catalog details step. */
+  linkedForm?: RegistrationLinkedFormView | null;
 };
 
 const DEFAULT_RECEIPT_BASE_PATH = "/ghalamchi/register/receipt";
@@ -146,6 +176,35 @@ function emptyDetails(): DetailsStepInput {
     packageKey: "",
     venueBranchKey: "",
     discountCode: "",
+  };
+}
+
+/** Prefill when a catalog dimension has exactly one option (common for DB flows).
+ * When preferFirst is true (Form Builder-driven), pick the first option so payment
+ * can resolve without showing the catalog details step.
+ */
+function detailsWithCatalogDefaults(
+  catalog: RegistrationFlowCatalog,
+  existing?: DetailsStepInput | null,
+  preferFirst = false,
+): DetailsStepInput {
+  const base = existing ?? emptyDetails();
+  const pick = <T extends { key: string }>(
+    current: string,
+    items: T[],
+  ): string => {
+    if (current) return current;
+    if (items.length === 1 || (preferFirst && items.length > 0)) {
+      return items[0]!.key;
+    }
+    return "";
+  };
+  return {
+    productKey: pick(base.productKey, catalog.products),
+    sessionKey: pick(base.sessionKey, catalog.sessions),
+    packageKey: pick(base.packageKey, catalog.packages),
+    venueBranchKey: pick(base.venueBranchKey, catalog.venueBranches),
+    discountCode: base.discountCode ?? "",
   };
 }
 
@@ -203,9 +262,11 @@ export function RegistrationWizard({
   receiptBasePath = DEFAULT_RECEIPT_BASE_PATH,
   saveProgressAction = defaultSaveProgressAction,
   submitAction = defaultSubmitAction,
+  previewPromotionAction = defaultPreviewPromotionAction,
   uploadDocumentAction,
   flowSnapshot,
   flowPublic,
+  linkedForm = null,
 }: RegistrationWizardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -223,8 +284,30 @@ export function RegistrationWizard({
   const [parent, setParent] = useState<ParentStepInput>(
     () => initialDraft?.parent ?? emptyParent(),
   );
-  const [details, setDetails] = useState<DetailsStepInput>(
-    () => initialDraft?.details ?? emptyDetails(),
+  const [details, setDetails] = useState<DetailsStepInput>(() =>
+    detailsWithCatalogDefaults(
+      catalog,
+      initialDraft?.details,
+      linkedForm != null,
+    ),
+  );
+  const [formAnswers, setFormAnswers] = useState<
+    Record<string, PreservedFieldValue>
+  >(() => {
+    const defaults = linkedForm
+      ? initialFormAnswerDefaults(linkedForm.customFields)
+      : {};
+    return { ...defaults, ...(initialDraft?.formAnswers ?? {}) };
+  });
+  const formDriven = linkedForm != null;
+  const steps = useMemo(
+    () =>
+      STEPS_BASE.map((item) =>
+        formDriven && item.id === 3
+          ? { ...item, label: "فرم تکمیلی" }
+          : item,
+      ),
+    [formDriven],
   );
   const [documents, setDocuments] = useState<UploadedDocument[]>(
     () => initialDraft?.documents ?? [],
@@ -238,6 +321,19 @@ export function RegistrationWizard({
   const [agreed, setAgreed] = useState(false);
   const [tokenHydrated, setTokenHydrated] = useState(false);
   const [discountExpired, setDiscountExpired] = useState(false);
+  const [promoDraft, setPromoDraft] = useState(details.discountCode);
+  const [promoApplying, setPromoApplying] = useState(false);
+  const [promoMessage, setPromoMessage] = useState<string | null>(null);
+  const [promoPreview, setPromoPreview] = useState<{
+    title: string;
+    discountAmountRials: number;
+    amountRials: number;
+    finalAmountRials: number;
+  } | null>(null);
+  const [attribution, setAttribution] = useState<RegistrationAttribution | null>(
+    () => initialDraft?.attribution ?? null,
+  );
+  const [attributionHydrated, setAttributionHydrated] = useState(false);
 
   const flow = useMemo(
     () =>
@@ -256,12 +352,31 @@ export function RegistrationWizard({
             discountEndsAt: new Date(0),
           }
         : flow;
-    return resolveRegistrationPricing({
+    const resolved = resolveRegistrationPricing({
       flowKey: catalog.flowKey,
       details,
       flow: effectiveFlow,
+      catalog,
     });
-  }, [catalog.flowKey, details, discountExpired, flow]);
+    if (!resolved.ok || !promoPreview) return resolved;
+    return {
+      ...resolved,
+      amountRials: promoPreview.amountRials,
+      discountRials: promoPreview.discountAmountRials,
+      finalAmountRials: promoPreview.finalAmountRials,
+      discountCode: details.discountCode || resolved.discountCode,
+      discountActive: promoPreview.discountAmountRials > 0,
+      savingsRials: promoPreview.discountAmountRials,
+      discountPercent:
+        promoPreview.amountRials > 0 && promoPreview.discountAmountRials > 0
+          ? Math.round(
+              (promoPreview.discountAmountRials / promoPreview.amountRials) *
+                100,
+            )
+          : null,
+      pricingBadge: promoPreview.title,
+    };
+  }, [catalog, details, discountExpired, flow, promoPreview]);
 
   const majorRequired = registrationGradeRequiresMajor(student.gradeSlug);
   const completionPercent = computeCompletionPercent(lastCompletedStep);
@@ -299,6 +414,83 @@ export function RegistrationWizard({
     setTokenHydrated(true);
   }, [catalog.flowKey, initialResumeToken, searchParams, tokenHydrated]);
 
+  useEffect(() => {
+    if (attributionHydrated) return;
+    let storedAttr: RegistrationAttribution | null = null;
+    let storedRef: string | null = null;
+    try {
+      const raw = window.localStorage.getItem(
+        attributionStorageKey(catalog.flowKey),
+      );
+      storedAttr = parseAttributionFromUnknown(
+        raw ? (JSON.parse(raw) as unknown) : null,
+      );
+      storedRef = window.localStorage.getItem(
+        referralStorageKey(catalog.flowKey),
+      );
+    } catch {
+      storedAttr = null;
+    }
+
+    const fromUrl = detectAttributionFromUrl({
+      searchParams,
+      landingPage:
+        typeof window !== "undefined"
+          ? `${window.location.pathname}${window.location.search}`
+          : null,
+      referralLink:
+        typeof window !== "undefined" ? window.location.href : null,
+    });
+
+    const urlRef = normalizeReferralCode(searchParams.get("ref"));
+    if (urlRef && !fromUrl.referralCode) {
+      fromUrl.referralCode = urlRef;
+      fromUrl.acquisitionSource = resolveAcquisitionSource(fromUrl);
+    }
+
+    const seed =
+      initialDraft?.attribution ?? storedAttr ?? null;
+    const merged = mergeAttributionFirstTouch(seed, fromUrl);
+    if (!merged.referralCode && storedRef) {
+      merged.referralCode = normalizeReferralCode(storedRef);
+      merged.acquisitionSource = resolveAcquisitionSource(merged);
+    }
+
+    setAttribution(merged);
+    try {
+      window.localStorage.setItem(
+        attributionStorageKey(catalog.flowKey),
+        JSON.stringify(merged),
+      );
+      if (merged.referralCode) {
+        window.localStorage.setItem(
+          referralStorageKey(catalog.flowKey),
+          merged.referralCode,
+        );
+      }
+    } catch {
+      /* ignore */
+    }
+
+    // Seed promo draft from referral when no manual code yet (manual wins later).
+    const resolvedCode = resolveRedeemCodePriority({
+      manualCode: details.discountCode,
+      referralRef: merged.referralCode,
+    });
+    if (resolvedCode.source === "referral" && resolvedCode.code) {
+      setPromoDraft((current) => current || resolvedCode.code!);
+      setDetails((current) =>
+        current.discountCode
+          ? current
+          : { ...current, discountCode: resolvedCode.code! },
+      );
+    }
+
+    setAttributionHydrated(true);
+    // First-touch hydrate once per mount; do not re-run on attribution changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional one-shot
+  }, [attributionHydrated, catalog.flowKey, searchParams]);
+
   function persistResumeToken(token: string) {
     setResumeToken(token);
     try {
@@ -321,6 +513,9 @@ export function RegistrationWizard({
         parent,
         details,
         documentIds: documents.map((doc) => doc.documentId),
+        formAnswers: formDriven ? formAnswers : undefined,
+        attribution,
+        leadId: initialDraft?.leadId ?? null,
       });
       if (!result.ok) {
         setFormError(result.error);
@@ -338,7 +533,7 @@ export function RegistrationWizard({
     if (registrationBlocked) return;
 
     if (step === 1) {
-      const result = validateStudentStep(student);
+      const result = validateStudentStep(student, { systemOnly: formDriven });
       if (!result.ok) {
         setErrors(result.errors);
         return;
@@ -351,7 +546,7 @@ export function RegistrationWizard({
     }
 
     if (step === 2) {
-      const result = validateParentStep(parent);
+      const result = validateParentStep(parent, { systemOnly: formDriven });
       if (!result.ok) {
         setErrors(result.errors);
         return;
@@ -364,7 +559,22 @@ export function RegistrationWizard({
     }
 
     if (step === 3) {
-      const result = validateDetailsStep(catalog.flowKey, details);
+      if (formDriven && linkedForm) {
+        const result = validateRegistrationFormAnswers(linkedForm, formAnswers);
+        if (!result.ok) {
+          setErrors(result.fieldErrors);
+          setFormError(result.formError);
+          return;
+        }
+        setFormAnswers(result.values);
+        setErrors({});
+        setFormError(null);
+        const token = await autosave(4, 3);
+        if (!token) return;
+        setStep(4);
+        return;
+      }
+      const result = validateDetailsStep(catalog.flowKey, details, catalog);
       if (!result.ok) {
         setErrors(result.errors);
         return;
@@ -404,6 +614,46 @@ export function RegistrationWizard({
     return autosave(Math.max(step, 4), Math.max(lastCompletedStep, 3));
   }
 
+  async function applyPromotionCode() {
+    setPromoApplying(true);
+    setPromoMessage(null);
+    try {
+      const result = await previewPromotionAction({
+        flowKey: catalog.flowKey,
+        details: { ...details, discountCode: promoDraft },
+        redeemCode: promoDraft,
+        nationalCode: student.nationalCode,
+      });
+      if (!result.ok) {
+        setPromoPreview(null);
+        setDetails((current) => ({ ...current, discountCode: "" }));
+        setPromoMessage(result.error);
+        return;
+      }
+      setDetails((current) => ({
+        ...current,
+        discountCode: result.code,
+      }));
+      setPromoDraft(result.code);
+      setPromoPreview({
+        title: result.title,
+        discountAmountRials: result.discountAmountRials,
+        amountRials: result.amountRials,
+        finalAmountRials: result.finalAmountRials,
+      });
+      setPromoMessage(null);
+    } finally {
+      setPromoApplying(false);
+    }
+  }
+
+  function clearPromotionCode() {
+    setPromoDraft("");
+    setPromoPreview(null);
+    setPromoMessage(null);
+    setDetails((current) => ({ ...current, discountCode: "" }));
+  }
+
   function submitPayment() {
     if (registrationBlocked) return;
     if (!agreed) {
@@ -412,11 +662,14 @@ export function RegistrationWizard({
     }
 
     const birthDate = studentBirthDateFromParts(student);
-    const gender = student.gender;
-    const relationship = parent.relationship;
-    if (!birthDate || !gender || !relationship) {
-      setFormError("اطلاعات فرم ناقص است. لطفاً مراحل قبل را تکمیل کنید.");
-      return;
+    const gender = student.gender || null;
+    const relationship = parent.relationship || null;
+
+    if (!formDriven) {
+      if (!birthDate || !gender || !relationship) {
+        setFormError("اطلاعات فرم ناقص است. لطفاً مراحل قبل را تکمیل کنید.");
+        return;
+      }
     }
 
     startTransition(async () => {
@@ -451,6 +704,16 @@ export function RegistrationWizard({
           venueBranchKey: details.venueBranchKey,
           discountCode: details.discountCode || null,
         },
+        formAnswers: formDriven ? formAnswers : undefined,
+        attribution,
+        leadId: initialDraft?.leadId ?? null,
+        linkedForm:
+          formDriven && linkedForm
+            ? {
+                formId: linkedForm.formId,
+                formVersionId: linkedForm.versionId,
+              }
+            : null,
       });
 
       if (!result.ok) {
@@ -526,7 +789,7 @@ export function RegistrationWizard({
             </div>
           </div>
 
-          <RegistrationStepper steps={STEPS} currentStep={step} />
+          <RegistrationStepper steps={steps} currentStep={step} />
 
           {formError ? (
             <div
@@ -543,6 +806,7 @@ export function RegistrationWizard({
                 value={student}
                 errors={errors}
                 majorRequired={majorRequired}
+                systemOnly={formDriven}
                 onChange={(next) => {
                   setStudent(next);
                   if (errors.birthDate && studentBirthDateFromParts(next)) {
@@ -556,20 +820,42 @@ export function RegistrationWizard({
             ) : null}
 
             {step === 2 ? (
-              <ParentStep value={parent} errors={errors} onChange={setParent} />
+              <ParentStep
+                value={parent}
+                errors={errors}
+                systemOnly={formDriven}
+                onChange={setParent}
+              />
             ) : null}
 
             {step === 3 ? (
-              <DetailsStep
-                catalog={catalog}
-                flowSnapshot={flowSnapshot}
-                value={details}
-                errors={errors}
-                pricing={pricing}
-                showDiscountCountdown={showDiscountCountdown}
-                onDiscountExpired={() => setDiscountExpired(true)}
-                onChange={setDetails}
-              />
+              formDriven && linkedForm ? (
+                <RegistrationFormQuestionsStep
+                  linkedForm={linkedForm}
+                  answers={formAnswers}
+                  errors={errors}
+                  onAnswersChange={setFormAnswers}
+                />
+              ) : (
+                <DetailsStep
+                  catalog={catalog}
+                  flowSnapshot={flowSnapshot}
+                  value={details}
+                  errors={errors}
+                  pricing={pricing}
+                  showDiscountCountdown={showDiscountCountdown}
+                  onDiscountExpired={() => setDiscountExpired(true)}
+                  onChange={setDetails}
+                  onClearError={(field) =>
+                    setErrors((current) => {
+                      if (!(field in current)) return current;
+                      const next = { ...current };
+                      delete next[field];
+                      return next;
+                    })
+                  }
+                />
+              )
             ) : null}
 
             {step === 4 ? (
@@ -601,6 +887,9 @@ export function RegistrationWizard({
                 showDiscountCountdown={showDiscountCountdown}
                 onDiscountExpired={() => setDiscountExpired(true)}
                 onEdit={setStep}
+                formDriven={formDriven}
+                linkedForm={linkedForm}
+                formAnswers={formAnswers}
               />
             ) : null}
 
@@ -617,6 +906,13 @@ export function RegistrationWizard({
                 onAgreedChange={setAgreed}
                 onPay={submitPayment}
                 onEdit={setStep}
+                promoDraft={promoDraft}
+                promoApplying={promoApplying}
+                promoMessage={promoMessage}
+                promoPreview={promoPreview}
+                onPromoDraftChange={setPromoDraft}
+                onApplyPromo={applyPromotionCode}
+                onClearPromo={clearPromotionCode}
               />
             ) : null}
           </div>
@@ -679,11 +975,13 @@ function StudentStep({
   value,
   errors,
   majorRequired,
+  systemOnly = false,
   onChange,
 }: {
   value: StudentStepInput;
   errors: Record<string, string>;
   majorRequired: boolean;
+  systemOnly?: boolean;
   onChange: (value: StudentStepInput) => void;
 }) {
   return (
@@ -694,6 +992,12 @@ function StudentStep({
       <h2 id="student-step-title" className="text-base font-semibold text-primary">
         {WIZARD_STEP_LABELS[1]}
       </h2>
+      {systemOnly ? (
+        <p className="text-sm text-muted">
+          فیلدهای هویتی سیستمی — بقیه سؤال‌ها در مرحله فرم تکمیلی از Form Builder
+          می‌آیند.
+        </p>
+      ) : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <RegistrationField id="firstName" label="نام" required error={errors.firstName}>
           <input
@@ -735,6 +1039,8 @@ function StudentStep({
         />
       </RegistrationField>
 
+      {systemOnly ? null : (
+        <>
       <RegistrationField
         id="birthDate"
         label="تاریخ تولد"
@@ -897,6 +1203,8 @@ function StudentStep({
           />
         </RegistrationField>
       </div>
+        </>
+      )}
     </section>
   );
 }
@@ -904,10 +1212,12 @@ function StudentStep({
 function ParentStep({
   value,
   errors,
+  systemOnly = false,
   onChange,
 }: {
   value: ParentStepInput;
   errors: Record<string, string>;
+  systemOnly?: boolean;
   onChange: (value: ParentStepInput) => void;
 }) {
   return (
@@ -918,6 +1228,14 @@ function ParentStep({
       <h2 id="parent-step-title" className="text-base font-semibold text-primary">
         {WIZARD_STEP_LABELS[2]}
       </h2>
+      {systemOnly ? (
+        <p className="text-sm text-muted">
+          موبایل ولی فیلد سیستمی است — بقیه اطلاعات تماس در صورت نیاز در فرم
+          تکمیلی تعریف می‌شود.
+        </p>
+      ) : null}
+      {systemOnly ? null : (
+        <>
       <RegistrationField
         id="parentName"
         label="نام ولی"
@@ -965,11 +1283,13 @@ function ParentStep({
           })}
         </div>
       </RegistrationField>
+        </>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <RegistrationField
           id="mobile"
-          label="موبایل"
+          label="موبایل ولی"
           required
           error={errors.mobile}
         >
@@ -983,6 +1303,7 @@ function ParentStep({
             placeholder="09xxxxxxxxx"
           />
         </RegistrationField>
+        {systemOnly ? null : (
         <RegistrationField
           id="secondaryMobile"
           label="موبایل دوم"
@@ -999,9 +1320,12 @@ function ParentStep({
             }
           />
         </RegistrationField>
+        )}
       </div>
 
-      <RegistrationField id="email" label="ایمیل" required error={errors.email}>
+      {systemOnly ? null : (
+        <>
+      <RegistrationField id="email" label="ایمیل" error={errors.email}>
         <input
           id="email"
           type="email"
@@ -1022,6 +1346,8 @@ function ParentStep({
           onChange={(e) => onChange({ ...value, address: e.target.value })}
         />
       </RegistrationField>
+        </>
+      )}
     </section>
   );
 }
@@ -1035,6 +1361,7 @@ function DetailsStep({
   showDiscountCountdown,
   onDiscountExpired,
   onChange,
+  onClearError,
 }: {
   catalog: RegistrationFlowCatalog;
   flowSnapshot?: RegistrationFlowSnapshot;
@@ -1044,6 +1371,7 @@ function DetailsStep({
   showDiscountCountdown: boolean;
   onDiscountExpired: () => void;
   onChange: (value: DetailsStepInput) => void;
+  onClearError: (field: string) => void;
 }) {
   return (
     <section
@@ -1062,14 +1390,20 @@ function DetailsStep({
         error={errors.productKey}
         options={catalog.products}
         value={value.productKey}
-        onSelect={(productKey) => onChange({ ...value, productKey })}
+        onSelect={(productKey) => {
+          onClearError("productKey");
+          onChange({ ...value, productKey });
+        }}
       />
       <OptionCards
         label="نوبت"
         error={errors.sessionKey}
         options={catalog.sessions}
         value={value.sessionKey}
-        onSelect={(sessionKey) => onChange({ ...value, sessionKey })}
+        onSelect={(sessionKey) => {
+          onClearError("sessionKey");
+          onChange({ ...value, sessionKey });
+        }}
       />
       <OptionCards
         label="بسته"
@@ -1079,31 +1413,21 @@ function DetailsStep({
           description: `${pkg.description ?? ""} · ${formatTomansFromRials(pkg.amountRials)}`,
         }))}
         value={value.packageKey}
-        onSelect={(packageKey) => onChange({ ...value, packageKey })}
+        onSelect={(packageKey) => {
+          onClearError("packageKey");
+          onChange({ ...value, packageKey });
+        }}
       />
       <OptionCards
         label="شعبه"
         error={errors.venueBranchKey}
         options={catalog.venueBranches}
         value={value.venueBranchKey}
-        onSelect={(venueBranchKey) => onChange({ ...value, venueBranchKey })}
+        onSelect={(venueBranchKey) => {
+          onClearError("venueBranchKey");
+          onChange({ ...value, venueBranchKey });
+        }}
       />
-
-      <RegistrationField
-        id="discountCode"
-        label="کد تخفیف"
-        error={errors.discountCode}
-        hint="در صورت داشتن کد، وارد کنید"
-      >
-        <input
-          id="discountCode"
-          className={registrationControlClass(Boolean(errors.discountCode))}
-          value={value.discountCode}
-          onChange={(e) =>
-            onChange({ ...value, discountCode: e.target.value.toUpperCase() })
-          }
-        />
-      </RegistrationField>
 
       <WizardPricingBlock
         pricing={pricing}
@@ -1168,6 +1492,17 @@ function OptionCards({
   );
 }
 
+function formatFormAnswerForReview(value: PreservedFieldValue): string {
+  if (value == null) return "—";
+  if (Array.isArray(value)) {
+    return value.length > 0 ? value.join("، ") : "—";
+  }
+  if (typeof value === "boolean") return value ? "بله" : "خیر";
+  if (typeof value === "object") return JSON.stringify(value);
+  const text = String(value).trim();
+  return text.length > 0 ? text : "—";
+}
+
 function ReviewStep({
   student,
   parent,
@@ -1177,6 +1512,9 @@ function ReviewStep({
   showDiscountCountdown,
   onDiscountExpired,
   onEdit,
+  formDriven = false,
+  linkedForm = null,
+  formAnswers = {},
 }: {
   student: StudentStepInput;
   parent: ParentStepInput;
@@ -1186,11 +1524,69 @@ function ReviewStep({
   showDiscountCountdown: boolean;
   onDiscountExpired: () => void;
   onEdit: (step: number) => void;
+  formDriven?: boolean;
+  linkedForm?: RegistrationLinkedFormView | null;
+  formAnswers?: Record<string, PreservedFieldValue>;
 }) {
   const genderLabel =
     student.gender === "MALE" || student.gender === "FEMALE"
       ? GENDER_LABELS[student.gender]
       : "—";
+
+  const studentRows: Array<[string, string]> = formDriven
+    ? [
+        ["نام", `${student.firstName} ${student.lastName}`],
+        ["کد ملی", toPersianDigits(student.nationalCode)],
+      ]
+    : [
+        ["نام", `${student.firstName} ${student.lastName}`],
+        ["کد ملی", toPersianDigits(student.nationalCode)],
+        [
+          "تاریخ تولد",
+          (() => {
+            const birthDate = studentBirthDateFromParts(student);
+            return birthDate
+              ? formatJalaliDate(birthDate.jy, birthDate.jm, birthDate.jd)
+              : "—";
+          })(),
+        ],
+        ["جنسیت", genderLabel],
+        ["پایه", student.gradeLabel],
+        ["رشته", student.majorLabel || "—"],
+        ["مدرسه", student.schoolName],
+        ["محل", `${student.city}، ${student.province}`],
+      ];
+
+  const parentRows: Array<[string, string]> = formDriven
+    ? [["موبایل ولی", toPersianDigits(parent.mobile)]]
+    : [
+        ["نام", parent.parentName],
+        [
+          "نسبت",
+          parent.relationship
+            ? PARENT_RELATIONSHIP_LABELS[parent.relationship]
+            : "—",
+        ],
+        ["موبایل", toPersianDigits(parent.mobile)],
+        [
+          "موبایل دوم",
+          parent.secondaryMobile
+            ? toPersianDigits(parent.secondaryMobile)
+            : "—",
+        ],
+        ["ایمیل", parent.email || "—"],
+        ["آدرس", parent.address || "—"],
+      ];
+
+  const formRows: Array<[string, string]> =
+    formDriven && linkedForm
+      ? linkedForm.customFields
+          .filter((field) => field.type !== FormFieldType.INFORMATIONAL)
+          .map((field) => [
+            field.label,
+            formatFormAnswerForReview(formAnswers[field.fieldKey] ?? null),
+          ])
+      : [];
 
   return (
     <section aria-labelledby="review-step-title" className="space-y-4">
@@ -1201,73 +1597,47 @@ function ReviewStep({
       <SummaryCard
         title="دانش‌آموز"
         onEdit={() => onEdit(1)}
-        rows={[
-          ["نام", `${student.firstName} ${student.lastName}`],
-          ["کد ملی", toPersianDigits(student.nationalCode)],
-          [
-            "تاریخ تولد",
-            (() => {
-              const birthDate = studentBirthDateFromParts(student);
-              return birthDate
-                ? formatJalaliDate(birthDate.jy, birthDate.jm, birthDate.jd)
-                : "—";
-            })(),
-          ],
-          ["جنسیت", genderLabel],
-          ["پایه", student.gradeLabel],
-          ["رشته", student.majorLabel || "—"],
-          ["مدرسه", student.schoolName],
-          ["محل", `${student.city}، ${student.province}`],
-        ]}
+        rows={studentRows}
       />
 
-      <SummaryCard
-        title="ولی"
-        onEdit={() => onEdit(2)}
-        rows={[
-          ["نام", parent.parentName],
-          [
-            "نسبت",
-            parent.relationship
-              ? PARENT_RELATIONSHIP_LABELS[parent.relationship]
-              : "—",
-          ],
-          ["موبایل", toPersianDigits(parent.mobile)],
-          [
-            "موبایل دوم",
-            parent.secondaryMobile
-              ? toPersianDigits(parent.secondaryMobile)
-              : "—",
-          ],
-          ["ایمیل", parent.email || "—"],
-          ["آدرس", parent.address || "—"],
-        ]}
-      />
+      <SummaryCard title="ولی" onEdit={() => onEdit(2)} rows={parentRows} />
 
-      <SummaryCard
-        title="ثبت‌نام"
-        onEdit={() => onEdit(3)}
-        rows={[
-          [
-            "آزمون",
-            pricing.ok ? pricing.productTitle : details.productKey || "—",
-          ],
-          [
-            "نوبت",
-            pricing.ok ? pricing.sessionTitle : details.sessionKey || "—",
-          ],
-          [
-            "بسته",
-            pricing.ok ? pricing.packageTitle : details.packageKey || "—",
-          ],
-          [
-            "شعبه",
-            pricing.ok
-              ? pricing.venueBranchTitle
-              : details.venueBranchKey || "—",
-          ],
-        ]}
-      />
+      {formDriven ? (
+        <SummaryCard
+          title={linkedForm ? `فرم تکمیلی — ${linkedForm.title}` : "فرم تکمیلی"}
+          onEdit={() => onEdit(3)}
+          rows={
+            formRows.length > 0
+              ? formRows
+              : [["وضعیت", "سؤال سفارشی ثبت نشده"]]
+          }
+        />
+      ) : (
+        <SummaryCard
+          title="ثبت‌نام"
+          onEdit={() => onEdit(3)}
+          rows={[
+            [
+              "آزمون",
+              pricing.ok ? pricing.productTitle : details.productKey || "—",
+            ],
+            [
+              "نوبت",
+              pricing.ok ? pricing.sessionTitle : details.sessionKey || "—",
+            ],
+            [
+              "بسته",
+              pricing.ok ? pricing.packageTitle : details.packageKey || "—",
+            ],
+            [
+              "شعبه",
+              pricing.ok
+                ? pricing.venueBranchTitle
+                : details.venueBranchKey || "—",
+            ],
+          ]}
+        />
+      )}
 
       <SummaryCard
         title="مدارک"
@@ -1341,6 +1711,13 @@ function PaymentStep({
   onAgreedChange,
   onPay,
   onEdit,
+  promoDraft,
+  promoApplying,
+  promoMessage,
+  promoPreview,
+  onPromoDraftChange,
+  onApplyPromo,
+  onClearPromo,
 }: {
   student: StudentStepInput;
   parent: ParentStepInput;
@@ -1353,6 +1730,18 @@ function PaymentStep({
   onAgreedChange: (value: boolean) => void;
   onPay: () => void;
   onEdit: (step: number) => void;
+  promoDraft: string;
+  promoApplying: boolean;
+  promoMessage: string | null;
+  promoPreview: {
+    title: string;
+    discountAmountRials: number;
+    amountRials: number;
+    finalAmountRials: number;
+  } | null;
+  onPromoDraftChange: (value: string) => void;
+  onApplyPromo: () => void;
+  onClearPromo: () => void;
 }) {
   return (
     <section
@@ -1422,6 +1811,55 @@ function PaymentStep({
           ],
         ]}
       />
+
+      <div className="space-y-3 rounded-2xl border border-border bg-white/90 p-4">
+        <h3 className="text-sm font-semibold text-primary">
+          کد تخفیف / کد معرف
+        </h3>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            value={promoDraft}
+            onChange={(e) => onPromoDraftChange(e.target.value.toUpperCase())}
+            placeholder="مثلاً WELCOME10"
+            dir="ltr"
+            className={`${registrationControlClass(Boolean(promoMessage))} text-left sm:flex-1`}
+          />
+          <button
+            type="button"
+            onClick={onApplyPromo}
+            disabled={promoApplying || !promoDraft.trim()}
+            className={`rounded-xl bg-secondary px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 ${BUTTON_MICRO}`}
+          >
+            {promoApplying ? "در حال بررسی…" : "اعمال"}
+          </button>
+          {promoPreview ? (
+            <button
+              type="button"
+              onClick={onClearPromo}
+              className="rounded-xl border border-border px-4 py-2.5 text-sm"
+            >
+              حذف
+            </button>
+          ) : null}
+        </div>
+        {promoMessage ? (
+          <p className="text-sm text-danger" role="alert">
+            {promoMessage}
+          </p>
+        ) : null}
+        {promoPreview ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 px-3 py-2 text-sm text-emerald-950">
+            <p className="font-semibold">{promoPreview.title}</p>
+            <p className="mt-1">
+              تخفیف: {formatTomansFromRials(promoPreview.discountAmountRials)}
+            </p>
+            <p>
+              مبلغ نهایی:{" "}
+              {formatTomansFromRials(promoPreview.finalAmountRials)}
+            </p>
+          </div>
+        ) : null}
+      </div>
 
       <div className="rounded-2xl border border-border bg-white/80 px-5 py-5 backdrop-blur-sm">
         <h3 className="text-sm font-semibold text-primary">اسناد و مدارک</h3>

@@ -75,8 +75,5 @@ export const qalamchiExamCatalog: RegistrationFlowCatalog = {
       description: "شعبه غرب نسیم‌شهر",
     },
   ],
-  discountCodes: {
-    SETAREGAN10: 250_000,
-    WELCOME5: 125_000,
-  },
+  discountCodes: {},
 };

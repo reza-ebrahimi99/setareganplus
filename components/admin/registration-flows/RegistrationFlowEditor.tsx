@@ -339,9 +339,11 @@ export function RegistrationFlowEditor({
         </section>
 
         <section className="space-y-4 border-t border-border/60 pt-5">
-          <h2 className="text-sm font-bold text-primary">اتصال فرم</h2>
+          <h2 className="text-sm font-bold text-primary">اتصال Form Builder</h2>
           <p className="text-xs leading-6 text-muted">
-            فرم را از فرم‌ساز بسازید و منتشر کنید — اینجا فقط اتصال انجام می‌شود.
+            ویزارد ثبت‌نام سؤال‌های سفارشی را از همین فرم می‌خواند (الزامی، ترتیب، راهنما،
+            پیش‌فرض، شرط نمایش). فیلدهای سیستمی (نام، نام‌خانوادگی، کدملی، موبایل ولی، پرداخت،
+            مدارک) جدا می‌مانند. برای انتشار، مرحله «فرم تکمیلی» را در مراحل فعال کنید.
           </p>
           <label className="block text-sm">
             <span className="mb-1.5 block text-muted">فرم منتشرشده</span>
@@ -351,7 +353,7 @@ export function RegistrationFlowEditor({
               disabled={!canManage}
               className={inputClass}
             >
-              <option value="">بدون فرم</option>
+              <option value="">بدون فرم — فقط کاتالوگ ثابت</option>
               {formOptions.map((form) => (
                 <option key={form.id} value={form.id}>
                   {form.title} ({form.slug})
@@ -360,27 +362,45 @@ export function RegistrationFlowEditor({
             </select>
           </label>
           {flow.formId ? (
-            <Link
-              href={`/admin/forms/${flow.formId}`}
-              className="inline-flex text-sm font-semibold text-secondary hover:underline"
-            >
-              باز کردن در فرم‌ساز
-            </Link>
+            <div className="flex flex-wrap gap-3 text-sm">
+              <Link
+                href={`/admin/forms/${flow.formId}`}
+                className="font-semibold text-secondary hover:underline"
+              >
+                ویرایش در فرم‌ساز
+              </Link>
+              {flow.formSlug ? (
+                <Link
+                  href={`/forms/${flow.formSlug}`}
+                  className="font-semibold text-secondary hover:underline"
+                  target="_blank"
+                >
+                  پیش‌نمایش عمومی فرم
+                </Link>
+              ) : null}
+            </div>
           ) : null}
           {flow.formPreview.length > 0 ? (
             <ul className="space-y-2 rounded-xl border border-border bg-background p-3">
-              {flow.formPreview.map((question) => (
+              {flow.formPreview.map((question, index) => (
                 <li
                   key={question.fieldKey}
-                  className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 py-2 text-sm last:border-0"
+                  className="border-b border-border/50 py-2 text-sm last:border-0"
                 >
-                  <span className="font-medium">{question.label}</span>
-                  <span className="text-xs text-muted">
-                    {getFormFieldTypeLabel(
-                      question.type as import("@/generated/prisma/enums").FormFieldType,
-                    )}
-                    {question.required ? " · الزامی" : ""}
-                  </span>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-medium">
+                      {index + 1}. {question.label}
+                    </span>
+                    <span className="text-xs text-muted">
+                      {getFormFieldTypeLabel(
+                        question.type as import("@/generated/prisma/enums").FormFieldType,
+                      )}
+                      {question.required ? " · الزامی" : " · اختیاری"}
+                    </span>
+                  </div>
+                  {question.helpText ? (
+                    <p className="mt-1 text-xs text-muted">{question.helpText}</p>
+                  ) : null}
                 </li>
               ))}
             </ul>

@@ -4,7 +4,6 @@
 
 import type { Prisma } from "@/generated/prisma/client";
 import {
-  CrmActivityType,
   DomainEventType,
   LeadSourceType,
   RegistrationActivityType,
@@ -15,15 +14,32 @@ import {
   ServiceInterest,
 } from "@/generated/prisma/enums";
 import { enqueueRegistrationCompletedSms } from "@/lib/communication/registration-sms";
-import { recordCrmActivity } from "@/lib/crm/activity";
 import { upsertLead } from "@/lib/crm/leads";
 import { normalizeEmail } from "@/lib/forms/normalize-email";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { validateIranianNationalId } from "@/lib/forms/validate-national-id";
+import { loadPublicFormById } from "@/lib/forms/load-public-form";
+import type { PreservedFieldValue } from "@/lib/forms/validate-public-submission";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { prisma } from "@/lib/prisma";
 import { startCheckoutForRegistration } from "@/lib/payment/service";
 import { recordRegistrationActivity } from "@/lib/registration/activity";
+import type { RegistrationAttribution } from "@/lib/registration/attribution";
+import {
+  attributionToMetadataPatch,
+  parseAttributionFromUnknown,
+  sanitizeClientAttribution,
+} from "@/lib/registration/attribution";
+import { partitionRegistrationFormFields } from "@/lib/registration/form-bridge";
+import { persistRegistrationFormAnswers } from "@/lib/registration/persist-form-answers";
+import {
+  advanceLeadStageForRegistration,
+  buildLeadLinkSnapshot,
+  findDuplicateRegistrationForLead,
+  findLeadForRegistration,
+  leadLinkToMetadataPatch,
+  recordRegistrationLeadTimeline,
+} from "@/lib/registration/lead-link";
 import { flowRequiresCheckout } from "@/lib/registration/flows/constants";
 import { findRegistrationFlowBySlug } from "@/lib/registration/flows/public";
 import { resolveRegistrationCatalog } from "@/lib/registration/flows/resolve-catalog";
@@ -33,7 +49,11 @@ import {
 } from "@/lib/registration/flow-config";
 import { ensureRegistrationFlowConfig } from "@/lib/registration/flow-config-db";
 import { nextRegistrationNumber } from "@/lib/registration/number-generator";
-import { resolveRegistrationPricing } from "@/lib/registration/pricing";
+import { resolveRegistrationPricingAsync } from "@/lib/registration/pricing-async";
+import {
+  appliedPromotionsMetadata,
+  recordPromotionUsages,
+} from "@/lib/promotions/record-usage";
 import { computeCompletionPercent } from "@/lib/registration/progress";
 import {
   REGISTRATION_STATUS_LABELS,
@@ -122,18 +142,40 @@ export async function createRegistration(
     secondaryNormalized = secondary.normalized;
   }
 
-  const email = normalizeEmail(input.parent.email ?? "");
-  if (!email.ok) {
-    return {
-      ok: false,
-      error: email.error,
-      fieldErrors: { email: email.error },
-    };
+  let emailNormalized: string | null = null;
+  if (input.parent.email?.trim()) {
+    const email = normalizeEmail(input.parent.email);
+    if (!email.ok) {
+      return {
+        ok: false,
+        error: email.error,
+        fieldErrors: { email: email.error },
+      };
+    }
+    emailNormalized = email.email;
   }
 
   const organization = await getCurrentOrganization();
   const branchId = await resolvePublicBranchId(organization.id);
-  const birthDate = birthDateToUtcDate(input.student.birthDate);
+  const birthDate = input.student.birthDate
+    ? birthDateToUtcDate(input.student.birthDate)
+    : null;
+  const formDriven = Boolean(input.linkedForm?.formId);
+  const resolvedDetails = {
+    productKey:
+      input.details.productKey ||
+      (formDriven ? (catalog.products[0]?.key ?? "") : ""),
+    sessionKey:
+      input.details.sessionKey ||
+      (formDriven ? (catalog.sessions[0]?.key ?? "") : ""),
+    packageKey:
+      input.details.packageKey ||
+      (formDriven ? (catalog.packages[0]?.key ?? "") : ""),
+    venueBranchKey:
+      input.details.venueBranchKey ||
+      (formDriven ? (catalog.venueBranches[0]?.key ?? "") : ""),
+    discountCode: input.details.discountCode ?? "",
+  };
 
   const flow = await ensureRegistrationFlowConfig({
     organizationId: organization.id,
@@ -159,20 +201,64 @@ export async function createRegistration(
   }
 
   const now = new Date();
-  const pricing = resolveRegistrationPricing({
+
+  // Idempotent seed of legacy catalog coupons into Promotion table.
+  try {
+    const { ensureLegacyCatalogPromotions } = await import(
+      "@/lib/promotions/legacy"
+    );
+    await ensureLegacyCatalogPromotions(organization.id);
+  } catch (error) {
+    console.warn(
+      "[registration] legacy coupon seed failed",
+      error instanceof Error ? error.message : "unknown",
+    );
+  }
+
+  const pricing = await resolveRegistrationPricingAsync({
     flowKey: input.flowKey,
-    details: {
-      productKey: input.details.productKey,
-      sessionKey: input.details.sessionKey,
-      packageKey: input.details.packageKey,
-      venueBranchKey: input.details.venueBranchKey,
-      discountCode: input.details.discountCode ?? "",
-    },
+    details: resolvedDetails,
     flow,
     now,
+    catalog,
+    organizationId: organization.id,
+    nationalCode: national.normalized,
   });
   if (!pricing.ok) {
     return { ok: false, error: pricing.error };
+  }
+
+  const priorMatch = await findLeadForRegistration({
+    organizationId: organization.id,
+    leadId: input.leadId,
+    mobile: input.parent.mobile,
+    nationalCode: national.normalized,
+    email: emailNormalized,
+  });
+  if (priorMatch) {
+    const dup = await findDuplicateRegistrationForLead({
+      organizationId: organization.id,
+      leadId: priorMatch.id,
+      flowKey: catalog.flowKey,
+      excludeRegistrationId: input.resumeToken
+        ? (
+            await prisma.registration.findFirst({
+              where: {
+                organizationId: organization.id,
+                resumeToken: input.resumeToken,
+                deletedAt: null,
+              },
+              select: { id: true },
+            })
+          )?.id
+        : null,
+    });
+    if (dup) {
+      return {
+        ok: false,
+        error: `برای این متقاضی ثبت‌نام فعال دیگری وجود دارد (${dup.registrationNumber}).`,
+      };
+    }
   }
 
   const dbFlow = await findRegistrationFlowBySlug(
@@ -195,6 +281,9 @@ export async function createRegistration(
 
   const completionPercent = computeCompletionPercent(WIZARD_TOTAL_STEPS);
 
+  // Never trust client-supplied referralOwner / qrOwner / leadLink.
+  const clientAttribution = sanitizeClientAttribution(input.attribution);
+
   const payload = {
     status: needsCheckout
       ? RegistrationStatus.WAITING_PAYMENT
@@ -209,26 +298,26 @@ export async function createRegistration(
     studentLastName: input.student.lastName.trim(),
     nationalCode: national.normalized,
     birthDate,
-    gender: input.student.gender,
-    gradeLabel: input.student.gradeLabel.trim(),
+    gender: input.student.gender ?? null,
+    gradeLabel: input.student.gradeLabel?.trim() || null,
     majorLabel: input.student.majorLabel?.trim() || null,
-    schoolName: input.student.schoolName.trim(),
-    province: input.student.province.trim(),
-    city: input.student.city.trim(),
-    parentName: input.parent.parentName.trim(),
-    parentRelationship: input.parent.relationship,
+    schoolName: input.student.schoolName?.trim() || null,
+    province: input.student.province?.trim() || null,
+    city: input.student.city?.trim() || null,
+    parentName: input.parent.parentName?.trim() || null,
+    parentRelationship: input.parent.relationship ?? null,
     parentMobile: mobile.normalized,
     parentMobileNormalized: mobile.normalized,
     parentSecondaryMobile: secondaryNormalized,
-    parentEmail: email.email,
+    parentEmail: emailNormalized,
     parentAddress: input.parent.address?.trim() || null,
-    productKey: input.details.productKey,
+    productKey: resolvedDetails.productKey || null,
     productTitle: pricing.productTitle,
-    sessionKey: input.details.sessionKey,
+    sessionKey: resolvedDetails.sessionKey || null,
     sessionTitle: pricing.sessionTitle,
-    packageKey: input.details.packageKey,
+    packageKey: resolvedDetails.packageKey || null,
     packageTitle: dbFlow?.paymentTitle ?? pricing.packageTitle,
-    venueBranchKey: input.details.venueBranchKey,
+    venueBranchKey: resolvedDetails.venueBranchKey || null,
     venueBranchTitle: pricing.venueBranchTitle,
     discountCode: pricing.discountCode,
     amountRials,
@@ -240,6 +329,15 @@ export async function createRegistration(
     totalSteps: WIZARD_TOTAL_STEPS,
     lastActivityAt: now,
     abandonedReason: null,
+    metadata: {
+      ...appliedPromotionsMetadata(pricing.appliedPromotions ?? [], {
+        referralPromotionId: pricing.referralPromotionId,
+        referralOwnerStaffId: pricing.referralOwnerStaffId,
+      }),
+      ...(clientAttribution
+        ? attributionToMetadataPatch(clientAttribution)
+        : {}),
+    } as Prisma.InputJsonValue,
   };
 
   let registration: {
@@ -286,11 +384,29 @@ export async function createRegistration(
           },
         }));
 
+      const existingMetaRow = await prisma.registration.findFirst({
+        where: { id: existingDraft.id },
+        select: { metadata: true },
+      });
+      const prevMeta =
+        existingMetaRow?.metadata &&
+        typeof existingMetaRow.metadata === "object" &&
+        !Array.isArray(existingMetaRow.metadata)
+          ? (existingMetaRow.metadata as Record<string, unknown>)
+          : {};
+
       registration = await prisma.registration.update({
         where: { id: existingDraft.id },
         data: {
           ...payload,
           publicTrackingCode,
+          metadata: {
+            ...prevMeta,
+            ...appliedPromotionsMetadata(pricing.appliedPromotions ?? [], {
+              referralPromotionId: pricing.referralPromotionId,
+              referralOwnerStaffId: pricing.referralOwnerStaffId,
+            }),
+          } as Prisma.InputJsonValue,
         },
         select: {
           id: true,
@@ -356,6 +472,23 @@ export async function createRegistration(
     throw error;
   }
 
+  try {
+    await recordPromotionUsages({
+      organizationId: organization.id,
+      registrationId: registration.id,
+      nationalCode: national.normalized,
+      applied: pricing.appliedPromotions ?? [],
+    });
+  } catch (error) {
+    console.error(
+      "[registration] promotion usage record failed",
+      error instanceof Error ? error.message : "unknown",
+    );
+  }
+
+  // Pre-detect existing lead (priority: leadId → mobile → national → email)
+  // priorMatch already resolved before create for duplicate protection.
+
   const leadResult = await upsertLead({
     organizationId: organization.id,
     branchId,
@@ -365,11 +498,11 @@ export async function createRegistration(
     mobileRaw: input.parent.mobile,
     fatherName:
       input.parent.relationship === RegistrationParentRelationship.FATHER
-        ? input.parent.parentName.trim()
+        ? input.parent.parentName?.trim() || null
         : null,
-    school: input.student.schoolName.trim(),
-    gradeLevel: input.student.gradeLabel.trim(),
-    email: email.email,
+    school: input.student.schoolName?.trim() || null,
+    gradeLevel: input.student.gradeLabel?.trim() || null,
+    email: emailNormalized,
     nationalCode: national.normalized,
     source: `REGISTRATION:${catalog.flowKey}`,
     sourceType: LeadSourceType.REGISTRATION,
@@ -382,36 +515,142 @@ export async function createRegistration(
     await prisma.lead.update({
       where: { id: leadResult.leadId },
       data: {
-        city: input.student.city.trim(),
-        province: input.student.province.trim(),
-        gender: input.student.gender,
+        city: input.student.city?.trim() || null,
+        province: input.student.province?.trim() || null,
+        gender: input.student.gender ?? null,
         birthDate,
         studyField: input.student.majorLabel?.trim() || null,
         nationalCode: national.normalized,
-        school: input.student.schoolName.trim(),
-        gradeLevel: input.student.gradeLabel.trim(),
+        school: input.student.schoolName?.trim() || null,
+        gradeLevel: input.student.gradeLabel?.trim() || null,
       },
     });
+
+    const matchedBy = priorMatch?.id === leadResult.leadId
+      ? priorMatch.matchedBy
+      : leadResult.created
+        ? ("created" as const)
+        : ("mobile" as const);
+
+    const leadSnapshot = await buildLeadLinkSnapshot({
+      organizationId: organization.id,
+      leadId: leadResult.leadId,
+      matchedBy,
+    });
+
+    const existingMetaRow = await prisma.registration.findFirst({
+      where: { id: registration.id },
+      select: { metadata: true },
+    });
+    const prevMeta =
+      existingMetaRow?.metadata &&
+      typeof existingMetaRow.metadata === "object" &&
+      !Array.isArray(existingMetaRow.metadata)
+        ? (existingMetaRow.metadata as Record<string, unknown>)
+        : {};
+
+    const attribution: RegistrationAttribution | null =
+      clientAttribution ??
+      sanitizeClientAttribution(parseAttributionFromUnknown(prevMeta)) ??
+      null;
+
+    // Referral owner name is always server-resolved from promotion owner staff.
+    if (attribution) {
+      attribution.referralOwner = null;
+      if (pricing.referralOwnerStaffId) {
+        const staff = await prisma.user.findFirst({
+          where: { id: pricing.referralOwnerStaffId },
+          select: { firstName: true, lastName: true },
+        });
+        if (staff) {
+          attribution.referralOwner =
+            `${staff.firstName} ${staff.lastName}`.trim();
+        }
+      }
+    }
 
     await prisma.registration.update({
       where: { id: registration.id },
-      data: { leadId: leadResult.leadId },
-    });
-
-    await recordCrmActivity({
-      organizationId: organization.id,
-      leadId: leadResult.leadId,
-      activityType: CrmActivityType.REGISTRATION_CREATED,
-      title: "Registration Created",
-      summary: `${registration.registrationNumber} · ${pricing.productTitle}`,
-      metadata: {
-        registrationId: registration.id,
-        registrationNumber: registration.registrationNumber,
-        flowKey: catalog.flowKey,
-        finalAmountRials: registration.finalAmountRials,
-        status: registration.status,
+      data: {
+        leadId: leadResult.leadId,
+        metadata: {
+          ...prevMeta,
+          ...appliedPromotionsMetadata(pricing.appliedPromotions ?? [], {
+            referralPromotionId: pricing.referralPromotionId,
+            referralOwnerStaffId: pricing.referralOwnerStaffId,
+          }),
+          // leadLink snapshot is always built server-side (never from client).
+          ...(leadSnapshot
+            ? leadLinkToMetadataPatch(leadSnapshot, attribution)
+            : attribution
+              ? attributionToMetadataPatch(attribution)
+              : {}),
+        } as Prisma.InputJsonValue,
       },
     });
+
+    const timelineEvents: Array<{
+      kind:
+        | "started"
+        | "promotion_applied"
+        | "payment_started"
+        | "completed";
+      summary?: string;
+      metadata?: Record<string, unknown>;
+    }> = [
+      {
+        kind: "started",
+        summary: `${registration.registrationNumber} · ${pricing.productTitle}`,
+      },
+    ];
+
+    const applied = pricing.appliedPromotions ?? [];
+    if (applied.length > 0) {
+      timelineEvents.push({
+        kind: "promotion_applied",
+        summary: applied.map((a) => a.title).join("، "),
+        metadata: {
+          codes: applied.map((a) => a.code).filter(Boolean).join(","),
+          discountRials: pricing.discountRials,
+        },
+      });
+    }
+
+    if (needsCheckout) {
+      timelineEvents.push({
+        kind: "payment_started",
+        summary: `مبلغ نهایی ${pricing.finalAmountRials}`,
+      });
+    } else {
+      timelineEvents.push({
+        kind: "completed",
+        summary: "ثبت‌نام بدون پرداخت / رایگان تکمیل شد",
+      });
+    }
+
+    await recordRegistrationLeadTimeline({
+      organizationId: organization.id,
+      leadId: leadResult.leadId,
+      registrationId: registration.id,
+      registrationNumber: registration.registrationNumber,
+      flowKey: catalog.flowKey,
+      events: timelineEvents,
+    });
+
+    try {
+      await advanceLeadStageForRegistration({
+        organizationId: organization.id,
+        leadId: leadResult.leadId,
+        phase: needsCheckout
+          ? "payment_pending"
+          : "registered",
+      });
+    } catch (error) {
+      console.error(
+        "[registration] lead stage advance failed",
+        error instanceof Error ? error.message : "unknown",
+      );
+    }
   }
 
   try {
@@ -451,6 +690,31 @@ export async function createRegistration(
     organizationId: organization.id,
     registrationId: registration.id,
   }).catch(() => {});
+
+  if (input.linkedForm?.formId && input.linkedForm.formVersionId) {
+    const loaded = await loadPublicFormById(input.linkedForm.formId, {
+      ignoreAvailability: true,
+    });
+    if (loaded.ok) {
+      const { customFields } = partitionRegistrationFormFields(loaded.data.fields);
+      const persisted = await persistRegistrationFormAnswers({
+        registrationId: registration.id,
+        formId: input.linkedForm.formId,
+        formVersionId: input.linkedForm.formVersionId,
+        fields: customFields,
+        answers: (input.formAnswers ?? {}) as Record<string, PreservedFieldValue>,
+        mobileNormalized: mobile.normalized,
+        email: emailNormalized,
+      });
+      if (!persisted.ok) {
+        return {
+          ok: false,
+          error: persisted.error,
+          fieldErrors: persisted.fieldErrors,
+        };
+      }
+    }
+  }
 
   if (!needsCheckout) {
     await recordRegistrationActivity({

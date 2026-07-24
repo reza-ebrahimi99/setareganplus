@@ -19,6 +19,12 @@ import {
   serializeRegistrationFlow,
   toRegistrationFlowPublicView,
 } from "@/lib/registration/flow-config";
+import { loadPublicFormById } from "@/lib/forms/load-public-form";
+import { toRegistrationLinkedFormView } from "@/lib/registration/form-bridge";
+import {
+  draftToWizardInitial,
+  loadRegistrationDraftByResumeToken,
+} from "@/lib/registration/draft";
 import { createPageMetadata } from "@/lib/seo/create-page-metadata";
 
 type PageProps = {
@@ -64,6 +70,21 @@ export default async function PublicRegistrationWizardPage({
         })
       : null;
 
+  const linkedFormResult =
+    flow?.formId != null
+      ? await loadPublicFormById(flow.formId, { ignoreAvailability: true })
+      : null;
+  const linkedForm =
+    linkedFormResult?.ok === true
+      ? toRegistrationLinkedFormView(linkedFormResult.data)
+      : null;
+
+  const resumeToken = query.token?.trim() || null;
+  const draftRow = resumeToken
+    ? await loadRegistrationDraftByResumeToken(resumeToken)
+    : null;
+  const initialDraft = draftRow ? draftToWizardInitial(draftRow) : null;
+
   const receiptBasePath = `/register/${slug}/receipt`;
 
   return (
@@ -77,7 +98,8 @@ export default async function PublicRegistrationWizardPage({
       >
         <RegistrationWizard
           catalog={catalog}
-          initialResumeToken={query.token ?? null}
+          initialResumeToken={resumeToken}
+          initialDraft={initialDraft}
           receiptBasePath={receiptBasePath}
           saveProgressAction={saveRegistrationProgressAction}
           submitAction={submitRegistrationAction}
@@ -88,6 +110,7 @@ export default async function PublicRegistrationWizardPage({
           flowPublic={
             flowConfig ? toRegistrationFlowPublicView(flowConfig) : undefined
           }
+          linkedForm={linkedForm}
         />
       </Suspense>
     </PublicFormShell>

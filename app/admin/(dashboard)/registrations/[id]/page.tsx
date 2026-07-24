@@ -8,6 +8,7 @@ import {
   reviewDocumentAction,
 } from "@/app/admin/(dashboard)/registrations/actions";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { RegistrationLeadAttributionPanel } from "@/components/admin/registrations/RegistrationLeadAttributionPanel";
 import { adminBreadcrumbs } from "@/content/admin";
 import { hasPermission } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-admin";
@@ -172,6 +173,23 @@ export default async function AdminRegistrationDetailPage({
           ) : null}
         </section>
       ) : null}
+
+      <RegistrationLeadAttributionPanel
+        metadata={registration.metadata}
+        leadId={registration.leadId}
+        discountCode={registration.discountCode}
+        amountRials={registration.amountRials}
+        discountRials={registration.discountRials}
+        finalAmountRials={registration.finalAmountRials}
+        paymentStatus={registration.paymentStatus}
+        registrationStatus={registration.status}
+        activities={registration.activities.map((a) => ({
+          title: a.title,
+          summary: a.summary,
+          occurredAt: a.occurredAt,
+          activityType: a.activityType,
+        }))}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="admin-card space-y-3 p-5">

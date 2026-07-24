@@ -3,6 +3,7 @@ import {
   type FormMode as FormModeValue,
   type FormPurpose,
   type FormFieldType,
+  type FormFieldSemantic,
 } from "@/generated/prisma/enums";
 import { countCapacityUsed } from "@/lib/forms/capacity";
 import {
@@ -30,6 +31,7 @@ export type PublicFormField = {
   required: boolean;
   config: unknown;
   visibilityConditions: unknown;
+  semantic?: FormFieldSemantic;
 };
 
 export type PublicFormStep = {
@@ -109,6 +111,7 @@ export type LoadPublicFormResult =
  */
 export async function loadPublicFormBySlug(
   slug: string,
+  options?: { ignoreAvailability?: boolean },
 ): Promise<LoadPublicFormResult> {
   try {
     const organization = await getCurrentOrganization();
@@ -132,6 +135,56 @@ export async function loadPublicFormBySlug(
       return { ok: false, reason: "not_found" };
     }
 
+    return assemblePublishedPublicForm(organization.id, form, options);
+  } catch {
+    return { ok: false, reason: "org_unavailable" };
+  }
+}
+
+/** Load published form by id (RegistrationFlow.formId). */
+export async function loadPublicFormById(
+  formId: string,
+  options?: { ignoreAvailability?: boolean },
+): Promise<LoadPublicFormResult> {
+  try {
+    const organization = await getCurrentOrganization();
+
+    const form = await prisma.form.findFirst({
+      where: {
+        organizationId: organization.id,
+        id: formId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        slug: true,
+        purpose: true,
+        mode: true,
+        publishedVersionId: true,
+      },
+    });
+
+    if (!form) {
+      return { ok: false, reason: "not_found" };
+    }
+
+    return assemblePublishedPublicForm(organization.id, form, options);
+  } catch {
+    return { ok: false, reason: "org_unavailable" };
+  }
+}
+
+async function assemblePublishedPublicForm(
+  organizationId: string,
+  form: {
+    id: string;
+    slug: string;
+    purpose: FormPurpose;
+    mode: FormModeValue;
+    publishedVersionId: string | null;
+  },
+  options?: { ignoreAvailability?: boolean },
+): Promise<LoadPublicFormResult> {
     if (!form.publishedVersionId) {
       return { ok: false, reason: "unavailable" };
     }
@@ -139,7 +192,7 @@ export async function loadPublicFormBySlug(
     const version = await prisma.formVersion.findFirst({
       where: {
         id: form.publishedVersionId,
-        organizationId: organization.id,
+        organizationId,
         formId: form.id,
         status: FormVersionStatus.PUBLISHED,
       },
@@ -184,6 +237,7 @@ export async function loadPublicFormBySlug(
             required: true,
             config: true,
             visibilityConditions: true,
+            semantic: true,
           },
         },
       },
@@ -203,7 +257,7 @@ export async function loadPublicFormBySlug(
         : null;
 
     const usedCapacity = await countCapacityUsed({
-      organizationId: organization.id,
+      organizationId,
       formId: form.id,
       formVersionId: version.id,
     });
@@ -229,35 +283,37 @@ export async function loadPublicFormBySlug(
       registrationDeadline: version.registrationDeadline,
     };
 
-    if (availability.status === "NOT_OPEN_YET") {
-      return {
-        ok: false,
-        reason: "not_open_yet",
-        message: availability.message ?? undefined,
-        meta,
-      };
-    }
+    if (!options?.ignoreAvailability) {
+      if (availability.status === "NOT_OPEN_YET") {
+        return {
+          ok: false,
+          reason: "not_open_yet",
+          message: availability.message ?? undefined,
+          meta,
+        };
+      }
 
-    if (availability.status === "CLOSED_BY_DEADLINE") {
-      return {
-        ok: false,
-        reason: "closed",
-        message: availability.message ?? undefined,
-        meta,
-      };
-    }
+      if (availability.status === "CLOSED_BY_DEADLINE") {
+        return {
+          ok: false,
+          reason: "closed",
+          message: availability.message ?? undefined,
+          meta,
+        };
+      }
 
-    if (availability.status === "CAPACITY_FULL") {
-      return {
-        ok: false,
-        reason: "capacity_full",
-        message: availability.message ?? undefined,
-        meta,
-      };
-    }
+      if (availability.status === "CAPACITY_FULL") {
+        return {
+          ok: false,
+          reason: "capacity_full",
+          message: availability.message ?? undefined,
+          meta,
+        };
+      }
 
-    if (availability.status !== "AVAILABLE") {
-      return { ok: false, reason: "unavailable", message: availability.message ?? undefined };
+      if (availability.status !== "AVAILABLE") {
+        return { ok: false, reason: "unavailable", message: availability.message ?? undefined };
+      }
     }
 
     const bookingSettings = parseFormBookingSettings(version.settings);
@@ -267,7 +323,7 @@ export async function loadPublicFormBySlug(
       const bookingService = await prisma.bookingService.findFirst({
         where: {
           id: bookingSettings.serviceId,
-          organizationId: organization.id,
+          organizationId,
           deletedAt: null,
           isActive: true,
         },
@@ -316,6 +372,7 @@ export async function loadPublicFormBySlug(
           required: field.required,
           config: field.config,
           visibilityConditions: field.visibilityConditions,
+          semantic: field.semantic,
         })),
         availability: {
           status: availability.status,
@@ -330,7 +387,4 @@ export async function loadPublicFormBySlug(
         },
       },
     };
-  } catch {
-    return { ok: false, reason: "org_unavailable" };
-  }
 }

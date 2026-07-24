@@ -9,6 +9,7 @@ import type {
   RegistrationStatus,
 } from "@/generated/prisma/enums";
 import type { JalaliDate } from "@/lib/datetime/jalali";
+import type { PreservedFieldValue } from "@/lib/forms/validate-public-submission";
 
 export type RegistrationFlowKey = "qalamchi-exam" | (string & {});
 
@@ -85,17 +86,18 @@ export type CreateRegistrationInput = {
     firstName: string;
     lastName: string;
     nationalCode: string;
-    birthDate: JalaliDate;
-    gender: Gender;
-    gradeLabel: string;
+    /** Optional when Form Builder supplies profile questions. */
+    birthDate?: JalaliDate | null;
+    gender?: Gender | null;
+    gradeLabel?: string;
     majorLabel?: string | null;
-    schoolName: string;
-    province: string;
-    city: string;
+    schoolName?: string;
+    province?: string;
+    city?: string;
   };
   parent: {
-    parentName: string;
-    relationship: RegistrationParentRelationship;
+    parentName?: string;
+    relationship?: RegistrationParentRelationship | null;
     mobile: string;
     secondaryMobile?: string | null;
     email?: string | null;
@@ -108,6 +110,16 @@ export type CreateRegistrationInput = {
     venueBranchKey: string;
     discountCode?: string | null;
   };
+  /** Custom Form Builder answers (non-system fields). */
+  formAnswers?: Record<string, PreservedFieldValue | null>;
+  linkedForm?: {
+    formId: string;
+    formVersionId: string;
+  } | null;
+  /** Optional explicit CRM lead id (e.g. staff-assisted registration). */
+  leadId?: string | null;
+  /** First-touch marketing attribution (UTM / referral / QR / manual). */
+  attribution?: import("@/lib/registration/attribution").RegistrationAttribution | null;
   honeypot?: string;
 };
 

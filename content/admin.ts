@@ -104,6 +104,11 @@ export const adminNavGroups: ReadonlyArray<{
             label: "محصولات و جریان‌های ثبت‌نام",
             permission: "registration_flows.view",
           },
+          {
+            href: "/admin/promotions",
+            label: "تخفیف‌ها و پروموشن",
+            permission: "promotions.view",
+          },
         ],
       },
     ],
@@ -123,6 +128,20 @@ export const adminNavGroups: ReadonlyArray<{
       {
         href: "/admin/reports/staff-performance",
         label: "عملکرد همکاران",
+        icon: "reports",
+        enabled: true,
+        permission: "reports.view",
+      },
+      {
+        href: "/admin/reports/promotions",
+        label: "گزارش پروموشن و معرف",
+        icon: "reports",
+        enabled: true,
+        permission: "reports.view",
+      },
+      {
+        href: "/admin/reports/lead-conversion",
+        label: "تبدیل لید به ثبت‌نام",
         icon: "reports",
         enabled: true,
         permission: "reports.view",

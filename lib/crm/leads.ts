@@ -73,6 +73,8 @@ async function findDeterministicLead(params: {
   sourceFormSubmissionId?: string | null;
   sourceBookingReservationId?: string | null;
   normalizedMobile?: string | null;
+  nationalCode?: string | null;
+  email?: string | null;
 }): Promise<{ id: string } | null> {
   if (params.sourceFormSubmissionId) {
     const bySub = await prisma.lead.findFirst({
@@ -108,6 +110,31 @@ async function findDeterministicLead(params: {
     });
     if (matches.length === 1) return matches[0]!;
     // Ambiguous: do not auto-merge.
+  }
+  if (params.nationalCode?.trim()) {
+    const matches = await prisma.lead.findMany({
+      where: {
+        organizationId: params.organizationId,
+        nationalCode: params.nationalCode.trim(),
+        deletedAt: null,
+      },
+      select: { id: true },
+      take: 3,
+    });
+    if (matches.length === 1) return matches[0]!;
+  }
+  if (params.email?.trim()) {
+    const bySubmission = await prisma.formSubmission.findFirst({
+      where: {
+        organizationId: params.organizationId,
+        email: params.email.trim().toLowerCase(),
+        leadId: { not: null },
+        deletedAt: null,
+      },
+      select: { leadId: true },
+      orderBy: { submittedAt: "desc" },
+    });
+    if (bySubmission?.leadId) return { id: bySubmission.leadId };
   }
   return null;
 }
@@ -154,6 +181,8 @@ export async function upsertLead(input: LeadIdentityInput): Promise<UpsertLeadRe
     sourceFormSubmissionId: input.sourceFormSubmissionId,
     sourceBookingReservationId: input.sourceBookingReservationId,
     normalizedMobile: mobile.normalized,
+    nationalCode: input.nationalCode,
+    email: input.email,
   });
 
   const scoreResult =

@@ -464,6 +464,8 @@ model Organization {
   slug      String    @unique
   legalName String?
   isActive  Boolean   @default(true)
+  /// Org-level JSON settings (registration stage mapping, feature flags, …).
+  settings  Json?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -537,6 +539,8 @@ model Organization {
   registrationFlowGalleryItems         RegistrationFlowGalleryItem[]
   registrationFlowItems                RegistrationFlowItem[]
   registrationFlowItemVariants         RegistrationFlowItemVariant[]
+  promotions                           Promotion[]
+  promotionUsages                      PromotionUsage[]
 
   @@map("organizations")
 }
@@ -609,6 +613,7 @@ model User {
   registrationDocumentReviews RegistrationDocument[]   @relation("RegistrationDocumentReviewer")
   registrationNotes           RegistrationNote[]       @relation("RegistrationNoteActor")
   registrationActivities      RegistrationActivity[]   @relation("RegistrationActivityActor")
+  ownedPromotions             Promotion[]              @relation("PromotionOwnerStaff")
 
   @@index([status])
   @@index([deletedAt])
@@ -2844,6 +2849,7 @@ model RegistrationFlow {
   galleryItems         RegistrationFlowGalleryItem[]
   items                RegistrationFlowItem[]
   registrations        Registration[]
+  promotions           Promotion[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -3074,6 +3080,7 @@ model Registration {
   documents        RegistrationDocument[]
   notes            RegistrationNote[]
   activities       RegistrationActivity[]
+  promotionUsages  PromotionUsage[]
 
   @@unique([organizationId, registrationNumber])
   @@unique([organizationId, id])
@@ -3091,6 +3098,84 @@ model Registration {
   @@index([organizationId, publicTrackingCode])
   @@index([organizationId, deletedAt])
   @@map("registrations")
+}
+
+// ─── Promotion Engine ─────────────────────────────────────────────────────────
+
+enum PromotionType {
+  TIMED
+  COUPON
+  REFERRAL
+  VIP
+}
+
+enum PromotionValueType {
+  PERCENT
+  FIXED
+}
+
+/// Unified promotions: timed sale, coupon, referral, VIP.
+model Promotion {
+  id                   String             @id @default(cuid())
+  organizationId       String
+  title                String
+  /// Null for TIMED flow sales (no redeem code). Unique per org when set.
+  code                 String?
+  type                 PromotionType
+  valueType            PromotionValueType
+  /// Percent (1–100) or fixed Rials off, depending on valueType.
+  value                Int
+  maxDiscountAmount    Int?
+  stackable            Boolean            @default(false)
+  priority             Int                @default(100)
+  startsAt             DateTime?
+  endsAt               DateTime?
+  usageLimit           Int?
+  usageCount           Int                @default(0)
+  usagePerNationalCode Int?
+  isActive             Boolean            @default(true)
+  registrationFlowId   String?
+  ownerStaffId         String?
+  metadata             Json?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  deletedAt            DateTime?
+
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  registrationFlow RegistrationFlow? @relation(fields: [organizationId, registrationFlowId], references: [organizationId, id], onDelete: Restrict)
+  ownerStaff       User?             @relation("PromotionOwnerStaff", fields: [ownerStaffId], references: [id], onDelete: SetNull)
+  usages           PromotionUsage[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, id])
+  @@index([organizationId, type, isActive, deletedAt])
+  @@index([organizationId, registrationFlowId])
+  @@index([organizationId, ownerStaffId])
+  @@index([organizationId, startsAt, endsAt])
+  @@index([ownerStaffId])
+  @@map("promotions")
+}
+
+model PromotionUsage {
+  id             String   @id @default(cuid())
+  organizationId String
+  promotionId    String
+  registrationId String
+  nationalCode   String?
+  usedAt         DateTime @default(now())
+  discountAmount Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  promotion    Promotion    @relation(fields: [organizationId, promotionId], references: [organizationId, id], onDelete: Restrict)
+  registration Registration @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([promotionId, registrationId])
+  @@index([organizationId, promotionId, usedAt])
+  @@index([organizationId, registrationId])
+  @@index([organizationId, nationalCode])
+  @@map("promotion_usages")
 }
 
 // ─── Payment Foundation (Sprint 4A) ───────────────────────────────────────────

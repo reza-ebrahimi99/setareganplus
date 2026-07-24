@@ -26,6 +26,13 @@ import type {
   RegistrationFlowKey,
   StudentStepInput,
 } from "@/lib/registration/types";
+import type { PreservedFieldValue } from "@/lib/forms/validate-public-submission";
+import type { RegistrationAttribution } from "@/lib/registration/attribution";
+import {
+  attributionToMetadataPatch,
+  parseAttributionFromUnknown,
+  sanitizeClientAttribution,
+} from "@/lib/registration/attribution";
 import {
   birthDateToUtcDate,
   studentBirthDateFromParts,
@@ -41,6 +48,12 @@ export type SaveProgressInput = {
   details: DetailsStepInput;
   /** Document ids already attached (optional). */
   documentIds?: string[];
+  /** Custom Form Builder answers (draft). */
+  formAnswers?: Record<string, PreservedFieldValue | null>;
+  /** Marketing attribution (first-touch). */
+  attribution?: RegistrationAttribution | null;
+  /** Optional known CRM lead id. */
+  leadId?: string | null;
 };
 
 export type SaveProgressResult =
@@ -69,11 +82,15 @@ async function resolvePublicBranchId(organizationId: string): Promise<string> {
 }
 
 function draftSnapshot(input: SaveProgressInput): Prisma.InputJsonValue {
+  const attribution = sanitizeClientAttribution(input.attribution);
   return {
     student: input.student,
     parent: input.parent,
     details: input.details,
     documentIds: input.documentIds ?? [],
+    formAnswers: input.formAnswers ?? {},
+    attribution,
+    leadId: input.leadId ?? null,
     currentStep: input.currentStep,
     lastCompletedStep: input.lastCompletedStep,
   };
@@ -166,6 +183,17 @@ export async function saveRegistrationProgress(
       };
     }
 
+    const prevMeta =
+      existing.metadata &&
+      typeof existing.metadata === "object" &&
+      !Array.isArray(existing.metadata)
+        ? (existing.metadata as Record<string, unknown>)
+        : {};
+    const attributionPatch = (() => {
+      const sanitized = sanitizeClientAttribution(input.attribution);
+      return sanitized ? attributionToMetadataPatch(sanitized) : {};
+    })();
+
     const updated = await prisma.registration.update({
       where: { id: existing.id },
       data: {
@@ -178,6 +206,7 @@ export async function saveRegistrationProgress(
         completionPercent,
         totalSteps: WIZARD_TOTAL_STEPS,
         lastActivityAt: now,
+        leadId: input.leadId?.trim() || existing.leadId,
         status:
           lastCompletedStep >= WIZARD_TOTAL_STEPS
             ? existing.status
@@ -187,6 +216,10 @@ export async function saveRegistrationProgress(
             ? `توقف در مرحله ${lastCompletedStep}`
             : null,
         wizardDraft: draftSnapshot(input),
+        metadata: {
+          ...prevMeta,
+          ...attributionPatch,
+        } as Prisma.InputJsonValue,
       },
       select: {
         id: true,
@@ -240,11 +273,18 @@ export async function saveRegistrationProgress(
         completionPercent,
         totalSteps: WIZARD_TOTAL_STEPS,
         lastActivityAt: now,
+        leadId: input.leadId?.trim() || null,
         abandonedReason:
           lastCompletedStep > 0
             ? `توقف در مرحله ${lastCompletedStep}`
             : null,
         wizardDraft: draftSnapshot(input),
+        metadata: (() => {
+          const sanitized = sanitizeClientAttribution(input.attribution);
+          return (sanitized
+            ? attributionToMetadataPatch(sanitized)
+            : {}) as Prisma.InputJsonValue;
+        })(),
         ...fields,
       },
       select: {
@@ -301,4 +341,46 @@ export async function loadRegistrationDraftByResumeToken(resumeToken: string) {
       },
     },
   });
+}
+
+/** Extract wizard resume fields from draft JSON + registration row. */
+export function draftToWizardInitial(row: {
+  leadId: string | null;
+  currentStep: number;
+  lastCompletedStep: number;
+  wizardDraft: unknown;
+}): {
+  student?: StudentStepInput;
+  parent?: ParentStepInput;
+  details?: DetailsStepInput;
+  formAnswers?: Record<string, PreservedFieldValue>;
+  attribution?: RegistrationAttribution | null;
+  leadId?: string | null;
+  currentStep?: number;
+  lastCompletedStep?: number;
+} {
+  const draft =
+    row.wizardDraft &&
+    typeof row.wizardDraft === "object" &&
+    !Array.isArray(row.wizardDraft)
+      ? (row.wizardDraft as Record<string, unknown>)
+      : {};
+
+  const attribution =
+    parseAttributionFromUnknown(draft.attribution) ??
+    parseAttributionFromUnknown(draft);
+
+  return {
+    student: (draft.student as StudentStepInput | undefined) ?? undefined,
+    parent: (draft.parent as ParentStepInput | undefined) ?? undefined,
+    details: (draft.details as DetailsStepInput | undefined) ?? undefined,
+    formAnswers:
+      (draft.formAnswers as Record<string, PreservedFieldValue> | undefined) ??
+      undefined,
+    attribution,
+    leadId:
+      (typeof draft.leadId === "string" ? draft.leadId : null) ?? row.leadId,
+    currentStep: row.currentStep,
+    lastCompletedStep: row.lastCompletedStep,
+  };
 }
