@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import { RegistrationStatus } from "@/generated/prisma/enums";
-import { formatRegistrationDate, formatRials } from "@/lib/registration/format";
+import { RetryPaymentButton } from "@/components/payment/RetryPaymentButton";
+import { CopyButton } from "@/components/ui/CopyButton";
+import {
+  formatRegistrationDate,
+  formatTomansFromRials,
+} from "@/lib/registration/format";
 import type { RegistrationPublicView } from "@/lib/registration/types";
 import {
   REGISTRATION_PAYMENT_LABELS,
@@ -19,6 +24,9 @@ export function RegistrationReceipt({
   registration,
   paymentMessage,
 }: RegistrationReceiptProps) {
+  const isPendingPayment =
+    registration.status === RegistrationStatus.WAITING_PAYMENT;
+
   return (
     <article className="registration-receipt rounded-3xl border border-border bg-surface p-5 shadow-[0_12px_40px_rgb(15_23_42_/_0.06)] sm:p-8">
       <div className="rounded-2xl bg-gradient-to-l from-primary/10 to-secondary/10 px-5 py-6 text-center">
@@ -34,6 +42,20 @@ export function RegistrationReceipt({
             {toPersianDigits(registration.registrationNumber)}
           </strong>
         </p>
+        {registration.publicTrackingCode ? (
+          <div className="mt-4 inline-flex flex-wrap items-center justify-center gap-2 rounded-xl border border-border/70 bg-white/80 px-4 py-2.5">
+            <div className="text-start">
+              <p className="text-[11px] text-muted">کد پیگیری</p>
+              <p
+                className="font-mono text-base font-semibold tracking-wide text-primary"
+                dir="ltr"
+              >
+                {toPersianDigits(registration.publicTrackingCode)}
+              </p>
+            </div>
+            <CopyButton text={registration.publicTrackingCode} />
+          </div>
+        ) : null}
       </div>
 
       {paymentMessage ? (
@@ -42,9 +64,15 @@ export function RegistrationReceipt({
         </p>
       ) : null}
 
+      {isPendingPayment ? (
+        <div className="mt-4 print:hidden">
+          <RetryPaymentButton registrationId={registration.id} />
+        </div>
+      ) : null}
+
       <dl className="mt-6 grid gap-3 sm:grid-cols-2">
         <ReceiptRow
-          label="وضعیت"
+          label="وضعیت پرداخت"
           value={REGISTRATION_STATUS_LABELS[registration.status]}
         />
         <ReceiptRow
@@ -58,7 +86,7 @@ export function RegistrationReceipt({
         <ReceiptRow label="شعبه" value={registration.venueBranchTitle ?? "—"} />
         <ReceiptRow
           label="مبلغ"
-          value={formatRials(registration.finalAmountRials)}
+          value={formatTomansFromRials(registration.finalAmountRials)}
         />
         <ReceiptRow
           label="تاریخ"

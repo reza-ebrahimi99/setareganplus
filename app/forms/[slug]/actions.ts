@@ -29,6 +29,7 @@ import {
 } from "@/lib/forms/validate-public-submission";
 import { assertFormFileUploadAnswers } from "@/lib/forms/assert-form-file-uploads";
 import { prisma } from "@/lib/prisma";
+import { allocateUniqueTrackingCode } from "@/lib/tracking/public-tracking-code";
 
 export type SubmitPublicFormState = {
   formError?: string;
@@ -284,9 +285,10 @@ export async function submitPublicFormAction(
   }
 
   let createdSubmissionId: string | null = null;
+  let createdTrackingCode: string | null = null;
 
   try {
-    createdSubmissionId = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       await lockFormVersionCapacity(tx, version.id);
 
       const liveForm = await tx.form.findFirst({
@@ -348,6 +350,17 @@ export async function submitPublicFormAction(
         throw new Error("CAPACITY_FULL");
       }
 
+      const trackingCode = await allocateUniqueTrackingCode({
+        organizationId: organization.id,
+        exists: async (code) => {
+          const row = await tx.formSubmission.findFirst({
+            where: { organizationId: organization.id, trackingCode: code },
+            select: { id: true },
+          });
+          return Boolean(row);
+        },
+      });
+
       const submission = await tx.formSubmission.create({
         data: {
           organizationId: organization.id,
@@ -355,6 +368,7 @@ export async function submitPublicFormAction(
           formId: form.id,
           formVersionId: version.id,
           status,
+          trackingCode,
           mobile: validated.mobile,
           mobileRaw: validated.mobileRaw,
           normalizedMobile: validated.normalizedMobile,
@@ -362,7 +376,7 @@ export async function submitPublicFormAction(
           isDuplicateInForm,
           duplicateOfSubmissionId: duplicateOfId,
         },
-        select: { id: true },
+        select: { id: true, trackingCode: true },
       });
 
       if (validated.answers.length > 0) {
@@ -381,8 +395,14 @@ export async function submitPublicFormAction(
         });
       }
 
-      return submission.id;
+      return {
+        id: submission.id,
+        trackingCode: submission.trackingCode!,
+      };
     });
+
+    createdSubmissionId = created.id;
+    createdTrackingCode = created.trackingCode;
 
     if (bookingProofReservationId && createdSubmissionId) {
       await linkReservationToSubmission({
@@ -414,6 +434,12 @@ export async function submitPublicFormAction(
       if (error.message === "CAPACITY_FULL") {
         return {
           formError: AVAILABILITY_MESSAGES.CAPACITY_FULL,
+          values: validated.values,
+        };
+      }
+      if (error.message === "TRACKING_CODE_ALLOCATION_FAILED") {
+        return {
+          formError: "ثبت پاسخ با خطا مواجه شد. لطفاً دوباره تلاش کنید.",
           values: validated.values,
         };
       }
@@ -449,6 +475,12 @@ export async function submitPublicFormAction(
   ) {
     redirect(
       `/book/${bookingServiceSlug}?afterForm=1&submissionId=${encodeURIComponent(createdSubmissionId)}&form=${encodeURIComponent(form.slug)}`,
+    );
+  }
+
+  if (createdTrackingCode) {
+    redirect(
+      `/forms/${form.slug}/success?code=${encodeURIComponent(createdTrackingCode)}`,
     );
   }
 

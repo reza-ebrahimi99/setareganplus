@@ -124,6 +124,7 @@ export type RegistrationPublicView = {
   amountRials: number;
   discountRials: number;
   finalAmountRials: number;
+  publicTrackingCode: string | null;
   trackingCode: string | null;
   paymentReceiptNumber: string | null;
   paymentProvider: string | null;

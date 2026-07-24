@@ -40,6 +40,7 @@ export async function enqueueFormConfirmationSms(params: {
       },
       select: {
         id: true,
+        trackingCode: true,
         normalizedMobile: true,
         formVersion: { select: { title: true } },
         answers: {
@@ -66,6 +67,8 @@ export async function enqueueFormConfirmationSms(params: {
       ""
     ).trim();
     if (!firstName) return;
+
+    const trackingCode = submission.trackingCode?.trim() || submission.id;
 
     const template = await prisma.smsTemplate.findFirst({
       where: {
@@ -96,7 +99,7 @@ export async function enqueueFormConfirmationSms(params: {
         kind: "form",
         variables: {
           name: firstName,
-          tracking: submission.id,
+          tracking: trackingCode,
         },
       },
     });

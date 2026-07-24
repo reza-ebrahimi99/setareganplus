@@ -44,6 +44,7 @@ import {
   birthDateToUtcDate,
   validateCreateRegistrationInput,
 } from "@/lib/registration/validate";
+import { allocateUniqueTrackingCode } from "@/lib/tracking/public-tracking-code";
 
 async function resolvePublicBranchId(organizationId: string): Promise<string> {
   const branch = await prisma.branch.findFirst({
@@ -245,44 +246,48 @@ export async function createRegistration(
     finalAmountRials: number;
     productTitle: string | null;
     resumeToken: string | null;
+    publicTrackingCode: string | null;
   };
 
-  const existingDraft = input.resumeToken
-    ? await prisma.registration.findFirst({
-        where: {
-          organizationId: organization.id,
-          resumeToken: input.resumeToken,
-          deletedAt: null,
-        },
-        select: { id: true, registrationNumber: true, resumeToken: true },
-      })
-    : null;
+  try {
+    const existingDraft = input.resumeToken
+      ? await prisma.registration.findFirst({
+          where: {
+            organizationId: organization.id,
+            resumeToken: input.resumeToken,
+            deletedAt: null,
+          },
+          select: {
+            id: true,
+            registrationNumber: true,
+            resumeToken: true,
+            publicTrackingCode: true,
+          },
+        })
+      : null;
 
-  if (existingDraft) {
-    registration = await prisma.registration.update({
-      where: { id: existingDraft.id },
-      data: payload,
-      select: {
-        id: true,
-        registrationNumber: true,
-        status: true,
-        finalAmountRials: true,
-        productTitle: true,
-        resumeToken: true,
-      },
-    });
-  } else {
-    registration = await prisma.$transaction(async (tx) => {
-      const number = await nextRegistrationNumber({
-        organizationId: organization.id,
-        tx,
-      });
-      return tx.registration.create({
-        data: {
+    if (existingDraft) {
+      const publicTrackingCode =
+        existingDraft.publicTrackingCode ??
+        (await allocateUniqueTrackingCode({
           organizationId: organization.id,
-          branchId,
-          registrationNumber: number.registrationNumber,
+          exists: async (code) => {
+            const row = await prisma.registration.findFirst({
+              where: {
+                organizationId: organization.id,
+                publicTrackingCode: code,
+              },
+              select: { id: true },
+            });
+            return Boolean(row);
+          },
+        }));
+
+      registration = await prisma.registration.update({
+        where: { id: existingDraft.id },
+        data: {
           ...payload,
+          publicTrackingCode,
         },
         select: {
           id: true,
@@ -291,9 +296,61 @@ export async function createRegistration(
           finalAmountRials: true,
           productTitle: true,
           resumeToken: true,
+          publicTrackingCode: true,
         },
       });
-    });
+    } else {
+      registration = await prisma.$transaction(async (tx) => {
+        const number = await nextRegistrationNumber({
+          organizationId: organization.id,
+          tx,
+        });
+
+        const publicTrackingCode = await allocateUniqueTrackingCode({
+          organizationId: organization.id,
+          exists: async (code) => {
+            const row = await tx.registration.findFirst({
+              where: {
+                organizationId: organization.id,
+                publicTrackingCode: code,
+              },
+              select: { id: true },
+            });
+            return Boolean(row);
+          },
+        });
+
+        return tx.registration.create({
+          data: {
+            organizationId: organization.id,
+            branchId,
+            registrationNumber: number.registrationNumber,
+            ...payload,
+            publicTrackingCode,
+          },
+          select: {
+            id: true,
+            registrationNumber: true,
+            status: true,
+            finalAmountRials: true,
+            productTitle: true,
+            resumeToken: true,
+            publicTrackingCode: true,
+          },
+        });
+      });
+    }
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "TRACKING_CODE_ALLOCATION_FAILED"
+    ) {
+      return {
+        ok: false,
+        error: "ثبت‌نام با خطا مواجه شد. لطفاً دوباره تلاش کنید.",
+      };
+    }
+    throw error;
   }
 
   const leadResult = await upsertLead({
@@ -445,6 +502,7 @@ export async function getRegistrationByNumber(
     amountRials: row.amountRials,
     discountRials: row.discountRials,
     finalAmountRials: row.finalAmountRials,
+    publicTrackingCode: row.publicTrackingCode,
     trackingCode: row.trackingCode ?? latestIntent?.trackingCode ?? null,
     paymentReceiptNumber: latestIntent?.receiptNumber ?? null,
     paymentProvider: row.paymentProvider ?? latestIntent?.provider ?? null,
@@ -452,6 +510,8 @@ export async function getRegistrationByNumber(
     paymentMessage:
       row.status === RegistrationStatus.WAITING_PAYMENT
         ? `وضعیت: ${REGISTRATION_STATUS_LABELS[row.status]} — در صورت نیاز می‌توانید پرداخت را دوباره انجام دهید.`
-        : `وضعیت: ${REGISTRATION_STATUS_LABELS[row.status]}`,
+        : row.status === RegistrationStatus.APPROVED
+          ? `وضعیت: ${REGISTRATION_STATUS_LABELS[row.status]}`
+          : `وضعیت: ${REGISTRATION_STATUS_LABELS[row.status]}`,
   };
 }

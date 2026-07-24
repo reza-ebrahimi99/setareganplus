@@ -1325,6 +1325,8 @@ model FormSubmission {
   formVersionId           String
   status                  FormSubmissionStatus @default(RECEIVED)
   submittedAt             DateTime             @default(now())
+  /// Public human-facing tracking code (ST-{jalaliYear}-{5}).
+  trackingCode            String?
   mobile                  String?
   mobileRaw               String?
   normalizedMobile        String?
@@ -1354,6 +1356,7 @@ model FormSubmission {
 
   @@unique([organizationId, branchId, id])
   @@unique([organizationId, id])
+  @@unique([organizationId, trackingCode])
   @@index([organizationId, formId, submittedAt])
   @@index([organizationId, formVersionId, submittedAt])
   @@index([organizationId, formId, normalizedMobile])
@@ -1362,6 +1365,7 @@ model FormSubmission {
   @@index([organizationId, existsInCrm])
   @@index([organizationId, isDuplicateInForm])
   @@index([organizationId, leadId])
+  @@index([organizationId, trackingCode])
   @@index([organizationId, deletedAt])
   @@map("form_submissions")
 }
@@ -3040,10 +3044,12 @@ model Registration {
   finalAmountRials Int    @default(0)
   currency         String @default("IRR")
 
-  /// Payment tracking placeholder (filled by PaymentService later).
-  trackingCode    String?
-  paymentProvider String?
-  paymentRef      String?
+  /// Public human-facing tracking code (ST-{jalaliYear}-{5}).
+  publicTrackingCode String?
+  /// Payment / PSP tracking (filled by PaymentService).
+  trackingCode       String?
+  paymentProvider    String?
+  paymentRef         String?
 
   adminNotesSummary String?
   metadata          Json?
@@ -3063,6 +3069,7 @@ model Registration {
   @@unique([organizationId, registrationNumber])
   @@unique([organizationId, id])
   @@unique([resumeToken])
+  @@unique([organizationId, publicTrackingCode])
   @@index([organizationId, status, createdAt])
   @@index([organizationId, paymentStatus, createdAt])
   @@index([organizationId, flowKey, createdAt])
@@ -3072,6 +3079,7 @@ model Registration {
   @@index([organizationId, leadId])
   @@index([organizationId, lastActivityAt])
   @@index([organizationId, completionPercent])
+  @@index([organizationId, publicTrackingCode])
   @@index([organizationId, deletedAt])
   @@map("registrations")
 }
