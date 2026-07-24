@@ -23,8 +23,10 @@ import {
   type RegistrationFlowActionState,
 } from "@/app/admin/(dashboard)/registrations/flows/actions";
 import { MediaPickerField } from "@/components/admin/media/MediaPickerField";
+import { JalaliDateTimeFields } from "@/components/datetime/JalaliDateTimeFields";
 import {
   RegistrationDocumentType,
+  RegistrationFlowPaymentMode,
   RegistrationProductType,
 } from "@/generated/prisma/enums";
 import { getFormFieldTypeLabel } from "@/lib/forms/form-field-type-labels";
@@ -145,6 +147,11 @@ export function RegistrationFlowEditor({
   const [documents, setDocuments] = useState(flow.documentRequirements);
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [showNewDoc, setShowNewDoc] = useState(false);
+  const [timedDiscountEnabled, setTimedDiscountEnabled] = useState(
+    flow.saleAmountRials != null,
+  );
+  const [paymentMode, setPaymentMode] = useState(flow.paymentMode);
+  const isFreePayment = paymentMode === RegistrationFlowPaymentMode.FREE;
 
   useEffect(() => {
     if (
@@ -392,7 +399,15 @@ export function RegistrationFlowEditor({
               <span className="mb-1.5 block text-muted">حالت پرداخت</span>
               <select
                 name="paymentMode"
-                defaultValue={flow.paymentMode}
+                value={paymentMode}
+                onChange={(event) => {
+                  const next = event.target
+                    .value as typeof flow.paymentMode;
+                  setPaymentMode(next);
+                  if (next === RegistrationFlowPaymentMode.FREE) {
+                    setTimedDiscountEnabled(false);
+                  }
+                }}
                 disabled={!canManage}
                 className={inputClass}
               >
@@ -409,14 +424,14 @@ export function RegistrationFlowEditor({
               </select>
             </label>
             <label className="block text-sm">
-              <span className="mb-1.5 block text-muted">مبلغ (ریال)</span>
+              <span className="mb-1.5 block text-muted">قیمت اصلی (ریال)</span>
               <input
                 name="paymentAmountRials"
                 type="number"
                 min={0}
                 step={1000}
                 defaultValue={flow.paymentAmountRials}
-                disabled={!canManage}
+                disabled={!canManage || isFreePayment}
                 className={inputClass}
               />
             </label>
@@ -425,7 +440,7 @@ export function RegistrationFlowEditor({
               <input
                 name="paymentTitle"
                 defaultValue={flow.paymentTitle ?? ""}
-                disabled={!canManage}
+                disabled={!canManage || isFreePayment}
                 className={inputClass}
               />
             </label>
@@ -439,10 +454,120 @@ export function RegistrationFlowEditor({
                     ? formatDateTimeLocalInTehran(flow.paymentDeadlineAt)
                     : ""
                 }
-                disabled={!canManage}
+                disabled={!canManage || isFreePayment}
                 className={inputClass}
               />
             </label>
+          </div>
+
+          <div className="space-y-4 rounded-2xl border border-border/80 bg-background/60 p-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-primary">
+                  تخفیف زمان‌دار
+                </h3>
+                <p className="mt-1 text-xs leading-6 text-muted">
+                  در بازه مشخص، مبلغ پرداخت به قیمت تخفیفی تغییر می‌کند.
+                </p>
+              </div>
+              <label className="inline-flex min-h-11 items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="timedDiscountEnabled"
+                  checked={timedDiscountEnabled && !isFreePayment}
+                  onChange={(event) =>
+                    setTimedDiscountEnabled(event.target.checked)
+                  }
+                  disabled={!canManage || isFreePayment}
+                  className="size-4 rounded border-border"
+                />
+                فعال‌سازی تخفیف زمان‌دار
+              </label>
+            </div>
+
+            {isFreePayment ? (
+              <p className="text-xs leading-6 text-muted">
+                برای جریان رایگان، تخفیف زمان‌دار اعمال نمی‌شود.
+              </p>
+            ) : null}
+
+            {timedDiscountEnabled && !isFreePayment ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block text-sm">
+                  <span className="mb-1.5 block text-muted">
+                    قیمت تخفیفی (ریال)
+                  </span>
+                  <input
+                    name="saleAmountRials"
+                    type="number"
+                    min={0}
+                    step={1000}
+                    defaultValue={
+                      flow.saleAmountRials != null
+                        ? String(flow.saleAmountRials)
+                        : ""
+                    }
+                    disabled={!canManage}
+                    className={inputClass}
+                  />
+                  {updateState.fieldErrors?.saleAmountRials ? (
+                    <p className="mt-1 text-xs text-red-600">
+                      {updateState.fieldErrors.saleAmountRials}
+                    </p>
+                  ) : null}
+                </label>
+                <label className="block text-sm">
+                  <span className="mb-1.5 block text-muted">عنوان تخفیف</span>
+                  <input
+                    name="pricingBadge"
+                    defaultValue={flow.pricingBadge ?? ""}
+                    placeholder="مثلاً فقط تا پایان تیر"
+                    disabled={!canManage}
+                    className={inputClass}
+                  />
+                </label>
+                <div className="block text-sm">
+                  <span className="mb-1.5 block text-muted">شروع تخفیف</span>
+                  <JalaliDateTimeFields
+                    id="discountStartsAt"
+                    name="discountStartsAt"
+                    defaultDate={flow.discountStartsAt}
+                    disabled={!canManage}
+                    hasError={Boolean(updateState.fieldErrors?.discountStartsAt)}
+                  />
+                  {updateState.fieldErrors?.discountStartsAt ? (
+                    <p className="mt-1 text-xs text-red-600">
+                      {updateState.fieldErrors.discountStartsAt}
+                    </p>
+                  ) : null}
+                </div>
+                <div className="block text-sm">
+                  <span className="mb-1.5 block text-muted">پایان تخفیف</span>
+                  <JalaliDateTimeFields
+                    id="discountEndsAt"
+                    name="discountEndsAt"
+                    defaultDate={flow.discountEndsAt}
+                    disabled={!canManage}
+                    hasError={Boolean(updateState.fieldErrors?.discountEndsAt)}
+                  />
+                  {updateState.fieldErrors?.discountEndsAt ? (
+                    <p className="mt-1 text-xs text-red-600">
+                      {updateState.fieldErrors.discountEndsAt}
+                    </p>
+                  ) : null}
+                </div>
+                <label className="inline-flex min-h-11 items-center gap-2 text-sm sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    name="showDiscountCountdown"
+                    defaultChecked={flow.showDiscountCountdown}
+                    disabled={!canManage}
+                    className="size-4 rounded border-border"
+                  />
+                  نمایش شمارش معکوس تا پایان تخفیف
+                </label>
+              </div>
+            ) : null}
           </div>
         </section>
 

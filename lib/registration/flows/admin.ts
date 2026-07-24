@@ -78,6 +78,11 @@ export type RegistrationFlowDetail = {
   paymentAmountRials: number;
   paymentTitle: string | null;
   paymentDeadlineAt: Date | null;
+  saleAmountRials: number | null;
+  pricingBadge: string | null;
+  discountStartsAt: Date | null;
+  discountEndsAt: Date | null;
+  showDiscountCountdown: boolean;
   publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -288,6 +293,11 @@ export async function getRegistrationFlowDetail(
     paymentAmountRials: row.paymentAmountRials,
     paymentTitle: row.paymentTitle,
     paymentDeadlineAt: row.paymentDeadlineAt,
+    saleAmountRials: row.saleAmountRials,
+    pricingBadge: row.pricingBadge,
+    discountStartsAt: row.discountStartsAt,
+    discountEndsAt: row.discountEndsAt,
+    showDiscountCountdown: row.showDiscountCountdown,
     publishedAt: row.publishedAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -412,6 +422,11 @@ export type UpdateRegistrationFlowGeneralInput = {
   paymentAmountRials: number;
   paymentTitle: string | null;
   paymentDeadlineAt: Date | null;
+  saleAmountRials: number | null;
+  pricingBadge: string | null;
+  discountStartsAt: Date | null;
+  discountEndsAt: Date | null;
+  showDiscountCountdown: boolean;
   formId: string | null;
 };
 
@@ -499,6 +514,23 @@ export async function updateRegistrationFlowGeneral(
         input.paymentMode === RegistrationFlowPaymentMode.VARIABLE_PRICE
           ? null
           : input.paymentDeadlineAt,
+      saleAmountRials:
+        input.paymentMode === RegistrationFlowPaymentMode.FREE
+          ? null
+          : input.saleAmountRials,
+      pricingBadge:
+        input.paymentMode === RegistrationFlowPaymentMode.FREE
+          ? null
+          : input.pricingBadge,
+      discountStartsAt:
+        input.paymentMode === RegistrationFlowPaymentMode.FREE
+          ? null
+          : input.discountStartsAt,
+      discountEndsAt:
+        input.paymentMode === RegistrationFlowPaymentMode.FREE
+          ? null
+          : input.discountEndsAt,
+      showDiscountCountdown: input.showDiscountCountdown,
       formId: input.formId,
     },
   });

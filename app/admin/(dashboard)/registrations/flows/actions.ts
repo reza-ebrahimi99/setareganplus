@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { RegistrationProductType } from "@/generated/prisma/enums";
+import {
+  RegistrationFlowPaymentMode,
+  RegistrationProductType,
+} from "@/generated/prisma/enums";
 import { requirePermission } from "@/lib/auth/require-admin";
 import {
   formatDateTimeLocalInTehran,
@@ -24,6 +27,7 @@ import {
   upsertRegistrationFlowDocumentRequirement,
 } from "@/lib/registration/flows/admin";
 import { getPublicRegistrationFlowPath } from "@/lib/registration/flows/public-url";
+import { validateTimedDiscountFormInput } from "@/lib/registration/timed-discount";
 
 export type RegistrationFlowActionState = {
   formError?: string;
@@ -192,6 +196,21 @@ export async function createRegistrationFlowAction(
   redirect(`/admin/registrations/flows/${createdFlowId}`);
 }
 
+function parseOptionalDateTimeField(
+  formData: FormData,
+  key: string,
+):
+  | { ok: true; value: Date | null }
+  | { ok: false; error: string } {
+  const raw = readString(formData, key).trim();
+  if (!raw) return { ok: true, value: null };
+  const parsed = parseTehranDateTimeLocal(raw);
+  if (!parsed) {
+    return { ok: false, error: "تاریخ/ساعت نامعتبر است." };
+  }
+  return { ok: true, value: parsed };
+}
+
 function parseFlowUpdateInput(
   formData: FormData,
   organizationId: string,
@@ -219,11 +238,64 @@ function parseFlowUpdateInput(
     readString(formData, "paymentDeadlineAt"),
   );
 
+  const timedDiscountEnabled =
+    readString(formData, "timedDiscountEnabled") === "on";
+  const saleRaw = readString(formData, "saleAmountRials").trim();
+  let saleAmountRials: number | null = null;
+  const parseErrors: Record<string, string> = {};
+  if (saleRaw) {
+    const parsedSale = Number.parseInt(saleRaw, 10);
+    if (!Number.isSafeInteger(parsedSale)) {
+      parseErrors.saleAmountRials = "قیمت تخفیفی نامعتبر است.";
+    } else {
+      saleAmountRials = parsedSale;
+    }
+  }
+  const pricingBadge = readOptionalString(readString(formData, "pricingBadge"));
+  const discountStartsParsed = parseOptionalDateTimeField(
+    formData,
+    "discountStartsAt",
+  );
+  const discountEndsParsed = parseOptionalDateTimeField(
+    formData,
+    "discountEndsAt",
+  );
+  if (!discountStartsParsed.ok) {
+    parseErrors.discountStartsAt = discountStartsParsed.error;
+  }
+  if (!discountEndsParsed.ok) {
+    parseErrors.discountEndsAt = discountEndsParsed.error;
+  }
+  const showDiscountCountdown =
+    readString(formData, "showDiscountCountdown") === "on";
+
   if (!isRegistrationProductType(productTypeRaw)) {
     throw new Error("INVALID_PRODUCT_TYPE");
   }
   if (!isRegistrationFlowPaymentMode(paymentModeRaw)) {
     throw new Error("INVALID_PAYMENT_MODE");
+  }
+
+  const isFree = paymentModeRaw === RegistrationFlowPaymentMode.FREE;
+  const discountValidated = validateTimedDiscountFormInput({
+    enabled: timedDiscountEnabled,
+    isFree,
+    paymentAmountRials,
+    saleAmountRials,
+    pricingBadge,
+    discountStartsAt: discountStartsParsed.ok
+      ? discountStartsParsed.value
+      : null,
+    discountEndsAt: discountEndsParsed.ok ? discountEndsParsed.value : null,
+    showDiscountCountdown,
+    parseErrors,
+  });
+
+  if (!discountValidated.ok) {
+    const err = new Error("DISCOUNT_VALIDATION");
+    (err as Error & { fieldErrors: Record<string, string> }).fieldErrors =
+      discountValidated.fieldErrors;
+    throw err;
   }
 
   return {
@@ -244,6 +316,11 @@ function parseFlowUpdateInput(
     paymentAmountRials,
     paymentTitle,
     paymentDeadlineAt,
+    saleAmountRials: discountValidated.saleAmountRials,
+    pricingBadge: discountValidated.pricingBadge,
+    discountStartsAt: discountValidated.discountStartsAt,
+    discountEndsAt: discountValidated.discountEndsAt,
+    showDiscountCountdown: discountValidated.showDiscountCountdown,
     formId,
   };
 }
@@ -269,6 +346,18 @@ export async function updateRegistrationFlowAction(
     revalidatePath(`/admin/registrations/flows/${flowId}`);
     return { successMessage: "تغییرات ذخیره شد." };
   } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "DISCOUNT_VALIDATION" &&
+      "fieldErrors" in error
+    ) {
+      return {
+        formError: "لطفاً خطاهای بخش تخفیف را برطرف کنید.",
+        fieldErrors: (
+          error as Error & { fieldErrors: Record<string, string> }
+        ).fieldErrors,
+      };
+    }
     return { formError: mapFlowError(error) };
   }
 }

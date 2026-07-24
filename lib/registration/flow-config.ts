@@ -8,6 +8,10 @@ import type {
   RegistrationFlowPaymentMode,
   RegistrationProductType,
 } from "@/generated/prisma/enums";
+import {
+  isTimedDiscountWindowActive,
+  resolveTimedDiscountPricing,
+} from "@/lib/registration/timed-discount";
 
 export type RegistrationFlowPackagePricing = {
   baseAmountRials?: number;
@@ -119,11 +123,7 @@ export function isDiscountWindowActive(
   >,
   now = new Date(),
 ): boolean {
-  if (flow.isFree) return true;
-  if (flow.saleAmountRials == null) return false;
-  if (flow.discountStartsAt && now < flow.discountStartsAt) return false;
-  if (flow.discountEndsAt && now > flow.discountEndsAt) return false;
-  return true;
+  return isTimedDiscountWindowActive(flow, now);
 }
 
 export type RegistrationFlowPublicView = {
@@ -153,13 +153,25 @@ export function toRegistrationFlowPublicView(
   now = new Date(),
 ): RegistrationFlowPublicView {
   const remaining = remainingCapacity(flow);
+  const timed = resolveTimedDiscountPricing(
+    {
+      paymentAmountRials: flow.baseAmountRials ?? 0,
+      saleAmountRials: flow.saleAmountRials,
+      discountStartsAt: flow.discountStartsAt,
+      discountEndsAt: flow.discountEndsAt,
+      pricingBadge: flow.pricingBadge,
+      showDiscountCountdown: flow.showDiscountCountdown,
+      isFree: flow.isFree,
+    },
+    now,
+  );
   return {
     flowKey: flow.flowKey,
     title: flow.title,
     subtitle: flow.subtitle,
     baseAmountRials: flow.baseAmountRials,
     saleAmountRials: flow.saleAmountRials,
-    pricingBadge: flow.pricingBadge,
+    pricingBadge: timed.pricingBadge,
     isFree: flow.isFree,
     discountStartsAt: flow.discountStartsAt?.toISOString() ?? null,
     discountEndsAt: flow.discountEndsAt?.toISOString() ?? null,
@@ -170,7 +182,7 @@ export function toRegistrationFlowPublicView(
     remainingCapacity: remaining,
     showRemainingCapacity: flow.showRemainingCapacity,
     window: isRegistrationWindowOpen(flow, now),
-    discountActive: isDiscountWindowActive(flow, now),
+    discountActive: timed.discountActive,
   };
 }
 

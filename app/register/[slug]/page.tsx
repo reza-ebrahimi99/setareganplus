@@ -1,13 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicFormShell } from "@/components/forms/PublicFormShell";
-import {
-  FLOW_PAYMENT_MODE_LABELS,
-  flowRequiresCheckout,
-} from "@/lib/registration/flows/constants";
+import { PublicRegistrationPricing } from "@/components/registration/PublicRegistrationPricing";
+import { FLOW_PAYMENT_MODE_LABELS } from "@/lib/registration/flows/constants";
 import { loadPublicRegistrationFlowBySlug } from "@/lib/registration/flows/public";
 import { getPublicRegistrationWizardPath } from "@/lib/registration/flows/public-url";
-import { formatRials } from "@/lib/registration/format";
 import { createPageMetadata } from "@/lib/seo/create-page-metadata";
 
 type PageProps = {
@@ -58,8 +55,6 @@ export default async function PublicRegistrationFlowPage({
   const wizardPath = getPublicRegistrationWizardPath(slug);
   const canStart = flow.isOpen || allowPreview;
   const paymentLabel = FLOW_PAYMENT_MODE_LABELS[flow.paymentMode];
-  const showAmount =
-    flowRequiresCheckout(flow.paymentMode) && flow.paymentAmountRials > 0;
 
   return (
     <PublicFormShell>
@@ -96,13 +91,16 @@ export default async function PublicRegistrationFlowPage({
               ))}
           </ul>
 
-          <div className="mt-6 rounded-2xl border border-border/80 bg-white/80 px-4 py-3 text-sm">
-            <p>
-              <span className="text-muted">پرداخت: </span>
-              {paymentLabel}
-              {showAmount ? ` · ${formatRials(flow.paymentAmountRials)}` : null}
-            </p>
-          </div>
+          <PublicRegistrationPricing
+            paymentMode={flow.paymentMode}
+            paymentAmountRials={flow.paymentAmountRials}
+            saleAmountRials={flow.saleAmountRials}
+            pricingBadge={flow.pricingBadge}
+            discountStartsAtIso={flow.discountStartsAt?.toISOString() ?? null}
+            discountEndsAtIso={flow.discountEndsAt?.toISOString() ?? null}
+            showDiscountCountdown={flow.showDiscountCountdown}
+            paymentLabel={paymentLabel}
+          />
 
           {!canStart && flow.closedReason ? (
             <p className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">

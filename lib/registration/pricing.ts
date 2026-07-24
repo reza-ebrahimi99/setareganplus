@@ -1,13 +1,14 @@
 /**
  * Server-authoritative registration pricing.
  * Client may preview; createRegistration always re-resolves with DB flow config + now.
+ * Timed-discount math lives in `timed-discount.ts` (single source of truth).
  */
 
 import { getRegistrationCatalog } from "@/lib/registration/catalog-registry";
+import type { RegistrationFlowConfig } from "@/lib/registration/flow-config-shared";
 import {
-  isDiscountWindowActive,
-  type RegistrationFlowConfig,
-} from "@/lib/registration/flow-config-shared";
+  resolveTimedDiscountPricing,
+} from "@/lib/registration/timed-discount";
 import type { DetailsStepInput } from "@/lib/registration/types";
 
 export type ResolvedRegistrationPricing = {
@@ -65,10 +66,11 @@ export function resolveRegistrationPricing(params: {
   const packageOverride =
     flow?.settings.packagePricing[params.details.packageKey] ?? null;
 
+  const catalogBase = pkg.amountRials;
   const amountRials =
     packageOverride?.baseAmountRials ??
     flow?.baseAmountRials ??
-    pkg.amountRials;
+    catalogBase;
 
   if (!Number.isInteger(amountRials) || amountRials < 0) {
     return { ok: false, error: "مبلغ پایه نامعتبر است." };
@@ -77,47 +79,69 @@ export function resolveRegistrationPricing(params: {
   const saleCandidate =
     packageOverride?.saleAmountRials ?? flow?.saleAmountRials ?? null;
 
-  const discountWindowActive =
-    flow != null &&
-    isDiscountWindowActive(
-      {
-        discountStartsAt: flow.discountStartsAt,
-        discountEndsAt: flow.discountEndsAt,
-        saleAmountRials: saleCandidate,
-        isFree: flow.isFree,
-      },
-      now,
-    );
+  const isFree = Boolean(flow?.isFree);
 
-  let discountRials = 0;
+  // Free flow: pay nothing (not a timed-sale window).
+  if (isFree) {
+    return {
+      ok: true,
+      amountRials,
+      discountRials: amountRials,
+      finalAmountRials: 0,
+      productTitle: product.title,
+      sessionTitle: session.title,
+      packageTitle: pkg.title,
+      venueBranchTitle: venue.title,
+      discountCode: null,
+      pricingBadge: null,
+      isFree: true,
+      discountActive: false,
+      discountEndsAt: null,
+      savingsRials: amountRials,
+      discountPercent:
+        amountRials > 0 ? 100 : null,
+    };
+  }
+
+  const timed = resolveTimedDiscountPricing(
+    {
+      paymentAmountRials: amountRials,
+      saleAmountRials: saleCandidate,
+      discountStartsAt: flow?.discountStartsAt ?? null,
+      discountEndsAt: flow?.discountEndsAt ?? null,
+      pricingBadge: flow?.pricingBadge ?? null,
+      showDiscountCountdown: flow?.showDiscountCountdown ?? true,
+      isFree: false,
+    },
+    now,
+  );
+
+  let discountRials = timed.discountRials;
   let discountCode: string | null = null;
-  let discountActive = false;
+  let discountActive = timed.discountActive;
+  let finalAmountRials = timed.finalAmountRials;
+  let pricingBadge = timed.pricingBadge;
+  let discountEndsAt = timed.discountActive
+    ? (flow?.discountEndsAt ?? null)
+    : null;
+  let discountPercent = timed.discountPercent;
 
-  if (flow?.isFree) {
-    discountRials = amountRials;
-    discountActive = true;
-  } else if (
-    discountWindowActive &&
-    saleCandidate != null &&
-    saleCandidate <= amountRials
-  ) {
-    discountRials = amountRials - saleCandidate;
-    discountActive = discountRials > 0;
-  } else {
+  // Promo codes only when timed sale is not active.
+  if (!timed.discountActive) {
     const code = trim(params.details.discountCode).toUpperCase();
     if (code && code in catalog.discountCodes) {
       discountRials = Math.min(catalog.discountCodes[code]!, amountRials);
       discountCode = discountRials > 0 ? code : null;
+      finalAmountRials = Math.max(0, amountRials - discountRials);
+      discountActive = discountRials > 0;
+      pricingBadge = null;
+      discountEndsAt = null;
+      discountPercent =
+        amountRials > 0 && discountRials > 0
+          ? Math.round((discountRials / amountRials) * 100)
+          : null;
     }
   }
-
-  const finalAmountRials = Math.max(0, amountRials - discountRials);
-  const isFree = Boolean(flow?.isFree) || finalAmountRials === 0;
-  const savingsRials = discountRials;
-  const discountPercent =
-    amountRials > 0 && discountRials > 0
-      ? Math.round((discountRials / amountRials) * 100)
-      : null;
 
   return {
     ok: true,
@@ -129,11 +153,11 @@ export function resolveRegistrationPricing(params: {
     packageTitle: pkg.title,
     venueBranchTitle: venue.title,
     discountCode,
-    pricingBadge: flow?.pricingBadge ?? null,
-    isFree,
+    pricingBadge,
+    isFree: finalAmountRials === 0,
     discountActive,
-    discountEndsAt: discountActive ? (flow?.discountEndsAt ?? null) : null,
-    savingsRials,
+    discountEndsAt,
+    savingsRials: discountRials,
     discountPercent,
   };
 }

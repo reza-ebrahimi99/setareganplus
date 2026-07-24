@@ -12,6 +12,13 @@ import {
   loadPublicRegistrationFlowBySlug,
 } from "@/lib/registration/flows/public";
 import { resolveRegistrationCatalog } from "@/lib/registration/flows/resolve-catalog";
+import {
+  getRegistrationFlowConfig,
+} from "@/lib/registration/flow-config-db";
+import {
+  serializeRegistrationFlow,
+  toRegistrationFlowPublicView,
+} from "@/lib/registration/flow-config";
 import { createPageMetadata } from "@/lib/seo/create-page-metadata";
 
 type PageProps = {
@@ -49,6 +56,14 @@ export default async function PublicRegistrationWizardPage({
     notFound();
   }
 
+  const flowConfig =
+    flow != null
+      ? await getRegistrationFlowConfig({
+          organizationId: flow.organizationId,
+          flowKey: flow.slug,
+        })
+      : null;
+
   const receiptBasePath = `/register/${slug}/receipt`;
 
   return (
@@ -67,6 +82,12 @@ export default async function PublicRegistrationWizardPage({
           saveProgressAction={saveRegistrationProgressAction}
           submitAction={submitRegistrationAction}
           uploadDocumentAction={uploadRegistrationDocumentAction}
+          flowSnapshot={
+            flowConfig ? serializeRegistrationFlow(flowConfig) : undefined
+          }
+          flowPublic={
+            flowConfig ? toRegistrationFlowPublicView(flowConfig) : undefined
+          }
         />
       </Suspense>
     </PublicFormShell>

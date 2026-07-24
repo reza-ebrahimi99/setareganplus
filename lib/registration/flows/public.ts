@@ -12,6 +12,7 @@ import {
   flowRequiresCheckout,
 } from "@/lib/registration/flows/constants";
 import type { RegistrationFlowCatalog } from "@/lib/registration/types";
+import { resolveTimedDiscountPricing } from "@/lib/registration/timed-discount";
 
 export type PublicRegistrationFlow = {
   id: string;
@@ -29,6 +30,11 @@ export type PublicRegistrationFlow = {
   paymentAmountRials: number;
   paymentTitle: string | null;
   paymentDeadlineAt: Date | null;
+  saleAmountRials: number | null;
+  pricingBadge: string | null;
+  discountStartsAt: Date | null;
+  discountEndsAt: Date | null;
+  showDiscountCountdown: boolean;
   opensAt: Date | null;
   closesAt: Date | null;
   formId: string | null;
@@ -50,6 +56,17 @@ export type PublicRegistrationFlow = {
   }>;
   isOpen: boolean;
   closedReason: "draft" | "archived" | "not_started" | "ended" | "full" | null;
+  /** Resolved at load time (server). Client may re-resolve on countdown expiry. */
+  pricing: {
+    amountRials: number;
+    finalAmountRials: number;
+    discountRials: number;
+    discountActive: boolean;
+    pricingBadge: string | null;
+    discountEndsAtIso: string | null;
+    showCountdown: boolean;
+    discountPercent: number | null;
+  };
 };
 
 function evaluateOpenWindow(flow: {
@@ -132,6 +149,17 @@ export async function loadPublicRegistrationFlowBySlug(
     row.coverMedia.deletedAt == null &&
     row.coverMedia.status === MediaAssetStatus.ACTIVE;
 
+  const isFree = row.paymentMode === RegistrationFlowPaymentMode.FREE;
+  const timed = resolveTimedDiscountPricing({
+    paymentAmountRials: row.paymentAmountRials,
+    saleAmountRials: row.saleAmountRials,
+    discountStartsAt: row.discountStartsAt,
+    discountEndsAt: row.discountEndsAt,
+    pricingBadge: row.pricingBadge,
+    showDiscountCountdown: row.showDiscountCountdown,
+    isFree,
+  });
+
   return {
     id: row.id,
     organizationId: row.organizationId,
@@ -151,6 +179,11 @@ export async function loadPublicRegistrationFlowBySlug(
     paymentAmountRials: row.paymentAmountRials,
     paymentTitle: row.paymentTitle,
     paymentDeadlineAt: row.paymentDeadlineAt,
+    saleAmountRials: row.saleAmountRials,
+    pricingBadge: row.pricingBadge,
+    discountStartsAt: row.discountStartsAt,
+    discountEndsAt: row.discountEndsAt,
+    showDiscountCountdown: row.showDiscountCountdown,
     opensAt: row.opensAt,
     closesAt: row.closesAt,
     formId: row.formId,
@@ -172,6 +205,16 @@ export async function loadPublicRegistrationFlowBySlug(
     })),
     isOpen: options?.allowPreview ? true : isOpen,
     closedReason: options?.allowPreview ? null : closedReason,
+    pricing: {
+      amountRials: timed.amountRials,
+      finalAmountRials: timed.finalAmountRials,
+      discountRials: timed.discountRials,
+      discountActive: timed.discountActive,
+      pricingBadge: timed.pricingBadge,
+      discountEndsAtIso: timed.discountEndsAt?.toISOString() ?? null,
+      showCountdown: timed.showCountdown,
+      discountPercent: timed.discountPercent,
+    },
   };
 }
 
