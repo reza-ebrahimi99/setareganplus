@@ -17,7 +17,7 @@ import {
 } from "@/lib/registration/admin-ops";
 import { listRegistrationCatalogs } from "@/lib/registration/catalog-registry";
 import { reviewRegistrationDocument } from "@/lib/registration/documents";
-import { ensureRegistrationFlowConfig } from "@/lib/registration/flow-config";
+import { ensureRegistrationFlowConfig } from "@/lib/registration/flow-config-db";
 import { normalizeRegistrationFlowSlug } from "@/lib/registration/flows/slug";
 import { revalidatePath } from "next/cache";
 

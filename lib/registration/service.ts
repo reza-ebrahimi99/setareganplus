@@ -28,10 +28,10 @@ import { flowRequiresCheckout } from "@/lib/registration/flows/constants";
 import { findRegistrationFlowBySlug } from "@/lib/registration/flows/public";
 import { resolveRegistrationCatalog } from "@/lib/registration/flows/resolve-catalog";
 import {
-  ensureRegistrationFlowConfig,
   isRegistrationWindowOpen,
   remainingCapacity,
 } from "@/lib/registration/flow-config";
+import { ensureRegistrationFlowConfig } from "@/lib/registration/flow-config-db";
 import { nextRegistrationNumber } from "@/lib/registration/number-generator";
 import { resolveRegistrationPricing } from "@/lib/registration/pricing";
 import { computeCompletionPercent } from "@/lib/registration/progress";

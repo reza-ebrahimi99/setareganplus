@@ -5,7 +5,7 @@ import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { RegistrationFlowSettingsForm } from "@/components/admin/registrations/RegistrationFlowSettingsForm";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { getRegistrationCatalog } from "@/lib/registration/catalog-registry";
-import { ensureRegistrationFlowConfig } from "@/lib/registration/flow-config";
+import { ensureRegistrationFlowConfig } from "@/lib/registration/flow-config-db";
 
 type PageProps = {
   params: Promise<{ flowKey: string }>;

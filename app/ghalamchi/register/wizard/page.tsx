@@ -4,11 +4,13 @@ import { RegistrationWizard } from "@/components/registration/RegistrationWizard
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { qalamchiExamCatalog } from "@/lib/registration/catalogs/qalamchi-exam";
 import {
-  ensureRegistrationFlowConfig,
   serializeRegistrationFlow,
   toRegistrationFlowPublicView,
 } from "@/lib/registration/flow-config";
+import { ensureRegistrationFlowConfig } from "@/lib/registration/flow-config-db";
 import { createPageMetadata } from "@/lib/seo/create-page-metadata";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = createPageMetadata({
   path: "/ghalamchi/register/wizard",

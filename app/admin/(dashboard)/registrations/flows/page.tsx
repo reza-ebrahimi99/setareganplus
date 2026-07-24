@@ -8,7 +8,7 @@ import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { toPersianDigits } from "@/lib/persian";
 import { listRegistrationCatalogs } from "@/lib/registration/catalog-registry";
-import { ensureRegistrationFlowConfig } from "@/lib/registration/flow-config";
+import { ensureRegistrationFlowConfig } from "@/lib/registration/flow-config-db";
 import { listRegistrationFlows } from "@/lib/registration/flows/admin";
 import {
   FLOW_LIFECYCLE_LABELS,
