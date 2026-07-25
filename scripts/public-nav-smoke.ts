@@ -5,7 +5,7 @@
  */
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import {
   publicNavIncludesHref,
@@ -24,8 +24,47 @@ function main() {
   const hrefs = publicNavLinks.map((link) => link.href);
   assert.deepEqual(
     hrefs,
-    ["/", "/about", "/achievements", "/courses", "/gallery", "/consultation"],
+    [
+      "/",
+      "/about",
+      "/team",
+      "/achievements",
+      "/courses",
+      "/gallery",
+      "/consultation",
+    ],
     "publicNavLinks order/hrefs drifted from the agreed primary menu",
+  );
+
+  const teamMatches = publicNavLinks.filter((link) => link.label === "تیم ما");
+  assert.equal(teamMatches.length, 1, "تیم ما must appear exactly once");
+  assert.equal(teamMatches[0]?.href, "/team", "تیم ما must link to /team");
+  assert.ok(
+    !("children" in teamMatches[0]! && teamMatches[0].children),
+    "تیم ما must be a standalone link (not a dropdown)",
+  );
+
+  const aboutIndex = publicNavLinks.findIndex((link) => link.label === "درباره ما");
+  const teamIndex = publicNavLinks.findIndex((link) => link.label === "تیم ما");
+  const achievementsIndex = publicNavLinks.findIndex(
+    (link) => link.label === "دستاوردها",
+  );
+  assert.ok(aboutIndex >= 0 && teamIndex >= 0 && achievementsIndex >= 0);
+  assert.equal(
+    teamIndex,
+    aboutIndex + 1,
+    "تیم ما must come immediately after درباره ما",
+  );
+  assert.equal(
+    achievementsIndex,
+    teamIndex + 1,
+    "تیم ما must come immediately before دستاوردها",
+  );
+
+  assert.ok(publicNavIncludesHref("/team"), "publicNavIncludesHref must include /team");
+  assert.ok(
+    existsSync(path.join(process.cwd(), "app", "team", "page.tsx")),
+    "public route app/team/page.tsx must exist",
   );
 
   assert.equal(
@@ -129,6 +168,7 @@ function main() {
 
   console.log("public-nav-smoke PASS");
   console.log(`  links: ${hrefs.join(" → ")}`);
+  console.log(`  تیم ما → /team (after درباره ما, before دستاوردها)`);
   console.log(
     `  دستاوردها → ${honors.label} (${honors.href}), ${examResults.label} (${examResults.href})`,
   );

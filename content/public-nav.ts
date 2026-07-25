@@ -16,7 +16,7 @@ export type PublicNavLink = {
 
 /**
  * Final primary menu (order is intentional):
- * خانه → درباره ما → دستاوردها → دوره‌ها و کلاس‌ها → گالری → مشاوره
+ * خانه → درباره ما → تیم ما → دستاوردها → دوره‌ها و کلاس‌ها → گالری → مشاوره
  *
  * دستاوردها is a dropdown:
  * - افتخارات مؤسسه → /achievements
@@ -27,6 +27,7 @@ export type PublicNavLink = {
 export const publicNavLinks = [
   { href: "/", label: "خانه" },
   { href: "/about", label: "درباره ما" },
+  { href: "/team", label: "تیم ما" },
   {
     href: "/achievements",
     label: "دستاوردها",

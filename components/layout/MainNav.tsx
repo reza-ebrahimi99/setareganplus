@@ -35,7 +35,7 @@ function ChevronDownIcon({ className }: { className?: string }) {
 
 function topLinkClassName(active: boolean) {
   const baseClassName =
-    "inline-flex items-center gap-1 rounded-lg px-1.5 py-2 text-[0.8rem] font-medium leading-5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary xl:px-2.5 xl:text-sm";
+    "inline-flex items-center gap-0.5 rounded-lg px-1 py-2 text-[0.75rem] font-medium leading-5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary xl:gap-1 xl:px-2 xl:text-[0.8125rem]";
 
   if (active) {
     return `${baseClassName} bg-primary/5 font-semibold text-primary`;
@@ -201,7 +201,7 @@ export function MainNav({ activePath, mobileExtra }: MainNavProps) {
         className="main-nav-desktop hidden min-w-0 max-w-full flex-1 items-center justify-end lg:flex"
         aria-label="ناوبری اصلی"
       >
-        <ul className="flex max-w-full list-none flex-wrap items-center justify-end gap-x-0.5 gap-y-1 xl:gap-x-1">
+        <ul className="flex max-w-full list-none flex-nowrap items-center justify-end gap-x-0 xl:gap-x-0.5">
           {publicNavLinks.map((link) => (
             <DesktopNavItem
               key={link.href}
