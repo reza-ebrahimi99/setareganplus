@@ -67,6 +67,15 @@ html {
   border-radius: 0.85rem;
 }
 
+/* Primary nav: never clip menu items horizontally */
+.main-nav-desktop {
+  overflow: visible;
+}
+
+.main-nav-desktop ul {
+  overflow: visible;
+}
+
 @media (min-width: 640px) {
   .brand-logo-frame--header {
     width: 3.15rem;

@@ -186,7 +186,19 @@ export async function startCheckoutForRegistration(params: {
 
   const fromStatus = intent.status;
   if (fromStatus !== PaymentStatus.PROCESSING) {
-    assertPaymentTransition(fromStatus, PaymentStatus.PROCESSING);
+    try {
+      assertPaymentTransition(fromStatus, PaymentStatus.PROCESSING);
+    } catch (error) {
+      console.error("[payment] invalid payment status transition", {
+        fromStatus,
+        registrationId: registration.id,
+        error,
+      });
+      return {
+        ok: false,
+        error: "امکان شروع پرداخت برای این وضعیت وجود ندارد.",
+      };
+    }
   }
 
   const callbackToken = newCallbackToken();
@@ -210,56 +222,80 @@ export async function startCheckoutForRegistration(params: {
     return { ok: false, error: requested.error };
   }
 
-  const session = await prisma.$transaction(async (tx) => {
-    const updatedIntent = await tx.paymentIntent.update({
-      where: { id: intent!.id },
-      data: {
-        status: PaymentStatus.PROCESSING,
-        provider: provider.id,
-        trackingCode: requested.trackingCode,
-        failedAt: null,
-        cancelledAt: null,
-      },
+  const checkoutUrl = requested.checkoutUrl?.trim() ?? "";
+  if (!checkoutUrl) {
+    console.error("[payment] provider returned empty checkoutUrl", {
+      provider: provider.id,
+      paymentIntentId: intent.id,
+      registrationId: registration.id,
     });
+    return {
+      ok: false,
+      error:
+        "لینک درگاه پرداخت دریافت نشد. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.",
+    };
+  }
 
-    await logPaymentEvent({
-      organizationId: params.organizationId,
-      paymentIntentId: updatedIntent.id,
-      fromStatus,
-      toStatus: PaymentStatus.PROCESSING,
-      event: "checkout.started",
-      message: "Checkout session opened",
-      metadata: { providerSessionId: requested.providerSessionId },
-      tx,
-    });
+  let session;
+  try {
+    session = await prisma.$transaction(async (tx) => {
+      const updatedIntent = await tx.paymentIntent.update({
+        where: { id: intent!.id },
+        data: {
+          status: PaymentStatus.PROCESSING,
+          provider: provider.id,
+          trackingCode: requested.trackingCode,
+          failedAt: null,
+          cancelledAt: null,
+        },
+      });
 
-    const createdSession = await tx.paymentSession.create({
-      data: {
+      await logPaymentEvent({
         organizationId: params.organizationId,
         paymentIntentId: updatedIntent.id,
-        provider: provider.id,
-        providerSessionId: requested.providerSessionId,
-        status: PaymentStatus.PROCESSING,
-        checkoutUrl: requested.checkoutUrl,
-        callbackToken,
-        rawRequestJson: requested.raw as Prisma.InputJsonValue,
-        expiresAt: new Date(Date.now() + INTENT_TTL_MS),
-      },
-    });
+        fromStatus,
+        toStatus: PaymentStatus.PROCESSING,
+        event: "checkout.started",
+        message: "Checkout session opened",
+        metadata: { providerSessionId: requested.providerSessionId },
+        tx,
+      });
 
-    await tx.registration.update({
-      where: { id: registration.id },
-      data: {
-        paymentProvider: provider.id,
-        trackingCode: requested.trackingCode,
-        paymentRef: requested.providerSessionId,
-        status: RegistrationStatus.WAITING_PAYMENT,
-        paymentStatus: RegistrationPaymentStatus.AWAITING,
-      },
-    });
+      const createdSession = await tx.paymentSession.create({
+        data: {
+          organizationId: params.organizationId,
+          paymentIntentId: updatedIntent.id,
+          provider: provider.id,
+          providerSessionId: requested.providerSessionId,
+          status: PaymentStatus.PROCESSING,
+          checkoutUrl,
+          callbackToken,
+          rawRequestJson: requested.raw as Prisma.InputJsonValue,
+          expiresAt: new Date(Date.now() + INTENT_TTL_MS),
+        },
+      });
 
-    return createdSession;
-  });
+      await tx.registration.update({
+        where: { id: registration.id },
+        data: {
+          paymentProvider: provider.id,
+          trackingCode: requested.trackingCode,
+          paymentRef: requested.providerSessionId,
+          status: RegistrationStatus.WAITING_PAYMENT,
+          paymentStatus: RegistrationPaymentStatus.AWAITING,
+        },
+      });
+
+      return createdSession;
+    });
+  } catch (error) {
+    console.error("[payment] failed to persist checkout session", error);
+    return {
+      ok: false,
+      error:
+        "آماده‌سازی درگاه پرداخت با خطا مواجه شد. لطفاً دوباره تلاش کنید.",
+    };
+  }
 
   await recordRegistrationActivity({
     organizationId: params.organizationId,
@@ -294,7 +330,7 @@ export async function startCheckoutForRegistration(params: {
     ok: true,
     paymentIntentId: intent.id,
     paymentSessionId: session.id,
-    checkoutUrl: requested.checkoutUrl,
+    checkoutUrl,
     trackingCode: requested.trackingCode,
     provider: provider.id,
   };

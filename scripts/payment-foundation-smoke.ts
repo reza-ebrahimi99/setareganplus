@@ -43,6 +43,15 @@ async function main() {
   if (!requested.ok) {
     errors.push(`requestPayment failed: ${requested.error}`);
   } else {
+    if (!requested.checkoutUrl?.trim()) {
+      errors.push("mock requestPayment returned empty checkoutUrl");
+    } else if (
+      !requested.checkoutUrl.startsWith("/payments/mock/checkout/")
+    ) {
+      errors.push(
+        `unexpected mock checkoutUrl shape: ${requested.checkoutUrl}`,
+      );
+    }
     for (const outcome of ["paid", "failed", "cancelled"] as const) {
       const verified = await provider.verifyPayment({
         organizationId: "org_test",

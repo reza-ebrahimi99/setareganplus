@@ -1,3 +1,6 @@
+import { aboutPageMeta } from "@/content/about-page";
+import { publicNavLinks } from "@/content/public-nav";
+
 export const siteConfig = {
   name: "ستارگان پلاس",
   nameEn: "SetareganPlus",
@@ -6,17 +9,8 @@ export const siteConfig = {
     "ستارگان پلاس سکوی دیجیتال مرکز آموزشی نسیم‌شهر برای معرفی خدمات آموزشی، راهنمایی مسیر ثبت‌نام و توسعه تدریجی خدمات دیجیتال است.",
 } as const;
 
-export const navLinks = [
-  { href: "/", label: "صفحه اصلی" },
-  { href: "/team", label: "تیم ما" },
-  { href: "/achievements", label: "افتخارات" },
-  { href: "/assessments", label: "آزمون" },
-  { href: "/courses", label: "دوره‌ها" },
-  { href: "/classes", label: "کلاس‌ها" },
-  { href: "/exams", label: "آزمون‌ها" },
-  { href: "/consultation", label: "مشاوره" },
-  { href: "/pre-registration", label: "پیش‌ثبت‌نام" },
-] as const;
+/** @deprecated Prefer `publicNavLinks` from `@/content/public-nav` — kept in sync for legacy imports. */
+export const navLinks = publicNavLinks;
 
 export const footerLinks = [
   { href: "/about", label: "درباره ما" },
@@ -35,15 +29,29 @@ export const footerContent = {
   note: "این سکو در حال توسعه است و به‌تدریج قابلیت‌های جدید اضافه خواهد شد.",
 } as const;
 
-/** @deprecated Prefer `content/about-page.ts` — kept for breadcrumbs / legacy refs */
-export const aboutContent = {
-  title: "درباره مؤسسه آموزشی ستارگان",
-  subtitle: "از سال ۱۳۹۴، همراه خانواده‌ها در مسیر رشد، یادگیری و موفقیت",
-  breadcrumbs: [
-    { label: "صفحه اصلی", href: "/" },
-    { label: "درباره ما" },
+/**
+ * Legacy InnerPageLayout shape for /about — meta synced from `aboutPageMeta`.
+ * Renamed so it cannot be confused with homepage `aboutContent` in `content/home.ts`.
+ * Live /about page renders `content/about-page.ts`, not `sections` here.
+ */
+export const legacyAboutPageContent = {
+  title: aboutPageMeta.title,
+  subtitle: aboutPageMeta.subtitle,
+  breadcrumbs: aboutPageMeta.breadcrumbs,
+  sections: [
+    {
+      heading: "داستان برند",
+      body: "مؤسسه آموزشی ستارگان از سال ۱۳۹۴ با دغدغهٔ آموزش باکیفیت شکل گرفت و امروز با دبستان غیردولتی ستارگان آینده، نمایندگی رسمی قلم‌چی و خدمات دیجیتال SetareganPlus همراه خانواده‌هاست.",
+    },
+    {
+      heading: "مسیر رشد",
+      body: "از آموزشگاه تقویتی و آمادگی کنکور تا دبستان و نمایندگی قلم‌چی؛ مسیر رشد مجموعه در صفحه درباره ما به‌صورت کامل روایت شده است.",
+    },
+    {
+      heading: "ارتباط",
+      body: "برای تماس، مسیر مراجعه و شبکه‌های اجتماعی، صفحه درباره ما و صفحه تماس را ببینید.",
+    },
   ],
-  sections: [] as const,
 } as const;
 
 export const contactContent = {

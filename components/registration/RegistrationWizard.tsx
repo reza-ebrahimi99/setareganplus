@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { ComponentProps } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -227,7 +227,17 @@ function WizardPricingBlock({
   showDiscountCountdown: boolean;
   onDiscountExpired: () => void;
 }) {
-  if (!pricing.ok) return null;
+  if (!pricing.ok) {
+    return (
+      <p
+        className="rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-danger"
+        role="alert"
+      >
+        {pricing.error ||
+          "محاسبه مبلغ ممکن نیست. لطفاً انتخاب‌های ثبت‌نام را بررسی کنید."}
+      </p>
+    );
+  }
 
   const endsAtIso = pricing.discountEndsAt
     ? pricing.discountEndsAt.toISOString()
@@ -271,6 +281,7 @@ export function RegistrationWizard({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
+  const paymentSubmitLockRef = useRef(false);
   const [saving, setSaving] = useState(false);
   const [step, setStep] = useState(() =>
     clampWizardStep(initialDraft?.currentStep, 1),
@@ -656,6 +667,16 @@ export function RegistrationWizard({
 
   function submitPayment() {
     if (registrationBlocked) return;
+    if (paymentSubmitLockRef.current || pending) return;
+
+    if (!pricing.ok) {
+      setFormError(
+        pricing.error ||
+          "محاسبه مبلغ ثبت‌نام ممکن نیست. لطفاً انتخاب‌های مرحله جزئیات را بررسی کنید.",
+      );
+      return;
+    }
+
     if (!agreed) {
       setFormError("برای ادامه، پذیرش قوانین و شرایط الزامی است.");
       return;
@@ -672,66 +693,90 @@ export function RegistrationWizard({
       }
     }
 
+    setFormError(null);
+    paymentSubmitLockRef.current = true;
+
     startTransition(async () => {
-      const result = await submitAction({
-        flowKey: catalog.flowKey,
-        resumeToken,
-        honeypot,
-        student: {
-          firstName: student.firstName,
-          lastName: student.lastName,
-          nationalCode: student.nationalCode,
-          birthDate,
-          gender,
-          gradeLabel: student.gradeLabel,
-          majorLabel: student.majorLabel || null,
-          schoolName: student.schoolName,
-          province: student.province,
-          city: student.city,
-        },
-        parent: {
-          parentName: parent.parentName,
-          relationship,
-          mobile: parent.mobile,
-          secondaryMobile: parent.secondaryMobile || null,
-          email: parent.email,
-          address: parent.address || null,
-        },
-        details: {
-          productKey: details.productKey,
-          sessionKey: details.sessionKey,
-          packageKey: details.packageKey,
-          venueBranchKey: details.venueBranchKey,
-          discountCode: details.discountCode || null,
-        },
-        formAnswers: formDriven ? formAnswers : undefined,
-        attribution,
-        leadId: initialDraft?.leadId ?? null,
-        linkedForm:
-          formDriven && linkedForm
-            ? {
-                formId: linkedForm.formId,
-                formVersionId: linkedForm.versionId,
-              }
-            : null,
-      });
+      try {
+        const result = await submitAction({
+          flowKey: catalog.flowKey,
+          resumeToken,
+          honeypot,
+          student: {
+            firstName: student.firstName,
+            lastName: student.lastName,
+            nationalCode: student.nationalCode,
+            birthDate,
+            gender,
+            gradeLabel: student.gradeLabel,
+            majorLabel: student.majorLabel || null,
+            schoolName: student.schoolName,
+            province: student.province,
+            city: student.city,
+          },
+          parent: {
+            parentName: parent.parentName,
+            relationship,
+            mobile: parent.mobile,
+            secondaryMobile: parent.secondaryMobile || null,
+            email: parent.email,
+            address: parent.address || null,
+          },
+          details: {
+            productKey: details.productKey,
+            sessionKey: details.sessionKey,
+            packageKey: details.packageKey,
+            venueBranchKey: details.venueBranchKey,
+            discountCode: details.discountCode || null,
+          },
+          formAnswers: formDriven ? formAnswers : undefined,
+          attribution,
+          leadId: initialDraft?.leadId ?? null,
+          linkedForm:
+            formDriven && linkedForm
+              ? {
+                  formId: linkedForm.formId,
+                  formVersionId: linkedForm.versionId,
+                }
+              : null,
+        });
 
-      if (!result.ok) {
-        setFormError(result.error);
-        if (result.fieldErrors) setErrors(result.fieldErrors);
-        return;
+        if (!result.ok) {
+          setFormError(result.error);
+          if (result.fieldErrors) setErrors(result.fieldErrors);
+          return;
+        }
+
+        setLastCompletedStep(WIZARD_TOTAL_STEPS);
+
+        const checkoutUrl = result.checkoutUrl?.trim() ?? "";
+        if (checkoutUrl) {
+          window.location.assign(checkoutUrl);
+          return;
+        }
+
+        if (result.checkoutUrl != null) {
+          console.error(
+            "[registration] empty checkoutUrl on successful submit",
+            { registrationNumber: result.registrationNumber },
+          );
+          setFormError(
+            "لینک درگاه پرداخت دریافت نشد. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.",
+          );
+          return;
+        }
+
+        router.push(
+          `${receiptBasePath}/${encodeURIComponent(result.registrationNumber)}`,
+        );
+      } catch (error) {
+        console.error("[registration] submitPayment failed", error);
+        setFormError(
+          "ثبت‌نام یا آماده‌سازی پرداخت با خطا مواجه شد. لطفاً دوباره تلاش کنید.",
+        );
+      } finally {
+        paymentSubmitLockRef.current = false;
       }
-
-      setLastCompletedStep(WIZARD_TOTAL_STEPS);
-
-      if (result.checkoutUrl) {
-        window.location.href = result.checkoutUrl;
-        return;
-      }
-
-      router.push(
-        `${receiptBasePath}/${encodeURIComponent(result.registrationNumber)}`,
-      );
     });
   }
 
@@ -903,6 +948,7 @@ export function RegistrationWizard({
                 onDiscountExpired={() => setDiscountExpired(true)}
                 pending={pending}
                 agreed={agreed}
+                formError={formError}
                 onAgreedChange={setAgreed}
                 onPay={submitPayment}
                 onEdit={setStep}
@@ -958,7 +1004,8 @@ export function RegistrationWizard({
               <button
                 type="button"
                 onClick={submitPayment}
-                disabled={busy || !pricing.ok || !agreed}
+                disabled={busy}
+                aria-busy={pending}
                 className={`inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-sm disabled:opacity-60 sm:w-auto ${BUTTON_MICRO}`}
               >
                 {pending ? "در حال انتقال به درگاه…" : "پرداخت و تکمیل ثبت‌نام"}
@@ -1708,6 +1755,7 @@ function PaymentStep({
   onDiscountExpired,
   pending,
   agreed,
+  formError,
   onAgreedChange,
   onPay,
   onEdit,
@@ -1727,6 +1775,7 @@ function PaymentStep({
   onDiscountExpired: () => void;
   pending: boolean;
   agreed: boolean;
+  formError: string | null;
   onAgreedChange: (value: boolean) => void;
   onPay: () => void;
   onEdit: (step: number) => void;
@@ -1888,10 +1937,24 @@ function PaymentStep({
       </label>
 
       <div className="public-form-submit-bar flex flex-col gap-3">
+        {formError ? (
+          <div
+            className="rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-danger"
+            role="alert"
+          >
+            {formError}
+          </div>
+        ) : null}
+        {!agreed ? (
+          <p className="text-xs leading-6 text-muted">
+            برای فعال‌سازی پرداخت، پذیرش قوانین و شرایط را علامت بزنید.
+          </p>
+        ) : null}
         <button
           type="button"
           onClick={onPay}
-          disabled={pending || !pricing.ok || !agreed}
+          disabled={pending}
+          aria-busy={pending}
           className={`inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/92 disabled:opacity-60 ${BUTTON_MICRO}`}
         >
           {pending ? "در حال انتقال به درگاه…" : "پرداخت و تکمیل ثبت‌نام"}

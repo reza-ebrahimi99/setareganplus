@@ -37,21 +37,43 @@ export type SubmitRegistrationActionResult =
 export async function submitRegistrationAction(
   input: CreateRegistrationInput,
 ): Promise<SubmitRegistrationActionResult> {
-  const result = await createRegistration(input);
-  if (!result.ok) {
+  try {
+    const result = await createRegistration(input);
+    if (!result.ok) {
+      return {
+        ok: false,
+        error: result.error,
+        fieldErrors: result.fieldErrors,
+      };
+    }
+
+    const checkoutUrl = result.checkoutUrl?.trim() || null;
+    if (result.checkoutUrl != null && !checkoutUrl) {
+      console.error(
+        "[registration] checkoutUrl was empty after successful createRegistration",
+        { registrationNumber: result.registrationNumber },
+      );
+      return {
+        ok: false,
+        error:
+          "لینک درگاه پرداخت دریافت نشد. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.",
+      };
+    }
+
+    return {
+      ok: true,
+      registrationNumber: result.registrationNumber,
+      paymentMessage: result.paymentMessage,
+      checkoutUrl,
+    };
+  } catch (error) {
+    console.error("[registration] submitRegistrationAction failed", error);
     return {
       ok: false,
-      error: result.error,
-      fieldErrors: result.fieldErrors,
+      error:
+        "ثبت‌نام یا آماده‌سازی پرداخت با خطا مواجه شد. لطفاً دوباره تلاش کنید.",
     };
   }
-
-  return {
-    ok: true,
-    registrationNumber: result.registrationNumber,
-    paymentMessage: result.paymentMessage,
-    checkoutUrl: result.checkoutUrl,
-  };
 }
 
 export async function saveRegistrationProgressAction(input: {

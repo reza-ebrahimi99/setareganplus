@@ -1,4 +1,3 @@
-import type { MediaAsset } from "@/lib/media";
 import {
   contactContent,
   founderContent,
@@ -8,7 +7,7 @@ import {
 
 /**
  * Rich About page content — identity, trust, and conversion.
- * Distinct from homepage `aboutContent` (school facts) and legacy `site.aboutContent`.
+ * Distinct from homepage `aboutContent` (school facts) and `legacyAboutPageContent` in site.ts.
  */
 
 export const aboutPageMeta = {
@@ -26,7 +25,11 @@ export const aboutHeroContent = {
   title: "از سال ۱۳۹۴، همراه خانواده‌ها در مسیر رشد، یادگیری و موفقیت",
   subtitle:
     "مؤسسه آموزشی ستارگان با هدف ارائه آموزش باکیفیت، پرورش استعدادها و ایجاد فرصت‌های یادگیری مؤثر فعالیت خود را آغاز کرد و امروز با توسعه خدمات آموزشی همراه خانواده‌های بسیاری در مسیر آینده‌ای روشن است.",
-  background: heroMedia.background,
+  /** Concrete URL — avoid MediaAsset nullability leaking into Image `src`. */
+  background: {
+    url: heroMedia.background.url ?? "/images/hero/hero.jpg",
+    alt: heroMedia.background.alt,
+  },
   primaryCta: { label: "آشنایی بیشتر", href: "#brand-story" },
   secondaryCta: { label: "ثبت‌نام", href: "/pre-registration" },
 } as const;
@@ -217,14 +220,20 @@ export const aboutGalleryContent = {
   heading: "لحظه‌هایی از فضای آموزشی",
   description:
     "نگاهی به کلاس‌ها، رویدادها و فضای یادگیری مجموعه ستارگان.",
-  items: galleryImages.map((image, index) => ({
-    id: image.mediaKey,
-    url: image.media.url,
-    alt: image.media.alt,
-    title: image.title,
-    caption: image.caption,
-    priority: index < 2,
-  })),
+  items: galleryImages.flatMap((image, index) => {
+    const url = image.media.url;
+    if (!url) return [];
+    return [
+      {
+        id: image.mediaKey,
+        url,
+        alt: image.media.alt,
+        title: image.title,
+        caption: image.caption,
+        priority: index < 2,
+      },
+    ];
+  }),
 } as const;
 
 export const aboutFounderContent = {
@@ -334,7 +343,7 @@ export const aboutFooterCtaContent = {
   background: {
     url: "/images/about/about.png",
     alt: "نمای مجموعه آموزشی ستارگان",
-  } satisfies MediaAsset,
+  },
   primary: { label: "ثبت‌نام", href: "/pre-registration" },
   secondary: { label: "دریافت مشاوره", href: "/consultation" },
 } as const;

@@ -62,10 +62,16 @@ function GhalamchiAffiliation({ compact = false }: { compact?: boolean }) {
 }
 
 export function SiteHeader({ activePath }: SiteHeaderProps) {
+  const preRegistrationCta = (
+    <Button href="/pre-registration" variant="secondary" className="shrink-0">
+      پیش‌ثبت‌نام
+    </Button>
+  );
+
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-surface/95 shadow-sm backdrop-blur-sm">
-      <Container className="flex min-w-0 items-center justify-between gap-2 py-2 sm:gap-3 sm:py-2.5 lg:gap-4">
-        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3 lg:gap-3 xl:gap-4">
+      <Container className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2 py-2 sm:gap-x-3 sm:py-2.5 lg:flex-nowrap lg:gap-x-3">
+        <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
           <Link
             href="/"
             className="group flex min-w-0 items-center gap-2 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:gap-2.5"
@@ -83,27 +89,26 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
 
           <div
             aria-hidden="true"
-            className="hidden h-9 w-px shrink-0 bg-border lg:block"
+            className="hidden h-9 w-px shrink-0 bg-border xl:block"
           />
 
-          <div className="hidden shrink-0 lg:block">
+          <div className="hidden shrink-0 xl:block">
             <GhalamchiAffiliation />
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <MainNav activePath={activePath} />
-          <Button
-            href="/pre-registration"
-            variant="secondary"
-            className="hidden sm:inline-flex"
-          >
-            پیش‌ثبت‌نام
-          </Button>
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3">
+          <MainNav
+            activePath={activePath}
+            mobileExtra={
+              <div className="px-1 pb-1 sm:hidden">{preRegistrationCta}</div>
+            }
+          />
+          <div className="hidden sm:block">{preRegistrationCta}</div>
         </div>
       </Container>
 
-      <div className="border-t border-border/70 bg-surface/90 lg:hidden">
+      <div className="border-t border-border/70 bg-surface/90 xl:hidden">
         <Container className="py-2">
           <GhalamchiAffiliation compact />
         </Container>

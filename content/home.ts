@@ -212,7 +212,8 @@ export const contactContent = {
     "https://maps.google.com/maps?q=%D9%86%D8%B3%DB%8C%D9%85%E2%80%8C%D8%B4%D9%87%D8%B1%D8%8C%20%D8%AE%DB%8C%D8%A7%D8%A8%D8%A7%D9%86%20%D8%A7%D9%85%D8%A7%D9%85%20%D8%AE%D9%85%DB%8C%D9%86%DB%8C%D8%8C%20%DA%A9%D9%88%DA%86%D9%87%20%D9%85%D8%AF%D8%B1%D8%B3%D9%87&z=16&output=embed",
 } as const;
 
-// ─── About ───────────────────────────────────────────────────────────────────
+// ─── About (homepage school section ONLY — not /about page copy) ─────────────
+// Distinct from `legacyAboutPageContent` in content/site.ts and from content/about-page.ts.
 
 export const aboutContent = {
   eyebrow: "دبستان ستارگان آینده",
@@ -261,7 +262,7 @@ export const aboutContent = {
   },
   relatedNote:
     "مرکز آموزشی ستارگان پلاس و نمایندگی رسمی قلم‌چی نسیم‌شهر، بخش‌های تکمیلی همان مجموعه هستند و آمار آن‌ها جداگانه گزارش می‌شود.",
-  cta: { label: "بیشتر بدانید", href: "/about" },
+  cta: { label: "درباره ما", href: "/about" },
 } as const;
 
 // ─── Why choose us (consumed by TrustSection until renamed) ─────────────────

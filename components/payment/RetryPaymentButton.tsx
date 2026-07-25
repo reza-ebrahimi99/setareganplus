@@ -16,12 +16,30 @@ export function RetryPaymentButton({
       disabled={pending}
       onClick={() => {
         startTransition(async () => {
-          const result = await retryPaymentAction(registrationId);
-          if (result.ok) {
-            window.location.href = result.checkoutUrl;
-            return;
+          try {
+            const result = await retryPaymentAction(registrationId);
+            if (!result.ok) {
+              window.alert(result.error);
+              return;
+            }
+            const checkoutUrl = result.checkoutUrl?.trim() ?? "";
+            if (!checkoutUrl) {
+              console.error(
+                "[payment] retry returned empty checkoutUrl",
+                { registrationId },
+              );
+              window.alert(
+                "لینک درگاه پرداخت دریافت نشد. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.",
+              );
+              return;
+            }
+            window.location.assign(checkoutUrl);
+          } catch (error) {
+            console.error("[payment] retryPayment failed", error);
+            window.alert(
+              "آماده‌سازی پرداخت با خطا مواجه شد. لطفاً دوباره تلاش کنید.",
+            );
           }
-          window.alert(result.error);
         });
       }}
       className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 text-sm font-semibold text-white hover:bg-primary/92 disabled:opacity-60"
