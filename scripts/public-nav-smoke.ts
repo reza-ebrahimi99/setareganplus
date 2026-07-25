@@ -1,6 +1,7 @@
 /**
- * Guards public primary navigation: /about must stay in config and MainNav.
+ * Guards public primary navigation + achievements dropdown.
  * Run: npx tsx scripts/public-nav-smoke.ts
+ * or: npm run test:public-nav
  */
 
 import assert from "node:assert/strict";
@@ -33,6 +34,39 @@ function main() {
     "pre-registration must not appear as a text nav item (gold CTA only)",
   );
 
+  const achievements = publicNavLinks.find(
+    (link) => link.label === "دستاوردها",
+  );
+  assert.ok(achievements, 'menu must include label "دستاوردها"');
+  assert.equal(achievements.href, "/achievements");
+  assert.ok(achievements.children, "دستاوردها must have children");
+  assert.equal(
+    achievements.children.length,
+    2,
+    "دستاوردها must have exactly two children",
+  );
+
+  const [honors, examResults] = achievements.children;
+  assert.equal(honors.label, "افتخارات مؤسسه");
+  assert.equal(honors.href, "/achievements");
+  assert.equal(examResults.label, "نتایج آزمون‌های قلم‌چی");
+  assert.equal(
+    examResults.href,
+    "/assessments",
+    "قلم‌چی results must point to the existing public /assessments route",
+  );
+
+  assert.notEqual(
+    honors.href,
+    examResults.href,
+    "dropdown children should target distinct routes (or intentional anchors)",
+  );
+
+  assert.ok(
+    publicNavIncludesHref("/assessments"),
+    "publicNavIncludesHref must recognize child href /assessments",
+  );
+
   const mainNavPath = path.join(
     process.cwd(),
     "components",
@@ -51,18 +85,42 @@ function main() {
     /publicNavLinks\.map/,
     "MainNav must map publicNavLinks for render (desktop/mobile)",
   );
+  assert.match(
+    mainNavSource,
+    /DesktopNavItem/,
+    "MainNav must render desktop dropdown items",
+  );
+  assert.match(
+    mainNavSource,
+    /MobileNavItem/,
+    "MainNav must render mobile accordion items",
+  );
+  assert.match(
+    mainNavSource,
+    /link\.children/,
+    "MainNav must render nav children for dropdown/accordion",
+  );
+  assert.match(
+    mainNavSource,
+    /aria-expanded/,
+    "Mobile submenu toggle must expose aria-expanded",
+  );
+  assert.match(
+    mainNavSource,
+    /role=["']menu["']/,
+    "Desktop dropdown must expose role=menu",
+  );
+  assert.match(
+    mainNavSource,
+    /group\/nav/,
+    "Desktop dropdown must use hover/focus-within group",
+  );
   assert.doesNotMatch(
     mainNavSource,
     /filter\s*\(\s*\(?\s*link[^)]*\)?\s*=>\s*link\.href\s*!==\s*["']\/about["']/,
     "MainNav must not filter out /about",
   );
-  assert.doesNotMatch(
-    mainNavSource,
-    /href\s*!==\s*["']\/about["']/,
-    "MainNav must not exclude /about via href comparison",
-  );
 
-  // Both desktop and mobile lists must iterate the shared config.
   const mapOccurrences = mainNavSource.match(/publicNavLinks\.map/g) ?? [];
   assert.ok(
     mapOccurrences.length >= 2,
@@ -71,7 +129,9 @@ function main() {
 
   console.log("public-nav-smoke PASS");
   console.log(`  links: ${hrefs.join(" → ")}`);
-  console.log('  /about + MainNav shared config OK');
+  console.log(
+    `  دستاوردها → ${honors.label} (${honors.href}), ${examResults.label} (${examResults.href})`,
+  );
 }
 
 main();
