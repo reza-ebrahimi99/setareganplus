@@ -187,6 +187,13 @@ export const adminNavGroups: ReadonlyArray<{
         permission: "website.manage",
       },
       {
+        href: "/admin/website/top-rank-archive",
+        label: "آرشیو رتبه‌های برتر",
+        icon: "settings",
+        enabled: true,
+        permission: "website.manage",
+      },
+      {
         href: "/admin/website/media",
         label: "کتابخانه رسانه",
         icon: "settings",

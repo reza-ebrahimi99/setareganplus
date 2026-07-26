@@ -20,6 +20,7 @@
     "test:jalali": "tsx --env-file=.env lib/booking/jalali-smoke.ts",
     "test:visibility": "tsx scripts/visibility-smoke.ts",
     "test:public-nav": "tsx scripts/public-nav-smoke.ts",
+    "test:top-rank-archive": "tsx scripts/top-rank-archive-unit-tests.ts",
     "test:site-placements": "tsx scripts/site-placements-smoke.ts",
     "test:communication": "tsx --env-file=.env scripts/communication-integration-tests.ts",
     "test:communication-smoke": "tsx scripts/communication-smoke.ts && tsx scripts/smsir-provider-smoke.ts",

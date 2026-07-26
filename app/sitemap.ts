@@ -26,6 +26,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/gallery", changeFrequency: "weekly", priority: 0.7 },
     { path: "/team", changeFrequency: "weekly", priority: 0.7 },
     { path: "/achievements", changeFrequency: "weekly", priority: 0.7 },
+    {
+      path: "/achievements/top-ranks",
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
     { path: "/faq", changeFrequency: "monthly", priority: 0.65 },
   ];
 

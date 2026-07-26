@@ -81,11 +81,11 @@ function main() {
   assert.ok(achievements.children, "دستاوردها must have children");
   assert.equal(
     achievements.children.length,
-    2,
-    "دستاوردها must have exactly two children",
+    3,
+    "دستاوردها must have exactly three children",
   );
 
-  const [honors, examResults] = achievements.children;
+  const [honors, examResults, topRanks] = achievements.children;
   assert.equal(honors.label, "افتخارات مؤسسه");
   assert.equal(honors.href, "/achievements");
   assert.equal(examResults.label, "نتایج آزمون‌های قلم‌چی");
@@ -94,16 +94,34 @@ function main() {
     "/assessments",
     "قلم‌چی results must point to the existing public /assessments route",
   );
+  assert.equal(topRanks.label, "آرشیو رتبه‌های برتر کنکور");
+  assert.equal(
+    topRanks.href,
+    "/achievements/top-ranks",
+    "top-rank archive must use the static public route under achievements",
+  );
 
   assert.notEqual(
     honors.href,
     examResults.href,
     "dropdown children should target distinct routes (or intentional anchors)",
   );
+  assert.notEqual(honors.href, topRanks.href);
+  assert.notEqual(examResults.href, topRanks.href);
 
   assert.ok(
     publicNavIncludesHref("/assessments"),
     "publicNavIncludesHref must recognize child href /assessments",
+  );
+  assert.ok(
+    publicNavIncludesHref("/achievements/top-ranks"),
+    "publicNavIncludesHref must recognize /achievements/top-ranks",
+  );
+  assert.ok(
+    existsSync(
+      path.join(process.cwd(), "app", "achievements", "top-ranks", "page.tsx"),
+    ),
+    "public route app/achievements/top-ranks/page.tsx must exist",
   );
 
   const mainNavPath = path.join(
@@ -170,7 +188,7 @@ function main() {
   console.log(`  links: ${hrefs.join(" → ")}`);
   console.log(`  تیم ما → /team (after درباره ما, before دستاوردها)`);
   console.log(
-    `  دستاوردها → ${honors.label} (${honors.href}), ${examResults.label} (${examResults.href})`,
+    `  دستاوردها → ${honors.label} (${honors.href}), ${examResults.label} (${examResults.href}), ${topRanks.label} (${topRanks.href})`,
   );
 }
 

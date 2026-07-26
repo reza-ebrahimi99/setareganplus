@@ -518,6 +518,7 @@ model Organization {
   students                             Student[]
   achievementCategories                AchievementCategory[]
   achievements                         Achievement[]
+  websiteTopRankArchives               WebsiteTopRankArchive[]
   assessmentProviders                  AssessmentProvider[]
   subjects                             Subject[]
   assessments                          Assessment[]
@@ -970,6 +971,7 @@ model MediaAsset {
   galleryAlbumItems            GalleryAlbumItem[]
   mediaPlacements              MediaPlacement[]
   websiteMarketingCards        WebsiteMarketingCard[]        @relation("WebsiteMarketingCardImage")
+  websiteTopRankArchives       WebsiteTopRankArchive[]       @relation("WebsiteTopRankArchiveImage")
   websitePageSectionMedia      WebsitePageSectionMedia[]     @relation("WebsitePageSectionMediaAsset")
   websitePageSeoImages         WebsitePage[]                 @relation("WebsitePageSeoImage")
   registrationDocuments        RegistrationDocument[]
@@ -2395,6 +2397,31 @@ model Achievement {
   @@index([organizationId, schoolYear])
   @@index([organizationId, isPublished, archivedAt, deletedAt, achievementDate])
   @@map("achievements")
+}
+
+/// One published/archive image board per Jalali exam year (org-scoped).
+/// Uniqueness of live years is enforced by a partial unique index (deletedAt IS NULL).
+model WebsiteTopRankArchive {
+  id             String    @id @default(cuid())
+  organizationId String
+  /// Jalali calendar year (e.g. 1385).
+  year           Int
+  title          String?
+  description    String?
+  mediaId        String
+  sortOrder      Int       @default(0)
+  isPublished    Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  media        MediaAsset   @relation("WebsiteTopRankArchiveImage", fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, deletedAt, isPublished, year])
+  @@index([organizationId, sortOrder])
+  @@index([mediaId])
+  @@map("website_top_rank_archives")
 }
 
 // ─── Assessment Center (آزمون) — multi-provider exam results ─────────────────

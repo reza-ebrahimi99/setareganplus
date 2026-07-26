@@ -21,6 +21,7 @@ export type PublicNavLink = {
  * دستاوردها is a dropdown:
  * - افتخارات مؤسسه → /achievements
  * - نتایج آزمون‌های قلم‌چی → /assessments (public assessment directory)
+ * - آرشیو رتبه‌های برتر کنکور → /achievements/top-ranks
  *
  * پیش‌ثبت‌نام stays as the gold header CTA only (not a text nav item).
  */
@@ -34,6 +35,10 @@ export const publicNavLinks = [
     children: [
       { href: "/achievements", label: "افتخارات مؤسسه" },
       { href: "/assessments", label: "نتایج آزمون‌های قلم‌چی" },
+      {
+        href: "/achievements/top-ranks",
+        label: "آرشیو رتبه‌های برتر کنکور",
+      },
     ],
   },
   { href: "/courses", label: "دوره‌ها و کلاس‌ها" },
@@ -72,5 +77,16 @@ export function isPublicNavChildActive(
 ): boolean {
   if (!activePath) return false;
   if (href === "/") return activePath === "/";
-  return activePath === href || activePath.startsWith(`${href}/`);
+  if (activePath === href) return true;
+  if (!activePath.startsWith(`${href}/`)) return false;
+
+  // Static sibling under /achievements must not activate «افتخارات مؤسسه».
+  if (href === "/achievements") {
+    const rest = activePath.slice("/achievements/".length);
+    if (rest === "top-ranks" || rest.startsWith("top-ranks/")) {
+      return false;
+    }
+  }
+
+  return true;
 }

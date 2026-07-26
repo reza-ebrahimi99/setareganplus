@@ -41,6 +41,7 @@ export async function getMediaAssetDependencies(
     pageSectionMedia,
     pageSeoImages,
     formAnswers,
+    topRankArchives,
   ] = await Promise.all([
     prisma.galleryAlbumItem.findMany({
       where: {
@@ -140,6 +141,11 @@ export async function getMediaAssetDependencies(
         fieldKey: true,
         submission: { select: { id: true, formId: true } },
       },
+      take: 50,
+    }),
+    prisma.websiteTopRankArchive.findMany({
+      where: { organizationId, mediaId, deletedAt: null },
+      select: { id: true, year: true, title: true },
       take: 50,
     }),
   ]);
@@ -251,6 +257,15 @@ export async function getMediaAssetDependencies(
       label: "پاسخ بارگذاری فایل فرم",
       detail: `فیلد «${answer.fieldKey}» · ارسال ${answer.submission.id}`,
       href: `/admin/forms/${answer.submission.formId}/responses`,
+    });
+  }
+
+  for (const archive of topRankArchives) {
+    dependencies.push({
+      kind: "website_top_rank_archive",
+      label: "آرشیو رتبه برتر کنکور",
+      detail: archive.title?.trim() || `سال ${archive.year}`,
+      href: `/admin/website/top-rank-archive/${archive.id}`,
     });
   }
 
