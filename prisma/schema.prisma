@@ -542,6 +542,10 @@ model Organization {
   registrationFlowItemVariants         RegistrationFlowItemVariant[]
   promotions                           Promotion[]
   promotionUsages                      PromotionUsage[]
+  experiences                          Experience[]
+  experienceVersions                   ExperienceVersion[]
+  experienceBlocks                     ExperienceBlock[]
+  experienceBlockMedia                 ExperienceBlockMedia[]
 
   @@map("organizations")
 }
@@ -978,6 +982,8 @@ model MediaAsset {
   registrationFlowCovers       RegistrationFlow[]            @relation("RegistrationFlowCover")
   registrationFlowGalleryItems RegistrationFlowGalleryItem[]
   registrationFlowItemImages   RegistrationFlowItem[]        @relation("RegistrationFlowItemImage")
+  experienceVersionSeoImages   ExperienceVersion[]           @relation("ExperienceVersionSeoImage")
+  experienceBlockMedia         ExperienceBlockMedia[]        @relation("ExperienceBlockMediaAsset")
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])
@@ -2824,49 +2830,49 @@ enum RegistrationFlowVariantKind {
 /// Product & Service Flow — admin-configurable catalog entry for the Registration Engine.
 /// Public route remains /register/[slug]; admin remains /admin/registrations/flows.
 model RegistrationFlow {
-  id                 String                          @id @default(cuid())
-  organizationId     String
-  title              String
-  slug               String
-  description        String                          @default("")
-  coverMediaId       String?
-  lifecycle          RegistrationFlowLifecycle       @default(DRAFT)
-  productType        RegistrationProductType         @default(SCHOOL_REGISTRATION)
+  id                          String                          @id @default(cuid())
+  organizationId              String
+  title                       String
+  slug                        String
+  description                 String                          @default("")
+  coverMediaId                String?
+  lifecycle                   RegistrationFlowLifecycle       @default(DRAFT)
+  productType                 RegistrationProductType         @default(SCHOOL_REGISTRATION)
   /// Optional link to an existing Form Builder form (questions live there).
-  formId             String?
-  opensAt            DateTime?
-  closesAt           DateTime?
-  academicYear       String?
+  formId                      String?
+  opensAt                     DateTime?
+  closesAt                    DateTime?
+  academicYear                String?
   /// Comma-separated or free-text grade targeting (e.g. "پایه دهم,پایه یازدهم").
-  gradeTargets       String?
+  gradeTargets                String?
   /// Course / class / service label for targeting.
-  courseTarget       String?
-  capacity           Int?
+  courseTarget                String?
+  capacity                    Int?
   /// Settles only via existing Payment Foundation (PaymentIntent).
-  paymentMode        RegistrationFlowPaymentMode     @default(FIXED_PRICE)
+  paymentMode                 RegistrationFlowPaymentMode     @default(FIXED_PRICE)
   /// Configured amount in Rials (FIXED_PRICE / DEPOSIT / INSTALLMENT base).
-  paymentAmountRials Int                             @default(0)
+  paymentAmountRials          Int                             @default(0)
   /// Optional promotional / sale amount in Rials (UX pricing card + countdown).
-  saleAmountRials    Int?
-  pricingBadge       String?
-  discountStartsAt   DateTime?
-  discountEndsAt     DateTime?
-  showDiscountCountdown Boolean                      @default(true)
-  showRemainingCapacity Boolean                      @default(true)
-  paymentTitle       String?
-  paymentDeadlineAt  DateTime?
-  fulfillmentMode    RegistrationFlowFulfillmentMode @default(NONE)
+  saleAmountRials             Int?
+  pricingBadge                String?
+  discountStartsAt            DateTime?
+  discountEndsAt              DateTime?
+  showDiscountCountdown       Boolean                         @default(true)
+  showRemainingCapacity       Boolean                         @default(true)
+  paymentTitle                String?
+  paymentDeadlineAt           DateTime?
+  fulfillmentMode             RegistrationFlowFulfillmentMode @default(NONE)
   /// Registration confirmation SMS (SMS.ir pattern / SmsTemplate.code).
-  confirmationSmsEnabled      Boolean @default(false)
-  adminNotificationSmsEnabled Boolean @default(false)
+  confirmationSmsEnabled      Boolean                         @default(false)
+  adminNotificationSmsEnabled Boolean                         @default(false)
   smsTemplateCode             String?
   /// JSON string[] of normalized mobile numbers for admin alerts.
-  adminSmsRecipients          Json    @default("[]")
-  publishedAt        DateTime?
-  metadata           Json?
-  createdAt          DateTime                        @default(now())
-  updatedAt          DateTime                        @updatedAt
-  deletedAt          DateTime?
+  adminSmsRecipients          Json                            @default("[]")
+  publishedAt                 DateTime?
+  metadata                    Json?
+  createdAt                   DateTime                        @default(now())
+  updatedAt                   DateTime                        @updatedAt
+  deletedAt                   DateTime?
 
   organization         Organization                          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   coverMedia           MediaAsset?                           @relation("RegistrationFlowCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
@@ -3022,6 +3028,163 @@ model RegistrationFlowItemVariant {
   @@index([organizationId, itemId, sortOrder])
   @@index([organizationId, deletedAt])
   @@map("registration_flow_item_variants")
+}
+
+// ─── Flow Experience Builder ───────────────────────────────────────────────
+//
+// Versioned block documents owned by registration flows (first consumer), later
+// website pages and other owners. Public reads Experience.publishedVersionId only.
+//
+// ExperienceVersion lifecycle (application-enforced; mirrors FormVersion):
+//   DRAFT      — editable; blocks mutate here; not linked from publishedVersionId.
+//   PUBLISHED  — frozen snapshot; pointed to by Experience.publishedVersionId.
+//   SUPERSEDED — replaced by a newer publish.
+//   ARCHIVED   — retired.
+//
+// Owner resolution: ownerType + ownerId (polymorphic; app validates owner exists).
+// templateKey: optional internal preset id (not marketplace).
+
+enum ExperienceOwnerType {
+  REGISTRATION_FLOW
+  WEBSITE_PAGE
+  STANDALONE
+}
+
+enum ExperiencePurpose {
+  LANDING
+  SUCCESS
+  PAYMENT_PENDING
+  WAITING_APPROVAL
+  DOWNLOAD
+  BOOKING
+  CUSTOM
+}
+
+enum ExperienceStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum ExperienceVersionStatus {
+  DRAFT
+  PUBLISHED
+  SUPERSEDED
+  ARCHIVED
+}
+
+enum ExperienceBlockStatus {
+  DRAFT
+  PUBLISHED
+  DISABLED
+}
+
+model Experience {
+  id                 String              @id @default(cuid())
+  organizationId     String
+  ownerType          ExperienceOwnerType
+  ownerId            String
+  purpose            ExperiencePurpose
+  /// Stable key within owner + purpose (e.g. default).
+  key                String              @default("default")
+  title              String
+  /// Optional internal preset / factory key for default templates.
+  templateKey        String?
+  status             ExperienceStatus    @default(DRAFT)
+  publishedVersionId String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  deletedAt          DateTime?
+
+  organization     Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  publishedVersion ExperienceVersion?  @relation("ExperiencePublishedVersion", fields: [organizationId, publishedVersionId], references: [organizationId, id], onDelete: Restrict)
+  versions         ExperienceVersion[] @relation("ExperienceVersions")
+
+  @@unique([organizationId, id])
+  @@index([organizationId, ownerType, ownerId, purpose, deletedAt])
+  @@index([organizationId, status, deletedAt])
+  @@index([organizationId, publishedVersionId])
+  @@map("experiences")
+}
+
+model ExperienceVersion {
+  id              String                  @id @default(cuid())
+  organizationId  String
+  experienceId    String
+  versionNumber   Int
+  status          ExperienceVersionStatus @default(DRAFT)
+  seoTitle        String?
+  seoDescription  String?
+  seoImageMediaId String?
+  /// Theme token overrides (org default → experience → version); stub in Sprint A.
+  themeOverride   Json                    @default("{}")
+  publishedAt     DateTime?
+  createdByUserId String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  organization           Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  experience             Experience        @relation("ExperienceVersions", fields: [organizationId, experienceId], references: [organizationId, id], onDelete: Restrict)
+  seoImageMedia          MediaAsset?       @relation("ExperienceVersionSeoImage", fields: [seoImageMediaId], references: [id], onDelete: SetNull)
+  blocks                 ExperienceBlock[]
+  experiencesAsPublished Experience[]      @relation("ExperiencePublishedVersion")
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, experienceId, versionNumber])
+  @@index([organizationId, experienceId, status])
+  @@index([seoImageMediaId])
+  @@map("experience_versions")
+}
+
+model ExperienceBlock {
+  id                  String                @id @default(cuid())
+  organizationId      String
+  experienceVersionId String
+  /// Allowlisted block type (HERO, PRICING, …) validated by BLOCK_REGISTRY.
+  type                String
+  status              ExperienceBlockStatus @default(DRAFT)
+  sortOrder           Int                   @default(0)
+  /// Typed JSON validated by BLOCK_REGISTRY for `type`.
+  config              Json                  @default("{}")
+  visibility          Json?
+  opensAt             DateTime?
+  closesAt            DateTime?
+  animation           Json?
+  layout              Json?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  deletedAt           DateTime?
+
+  organization      Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  experienceVersion ExperienceVersion      @relation(fields: [organizationId, experienceVersionId], references: [organizationId, id], onDelete: Cascade)
+  mediaLinks        ExperienceBlockMedia[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, experienceVersionId, deletedAt, status, sortOrder])
+  @@index([experienceVersionId, deletedAt, sortOrder])
+  @@map("experience_blocks")
+}
+
+model ExperienceBlockMedia {
+  id             String   @id @default(cuid())
+  organizationId String
+  blockId        String
+  mediaId        String
+  /// Semantic role within block config (e.g. primary, mobile, background).
+  role           String
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  block        ExperienceBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  media        MediaAsset      @relation("ExperienceBlockMediaAsset", fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@unique([blockId, role, sortOrder])
+  @@index([mediaId])
+  @@index([organizationId, mediaId])
+  @@index([blockId, sortOrder])
+  @@map("experience_block_media")
 }
 
 /// Durable registration application (wizard → payment → CRM → admin ops).
