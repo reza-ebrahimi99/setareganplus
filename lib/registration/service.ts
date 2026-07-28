@@ -47,7 +47,7 @@ import {
   isRegistrationWindowOpen,
   remainingCapacity,
 } from "@/lib/registration/flow-config";
-import { ensureRegistrationFlowConfig } from "@/lib/registration/flow-config-db";
+import { resolveRegistrationFlowConfig } from "@/lib/registration/flow-config-db";
 import { nextRegistrationNumber } from "@/lib/registration/number-generator";
 import { resolveRegistrationPricingAsync } from "@/lib/registration/pricing-async";
 import {
@@ -177,10 +177,13 @@ export async function createRegistration(
     discountCode: input.details.discountCode ?? "",
   };
 
-  const flow = await ensureRegistrationFlowConfig({
+  const flow = await resolveRegistrationFlowConfig({
     organizationId: organization.id,
     flowKey: catalog.flowKey,
   });
+  if (!flow) {
+    return { ok: false, error: "جریان ثبت‌نام یافت نشد." };
+  }
 
   const window = isRegistrationWindowOpen(flow);
   if (!window.open) {

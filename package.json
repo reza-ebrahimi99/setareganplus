@@ -41,6 +41,7 @@
     "test:assessment-import": "tsx scripts/assessment-import-unit-tests.ts",
     "test:portal-auth": "tsx scripts/portal-auth-unit-tests.ts",
     "test:zibal-payment": "tsx scripts/zibal-payment-unit-tests.ts",
+    "test:registration-flow-resolve": "tsx scripts/registration-flow-config-resolve-unit-tests.ts",
     "test:crm-import:integration": "tsx --env-file=.env scripts/crm-import-integration-tests.ts",
     "test:crm-dashboard": "tsx scripts/crm-dashboard-unit-tests.ts",
     "test:staff-smoke": "prisma generate && tsx scripts/staff-rbac-smoke.ts",

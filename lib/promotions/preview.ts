@@ -13,7 +13,7 @@ import {
   eligibilityMessage,
   evaluatePromotionEligibility,
 } from "@/lib/promotions/eligibility";
-import { ensureRegistrationFlowConfig } from "@/lib/registration/flow-config-db";
+import { resolveRegistrationFlowConfig } from "@/lib/registration/flow-config-db";
 import { resolveRegistrationCatalog } from "@/lib/registration/flows/resolve-catalog";
 import type { DetailsStepInput } from "@/lib/registration/types";
 
@@ -62,10 +62,13 @@ export async function previewRegistrationPromotionCode(params: {
     return { ok: false, error: "کد تخفیف یا معرف معتبر نیست." };
   }
 
-  const flow = await ensureRegistrationFlowConfig({
+  const flow = await resolveRegistrationFlowConfig({
     organizationId: organization.id,
     flowKey: catalog.flowKey,
   });
+  if (!flow) {
+    return { ok: false, error: "جریان ثبت‌نام یافت نشد." };
+  }
 
   const amountRials =
     flow.settings.packagePricing[params.details.packageKey]?.baseAmountRials ??
