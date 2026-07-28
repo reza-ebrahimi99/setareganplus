@@ -70,6 +70,8 @@ export const ctaBlockDefinition = {
   type: CTA_BLOCK_TYPE,
   labelFa: "فراخوان",
   descriptionFa: "بخش دعوت به اقدام با دکمه‌های پیوند.",
+  categoryFa: "اقدام",
+  iconKey: "cta",
   configVersion: 1,
   capabilities: {
     supportsVisibility: true,

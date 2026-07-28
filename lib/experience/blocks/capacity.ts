@@ -53,6 +53,8 @@ export const capacityBlockDefinition = {
   type: CAPACITY_BLOCK_TYPE,
   labelFa: "ظرفیت",
   descriptionFa: "نمایش ظرفیت باقی‌مانده از جریان ثبت‌نام.",
+  categoryFa: "پویا",
+  iconKey: "capacity",
   configVersion: 1,
   capabilities: {
     supportsVisibility: true,

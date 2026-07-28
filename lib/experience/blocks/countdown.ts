@@ -17,15 +17,19 @@ const FORBIDDEN_BINDING_KEYS = [
   "endsAtIso",
 ] as const;
 
+export type CountdownTargetKind = "AUTO" | "DISCOUNT" | "REGISTRATION_CLOSE";
+
 export type CountdownBlockConfig = {
   v: 1;
   showWhenInactive?: boolean;
   heading?: string;
+  targetKind?: CountdownTargetKind;
 };
 
 const defaultConfig: CountdownBlockConfig = {
   v: 1,
   showWhenInactive: false,
+  targetKind: "AUTO",
 };
 
 function parseConfig(raw: unknown) {
@@ -41,7 +45,17 @@ function parseConfig(raw: unknown) {
   const forbidden = rejectForbiddenKeys(obj, FORBIDDEN_BINDING_KEYS);
   if (!forbidden.ok) return forbidden;
 
-  const config: CountdownBlockConfig = { v: 1 };
+  const rawTargetKind = readString(obj, "targetKind") || "AUTO";
+  if (
+    rawTargetKind !== "AUTO" &&
+    rawTargetKind !== "DISCOUNT" &&
+    rawTargetKind !== "REGISTRATION_CLOSE"
+  ) {
+    return { ok: false as const, error: "نوع هدف شمارش معکوس نامعتبر است." };
+  }
+  const targetKind: CountdownTargetKind = rawTargetKind;
+
+  const config: CountdownBlockConfig = { v: 1, targetKind };
   const showWhenInactive = readBoolean(obj, "showWhenInactive");
   if (showWhenInactive !== undefined) config.showWhenInactive = showWhenInactive;
   const heading = normalizePageBuilderText(readString(obj, "heading"), 120);
@@ -53,6 +67,8 @@ export const countdownBlockDefinition = {
   type: COUNTDOWN_BLOCK_TYPE,
   labelFa: "شمارش معکوس",
   descriptionFa: "نمایش زمان باقی‌مانده تخفیف از پنجره زمانی جریان ثبت‌نام.",
+  categoryFa: "پویا",
+  iconKey: "countdown",
   configVersion: 1,
   capabilities: {
     supportsVisibility: true,

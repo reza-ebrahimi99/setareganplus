@@ -36,6 +36,8 @@ export const spacerBlockDefinition = {
   type: SPACER_BLOCK_TYPE,
   labelFa: "فاصله‌گذار",
   descriptionFa: "فاصله عمودی بین بلوک‌ها.",
+  categoryFa: "چیدمان",
+  iconKey: "spacer",
   configVersion: 1,
   capabilities: {
     supportsVisibility: true,

@@ -66,6 +66,8 @@ export const pricingBlockDefinition = {
   type: PRICING_BLOCK_TYPE,
   labelFa: "قیمت‌گذاری",
   descriptionFa: "نمایش قیمت و تخفیف از موتور جریان ثبت‌نام (بدون ذخیره مبلغ در بلوک).",
+  categoryFa: "پویا",
+  iconKey: "pricing",
   configVersion: 1,
   capabilities: {
     supportsVisibility: true,

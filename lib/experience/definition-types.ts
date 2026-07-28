@@ -3,8 +3,17 @@
  */
 
 import type { ReactNode } from "react";
+import type {
+  ExperienceBlockCategoryFa,
+  ExperienceBlockIconKey,
+} from "@/lib/experience/block-icon-keys";
 import type { ExperienceBindingContext } from "@/lib/experience/binding-context";
-import type { BlockMediaLinkInput, BlockMediaMap, BlockMediaRole } from "@/lib/experience/media-types";
+import type { ExperiencePublicRenderContext } from "@/lib/experience/public/render-context";
+import type {
+  BlockMediaLinkInput,
+  BlockMediaMap,
+  BlockMediaRole,
+} from "@/lib/experience/media-types";
 
 export type ConfigParseResult<T> =
   | { ok: true; data: T }
@@ -26,6 +35,10 @@ export type BlockDefinition<Type extends string, Config> = {
   readonly type: Type;
   readonly labelFa: string;
   readonly descriptionFa: string;
+  /** Admin library category — registry-only. */
+  readonly categoryFa: ExperienceBlockCategoryFa;
+  /** Constrained internal icon key — never arbitrary user input. */
+  readonly iconKey?: ExperienceBlockIconKey;
   readonly configVersion: 1;
   readonly capabilities: BlockCapabilities;
   readonly defaultConfig: Config;
@@ -35,21 +48,16 @@ export type BlockDefinition<Type extends string, Config> = {
   extractMediaLinks: (
     formMedia: Partial<Record<BlockMediaRole, string | null>>,
   ) => BlockMediaLinkInput[];
-  /**
-   * Server-safe lazy load of the public RSC renderer for this block type.
-   * Resolved only through getPublicBlockRenderer(type).
-   */
   loadPublicRenderer: () => Promise<ExperiencePublicBlockRenderer<Config>>;
-  /**
-   * Lazy load of the admin settings panel for this block type.
-   * Resolved only through getAdminBlockEditor(type).
-   */
   loadAdminEditor: () => Promise<ExperienceAdminBlockEditor<Config>>;
 };
 
 export type ExperiencePublicBlockRendererProps<Config> = {
   config: Config;
   media: BlockMediaMap;
+  /** Full public-safe request context (preferred). */
+  context: ExperiencePublicRenderContext;
+  /** Binding slice for dynamic blocks — derived from context. */
   binding?: ExperienceBindingContext;
 };
 

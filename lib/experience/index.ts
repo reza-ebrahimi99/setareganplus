@@ -39,3 +39,17 @@ export {
 export { extractMediaLinksForRoles } from "@/lib/experience/media-types";
 
 export * from "@/lib/experience/service";
+
+export type { ExperiencePublicRenderContext } from "@/lib/experience/public/render-context";
+export {
+  bindingFromPublicRenderContext,
+  buildExperiencePublicRenderContext,
+} from "@/lib/experience/public/render-context";
+export {
+  isBlockPubliclyVisible,
+  sortBlocksDeterministically,
+} from "@/lib/experience/public/block-visibility";
+export {
+  experienceHasRenderableBlocks,
+  selectRenderablePublicBlocks,
+} from "@/lib/experience/public/select-renderable-blocks";

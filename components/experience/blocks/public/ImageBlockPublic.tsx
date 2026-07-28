@@ -8,9 +8,6 @@ export function ImageBlockPublic({
   media,
 }: ExperiencePublicBlockRendererProps<ImageBlockConfig>) {
   return (
-    <ImageSectionRenderer
-      config={config}
-      media={media as SectionMediaMap}
-    />
+    <ImageSectionRenderer config={config} media={media as SectionMediaMap} />
   );
 }

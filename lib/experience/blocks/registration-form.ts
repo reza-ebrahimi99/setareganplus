@@ -69,6 +69,8 @@ export const registrationFormBlockDefinition = {
   type: REGISTRATION_FORM_BLOCK_TYPE,
   labelFa: "فرم ثبت‌نام",
   descriptionFa: "ورود به ویزارد ثبت‌نام متصل به فرم‌ساز (بدون تکرار فیلدها).",
+  categoryFa: "پویا",
+  iconKey: "form",
   configVersion: 1,
   capabilities: {
     supportsVisibility: true,

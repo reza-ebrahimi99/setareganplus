@@ -79,7 +79,10 @@ export const BLOCK_TYPE_OPTIONS = (
   type,
   labelFa: BLOCK_REGISTRY[type].labelFa,
   descriptionFa: BLOCK_REGISTRY[type].descriptionFa,
+  categoryFa: BLOCK_REGISTRY[type].categoryFa,
+  iconKey: BLOCK_REGISTRY[type].iconKey ?? null,
   capabilities: BLOCK_REGISTRY[type].capabilities,
+  mediaRoles: BLOCK_REGISTRY[type].mediaRoles,
 }));
 
 export async function loadPublicBlockRenderer(type: ExperienceBlockType) {

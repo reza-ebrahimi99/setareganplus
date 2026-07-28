@@ -85,6 +85,8 @@ export const heroBlockDefinition = {
   type: HERO_BLOCK_TYPE,
   labelFa: "هیرو",
   descriptionFa: "بخش معرفی با عنوان، تصویر و دکمه‌های اقدام.",
+  categoryFa: "محتوا",
+  iconKey: "hero",
   configVersion: 1,
   capabilities: {
     supportsVisibility: true,

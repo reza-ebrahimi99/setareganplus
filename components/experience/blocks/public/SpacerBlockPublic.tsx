@@ -2,6 +2,7 @@ import { SpacerSectionRenderer } from "@/components/website/page-builder/section
 import type { SpacerBlockConfig } from "@/lib/experience/blocks/spacer";
 import type { ExperiencePublicBlockRendererProps } from "@/lib/experience/definition-types";
 
+/** Spacing only from registry-approved size tokens — no arbitrary CSS. */
 export function SpacerBlockPublic({
   config,
 }: ExperiencePublicBlockRendererProps<SpacerBlockConfig>) {

@@ -67,6 +67,8 @@ export const imageBlockDefinition = {
   type: IMAGE_BLOCK_TYPE,
   labelFa: "تصویر",
   descriptionFa: "تصویر تمام‌عرض یا محدود با زیرنویس اختیاری.",
+  categoryFa: "محتوا",
+  iconKey: "image",
   configVersion: 1,
   capabilities: {
     supportsVisibility: true,

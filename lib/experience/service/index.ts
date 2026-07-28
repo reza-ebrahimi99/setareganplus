@@ -40,6 +40,7 @@ export {
   getActivePublishedVersion,
   getEditableDraftVersion,
   publishExperienceVersion,
+  updateDraftVersionSeo,
 } from "@/lib/experience/service/version-service";
 
 export {

@@ -487,7 +487,24 @@ async function main() {
       const def = BLOCK_REGISTRY[option.type];
       assert.equal(option.labelFa, def.labelFa);
       assert.equal(option.descriptionFa, def.descriptionFa);
+      assert.equal(option.categoryFa, def.categoryFa);
+      assert.equal(option.iconKey, def.iconKey ?? null);
       assert.deepEqual(option.capabilities, def.capabilities);
+    }
+  });
+
+  await test("every block definition declares categoryFa and constrained iconKey", () => {
+    for (const type of EXPECTED_TYPES) {
+      const def = BLOCK_REGISTRY[type];
+      assert.ok(def.categoryFa.length > 0, type);
+      if (def.iconKey) {
+        assert.ok(
+          ["hero", "image", "text", "features", "pricing", "countdown", "capacity", "form", "cta", "spacer"].includes(
+            def.iconKey,
+          ),
+          type,
+        );
+      }
     }
   });
 

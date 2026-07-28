@@ -8,9 +8,6 @@ export function HeroBlockPublic({
   media,
 }: ExperiencePublicBlockRendererProps<HeroBlockConfig>) {
   return (
-    <HeroSectionRenderer
-      config={config}
-      media={media as SectionMediaMap}
-    />
+    <HeroSectionRenderer config={config} media={media as SectionMediaMap} />
   );
 }

@@ -8,7 +8,9 @@ export function FeaturesBlockPublic({
   return (
     <section className="rounded-3xl border border-border bg-surface px-6 py-10 sm:px-10">
       {config.title ? (
-        <h2 className="text-xl font-bold text-primary sm:text-2xl">{config.title}</h2>
+        <h2 className="text-xl font-bold text-primary sm:text-2xl">
+          {config.title}
+        </h2>
       ) : null}
       <ul className={`grid gap-4 sm:grid-cols-2 ${config.title ? "mt-8" : ""}`}>
         {config.items.map((item, index) => (
@@ -20,7 +22,9 @@ export function FeaturesBlockPublic({
               {toPersianDigits(String(index + 1))}. {item.title}
             </p>
             {item.description ? (
-              <p className="mt-2 text-sm leading-7 text-muted">{item.description}</p>
+              <p className="mt-2 text-sm leading-7 text-muted">
+                {item.description}
+              </p>
             ) : null}
           </li>
         ))}

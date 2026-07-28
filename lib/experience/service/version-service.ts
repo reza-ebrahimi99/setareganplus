@@ -3,6 +3,7 @@ import {
   ExperienceBlockStatus,
   ExperienceStatus,
   ExperienceVersionStatus,
+  MediaAssetStatus,
 } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { assertRegistrationFlowOwner } from "@/lib/experience/service/owner";
@@ -249,6 +250,75 @@ export async function archiveDraftVersion(params: {
   }
 
   return okResult({ versionId: params.versionId });
+}
+
+/**
+ * Update SEO fields on a DRAFT version only. Published versions are immutable.
+ */
+export async function updateDraftVersionSeo(params: {
+  organizationId: string;
+  experienceId: string;
+  versionId: string;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoImageMediaId?: string | null;
+}): Promise<ExperienceResult<{ versionId: string }>> {
+  const draft = await prisma.experienceVersion.findFirst({
+    where: {
+      id: params.versionId,
+      organizationId: params.organizationId,
+      experienceId: params.experienceId,
+      status: ExperienceVersionStatus.DRAFT,
+    },
+    select: { id: true },
+  });
+  if (!draft) {
+    return failResult(
+      "VERSION_NOT_DRAFT",
+      "فقط پیش‌نویس قابل ویرایش است یا نسخه یافت نشد.",
+    );
+  }
+
+  if (params.seoImageMediaId) {
+    const media = await prisma.mediaAsset.findFirst({
+      where: {
+        id: params.seoImageMediaId,
+        organizationId: params.organizationId,
+        deletedAt: null,
+        status: MediaAssetStatus.ACTIVE,
+      },
+      select: { id: true },
+    });
+    if (!media) {
+      return failResult("MEDIA_INVALID", "رسانه SEO در سازمان یافت نشد.");
+    }
+  }
+
+  const seoTitle =
+    params.seoTitle === undefined
+      ? undefined
+      : params.seoTitle?.trim()
+        ? params.seoTitle.trim().slice(0, 120)
+        : null;
+  const seoDescription =
+    params.seoDescription === undefined
+      ? undefined
+      : params.seoDescription?.trim()
+        ? params.seoDescription.trim().slice(0, 320)
+        : null;
+
+  await prisma.experienceVersion.update({
+    where: { id: draft.id },
+    data: {
+      ...(seoTitle !== undefined ? { seoTitle } : {}),
+      ...(seoDescription !== undefined ? { seoDescription } : {}),
+      ...(params.seoImageMediaId !== undefined
+        ? { seoImageMediaId: params.seoImageMediaId }
+        : {}),
+    },
+  });
+
+  return okResult({ versionId: draft.id });
 }
 
 export async function publishExperienceVersion(params: {

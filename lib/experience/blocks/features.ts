@@ -97,6 +97,8 @@ export const featuresBlockDefinition = {
   type: FEATURES_BLOCK_TYPE,
   labelFa: "ویژگی‌ها",
   descriptionFa: "فهرست مزایا یا نکات کلیدی با آیکن اختیاری.",
+  categoryFa: "محتوا",
+  iconKey: "features",
   configVersion: 1,
   capabilities: {
     supportsVisibility: true,

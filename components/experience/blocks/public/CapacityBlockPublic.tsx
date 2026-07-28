@@ -4,18 +4,27 @@ import { toPersianDigits } from "@/lib/persian";
 
 export function CapacityBlockPublic({
   config,
-  binding,
+  context,
 }: ExperiencePublicBlockRendererProps<CapacityBlockConfig>) {
-  if (!binding) return null;
-  const { flow, registrationCount } = binding;
-  if (flow.capacity == null || flow.capacity <= 0) {
+  const { capacity } = context;
+
+  if (capacity.isUnavailable) {
     return null;
   }
 
-  const isFull = flow.closedReason === "full";
-  const remaining = Math.max(0, flow.capacity - registrationCount);
+  if (capacity.isUnlimited) {
+    if (config.heading) {
+      return (
+        <section className="rounded-2xl border border-border bg-surface px-6 py-4 text-sm text-foreground">
+          <p className="font-semibold text-primary">{config.heading}</p>
+          <p className="mt-2 text-muted">ظرفیت محدود اعلام نشده است.</p>
+        </section>
+      );
+    }
+    return null;
+  }
 
-  if (isFull && config.fullMessage) {
+  if (capacity.isFull && config.fullMessage) {
     return (
       <section className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
         {config.fullMessage}
@@ -26,6 +35,9 @@ export function CapacityBlockPublic({
   if (config.showRemaining === false) {
     return null;
   }
+
+  const limit = capacity.limit ?? 0;
+  const remaining = capacity.remaining ?? 0;
 
   return (
     <section className="rounded-2xl border border-border bg-surface px-6 py-4 text-sm text-foreground">
@@ -38,7 +50,7 @@ export function CapacityBlockPublic({
           {toPersianDigits(String(remaining))}
         </span>
         {" / "}
-        {toPersianDigits(String(flow.capacity))}
+        {toPersianDigits(String(limit))}
       </p>
     </section>
   );

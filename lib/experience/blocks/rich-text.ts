@@ -57,6 +57,8 @@ export const richTextBlockDefinition = {
   type: RICH_TEXT_BLOCK_TYPE,
   labelFa: "متن",
   descriptionFa: "متن غنی با عنوان اختیاری.",
+  categoryFa: "محتوا",
+  iconKey: "text",
   configVersion: 1,
   capabilities: {
     supportsVisibility: true,

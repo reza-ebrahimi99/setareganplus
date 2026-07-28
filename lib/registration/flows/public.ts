@@ -26,6 +26,8 @@ export type PublicRegistrationFlow = {
   gradeTargets: string | null;
   courseTarget: string | null;
   capacity: number | null;
+  /** Confirmed registrations count (public aggregate — no applicant PII). */
+  registrationCount: number;
   paymentMode: RegistrationFlowPaymentModeValue;
   paymentAmountRials: number;
   paymentTitle: string | null;
@@ -175,6 +177,7 @@ export async function loadPublicRegistrationFlowBySlug(
     gradeTargets: row.gradeTargets,
     courseTarget: row.courseTarget,
     capacity: row.capacity,
+    registrationCount: row._count.registrations,
     paymentMode: row.paymentMode,
     paymentAmountRials: row.paymentAmountRials,
     paymentTitle: row.paymentTitle,
