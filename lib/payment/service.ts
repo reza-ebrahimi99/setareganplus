@@ -16,6 +16,11 @@ import { recordCrmActivity } from "@/lib/crm/activity";
 import { getPaymentProvider } from "@/lib/payment/get-provider";
 import { logPaymentEvent } from "@/lib/payment/logger";
 import {
+  buildSafePaymentRedirectPath,
+  checkVerifiedAmountAgainstIntent,
+  isAllowedZibalCheckoutUrl,
+} from "@/lib/payment/payment-guards";
+import {
   assertPaymentTransition,
   isRetryablePaymentStatus,
   isTerminalPaymentStatus,
@@ -110,6 +115,7 @@ export async function startCheckoutForRegistration(params: {
       finalAmountRials: true,
       currency: true,
       productTitle: true,
+      parentMobileNormalized: true,
     },
   });
 
@@ -215,6 +221,9 @@ export async function startCheckoutForRegistration(params: {
     metadata: {
       registrationId: registration.id,
       registrationNumber: registration.registrationNumber,
+      ...(registration.parentMobileNormalized
+        ? { mobile: registration.parentMobileNormalized }
+        : {}),
     },
   });
 
@@ -233,6 +242,17 @@ export async function startCheckoutForRegistration(params: {
       ok: false,
       error:
         "لینک درگاه پرداخت دریافت نشد. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.",
+    };
+  }
+
+  if (provider.id === "zibal" && !isAllowedZibalCheckoutUrl(checkoutUrl)) {
+    console.error("[payment] rejected non-Zibal checkout URL", {
+      paymentIntentId: intent.id,
+      registrationId: registration.id,
+    });
+    return {
+      ok: false,
+      error: "آدرس درگاه پرداخت نامعتبر است.",
     };
   }
 
@@ -377,17 +397,13 @@ export async function verifyPaymentCallback(params: {
   const registration = intent.registration;
 
   if (isTerminalPaymentStatus(intent.status) || intent.status === PaymentStatus.PAID) {
-    const redirectPath =
-      intent.status === PaymentStatus.PAID
-        ? `/payments/success?intent=${encodeURIComponent(intent.id)}`
-        : `/payments/failed?intent=${encodeURIComponent(intent.id)}`;
     return {
       ok: true,
       alreadyFinalized: true,
       paymentIntentId: intent.id,
       status: intent.status,
       registrationNumber: registration.registrationNumber,
-      redirectPath,
+      redirectPath: buildSafePaymentRedirectPath(intent.status, intent.id),
     };
   }
 
@@ -401,7 +417,7 @@ export async function verifyPaymentCallback(params: {
       paymentIntentId: intent.id,
       status: intent.status,
       registrationNumber: registration.registrationNumber,
-      redirectPath: `/payments/failed?intent=${encodeURIComponent(intent.id)}`,
+      redirectPath: buildSafePaymentRedirectPath(intent.status, intent.id),
     };
   }
 
@@ -419,6 +435,23 @@ export async function verifyPaymentCallback(params: {
 
   if (!verified.ok) {
     return { ok: false, error: verified.error };
+  }
+
+  if (verified.outcome === "paid") {
+    const amountCheck = checkVerifiedAmountAgainstIntent({
+      providerId: provider.id,
+      verifiedAmountRials: verified.amountRials,
+      expectedFinalAmountRials: intent.finalAmountRials,
+    });
+    if (!amountCheck.ok) {
+      console.error("[payment] verified amount rejected", {
+        paymentIntentId: intent.id,
+        expectedRials: intent.finalAmountRials,
+        verifiedRials: verified.amountRials ?? null,
+        provider: provider.id,
+      });
+      return { ok: false, error: amountCheck.error };
+    }
   }
 
   const nextStatus: PaymentStatus =
@@ -521,17 +554,13 @@ export async function verifyPaymentCallback(params: {
   // CRM / timeline only when this invocation won the status transition.
   // Duplicate callbacks / concurrent losers return alreadyFinalized redirect.
   if (!wonLock) {
-    const redirectPath =
-      fresh.status === PaymentStatus.PAID
-        ? `/payments/success?intent=${encodeURIComponent(fresh.id)}`
-        : `/payments/failed?intent=${encodeURIComponent(fresh.id)}`;
     return {
       ok: true,
       alreadyFinalized: true,
       paymentIntentId: fresh.id,
       status: fresh.status,
       registrationNumber: registration.registrationNumber,
-      redirectPath,
+      redirectPath: buildSafePaymentRedirectPath(fresh.status, fresh.id),
     };
   }
 
@@ -661,18 +690,13 @@ export async function verifyPaymentCallback(params: {
     });
   }
 
-  const redirectPath =
-    fresh.status === PaymentStatus.PAID
-      ? `/payments/success?intent=${encodeURIComponent(fresh.id)}`
-      : `/payments/failed?intent=${encodeURIComponent(fresh.id)}`;
-
   return {
     ok: true,
     alreadyFinalized: false,
     paymentIntentId: fresh.id,
     status: fresh.status,
     registrationNumber: registration.registrationNumber,
-    redirectPath,
+    redirectPath: buildSafePaymentRedirectPath(fresh.status, fresh.id),
   };
 }
 

@@ -9,7 +9,7 @@ export type {
   VerifyPaymentInput,
   VerifyPaymentResult,
 } from "@/lib/payment/provider";
-export { getPaymentProvider, setPaymentProviderForTests } from "@/lib/payment/get-provider";
+export { getPaymentProvider, setPaymentProviderForTests, resolveConfiguredPaymentProviderId } from "@/lib/payment/get-provider";
 export {
   startCheckoutForRegistration,
   verifyPaymentCallback,

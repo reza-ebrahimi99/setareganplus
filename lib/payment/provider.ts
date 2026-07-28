@@ -1,6 +1,6 @@
 import type { PaymentStatus } from "@/generated/prisma/enums";
 
-export type PaymentProviderId = "mock";
+export type PaymentProviderId = "mock" | "zibal";
 
 export type RequestPaymentInput = {
   organizationId: string;
@@ -30,7 +30,7 @@ export type VerifyPaymentInput = {
   organizationId: string;
   providerSessionId: string;
   callbackToken: string;
-  /** Provider-specific callback query/body (mock: outcome). */
+  /** Provider-specific callback query/body (mock: outcome; zibal: trackId/success/status). */
   callbackPayload: Record<string, unknown>;
 };
 
@@ -42,13 +42,15 @@ export type VerifyPaymentResult =
       outcome: VerifyPaymentOutcome;
       providerRef: string | null;
       trackingCode: string | null;
+      /** Verified amount from PSP when available (Rials). Must match local intent. */
+      amountRials?: number | null;
       raw: Record<string, unknown>;
     }
   | { ok: false; error: string };
 
 /**
  * Gateway-agnostic payment provider contract.
- * Real PSPs implement this later; no gateway logic outside providers.
+ * Real PSPs implement this; no gateway logic outside providers.
  */
 export interface PaymentProvider {
   readonly id: PaymentProviderId;

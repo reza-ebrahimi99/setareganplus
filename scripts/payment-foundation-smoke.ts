@@ -12,6 +12,8 @@ import {
   isTerminalPaymentStatus,
 } from "../lib/payment/status-machine";
 import { MockPaymentProvider } from "../lib/payment/providers/mock";
+import { ZibalPaymentProvider } from "../lib/payment/providers/zibal";
+import { zibalStartUrl } from "../lib/payment/providers/zibal-http";
 
 async function main() {
   const errors: string[] = [];
@@ -73,6 +75,19 @@ async function main() {
     if (!again.ok || again.outcome !== "paid") {
       errors.push("duplicate verify paid failed");
     }
+  }
+
+  // Zibal provider is registered; start URL contract is fixed; merchant stays server-side.
+  const zibal = new ZibalPaymentProvider();
+  if (zibal.id !== "zibal") {
+    errors.push("ZibalPaymentProvider.id must be zibal");
+  }
+  const start = zibalStartUrl("999");
+  if (!start.includes("/start/999")) {
+    errors.push(`unexpected zibal start url: ${start}`);
+  }
+  if (start.includes("merchant")) {
+    errors.push("zibal start url must not include merchant");
   }
 
   if (errors.length > 0) {
