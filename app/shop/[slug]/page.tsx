@@ -49,6 +49,13 @@ export default async function ShopProductPage({ params }: PageProps) {
   if (!product) notFound();
 
   const { pricing } = product;
+  // /media/* is served by Nginx from STAROS_MEDIA_ROOT (outside public/).
+  // Next.js image optimizer would request /_next/image?... and break covers.
+  const coverUnoptimized =
+    !product.imageUrl ||
+    product.imageUrl.startsWith("/media/") ||
+    !product.imageUrl.startsWith("/");
+
   const specs: Array<{ label: string; value: string }> = [
     { label: "مؤلف", value: product.authors || "—" },
     {
@@ -104,6 +111,7 @@ export default async function ShopProductPage({ params }: PageProps) {
                 className="object-cover"
                 sizes="(max-width: 640px) 100vw, 512px"
                 priority
+                unoptimized={coverUnoptimized}
               />
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-muted">

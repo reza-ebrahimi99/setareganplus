@@ -92,29 +92,41 @@ export async function createSingleItemCommerceOrder(
     priceEndsAt: item.priceEndsAt,
   });
 
-  const totals = calculateOrderTotals({
-    lines: [
-      {
-        itemId: item.id,
-        titleSnapshot: item.title,
-        skuSnapshot: item.sku,
-        systemKindSnapshot: item.systemKind as
-          | "PHYSICAL"
-          | "DIGITAL"
-          | "COURSE"
-          | "EVENT"
-          | "EXAM"
-          | "CONSULTING"
-          | "SERVICE"
-          | "CUSTOM",
-        unitPriceRials: pricing.finalPriceRials,
-        quantity: 1,
-        discountRials: 0,
-      },
-    ],
-    shippingRials: 0,
-    taxRials: 0,
-  });
+  let totals;
+  try {
+    totals = calculateOrderTotals({
+      lines: [
+        {
+          itemId: item.id,
+          titleSnapshot: item.title,
+          skuSnapshot: item.sku,
+          systemKindSnapshot: item.systemKind as
+            | "PHYSICAL"
+            | "DIGITAL"
+            | "COURSE"
+            | "EVENT"
+            | "EXAM"
+            | "CONSULTING"
+            | "SERVICE"
+            | "CUSTOM",
+          unitPriceRials: pricing.finalPriceRials,
+          quantity: 1,
+          discountRials: 0,
+        },
+      ],
+      shippingRials: 0,
+      taxRials: 0,
+    });
+  } catch (error) {
+    console.error("[commerce] order totals failed", error);
+    return {
+      ok: false,
+      error:
+        process.env.NODE_ENV === "development" && error instanceof Error
+          ? error.message
+          : "محاسبه مبلغ سفارش ناموفق بود.",
+    };
+  }
 
   try {
     const created = await prisma.$transaction(async (tx) => {
@@ -131,6 +143,9 @@ export async function createSingleItemCommerceOrder(
         sequence: countToday + 1,
       });
 
+      // Nested item create under Order must NOT pass organizationId —
+      // Prisma UncheckedCreateWithoutOrderInput omits it (inherited from parent).
+      // Create order + lines in two steps so compound FKs stay explicit and safe.
       const order = await tx.commerceOrder.create({
         data: {
           organizationId: input.organizationId,
@@ -145,22 +160,25 @@ export async function createSingleItemCommerceOrder(
           shippingRials: 0,
           grandTotalRials: totals.grandTotalRials,
           deliveryMethod: CommerceDeliveryMethod.PICKUP_ONSITE,
+          fulfillmentStatus: CommerceFulfillmentStatus.AWAITING_PICKUP,
           currency: "IRR",
-          items: {
-            create: totals.lines.map((line) => ({
-              organizationId: input.organizationId,
-              itemId: line.itemId,
-              titleSnapshot: line.titleSnapshot,
-              skuSnapshot: line.skuSnapshot,
-              systemKindSnapshot: line.systemKindSnapshot as CommerceSystemKind,
-              unitPriceRials: line.unitPriceRials,
-              quantity: line.quantity,
-              discountRials: line.discountRials,
-              totalRials: line.totalRials,
-            })),
-          },
         },
         select: { id: true, orderNumber: true, grandTotalRials: true },
+      });
+
+      await tx.commerceOrderItem.createMany({
+        data: totals.lines.map((line) => ({
+          organizationId: input.organizationId,
+          orderId: order.id,
+          itemId: line.itemId,
+          titleSnapshot: line.titleSnapshot,
+          skuSnapshot: line.skuSnapshot,
+          systemKindSnapshot: line.systemKindSnapshot as CommerceSystemKind,
+          unitPriceRials: line.unitPriceRials,
+          quantity: line.quantity,
+          discountRials: line.discountRials,
+          totalRials: line.totalRials,
+        })),
       });
 
       return order;
@@ -173,8 +191,18 @@ export async function createSingleItemCommerceOrder(
       grandTotalRials: created.grandTotalRials,
     };
   } catch (error) {
-    console.error("[commerce] create order failed", error);
-    return { ok: false, error: "ثبت سفارش ناموفق بود." };
+    console.error("[commerce] create order failed", {
+      organizationId: input.organizationId,
+      itemId: input.itemId,
+      error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    const devDetail =
+      process.env.NODE_ENV === "development" && error instanceof Error
+        ? ` (${error.message})`
+        : "";
+    return { ok: false, error: `ثبت سفارش ناموفق بود.${devDetail}` };
   }
 }
 

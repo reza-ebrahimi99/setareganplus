@@ -16,7 +16,8 @@ export async function startShopCheckoutAction(
   let organization;
   try {
     organization = await getCurrentOrganization();
-  } catch {
+  } catch (error) {
+    console.error("[shop] organization resolve failed", error);
     return { formError: "سازمان یافت نشد." };
   }
 
@@ -27,6 +28,11 @@ export async function startShopCheckoutAction(
 
   if (!itemId) return { formError: "محصول نامعتبر است." };
 
+  console.info("[shop] checkout start", {
+    organizationId: organization.id,
+    itemId,
+  });
+
   const order = await createSingleItemCommerceOrder({
     organizationId: organization.id,
     itemId,
@@ -35,14 +41,44 @@ export async function startShopCheckoutAction(
     buyerMobile,
   });
 
-  if (!order.ok) return { formError: order.error };
+  if (!order.ok) {
+    console.error("[shop] create order failed", {
+      organizationId: organization.id,
+      itemId,
+      error: order.error,
+    });
+    return { formError: order.error };
+  }
+
+  console.info("[shop] order created", {
+    orderId: order.orderId,
+    orderNumber: order.orderNumber,
+    grandTotalRials: order.grandTotalRials,
+  });
 
   const checkout = await startCheckoutForCommerceOrder({
     organizationId: organization.id,
     orderId: order.orderId,
   });
 
-  if (!checkout.ok) return { formError: checkout.error };
+  if (!checkout.ok) {
+    console.error("[shop] checkout failed after order create", {
+      orderId: order.orderId,
+      error: checkout.error,
+    });
+    return { formError: checkout.error };
+  }
+
+  console.info("[shop] redirecting to payment provider", {
+    orderId: order.orderId,
+    checkoutUrlHost: (() => {
+      try {
+        return new URL(checkout.checkoutUrl).host;
+      } catch {
+        return "invalid-url";
+      }
+    })(),
+  });
 
   redirect(checkout.checkoutUrl);
 }
