@@ -193,9 +193,17 @@ export function birthDateToUtcDate(birthDate: JalaliDate): Date {
   return new Date(Date.UTC(gy, gm - 1, gd));
 }
 
+export type CreateRegistrationValidationOptions = {
+  requireStudent?: boolean;
+  requireApplicant?: boolean;
+  requireApplicantMobile?: boolean;
+  requireDetails?: boolean;
+};
+
 export function validateCreateRegistrationInput(
   input: CreateRegistrationInput,
   catalogOverride?: RegistrationFlowCatalog | null,
+  wizardOptions: CreateRegistrationValidationOptions = {},
 ):
   | { ok: true }
   | { ok: false; error: string; fieldErrors?: FieldErrors } {
@@ -203,58 +211,78 @@ export function validateCreateRegistrationInput(
     return { ok: false, error: "درخواست نامعتبر است." };
   }
 
+  const requireStudent = wizardOptions.requireStudent !== false;
+  const requireApplicant = wizardOptions.requireApplicant !== false;
+  const requireApplicantMobile =
+    wizardOptions.requireApplicantMobile ?? requireApplicant;
+  const requireDetails = wizardOptions.requireDetails !== false;
+
   const studentErrors: FieldErrors = {};
-  if (!trim(input.student.firstName)) {
-    studentErrors.firstName = "نام الزامی است.";
+  if (requireStudent) {
+    if (!trim(input.student.firstName)) {
+      studentErrors.firstName = "نام الزامی است.";
+    }
+    if (!trim(input.student.lastName)) {
+      studentErrors.lastName = "نام خانوادگی الزامی است.";
+    }
+    const national = validateIranianNationalId(input.student.nationalCode);
+    if (!national.ok) studentErrors.nationalCode = national.error;
+    if (!input.student.birthDate) {
+      studentErrors.birthDate = "تاریخ تولد الزامی است.";
+    }
+    if (
+      input.student.gender !== Gender.MALE &&
+      input.student.gender !== Gender.FEMALE
+    ) {
+      studentErrors.gender = "جنسیت را انتخاب کنید.";
+    }
+    if (!trim(input.student.gradeLabel)) {
+      studentErrors.gradeSlug = "پایه تحصیلی الزامی است.";
+    }
+    if (!trim(input.student.schoolName)) {
+      studentErrors.schoolName = "نام مدرسه الزامی است.";
+    }
+    if (
+      !trim(input.student.province) ||
+      !(IRAN_PROVINCES as readonly string[]).includes(input.student.province)
+    ) {
+      studentErrors.province = "استان را از فهرست انتخاب کنید.";
+    }
+    if (!trim(input.student.city)) studentErrors.city = "شهر الزامی است.";
   }
-  if (!trim(input.student.lastName)) {
-    studentErrors.lastName = "نام خانوادگی الزامی است.";
-  }
-  const national = validateIranianNationalId(input.student.nationalCode);
-  if (!national.ok) studentErrors.nationalCode = national.error;
-  if (!input.student.birthDate) {
-    studentErrors.birthDate = "تاریخ تولد الزامی است.";
-  }
-  if (
-    input.student.gender !== Gender.MALE &&
-    input.student.gender !== Gender.FEMALE
-  ) {
-    studentErrors.gender = "جنسیت را انتخاب کنید.";
-  }
-  if (!trim(input.student.gradeLabel)) {
-    studentErrors.gradeSlug = "پایه تحصیلی الزامی است.";
-  }
-  if (!trim(input.student.schoolName)) {
-    studentErrors.schoolName = "نام مدرسه الزامی است.";
-  }
-  if (
-    !trim(input.student.province) ||
-    !(IRAN_PROVINCES as readonly string[]).includes(input.student.province)
-  ) {
-    studentErrors.province = "استان را از فهرست انتخاب کنید.";
-  }
-  if (!trim(input.student.city)) studentErrors.city = "شهر الزامی است.";
 
-  const parentCheck = validateParentStep({
-    parentName: input.parent.parentName,
-    relationship: input.parent.relationship,
-    mobile: input.parent.mobile,
-    secondaryMobile: input.parent.secondaryMobile ?? "",
-    email: input.parent.email ?? "",
-    address: input.parent.address ?? "",
-  });
+  let parentCheck: { ok: true } | { ok: false; errors: FieldErrors } = {
+    ok: true,
+  };
+  if (requireApplicant) {
+    parentCheck = validateParentStep({
+      parentName: input.parent.parentName,
+      relationship: input.parent.relationship,
+      mobile: input.parent.mobile,
+      secondaryMobile: input.parent.secondaryMobile ?? "",
+      email: input.parent.email ?? "",
+      address: input.parent.address ?? "",
+    });
+  } else if (requireApplicantMobile && input.parent.mobile?.trim()) {
+    const mobile = normalizeIranianMobile(input.parent.mobile);
+    if (!mobile.ok) {
+      parentCheck = { ok: false, errors: { mobile: mobile.error } };
+    }
+  }
 
-  const detailsCheck = validateDetailsStep(
-    input.flowKey,
-    {
-      productKey: input.details.productKey,
-      sessionKey: input.details.sessionKey,
-      packageKey: input.details.packageKey,
-      venueBranchKey: input.details.venueBranchKey,
-      discountCode: input.details.discountCode ?? "",
-    },
-    catalogOverride,
-  );
+  const detailsCheck = requireDetails
+    ? validateDetailsStep(
+        input.flowKey,
+        {
+          productKey: input.details.productKey,
+          sessionKey: input.details.sessionKey,
+          packageKey: input.details.packageKey,
+          venueBranchKey: input.details.venueBranchKey,
+          discountCode: input.details.discountCode ?? "",
+        },
+        catalogOverride,
+      )
+    : ({ ok: true } as const);
 
   const fieldErrors: FieldErrors = {
     ...studentErrors,

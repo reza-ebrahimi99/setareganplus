@@ -152,7 +152,7 @@ export default async function AdminRegistrationsPage({
           href="/admin/registrations/flows"
           className="inline-flex min-h-10 items-center rounded-xl border border-border bg-surface px-4 text-sm font-medium text-primary hover:bg-background"
         >
-          محصولات و جریان‌ها
+          جریان‌های ثبت‌نام
         </Link>
       </div>
 

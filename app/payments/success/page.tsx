@@ -41,6 +41,8 @@ export default async function PaymentSuccessPage({ searchParams }: PageProps) {
   }
 
   const reg = intent.registration;
+  if (!reg) notFound();
+
   const studentName =
     `${reg.studentFirstName} ${reg.studentLastName}`.trim();
   const statusUrl = `/ghalamchi/register/receipt/${encodeURIComponent(reg.registrationNumber)}`;

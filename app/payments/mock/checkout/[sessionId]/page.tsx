@@ -50,8 +50,13 @@ export default async function MockCheckoutPage({
   }
 
   const intent = session.paymentIntent;
+  const registration = intent.registration;
+  if (!registration) {
+    notFound();
+  }
+
   const studentName =
-    `${intent.registration.studentFirstName} ${intent.registration.studentLastName}`.trim();
+    `${registration.studentFirstName} ${registration.studentLastName}`.trim();
 
   return (
     <PublicFormShell>
@@ -68,7 +73,7 @@ export default async function MockCheckoutPage({
           <div className="flex justify-between gap-3">
             <dt className="text-muted">ثبت‌نام</dt>
             <dd className="font-medium" dir="ltr">
-              {toPersianDigits(intent.registration.registrationNumber)}
+              {toPersianDigits(registration.registrationNumber)}
             </dd>
           </div>
           <div className="flex justify-between gap-3">
@@ -77,7 +82,7 @@ export default async function MockCheckoutPage({
           </div>
           <div className="flex justify-between gap-3">
             <dt className="text-muted">محصول</dt>
-            <dd className="font-medium">{intent.registration.productTitle}</dd>
+            <dd className="font-medium">{registration.productTitle}</dd>
           </div>
           <div className="flex justify-between gap-3">
             <dt className="text-muted">مبلغ</dt>

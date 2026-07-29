@@ -59,6 +59,8 @@ export default async function PaymentFailedPage({ searchParams }: PageProps) {
   if (!intent) notFound();
 
   const reg = intent.registration;
+  if (!reg) notFound();
+
   const canRetry =
     intent.status === PaymentStatus.FAILED ||
     intent.status === PaymentStatus.CANCELLED ||

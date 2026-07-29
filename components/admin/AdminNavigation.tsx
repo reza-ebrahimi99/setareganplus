@@ -1,8 +1,11 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { adminNavGroups } from "@/content/admin";
+import {
+  resolveEnabledAdminNavItem,
+} from "@/lib/admin/nav-permissions";
 import { AdminNavIconComponent } from "./AdminIcons";
 
 function getLinkClassName(isActive: boolean, nested = false) {
@@ -53,87 +56,85 @@ export function AdminNavigation({ permissions }: { permissions: readonly string[
             {group.label}
           </p>
           <ul className="space-y-0.5">
-            {group.items.filter((item) =>
-              !item.enabled || !item.permission || permissions.includes(item.permission),
-            ).map((item) => {
-              if (item.enabled) {
-                const children = item.children?.filter(
-                  (child) =>
-                    !child.permission || permissions.includes(child.permission),
-                );
-
-                if (children && children.length > 0) {
-                  const groupOpen = isNavGroupOpen(pathname, item.href);
-
-                  return (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        className={getLinkClassName(groupOpen && pathname === item.href)}
-                        aria-current={
-                          groupOpen && pathname === item.href ? "page" : undefined
-                        }
-                      >
-                        <AdminNavIconComponent name={item.icon} className="size-[18px]" />
-                        <span className="flex-1">{item.label}</span>
-                      </Link>
-                      {groupOpen ? (
-                        <ul className="mt-0.5 space-y-0.5">
-                          {children.map((child) => {
-                            const childActive = isChildNavActive(pathname, child.href);
-                            return (
-                              <li key={child.href}>
-                                <Link
-                                  href={child.href}
-                                  className={getLinkClassName(childActive, true)}
-                                  aria-current={childActive ? "page" : undefined}
-                                >
-                                  <span className="flex-1">{child.label}</span>
-                                </Link>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      ) : null}
-                    </li>
-                  );
-                }
-
-                const isActive =
-                  item.href === "/admin"
-                    ? pathname === "/admin"
-                    : pathname === item.href ||
-                      pathname.startsWith(`${item.href}/`);
-
+            {group.items.map((item) => {
+              if (!item.enabled) {
                 return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={getLinkClassName(isActive)}
-                      aria-current={isActive ? "page" : undefined}
+                  <li key={item.label}>
+                    <span
+                      aria-disabled="true"
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-500"
                     >
-                      <AdminNavIconComponent name={item.icon} className="size-[18px]" />
+                      <AdminNavIconComponent
+                        name={item.icon}
+                        className="size-[18px] opacity-50"
+                      />
                       <span className="flex-1">{item.label}</span>
-                    </Link>
+                      <span className="rounded-full border border-white/10 px-1.5 py-0.5 text-[10px] text-slate-500">
+                        ╪»╪▒ ┘┘é╪┤┘ç ╪ز┘ê╪│╪╣┘ç
+                      </span>
+                    </span>
                   </li>
                 );
               }
 
+              const resolved = resolveEnabledAdminNavItem(item, permissions);
+              if (!resolved.visible) return null;
+
+              if (resolved.children.length > 0) {
+                const groupOpen = isNavGroupOpen(pathname, item.href);
+
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={resolved.href}
+                      className={getLinkClassName(
+                        groupOpen && pathname === resolved.href,
+                      )}
+                      aria-current={
+                        groupOpen && pathname === resolved.href ? "page" : undefined
+                      }
+                    >
+                      <AdminNavIconComponent name={item.icon} className="size-[18px]" />
+                      <span className="flex-1">{item.label}</span>
+                    </Link>
+                    {groupOpen ? (
+                      <ul className="mt-0.5 space-y-0.5">
+                        {resolved.children.map((child) => {
+                          const childActive = isChildNavActive(pathname, child.href);
+                          return (
+                            <li key={`${child.href}:${child.label}`}>
+                              <Link
+                                href={child.href}
+                                className={getLinkClassName(childActive, true)}
+                                aria-current={childActive ? "page" : undefined}
+                              >
+                                <span className="flex-1">{child.label}</span>
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : null}
+                  </li>
+                );
+              }
+
+              const isActive =
+                resolved.href === "/admin"
+                  ? pathname === "/admin"
+                  : pathname === resolved.href ||
+                    pathname.startsWith(`${resolved.href}/`);
+
               return (
-                <li key={item.label}>
-                  <span
-                    aria-disabled="true"
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-500"
+                <li key={item.href}>
+                  <Link
+                    href={resolved.href}
+                    className={getLinkClassName(isActive)}
+                    aria-current={isActive ? "page" : undefined}
                   >
-                    <AdminNavIconComponent
-                      name={item.icon}
-                      className="size-[18px] opacity-50"
-                    />
+                    <AdminNavIconComponent name={item.icon} className="size-[18px]" />
                     <span className="flex-1">{item.label}</span>
-                    <span className="rounded-full border border-white/10 px-1.5 py-0.5 text-[10px] text-slate-500">
-                      در نقشه توسعه
-                    </span>
-                  </span>
+                  </Link>
                 </li>
               );
             })}

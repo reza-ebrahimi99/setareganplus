@@ -37,7 +37,6 @@ import { resolveRegistrationPricing } from "@/lib/registration/pricing";
 import { computeCompletionPercent } from "@/lib/registration/progress";
 import {
   REGISTRATION_STATUS_LABELS,
-  WIZARD_TOTAL_STEPS,
 } from "@/lib/registration/status";
 import type {
   CreateRegistrationInput,
@@ -48,6 +47,7 @@ import {
   validateCreateRegistrationInput,
 } from "@/lib/registration/validate";
 import { allocateUniqueTrackingCode } from "@/lib/tracking/public-tracking-code";
+import { buildWizardPlan } from "@/lib/registration/wizard-plan";
 
 async function resolvePublicBranchId(organizationId: string): Promise<string> {
   const branch = await prisma.branch.findFirst({
@@ -82,7 +82,33 @@ export async function createRegistration(
     return { ok: false, error: "جریان ثبت‌نام یافت نشد." };
   }
 
-  const validated = validateCreateRegistrationInput(input, catalog);
+  const organization = await getCurrentOrganization();
+  const formDriven = Boolean(
+    (input as { linkedForm?: { formId?: string } | null }).linkedForm?.formId,
+  );
+
+  const flowRow = await prisma.registrationFlow.findFirst({
+    where: {
+      organizationId: organization.id,
+      slug: catalog.flowKey,
+      deletedAt: null,
+    },
+    include: {
+      steps: { orderBy: { sortOrder: "asc" } },
+    },
+  });
+
+  const wizardPlan = buildWizardPlan(flowRow?.steps ?? null, { formDriven });
+  const requireStudent = wizardPlan.has("STUDENT");
+  const requireApplicant = wizardPlan.has("APPLICANT");
+  const requireFormPanel = wizardPlan.has("FORM");
+
+  const validated = validateCreateRegistrationInput(input, catalog, {
+    requireStudent,
+    requireApplicant,
+    requireApplicantMobile: requireApplicant,
+    requireDetails: requireFormPanel && !formDriven,
+  });
   if (!validated.ok) {
     return {
       ok: false,
@@ -91,22 +117,30 @@ export async function createRegistration(
     };
   }
 
-  const national = validateIranianNationalId(input.student.nationalCode);
-  if (!national.ok) {
-    return {
-      ok: false,
-      error: national.error,
-      fieldErrors: { nationalCode: national.error },
-    };
+  let nationalNormalized: string | null = null;
+  if (requireStudent || input.student.nationalCode?.trim()) {
+    const national = validateIranianNationalId(input.student.nationalCode);
+    if (!national.ok) {
+      return {
+        ok: false,
+        error: national.error,
+        fieldErrors: { nationalCode: national.error },
+      };
+    }
+    nationalNormalized = national.normalized;
   }
 
-  const mobile = normalizeIranianMobile(input.parent.mobile);
-  if (!mobile.ok) {
-    return {
-      ok: false,
-      error: mobile.error,
-      fieldErrors: { mobile: mobile.error },
-    };
+  let mobileNormalized: string | null = null;
+  if (requireApplicant || input.parent.mobile?.trim()) {
+    const mobile = normalizeIranianMobile(input.parent.mobile);
+    if (!mobile.ok) {
+      return {
+        ok: false,
+        error: mobile.error,
+        fieldErrors: { mobile: mobile.error },
+      };
+    }
+    mobileNormalized = mobile.normalized;
   }
 
   let secondaryNormalized: string | null = null;
@@ -122,18 +156,23 @@ export async function createRegistration(
     secondaryNormalized = secondary.normalized;
   }
 
-  const email = normalizeEmail(input.parent.email ?? "");
-  if (!email.ok) {
-    return {
-      ok: false,
-      error: email.error,
-      fieldErrors: { email: email.error },
-    };
+  let emailValue: string | null = null;
+  if (input.parent.email?.trim()) {
+    const email = normalizeEmail(input.parent.email);
+    if (!email.ok) {
+      return {
+        ok: false,
+        error: email.error,
+        fieldErrors: { email: email.error },
+      };
+    }
+    emailValue = email.email;
   }
 
-  const organization = await getCurrentOrganization();
   const branchId = await resolvePublicBranchId(organization.id);
-  const birthDate = birthDateToUtcDate(input.student.birthDate);
+  const birthDate = input.student.birthDate
+    ? birthDateToUtcDate(input.student.birthDate)
+    : null;
 
   const flow = await ensureRegistrationFlowConfig({
     organizationId: organization.id,
@@ -158,15 +197,39 @@ export async function createRegistration(
     return { ok: false, error: "ظرفیت تکمیل شده است." };
   }
 
+  const resolvedDetails = {
+    productKey:
+      input.details.productKey ||
+      (formDriven || !requireFormPanel
+        ? (catalog.products[0]?.key ?? "")
+        : ""),
+    sessionKey:
+      input.details.sessionKey ||
+      (formDriven || !requireFormPanel
+        ? (catalog.sessions[0]?.key ?? "")
+        : ""),
+    packageKey:
+      input.details.packageKey ||
+      (formDriven || !requireFormPanel
+        ? (catalog.packages[0]?.key ?? "")
+        : ""),
+    venueBranchKey:
+      input.details.venueBranchKey ||
+      (formDriven || !requireFormPanel
+        ? (catalog.venueBranches[0]?.key ?? "")
+        : ""),
+    discountCode: input.details.discountCode ?? "",
+  };
+
   const now = new Date();
   const pricing = resolveRegistrationPricing({
     flowKey: input.flowKey,
     details: {
-      productKey: input.details.productKey,
-      sessionKey: input.details.sessionKey,
-      packageKey: input.details.packageKey,
-      venueBranchKey: input.details.venueBranchKey,
-      discountCode: input.details.discountCode ?? "",
+      productKey: resolvedDetails.productKey,
+      sessionKey: resolvedDetails.sessionKey,
+      packageKey: resolvedDetails.packageKey,
+      venueBranchKey: resolvedDetails.venueBranchKey,
+      discountCode: resolvedDetails.discountCode,
     },
     flow,
     now,
@@ -193,7 +256,17 @@ export async function createRegistration(
   const finalAmountRials =
     dbFlow && !needsCheckout ? 0 : pricing.finalAmountRials;
 
-  const completionPercent = computeCompletionPercent(WIZARD_TOTAL_STEPS);
+  const completionPercent = computeCompletionPercent(
+    wizardPlan.totalSteps,
+    wizardPlan.totalSteps,
+  );
+
+  const studentFirstName =
+    input.student.firstName.trim() ||
+    (requireStudent ? "" : "خریدار");
+  const studentLastName =
+    input.student.lastName.trim() ||
+    (requireStudent ? "" : catalog.title.slice(0, 40));
 
   const payload = {
     status: needsCheckout
@@ -205,39 +278,39 @@ export async function createRegistration(
     productType: catalog.productType,
     flowKey: catalog.flowKey,
     registrationFlowId: flow.id,
-    studentFirstName: input.student.firstName.trim(),
-    studentLastName: input.student.lastName.trim(),
-    nationalCode: national.normalized,
+    studentFirstName,
+    studentLastName,
+    nationalCode: nationalNormalized,
     birthDate,
-    gender: input.student.gender,
-    gradeLabel: input.student.gradeLabel.trim(),
+    gender: input.student.gender || null,
+    gradeLabel: input.student.gradeLabel.trim() || null,
     majorLabel: input.student.majorLabel?.trim() || null,
-    schoolName: input.student.schoolName.trim(),
-    province: input.student.province.trim(),
-    city: input.student.city.trim(),
-    parentName: input.parent.parentName.trim(),
-    parentRelationship: input.parent.relationship,
-    parentMobile: mobile.normalized,
-    parentMobileNormalized: mobile.normalized,
+    schoolName: input.student.schoolName.trim() || null,
+    province: input.student.province.trim() || null,
+    city: input.student.city.trim() || null,
+    parentName: input.parent.parentName.trim() || null,
+    parentRelationship: input.parent.relationship || null,
+    parentMobile: mobileNormalized,
+    parentMobileNormalized: mobileNormalized,
     parentSecondaryMobile: secondaryNormalized,
-    parentEmail: email.email,
+    parentEmail: emailValue,
     parentAddress: input.parent.address?.trim() || null,
-    productKey: input.details.productKey,
+    productKey: resolvedDetails.productKey || null,
     productTitle: pricing.productTitle,
-    sessionKey: input.details.sessionKey,
+    sessionKey: resolvedDetails.sessionKey || null,
     sessionTitle: pricing.sessionTitle,
-    packageKey: input.details.packageKey,
+    packageKey: resolvedDetails.packageKey || null,
     packageTitle: dbFlow?.paymentTitle ?? pricing.packageTitle,
-    venueBranchKey: input.details.venueBranchKey,
+    venueBranchKey: resolvedDetails.venueBranchKey || null,
     venueBranchTitle: pricing.venueBranchTitle,
     discountCode: pricing.discountCode,
     amountRials,
     discountRials,
     finalAmountRials,
-    currentStep: WIZARD_TOTAL_STEPS,
-    lastCompletedStep: WIZARD_TOTAL_STEPS,
+    currentStep: wizardPlan.totalSteps,
+    lastCompletedStep: wizardPlan.totalSteps,
     completionPercent,
-    totalSteps: WIZARD_TOTAL_STEPS,
+    totalSteps: wizardPlan.totalSteps,
     lastActivityAt: now,
     abandonedReason: null,
   };
@@ -356,40 +429,42 @@ export async function createRegistration(
     throw error;
   }
 
-  const leadResult = await upsertLead({
-    organizationId: organization.id,
-    branchId,
-    firstName: input.student.firstName.trim(),
-    lastName: input.student.lastName.trim(),
-    mobile: mobile.normalized,
-    mobileRaw: input.parent.mobile,
-    fatherName:
-      input.parent.relationship === RegistrationParentRelationship.FATHER
-        ? input.parent.parentName.trim()
-        : null,
-    school: input.student.schoolName.trim(),
-    gradeLevel: input.student.gradeLabel.trim(),
-    email: email.email,
-    nationalCode: national.normalized,
-    source: `REGISTRATION:${catalog.flowKey}`,
-    sourceType: LeadSourceType.REGISTRATION,
-    serviceInterest: ServiceInterest.EXAMS,
-    applyScoring: true,
-    createInitialTask: false,
-  });
+  const leadResult = mobileNormalized
+    ? await upsertLead({
+        organizationId: organization.id,
+        branchId,
+        firstName: studentFirstName,
+        lastName: studentLastName,
+        mobile: mobileNormalized,
+        mobileRaw: input.parent.mobile,
+        fatherName:
+          input.parent.relationship === RegistrationParentRelationship.FATHER
+            ? input.parent.parentName.trim()
+            : null,
+        school: input.student.schoolName.trim() || null,
+        gradeLevel: input.student.gradeLabel.trim() || null,
+        email: emailValue,
+        nationalCode: nationalNormalized,
+        source: `REGISTRATION:${catalog.flowKey}`,
+        sourceType: LeadSourceType.REGISTRATION,
+        serviceInterest: ServiceInterest.EXAMS,
+        applyScoring: true,
+        createInitialTask: false,
+      })
+    : { ok: false as const };
 
   if (leadResult.ok) {
     await prisma.lead.update({
       where: { id: leadResult.leadId },
       data: {
-        city: input.student.city.trim(),
-        province: input.student.province.trim(),
-        gender: input.student.gender,
+        city: input.student.city.trim() || null,
+        province: input.student.province.trim() || null,
+        gender: input.student.gender || null,
         birthDate,
         studyField: input.student.majorLabel?.trim() || null,
-        nationalCode: national.normalized,
-        school: input.student.schoolName.trim(),
-        gradeLevel: input.student.gradeLabel.trim(),
+        nationalCode: nationalNormalized,
+        school: input.student.schoolName.trim() || null,
+        gradeLevel: input.student.gradeLabel.trim() || null,
       },
     });
 

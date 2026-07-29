@@ -88,6 +88,7 @@ export default async function PublicRegistrationWizardPage({
           flowPublic={
             flowConfig ? toRegistrationFlowPublicView(flowConfig) : undefined
           }
+          flowSteps={flow?.steps ?? null}
         />
       </Suspense>
     </PublicFormShell>

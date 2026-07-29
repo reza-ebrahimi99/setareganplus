@@ -9,7 +9,7 @@ export type {
   VerifyPaymentInput,
   VerifyPaymentResult,
 } from "@/lib/payment/provider";
-export { getPaymentProvider, setPaymentProviderForTests } from "@/lib/payment/get-provider";
+export { getPaymentProvider, setPaymentProviderForTests, resolveConfiguredPaymentProviderId } from "@/lib/payment/get-provider";
 export {
   startCheckoutForRegistration,
   verifyPaymentCallback,
@@ -22,3 +22,11 @@ export {
   isTerminalPaymentStatus,
   isRetryablePaymentStatus,
 } from "@/lib/payment/status-machine";
+export {
+  validatePayableTarget,
+  registrationPayableTarget,
+  commerceOrderPayableTarget,
+  isRegistrationPayable,
+  isCommerceOrderPayable,
+  PayableTargetError,
+} from "@/lib/payment/payable";

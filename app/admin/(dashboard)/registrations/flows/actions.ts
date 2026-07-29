@@ -28,6 +28,7 @@ import {
 } from "@/lib/registration/flows/admin";
 import { getPublicRegistrationFlowPath } from "@/lib/registration/flows/public-url";
 import { validateTimedDiscountFormInput } from "@/lib/registration/timed-discount";
+import { prisma } from "@/lib/prisma";
 
 export type RegistrationFlowActionState = {
   formError?: string;
@@ -388,6 +389,14 @@ export async function updateRegistrationFlowStepsAction(
     });
     revalidatePath("/admin/registrations/flows");
     revalidatePath(`/admin/registrations/flows/${flowId}`);
+    const flow = await prisma.registrationFlow.findFirst({
+      where: { id: flowId, organizationId: session.organization.id },
+      select: { slug: true },
+    });
+    if (flow?.slug) {
+      revalidatePath(getPublicRegistrationFlowPath(flow.slug));
+      revalidatePath(`${getPublicRegistrationFlowPath(flow.slug)}/wizard`);
+    }
     return { successMessage: "مراحل ذخیره شد." };
   } catch (error) {
     return { formError: mapFlowError(error) };

@@ -537,6 +537,12 @@ model Organization {
   registrationFlowGalleryItems         RegistrationFlowGalleryItem[]
   registrationFlowItems                RegistrationFlowItem[]
   registrationFlowItemVariants         RegistrationFlowItemVariant[]
+  commerceCategories                   CommerceCategory[]
+  commerceBusinessTypes                CommerceBusinessType[]
+  commerceItems                        CommerceItem[]
+  commerceItemCategories               CommerceItemCategory[]
+  commerceOrders                       CommerceOrder[]
+  commerceOrderItems                   CommerceOrderItem[]
 
   @@map("organizations")
 }
@@ -569,6 +575,9 @@ model Branch {
   bookingSlots         BookingSlot[]
   crmLeadImportReports CrmLeadImportReport[]
   registrations        Registration[]
+  commerceCategories   CommerceCategory[]
+  commerceItems        CommerceItem[]
+  commerceOrders       CommerceOrder[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -779,6 +788,7 @@ model Lead {
   crmCallLogs         CrmCallLog[]
   bookingReservations BookingReservation[]
   registrations       Registration[]
+  commerceOrders      CommerceOrder[]
 
   @@unique([organizationId, branchId, id])
   @@unique([organizationId, id])
@@ -971,6 +981,8 @@ model MediaAsset {
   registrationFlowCovers       RegistrationFlow[]            @relation("RegistrationFlowCover")
   registrationFlowGalleryItems RegistrationFlowGalleryItem[]
   registrationFlowItemImages   RegistrationFlowItem[]        @relation("RegistrationFlowItemImage")
+  commerceCategoryImages       CommerceCategory[]            @relation("CommerceCategoryImage")
+  commerceItemPrimaryImages    CommerceItem[]                @relation("CommerceItemPrimaryImage")
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])
@@ -3105,18 +3117,35 @@ enum PaymentStatus {
   REFUNDED
 }
 
-/// Payable unit for one Registration checkout (amounts snapshotted at create).
+/// Polymorphic payment target discriminator (additive; extend with ADD VALUE).
+enum PaymentPayableType {
+  REGISTRATION
+  COMMERCE_ORDER
+  /// Reserved for future domains — do not create intents with these until wired.
+  BOOKING
+  TUITION
+  INSTALLMENT
+}
+
+/// Payable unit for checkout (amounts snapshotted at create).
+/// Target is polymorphic via payableType + payableId.
+/// registrationId is retained for backward-compatible Registration payments (nullable for other domains).
 model PaymentIntent {
-  id               String        @id @default(cuid())
+  id               String             @id @default(cuid())
   organizationId   String
-  registrationId   String
+  /// Legacy / Registration shortcut FK. Required when payableType = REGISTRATION; otherwise null.
+  registrationId   String?
+  /// Domain of the payable entity (REGISTRATION, COMMERCE_ORDER, …).
+  payableType      PaymentPayableType
+  /// Id of the payable entity (registrationId or commerceOrderId, etc.).
+  payableId        String
   idempotencyKey   String
-  status           PaymentStatus @default(PENDING)
+  status           PaymentStatus      @default(PENDING)
   provider         String
   amountRials      Int
-  discountRials    Int           @default(0)
+  discountRials    Int                @default(0)
   finalAmountRials Int
-  currency         String        @default("IRR")
+  currency         String             @default("IRR")
   description      String?
   trackingCode     String?
   receiptNumber    String?
@@ -3125,17 +3154,18 @@ model PaymentIntent {
   failedAt         DateTime?
   cancelledAt      DateTime?
   metadata         Json?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
   organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  registration Registration      @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
+  registration Registration?     @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
   sessions     PaymentSession[]
   eventLogs    PaymentEventLog[]
 
   @@unique([organizationId, idempotencyKey])
   @@unique([organizationId, id])
   @@index([organizationId, registrationId, status])
+  @@index([organizationId, payableType, payableId, status])
   @@index([organizationId, status, createdAt])
   @@index([organizationId, trackingCode])
   @@index([organizationId, receiptNumber])
@@ -3253,3 +3283,255 @@ model RegistrationActivity {
   @@index([organizationId, activityType, occurredAt])
   @@map("registration_activities")
 }
+
+// ─── Commerce Foundation ──────────────────────────────────────────────────────
+// Sellable catalog entity is CommerceItem (goods + services + events + ظخ).
+// Admin UX label remains ┬س┘à╪ص╪╡┘ê┘╪د╪ز┬╗; do not confuse with RegistrationProductType.
+// Variants are deferred ظ¤ extend later with CommerceVariant + OrderItem.variantId.
+
+/// Technical fulfillment kind (stable; extend with ADD VALUE when needed).
+enum CommerceSystemKind {
+  PHYSICAL
+  DIGITAL
+  COURSE
+  EVENT
+  EXAM
+  CONSULTING
+  SERVICE
+  CUSTOM
+}
+
+enum CommerceItemStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum CommerceOrderStatus {
+  DRAFT
+  AWAITING_PAYMENT
+  PAID
+  FULFILLING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum CommerceOrderPaymentStatus {
+  UNPAID
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIAL
+}
+
+/// Nested, admin-managed store categories (seeded, fully editable).
+model CommerceCategory {
+  id              String    @id @default(cuid())
+  organizationId  String
+  /// Optional branch scope; null = organization-wide.
+  branchId        String?
+  parentId        String?
+  /// Stable seed key for idempotent seeds (null for admin-created rows).
+  seedKey         String?
+  title           String
+  slug            String
+  description     String    @default("")
+  icon            String?
+  color           String?
+  imageAssetId    String?
+  sortOrder       Int       @default(0)
+  isActive        Boolean   @default(true)
+  isVisible       Boolean   @default(true)
+  isFeatured      Boolean   @default(false)
+  metaTitle       String?
+  metaDescription String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch?                @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  parent       CommerceCategory?      @relation("CommerceCategoryTree", fields: [organizationId, parentId], references: [organizationId, id], onDelete: Restrict)
+  children     CommerceCategory[]      @relation("CommerceCategoryTree")
+  imageAsset   MediaAsset?            @relation("CommerceCategoryImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
+  itemLinks    CommerceItemCategory[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@unique([organizationId, seedKey])
+  @@index([organizationId, parentId, sortOrder])
+  @@index([organizationId, isActive, isVisible, deletedAt])
+  @@index([organizationId, branchId])
+  @@index([imageAssetId])
+  @@map("commerce_categories")
+}
+
+/// Editable business-facing type labels (╪ش╪▓┘ê┘ç╪î ┘ê╪ذ█î┘╪د╪▒╪î ظخ) ظ¤ no Prisma migration to rename.
+model CommerceBusinessType {
+  id             String    @id @default(cuid())
+  organizationId String
+  title          String
+  slug           String
+  description    String    @default("")
+  sortOrder      Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  items        CommerceItem[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, isActive, deletedAt, sortOrder])
+  @@map("commerce_business_types")
+}
+
+/// Universal sellable catalog entity (physical goods, digital, courses, events, services, ظخ).
+model CommerceItem {
+  id                   String             @id @default(cuid())
+  organizationId       String
+  /// Optional branch ownership; null = organization-wide catalog item.
+  branchId             String?
+  title                String
+  slug                 String
+  shortDescription     String             @default("")
+  description          String             @default("")
+  status               CommerceItemStatus @default(DRAFT)
+  systemKind           CommerceSystemKind @default(CUSTOM)
+  businessTypeId       String?
+  basePriceRials       Int                @default(0)
+  salePriceRials       Int?
+  currency             String             @default("IRR")
+  /// Pricing schedule readiness (null = always-on pricing).
+  priceStartsAt        DateTime?
+  priceEndsAt          DateTime?
+  primaryImageAssetId  String?
+  sku                  String?
+  barcode              String?
+  trackInventory       Boolean            @default(false)
+  stockQuantity        Int?
+  unlimitedStock       Boolean            @default(true)
+  /// Fulfillment hints (derived defaults from systemKind; overridable).
+  requiresShipping     Boolean            @default(false)
+  grantsDigitalAccess  Boolean            @default(false)
+  requiresScheduling   Boolean            @default(false)
+  requiresEnrollment   Boolean            @default(false)
+  metaTitle            String?
+  metaDescription      String?
+  isFeatured           Boolean            @default(false)
+  sortOrder            Int                @default(0)
+  metadata             Json?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  deletedAt            DateTime?
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch?                @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  businessType CommerceBusinessType?  @relation(fields: [organizationId, businessTypeId], references: [organizationId, id], onDelete: Restrict)
+  primaryImage MediaAsset?            @relation("CommerceItemPrimaryImage", fields: [primaryImageAssetId], references: [id], onDelete: SetNull)
+  categoryLinks CommerceItemCategory[]
+  orderItems   CommerceOrderItem[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, deletedAt])
+  @@index([organizationId, systemKind, deletedAt])
+  @@index([organizationId, businessTypeId])
+  @@index([organizationId, branchId])
+  @@index([organizationId, isFeatured, sortOrder])
+  @@index([organizationId, sku])
+  @@index([primaryImageAssetId])
+  @@map("commerce_items")
+}
+
+/// Explicit M2M join for catalog merchandising.
+model CommerceItemCategory {
+  id             String   @id @default(cuid())
+  organizationId String
+  itemId         String
+  categoryId     String
+  sortOrder      Int      @default(0)
+  isFeatured     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  item         CommerceItem     @relation(fields: [organizationId, itemId], references: [organizationId, id], onDelete: Restrict)
+  category     CommerceCategory @relation(fields: [organizationId, categoryId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([itemId, categoryId])
+  @@unique([organizationId, id])
+  @@index([organizationId, categoryId, sortOrder])
+  @@index([organizationId, itemId])
+  @@map("commerce_item_categories")
+}
+
+model CommerceOrder {
+  id             String                     @id @default(cuid())
+  organizationId String
+  branchId       String?
+  orderNumber    String
+  status         CommerceOrderStatus        @default(DRAFT)
+  paymentStatus  CommerceOrderPaymentStatus @default(UNPAID)
+  buyerName      String?
+  buyerMobile    String?
+  buyerEmail     String?
+  buyerNationalCode String?
+  leadId         String?
+  subtotalRials  Int                        @default(0)
+  discountRials  Int                        @default(0)
+  taxRials       Int                        @default(0)
+  shippingRials  Int                        @default(0)
+  grandTotalRials Int                       @default(0)
+  currency       String                     @default("IRR")
+  notes          String?
+  metadata       Json?
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch?             @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  lead         Lead?               @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  items        CommerceOrderItem[]
+
+  @@unique([organizationId, orderNumber])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, paymentStatus, createdAt])
+  @@index([organizationId, branchId])
+  @@index([organizationId, leadId])
+  @@index([organizationId, buyerMobile])
+  @@map("commerce_orders")
+}
+
+model CommerceOrderItem {
+  id                    String            @id @default(cuid())
+  organizationId        String
+  orderId               String
+  itemId                String?
+  /// Immutable line snapshots (survive catalog edits / soft-delete).
+  titleSnapshot         String
+  skuSnapshot           String?
+  systemKindSnapshot    CommerceSystemKind
+  unitPriceRials        Int
+  quantity              Int               @default(1)
+  discountRials         Int               @default(0)
+  totalRials            Int
+  metadata              Json?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  order        CommerceOrder @relation(fields: [organizationId, orderId], references: [organizationId, id], onDelete: Restrict)
+  item         CommerceItem? @relation(fields: [organizationId, itemId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, orderId])
+  @@index([organizationId, itemId])
+  @@map("commerce_order_items")
+}
+

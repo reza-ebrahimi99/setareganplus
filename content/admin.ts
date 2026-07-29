@@ -22,6 +22,8 @@ type AdminNavChildItem = {
   permission?: Permission;
 };
 
+export type { AdminNavChildItem };
+
 type AdminNavItemEnabled = {
   href: string;
   label: string;
@@ -101,8 +103,42 @@ export const adminNavGroups: ReadonlyArray<{
           },
           {
             href: "/admin/registrations/flows",
-            label: "محصولات و جریان‌های ثبت‌نام",
+            label: "جریان‌های ثبت‌نام",
             permission: "registration_flows.view",
+          },
+        ],
+      },
+      {
+        href: "/admin/commerce",
+        label: "فروشگاه",
+        icon: "courses",
+        enabled: true,
+        permission: "commerce.view",
+        children: [
+          {
+            href: "/admin/commerce",
+            label: "داشبورد",
+            permission: "commerce.view",
+          },
+          {
+            href: "/admin/commerce/categories",
+            label: "دسته‌بندی‌ها",
+            permission: "commerce.categories.manage",
+          },
+          {
+            href: "/admin/commerce/products",
+            label: "محصولات",
+            permission: "commerce.products.manage",
+          },
+          {
+            href: "/admin/commerce/orders",
+            label: "سفارش‌ها",
+            permission: "commerce.orders.view",
+          },
+          {
+            href: "/admin/commerce/payments",
+            label: "پرداخت‌ها",
+            permission: "commerce.payments.view",
           },
         ],
       },
@@ -301,6 +337,30 @@ export const adminBreadcrumbs = {
     { label: "ثبت‌نام‌ها", href: "/admin/registrations" },
     { label: "جریان‌های ثبت‌نام", href: "/admin/registrations/flows" },
     { label: "ویرایش جریان" },
+  ],
+  commerce: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه" },
+  ],
+  commerceCategories: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "دسته‌بندی‌ها" },
+  ],
+  commerceProducts: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "محصولات" },
+  ],
+  commerceOrders: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "سفارش‌ها" },
+  ],
+  commercePayments: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "پرداخت‌ها" },
   ],
   bookingServices: [
     { label: "مدیریت", href: "/admin" },

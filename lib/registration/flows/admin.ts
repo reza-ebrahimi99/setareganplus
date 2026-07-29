@@ -15,13 +15,13 @@ import { publicUrlForStorageKey } from "@/lib/media/storage";
 import { prisma } from "@/lib/prisma";
 import {
   DEFAULT_ACCEPTED_MIME,
-  DEFAULT_FLOW_STEPS,
   DEFAULT_MAX_FILE_BYTES,
 } from "@/lib/registration/flows/constants";
 import {
   normalizeRegistrationFlowSlug,
   slugFromRegistrationFlowTitle,
 } from "@/lib/registration/flows/slug";
+import { defaultFlowStepsForProductType } from "@/lib/registration/wizard-plan";
 
 export function isRegistrationFlowPaymentMode(
   value: string,
@@ -380,7 +380,9 @@ export async function createRegistrationFlow(
         productType:
           input.productType ?? RegistrationProductType.SCHOOL_REGISTRATION,
         steps: {
-          create: DEFAULT_FLOW_STEPS.map((step) => ({
+          create: defaultFlowStepsForProductType(
+            input.productType ?? RegistrationProductType.SCHOOL_REGISTRATION,
+          ).map((step) => ({
             stepKey: step.stepKey,
             label: step.label,
             enabled: step.enabled,
@@ -735,7 +737,25 @@ export async function publishRegistrationFlow(input: {
     where: { id: flow.id },
     data: {
       lifecycle: RegistrationFlowLifecycle.ACTIVE,
-      publishedAt: flow.publishedAt ?? new Date(),
+      publishedAt: new Date(),
+      // Stamp enabled-step snapshot for audit; public runtime still reads live steps.
+      metadata: {
+        ...((flow.metadata &&
+        typeof flow.metadata === "object" &&
+        !Array.isArray(flow.metadata)
+          ? flow.metadata
+          : {}) as Record<string, unknown>),
+        publishedSteps: flow.steps
+          .slice()
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((s) => ({
+            stepKey: s.stepKey,
+            enabled: s.enabled,
+            sortOrder: s.sortOrder,
+            label: s.label,
+          })),
+        publishedStepsAt: new Date().toISOString(),
+      },
     },
   });
 }

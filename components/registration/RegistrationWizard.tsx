@@ -40,7 +40,6 @@ import {
 } from "@/lib/registration/pricing";
 import {
   WIZARD_STEP_LABELS,
-  WIZARD_TOTAL_STEPS,
 } from "@/lib/registration/status";
 import type { RegistrationFlowCatalog } from "@/lib/registration/types";
 import {
@@ -55,13 +54,13 @@ import {
   validateParentStep,
   validateStudentStep,
 } from "@/lib/registration/validate";
+import {
+  buildWizardPlan,
+  type FlowStepLike,
+  type WizardPanelKey,
+} from "@/lib/registration/wizard-plan";
 import { toPersianDigits } from "@/lib/persian";
 import { formatJalaliDate } from "@/lib/datetime/jalali";
-
-const STEPS = Array.from({ length: WIZARD_TOTAL_STEPS }, (_, index) => {
-  const id = index + 1;
-  return { id, label: WIZARD_STEP_LABELS[id] ?? `مرحله ${id}` };
-});
 
 const GENDER_LABELS = {
   MALE: "پسر",
@@ -101,6 +100,8 @@ type RegistrationWizardProps = {
   >["uploadDocumentAction"];
   flowSnapshot?: RegistrationFlowSnapshot;
   flowPublic?: RegistrationFlowPublicView;
+  /** Enabled RegistrationFlow steps from DB (public ACTIVE flow). */
+  flowSteps?: FlowStepLike[] | null;
 };
 
 const DEFAULT_RECEIPT_BASE_PATH = "/ghalamchi/register/receipt";
@@ -149,14 +150,22 @@ function emptyDetails(): DetailsStepInput {
   };
 }
 
-function clampWizardStep(value: number | undefined, fallback: number) {
+function clampWizardStep(
+  value: number | undefined,
+  fallback: number,
+  totalSteps: number,
+) {
   if (typeof value !== "number" || Number.isNaN(value)) return fallback;
-  return Math.max(1, Math.min(WIZARD_TOTAL_STEPS, Math.floor(value)));
+  return Math.max(1, Math.min(totalSteps, Math.floor(value)));
 }
 
-function clampCompletedStep(value: number | undefined, fallback: number) {
+function clampCompletedStep(
+  value: number | undefined,
+  fallback: number,
+  totalSteps: number,
+) {
   if (typeof value !== "number" || Number.isNaN(value)) return fallback;
-  return Math.max(0, Math.min(WIZARD_TOTAL_STEPS, Math.floor(value)));
+  return Math.max(0, Math.min(totalSteps, Math.floor(value)));
 }
 
 function WizardPricingBlock({
@@ -206,16 +215,24 @@ export function RegistrationWizard({
   uploadDocumentAction,
   flowSnapshot,
   flowPublic,
+  flowSteps = null,
 }: RegistrationWizardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
   const [saving, setSaving] = useState(false);
+
+  const wizardPlan = useMemo(
+    () => buildWizardPlan(flowSteps, { formDriven: false }),
+    [flowSteps],
+  );
+  const totalSteps = wizardPlan.totalSteps;
+
   const [step, setStep] = useState(() =>
-    clampWizardStep(initialDraft?.currentStep, 1),
+    clampWizardStep(initialDraft?.currentStep, 1, totalSteps),
   );
   const [lastCompletedStep, setLastCompletedStep] = useState(() =>
-    clampCompletedStep(initialDraft?.lastCompletedStep, 0),
+    clampCompletedStep(initialDraft?.lastCompletedStep, 0, totalSteps),
   );
   const [student, setStudent] = useState<StudentStepInput>(
     () => initialDraft?.student ?? emptyStudent(),
@@ -264,10 +281,28 @@ export function RegistrationWizard({
   }, [catalog.flowKey, details, discountExpired, flow]);
 
   const majorRequired = registrationGradeRequiresMajor(student.gradeSlug);
-  const completionPercent = computeCompletionPercent(lastCompletedStep);
+  const completionPercent = computeCompletionPercent(
+    lastCompletedStep,
+    totalSteps,
+  );
   const registrationBlocked =
     flowPublic != null &&
     (!flowPublic.window.open || flowPublic.remainingCapacity === 0);
+
+  const stepperSteps = useMemo(
+    () =>
+      wizardPlan.steps.map((item) => ({
+        id: item.index,
+        label: item.label,
+      })),
+    [wizardPlan],
+  );
+  const currentPanel = wizardPlan.panelAt(step)?.panel ?? null;
+
+  function goToPanel(panel: WizardPanelKey) {
+    const index = wizardPlan.indexOf(panel);
+    if (index != null) setStep(index);
+  }
 
   useEffect(() => {
     if (tokenHydrated) return;
@@ -337,59 +372,69 @@ export function RegistrationWizard({
   async function goNext() {
     if (registrationBlocked) return;
 
-    if (step === 1) {
+    const panel = wizardPlan.panelAt(step)?.panel;
+    if (!panel) return;
+
+    if (panel === "STUDENT") {
       const result = validateStudentStep(student);
       if (!result.ok) {
         setErrors(result.errors);
         return;
       }
       setErrors({});
-      const token = await autosave(2, 1);
+      const token = await autosave(Math.min(step + 1, totalSteps), step);
       if (!token) return;
-      setStep(2);
+      setStep((current) => Math.min(totalSteps, current + 1));
       return;
     }
 
-    if (step === 2) {
+    if (panel === "APPLICANT") {
       const result = validateParentStep(parent);
       if (!result.ok) {
         setErrors(result.errors);
         return;
       }
       setErrors({});
-      const token = await autosave(3, 2);
+      const token = await autosave(Math.min(step + 1, totalSteps), step);
       if (!token) return;
-      setStep(3);
+      setStep((current) => Math.min(totalSteps, current + 1));
       return;
     }
 
-    if (step === 3) {
+    if (panel === "FORM") {
       const result = validateDetailsStep(catalog.flowKey, details);
       if (!result.ok) {
         setErrors(result.errors);
         return;
       }
       setErrors({});
-      const token = await autosave(4, 3);
+      const token = await autosave(Math.min(step + 1, totalSteps), step);
       if (!token) return;
-      setStep(4);
+      setStep((current) => Math.min(totalSteps, current + 1));
       return;
     }
 
-    if (step === 4) {
-      // Documents are optional in v1 — advance without requiring uploads.
+    if (panel === "DOCUMENTS") {
       setErrors({});
-      const token = await autosave(5, 4);
+      const token = await autosave(Math.min(step + 1, totalSteps), step);
       if (!token) return;
-      setStep(5);
+      setStep((current) => Math.min(totalSteps, current + 1));
       return;
     }
 
-    if (step === 5) {
+    if (panel === "REVIEW") {
       setErrors({});
-      const token = await autosave(6, 5);
+      const token = await autosave(Math.min(step + 1, totalSteps), step);
       if (!token) return;
-      setStep(6);
+      setStep((current) => Math.min(totalSteps, current + 1));
+      return;
+    }
+
+    if (panel === "PAYMENT") {
+      setErrors({});
+      const token = await autosave(Math.min(step + 1, totalSteps), step);
+      if (!token) return;
+      setStep((current) => Math.min(totalSteps, current + 1));
     }
   }
 
@@ -401,7 +446,12 @@ export function RegistrationWizard({
 
   async function ensureSavedForUpload(): Promise<string | null> {
     if (resumeToken) return resumeToken;
-    return autosave(Math.max(step, 4), Math.max(lastCompletedStep, 3));
+    const documentsIndex = wizardPlan.indexOf("DOCUMENTS") ?? step;
+    const formIndex = wizardPlan.indexOf("FORM") ?? Math.max(documentsIndex - 1, 0);
+    return autosave(
+      Math.max(step, documentsIndex),
+      Math.max(lastCompletedStep, formIndex),
+    );
   }
 
   function submitPayment() {
@@ -411,13 +461,32 @@ export function RegistrationWizard({
       return;
     }
 
-    const birthDate = studentBirthDateFromParts(student);
-    const gender = student.gender;
-    const relationship = parent.relationship;
-    if (!birthDate || !gender || !relationship) {
-      setFormError("اطلاعات فرم ناقص است. لطفاً مراحل قبل را تکمیل کنید.");
+    if (wizardPlan.has("STUDENT")) {
+      const birthDate = studentBirthDateFromParts(student);
+      const gender = student.gender;
+      if (!birthDate || !gender) {
+        setFormError("اطلاعات دانش‌آموز ناقص است. لطفاً مراحل قبل را تکمیل کنید.");
+        return;
+      }
+    }
+
+    if (wizardPlan.has("APPLICANT") && !parent.relationship) {
+      setFormError("اطلاعات ولی ناقص است. لطفاً مراحل قبل را تکمیل کنید.");
       return;
     }
+
+    const birthDate = studentBirthDateFromParts(student);
+    const gender =
+      student.gender === "MALE" || student.gender === "FEMALE"
+        ? student.gender
+        : Gender.MALE;
+    const relationship =
+      parent.relationship === RegistrationParentRelationship.FATHER ||
+      parent.relationship === RegistrationParentRelationship.MOTHER ||
+      parent.relationship === RegistrationParentRelationship.GUARDIAN ||
+      parent.relationship === RegistrationParentRelationship.OTHER
+        ? parent.relationship
+        : RegistrationParentRelationship.OTHER;
 
     startTransition(async () => {
       const result = await submitAction({
@@ -428,7 +497,11 @@ export function RegistrationWizard({
           firstName: student.firstName,
           lastName: student.lastName,
           nationalCode: student.nationalCode,
-          birthDate,
+          birthDate: birthDate ?? {
+            jy: 1385,
+            jm: 1,
+            jd: 1,
+          },
           gender,
           gradeLabel: student.gradeLabel,
           majorLabel: student.majorLabel || null,
@@ -459,7 +532,7 @@ export function RegistrationWizard({
         return;
       }
 
-      setLastCompletedStep(WIZARD_TOTAL_STEPS);
+      setLastCompletedStep(totalSteps);
 
       if (result.checkoutUrl) {
         window.location.href = result.checkoutUrl;
@@ -526,7 +599,7 @@ export function RegistrationWizard({
             </div>
           </div>
 
-          <RegistrationStepper steps={STEPS} currentStep={step} />
+          <RegistrationStepper steps={stepperSteps} currentStep={step} />
 
           {formError ? (
             <div
@@ -538,7 +611,7 @@ export function RegistrationWizard({
           ) : null}
 
           <div className="registration-step-panel space-y-5" key={step}>
-            {step === 1 ? (
+            {currentPanel === "STUDENT" ? (
               <StudentStep
                 value={student}
                 errors={errors}
@@ -555,11 +628,11 @@ export function RegistrationWizard({
               />
             ) : null}
 
-            {step === 2 ? (
+            {currentPanel === "APPLICANT" ? (
               <ParentStep value={parent} errors={errors} onChange={setParent} />
             ) : null}
 
-            {step === 3 ? (
+            {currentPanel === "FORM" ? (
               <DetailsStep
                 catalog={catalog}
                 flowSnapshot={flowSnapshot}
@@ -572,7 +645,7 @@ export function RegistrationWizard({
               />
             ) : null}
 
-            {step === 4 ? (
+            {currentPanel === "DOCUMENTS" ? (
               <DocumentUploadStep
                 resumeToken={resumeToken}
                 documents={documents}
@@ -591,7 +664,7 @@ export function RegistrationWizard({
               />
             ) : null}
 
-            {step === 5 ? (
+            {currentPanel === "REVIEW" ? (
               <ReviewStep
                 student={student}
                 parent={parent}
@@ -600,11 +673,15 @@ export function RegistrationWizard({
                 pricing={pricing}
                 showDiscountCountdown={showDiscountCountdown}
                 onDiscountExpired={() => setDiscountExpired(true)}
-                onEdit={setStep}
+                showStudent={wizardPlan.has("STUDENT")}
+                showApplicant={wizardPlan.has("APPLICANT")}
+                showForm={wizardPlan.has("FORM")}
+                showDocuments={wizardPlan.has("DOCUMENTS")}
+                onEdit={goToPanel}
               />
             ) : null}
 
-            {step === 6 ? (
+            {currentPanel === "PAYMENT" ? (
               <PaymentStep
                 student={student}
                 parent={parent}
@@ -616,7 +693,9 @@ export function RegistrationWizard({
                 agreed={agreed}
                 onAgreedChange={setAgreed}
                 onPay={submitPayment}
-                onEdit={setStep}
+                showStudent={wizardPlan.has("STUDENT")}
+                showApplicant={wizardPlan.has("APPLICANT")}
+                onEdit={goToPanel}
               />
             ) : null}
           </div>
@@ -643,7 +722,7 @@ export function RegistrationWizard({
               مرحله قبل
             </button>
 
-            {step < WIZARD_TOTAL_STEPS ? (
+            {step < totalSteps ? (
               <button
                 type="button"
                 onClick={() => {
@@ -654,7 +733,7 @@ export function RegistrationWizard({
               >
                 {saving
                   ? "ذخیره پیشرفت…"
-                  : step === 5
+                  : currentPanel === "REVIEW"
                     ? "ادامه به پرداخت"
                     : "مرحله بعد"}
               </button>
@@ -1176,6 +1255,10 @@ function ReviewStep({
   pricing,
   showDiscountCountdown,
   onDiscountExpired,
+  showStudent = true,
+  showApplicant = true,
+  showForm = true,
+  showDocuments = true,
   onEdit,
 }: {
   student: StudentStepInput;
@@ -1185,7 +1268,11 @@ function ReviewStep({
   pricing: WizardPricing;
   showDiscountCountdown: boolean;
   onDiscountExpired: () => void;
-  onEdit: (step: number) => void;
+  showStudent?: boolean;
+  showApplicant?: boolean;
+  showForm?: boolean;
+  showDocuments?: boolean;
+  onEdit: (panel: WizardPanelKey) => void;
 }) {
   const genderLabel =
     student.gender === "MALE" || student.gender === "FEMALE"
@@ -1195,12 +1282,13 @@ function ReviewStep({
   return (
     <section aria-labelledby="review-step-title" className="space-y-4">
       <h2 id="review-step-title" className="text-base font-semibold text-primary">
-        {WIZARD_STEP_LABELS[5]}
+        بازبینی
       </h2>
 
+      {showStudent ? (
       <SummaryCard
         title="دانش‌آموز"
-        onEdit={() => onEdit(1)}
+        onEdit={() => onEdit("STUDENT")}
         rows={[
           ["نام", `${student.firstName} ${student.lastName}`],
           ["کد ملی", toPersianDigits(student.nationalCode)],
@@ -1220,10 +1308,12 @@ function ReviewStep({
           ["محل", `${student.city}، ${student.province}`],
         ]}
       />
+      ) : null}
 
+      {showApplicant ? (
       <SummaryCard
         title="ولی"
-        onEdit={() => onEdit(2)}
+        onEdit={() => onEdit("APPLICANT")}
         rows={[
           ["نام", parent.parentName],
           [
@@ -1243,10 +1333,12 @@ function ReviewStep({
           ["آدرس", parent.address || "—"],
         ]}
       />
+      ) : null}
 
+      {showForm ? (
       <SummaryCard
         title="ثبت‌نام"
-        onEdit={() => onEdit(3)}
+        onEdit={() => onEdit("FORM")}
         rows={[
           [
             "آزمون",
@@ -1268,10 +1360,12 @@ function ReviewStep({
           ],
         ]}
       />
+      ) : null}
 
+      {showDocuments ? (
       <SummaryCard
         title="مدارک"
-        onEdit={() => onEdit(4)}
+        onEdit={() => onEdit("DOCUMENTS")}
         rows={[
           [
             "تعداد فایل",
@@ -1281,6 +1375,7 @@ function ReviewStep({
           ],
         ]}
       />
+      ) : null}
 
       <WizardPricingBlock
         pricing={pricing}
@@ -1340,6 +1435,8 @@ function PaymentStep({
   agreed,
   onAgreedChange,
   onPay,
+  showStudent = true,
+  showApplicant = true,
   onEdit,
 }: {
   student: StudentStepInput;
@@ -1352,7 +1449,9 @@ function PaymentStep({
   agreed: boolean;
   onAgreedChange: (value: boolean) => void;
   onPay: () => void;
-  onEdit: (step: number) => void;
+  showStudent?: boolean;
+  showApplicant?: boolean;
+  onEdit: (panel: WizardPanelKey) => void;
 }) {
   return (
     <section
@@ -1365,16 +1464,17 @@ function PaymentStep({
           id="payment-step-title"
           className="mt-1 text-lg font-bold text-primary sm:text-xl"
         >
-          {WIZARD_STEP_LABELS[6]}
+          پرداخت
         </h2>
         <p className="mt-2 text-sm leading-7 text-muted">
           قبل از انتقال به درگاه، اطلاعات و مبلغ قابل پرداخت را تأیید کنید.
         </p>
       </div>
 
+      {showStudent ? (
       <SummaryCard
         title="دانش‌آموز"
-        onEdit={() => onEdit(1)}
+        onEdit={() => onEdit("STUDENT")}
         rows={[
           ["نام", `${student.firstName} ${student.lastName}`],
           ["پایه", student.gradeLabel || "—"],
@@ -1382,10 +1482,12 @@ function PaymentStep({
           ["مدرسه", student.schoolName || "—"],
         ]}
       />
+      ) : null}
 
+      {showApplicant ? (
       <SummaryCard
         title="ولی"
-        onEdit={() => onEdit(2)}
+        onEdit={() => onEdit("APPLICANT")}
         rows={[
           ["نام", parent.parentName],
           [
@@ -1397,10 +1499,11 @@ function PaymentStep({
           ["موبایل", toPersianDigits(parent.mobile)],
         ]}
       />
+      ) : null}
 
       <SummaryCard
         title="انتخاب ثبت‌نام"
-        onEdit={() => onEdit(3)}
+        onEdit={() => onEdit("FORM")}
         rows={[
           [
             "آزمون",

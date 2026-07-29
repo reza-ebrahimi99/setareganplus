@@ -16,11 +16,17 @@ import { recordCrmActivity } from "@/lib/crm/activity";
 import { getPaymentProvider } from "@/lib/payment/get-provider";
 import { logPaymentEvent } from "@/lib/payment/logger";
 import {
+  buildSafePaymentRedirectPath,
+  checkVerifiedAmountAgainstIntent,
+  isAllowedZibalCheckoutUrl,
+} from "@/lib/payment/payment-guards";
+import {
   assertPaymentTransition,
   isRetryablePaymentStatus,
   isTerminalPaymentStatus,
 } from "@/lib/payment/status-machine";
 import { prisma } from "@/lib/prisma";
+import { registrationPayableTarget } from "@/lib/payment/payable";
 import { recordRegistrationActivity } from "@/lib/registration/activity";
 
 const INTENT_TTL_MS = 60 * 60 * 1000;
@@ -110,6 +116,7 @@ export async function startCheckoutForRegistration(params: {
       finalAmountRials: true,
       currency: true,
       productTitle: true,
+      parentMobileNormalized: true,
     },
   });
 
@@ -147,10 +154,13 @@ export async function startCheckoutForRegistration(params: {
   }
 
   if (!intent) {
+    const payable = registrationPayableTarget(registration.id);
     intent = await prisma.paymentIntent.create({
       data: {
         organizationId: params.organizationId,
-        registrationId: registration.id,
+        registrationId: payable.registrationId,
+        payableType: payable.payableType,
+        payableId: payable.payableId,
         idempotencyKey,
         status: PaymentStatus.PENDING,
         provider: provider.id,
@@ -203,11 +213,39 @@ export async function startCheckoutForRegistration(params: {
     metadata: {
       registrationId: registration.id,
       registrationNumber: registration.registrationNumber,
+      ...(registration.parentMobileNormalized
+        ? { mobile: registration.parentMobileNormalized }
+        : {}),
     },
   });
 
   if (!requested.ok) {
     return { ok: false, error: requested.error };
+  }
+
+  const checkoutUrl = requested.checkoutUrl?.trim() ?? "";
+  if (!checkoutUrl) {
+    console.error("[payment] provider returned empty checkoutUrl", {
+      provider: provider.id,
+      paymentIntentId: intent.id,
+      registrationId: registration.id,
+    });
+    return {
+      ok: false,
+      error:
+        "لینک درگاه پرداخت دریافت نشد. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.",
+    };
+  }
+
+  if (provider.id === "zibal" && !isAllowedZibalCheckoutUrl(checkoutUrl)) {
+    console.error("[payment] rejected non-Zibal checkout URL", {
+      paymentIntentId: intent.id,
+      registrationId: registration.id,
+    });
+    return {
+      ok: false,
+      error: "آدرس درگاه پرداخت نامعتبر است.",
+    };
   }
 
   const session = await prisma.$transaction(async (tx) => {
@@ -240,7 +278,7 @@ export async function startCheckoutForRegistration(params: {
         provider: provider.id,
         providerSessionId: requested.providerSessionId,
         status: PaymentStatus.PROCESSING,
-        checkoutUrl: requested.checkoutUrl,
+        checkoutUrl,
         callbackToken,
         rawRequestJson: requested.raw as Prisma.InputJsonValue,
         expiresAt: new Date(Date.now() + INTENT_TTL_MS),
@@ -339,18 +377,28 @@ export async function verifyPaymentCallback(params: {
   const intent = session.paymentIntent;
   const registration = intent.registration;
 
+  // Phase 1: callback completion still finalizes Registration side-effects only.
+  // Commerce order completion will be wired when checkout initiation lands.
+  if (!registration) {
+    console.error("[payment] missing registration on payment intent", {
+      paymentIntentId: intent.id,
+      payableType: intent.payableType,
+      payableId: intent.payableId,
+    });
+    return {
+      ok: false,
+      error: "هدف پرداخت (ثبت‌نام) برای این نشست یافت نشد.",
+    };
+  }
+
   if (isTerminalPaymentStatus(intent.status) || intent.status === PaymentStatus.PAID) {
-    const redirectPath =
-      intent.status === PaymentStatus.PAID
-        ? `/payments/success?intent=${encodeURIComponent(intent.id)}`
-        : `/payments/failed?intent=${encodeURIComponent(intent.id)}`;
     return {
       ok: true,
       alreadyFinalized: true,
       paymentIntentId: intent.id,
       status: intent.status,
       registrationNumber: registration.registrationNumber,
-      redirectPath,
+      redirectPath: buildSafePaymentRedirectPath(intent.status, intent.id),
     };
   }
 
@@ -364,7 +412,7 @@ export async function verifyPaymentCallback(params: {
       paymentIntentId: intent.id,
       status: intent.status,
       registrationNumber: registration.registrationNumber,
-      redirectPath: `/payments/failed?intent=${encodeURIComponent(intent.id)}`,
+      redirectPath: buildSafePaymentRedirectPath(intent.status, intent.id),
     };
   }
 
@@ -382,6 +430,23 @@ export async function verifyPaymentCallback(params: {
 
   if (!verified.ok) {
     return { ok: false, error: verified.error };
+  }
+
+  if (verified.outcome === "paid") {
+    const amountCheck = checkVerifiedAmountAgainstIntent({
+      providerId: provider.id,
+      verifiedAmountRials: verified.amountRials,
+      expectedFinalAmountRials: intent.finalAmountRials,
+    });
+    if (!amountCheck.ok) {
+      console.error("[payment] verified amount rejected", {
+        paymentIntentId: intent.id,
+        expectedRials: intent.finalAmountRials,
+        verifiedRials: verified.amountRials ?? null,
+        provider: provider.id,
+      });
+      return { ok: false, error: amountCheck.error };
+    }
   }
 
   const nextStatus: PaymentStatus =
@@ -588,18 +653,13 @@ export async function verifyPaymentCallback(params: {
     }
   }
 
-  const redirectPath =
-    fresh.status === PaymentStatus.PAID
-      ? `/payments/success?intent=${encodeURIComponent(fresh.id)}`
-      : `/payments/failed?intent=${encodeURIComponent(fresh.id)}`;
-
   return {
     ok: true,
     alreadyFinalized: false,
     paymentIntentId: fresh.id,
     status: fresh.status,
     registrationNumber: registration.registrationNumber,
-    redirectPath,
+    redirectPath: buildSafePaymentRedirectPath(fresh.status, fresh.id),
   };
 }
 
