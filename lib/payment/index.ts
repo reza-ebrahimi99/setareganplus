@@ -12,6 +12,7 @@ export type {
 export { getPaymentProvider, setPaymentProviderForTests, resolveConfiguredPaymentProviderId } from "@/lib/payment/get-provider";
 export {
   startCheckoutForRegistration,
+  startCheckoutForCommerceOrder,
   verifyPaymentCallback,
   getPaymentIntentPublicView,
   getMockCheckoutSession,

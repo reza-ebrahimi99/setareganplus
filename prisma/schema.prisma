@@ -618,6 +618,7 @@ model User {
   registrationDocumentReviews RegistrationDocument[]   @relation("RegistrationDocumentReviewer")
   registrationNotes           RegistrationNote[]       @relation("RegistrationNoteActor")
   registrationActivities      RegistrationActivity[]   @relation("RegistrationActivityActor")
+  commerceOrdersDelivered     CommerceOrder[]          @relation("CommerceOrderDeliveredBy")
 
   @@index([status])
   @@index([deletedAt])
@@ -3304,6 +3305,7 @@ enum CommerceSystemKind {
 enum CommerceItemStatus {
   DRAFT
   ACTIVE
+  OUT_OF_STOCK
   ARCHIVED
 }
 
@@ -3324,6 +3326,39 @@ enum CommerceOrderPaymentStatus {
   FAILED
   REFUNDED
   PARTIAL
+}
+
+/// Physical booklet print style (MVP catalog attribute).
+enum CommercePrintType {
+  COLOR
+  BLACK_AND_WHITE
+}
+
+/// Physical booklet binding style.
+enum CommerceBindingType {
+  STAPLED
+  SPIRAL
+  PERFECT
+  OTHER
+}
+
+/// Physical booklet trim / format size.
+enum CommerceFormatSize {
+  A4
+  A5
+  RAHLI
+  OTHER
+}
+
+/// On-site pickup fulfillment (no postal shipping in MVP).
+enum CommerceDeliveryMethod {
+  PICKUP_ONSITE
+}
+
+enum CommerceFulfillmentStatus {
+  AWAITING_PICKUP
+  DELIVERED
+  CANCELLED
 }
 
 /// Nested, admin-managed store categories (seeded, fully editable).
@@ -3390,7 +3425,7 @@ model CommerceBusinessType {
   @@map("commerce_business_types")
 }
 
-/// Universal sellable catalog entity (physical goods, digital, courses, events, services, ظخ).
+/// Universal sellable catalog entity (physical goods, digital, courses, events, services, …).
 model CommerceItem {
   id                   String             @id @default(cuid())
   organizationId       String
@@ -3420,6 +3455,19 @@ model CommerceItem {
   grantsDigitalAccess  Boolean            @default(false)
   requiresScheduling   Boolean            @default(false)
   requiresEnrollment   Boolean            @default(false)
+  /// Soft visibility toggle (independent from lifecycle status).
+  isVisible            Boolean            @default(true)
+  /// Booklet / physical catalog attributes (MVP).
+  authors              String             @default("")
+  subject              String?
+  gradeLabel           String?
+  pageCount            Int?
+  editionYear          Int?
+  printType            CommercePrintType?
+  bindingType          CommerceBindingType?
+  formatSize           CommerceFormatSize?
+  /// Managed feature / TOC list (JSON string array).
+  features             Json?
   metaTitle            String?
   metaDescription      String?
   isFeatured           Boolean            @default(false)
@@ -3443,6 +3491,7 @@ model CommerceItem {
   @@index([organizationId, businessTypeId])
   @@index([organizationId, branchId])
   @@index([organizationId, isFeatured, sortOrder])
+  @@index([organizationId, isVisible, status, deletedAt])
   @@index([organizationId, sku])
   @@index([primaryImageAssetId])
   @@map("commerce_items")
@@ -3488,6 +3537,11 @@ model CommerceOrder {
   shippingRials  Int                        @default(0)
   grandTotalRials Int                       @default(0)
   currency       String                     @default("IRR")
+  /// MVP: fixed on-site pickup at Setaregan institute (no postal shipping).
+  deliveryMethod    CommerceDeliveryMethod     @default(PICKUP_ONSITE)
+  fulfillmentStatus CommerceFulfillmentStatus?
+  deliveredAt       DateTime?
+  deliveredByUserId String?
   notes          String?
   metadata       Json?
   createdAt      DateTime                   @default(now())
@@ -3496,15 +3550,18 @@ model CommerceOrder {
   organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   branch       Branch?             @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
   lead         Lead?               @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  deliveredBy  User?               @relation("CommerceOrderDeliveredBy", fields: [deliveredByUserId], references: [id], onDelete: SetNull)
   items        CommerceOrderItem[]
 
   @@unique([organizationId, orderNumber])
   @@unique([organizationId, id])
   @@index([organizationId, status, createdAt])
   @@index([organizationId, paymentStatus, createdAt])
+  @@index([organizationId, fulfillmentStatus, createdAt])
   @@index([organizationId, branchId])
   @@index([organizationId, leadId])
   @@index([organizationId, buyerMobile])
+  @@index([deliveredByUserId])
   @@map("commerce_orders")
 }
 

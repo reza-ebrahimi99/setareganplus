@@ -208,7 +208,7 @@ check("catalog: reject invalid prices", () => {
 check("catalog: fulfillment defaults by kind", () => {
   assert.equal(defaultFulfillmentHints("CONSULTING").requiresScheduling, true);
   assert.equal(defaultFulfillmentHints("COURSE").requiresEnrollment, true);
-  assert.equal(defaultFulfillmentHints("PHYSICAL").requiresShipping, true);
+  assert.equal(defaultFulfillmentHints("PHYSICAL").requiresShipping, false);
 });
 
 check("order: line snapshot + totals", () => {

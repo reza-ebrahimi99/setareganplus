@@ -4,6 +4,8 @@
 
 export * from "@/lib/commerce/types";
 export * from "@/lib/commerce/permissions";
+export * from "@/lib/commerce/booklet";
+export * from "@/lib/commerce/pricing";
 export {
   assertUniqueCategorySlug,
   assertValidCategoryParent,

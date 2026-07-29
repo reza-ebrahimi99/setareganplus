@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import { AdminSection } from "@/components/admin/AdminSection";
 import { adminBreadcrumbs } from "@/content/admin";
 import { requirePermission } from "@/lib/auth/require-admin";
 
@@ -12,44 +10,51 @@ export const metadata: Metadata = {
   title: "فروشگاه",
 };
 
-export default async function AdminCommerceDashboardPage() {
-  await requirePermission("commerce.view");
+const links = [
+  {
+    href: "/admin/commerce/products",
+    title: "محصولات",
+    description: "مدیریت جزوه‌ها و اقلام کاتالوگ",
+  },
+  {
+    href: "/admin/commerce/orders",
+    title: "سفارش‌ها",
+    description: "پیگیری پرداخت و تحویل حضوری",
+  },
+  {
+    href: "/admin/commerce/categories",
+    title: "دسته‌بندی‌ها",
+    description: "ساختار دسته‌های فروشگاه",
+  },
+  {
+    href: "/admin/commerce/payments",
+    title: "پرداخت‌ها",
+    description: "نمای کلی پرداخت‌های فروشگاه",
+  },
+] as const;
 
-  const links = [
-    { href: "/admin/commerce/categories", label: "دسته‌بندی‌ها" },
-    { href: "/admin/commerce/products", label: "محصولات" },
-    { href: "/admin/commerce/orders", label: "سفارش‌ها" },
-    { href: "/admin/commerce/payments", label: "پرداخت‌ها" },
-  ] as const;
+export default async function AdminCommerceHomePage() {
+  await requirePermission("commerce.view");
 
   return (
     <>
       <AdminPageHeader
         title="فروشگاه"
-        description="زیرساخت تجارت الکترونیک — کاتالوگ، سفارش و پرداخت (فاز Foundation)"
+        description="فروش جزوه فیزیکی با تحویل حضوری از مؤسسه آموزشی ستارگان"
         breadcrumbs={adminBreadcrumbs.commerce}
         compact
       />
-
-      <AdminSection title="میان‌برها" headingId="commerce-shortcuts">
-        <div className="flex flex-wrap gap-3">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="inline-flex min-h-10 items-center rounded-xl border border-border bg-surface px-4 text-sm font-medium text-primary hover:bg-background"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
-      </AdminSection>
-
-      <div className="mt-6">
-        <AdminEmptyState
-          title="داشبورد فروشگاه به‌زودی تکمیل می‌شود"
-          description="در این فاز فقط زیرساخت داده، دسترسی‌ها و ناوبری آماده شده است. فروشگاه عمومی و تسویه‌حساب در فازهای بعدی اضافه می‌شوند."
-        />
+      <div className="grid gap-3 sm:grid-cols-2">
+        {links.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="rounded-2xl border border-border bg-surface p-5 transition hover:border-primary/40"
+          >
+            <h2 className="text-base font-bold text-foreground">{item.title}</h2>
+            <p className="mt-2 text-sm leading-7 text-muted">{item.description}</p>
+          </Link>
+        ))}
       </div>
     </>
   );

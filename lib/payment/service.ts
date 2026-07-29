@@ -6,12 +6,18 @@
 import { randomBytes } from "node:crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import {
+  CommerceFulfillmentStatus,
+  CommerceOrderPaymentStatus,
+  CommerceOrderStatus,
   CrmActivityType,
+  PaymentPayableType,
   PaymentStatus,
   RegistrationActivityType,
   RegistrationPaymentStatus,
   RegistrationStatus,
 } from "@/generated/prisma/enums";
+import { enqueueCommerceOrderPaidSms } from "@/lib/commerce/commerce-sms";
+import { decrementCommerceItemStock } from "@/lib/commerce/inventory";
 import { recordCrmActivity } from "@/lib/crm/activity";
 import { getPaymentProvider } from "@/lib/payment/get-provider";
 import { logPaymentEvent } from "@/lib/payment/logger";
@@ -21,12 +27,15 @@ import {
   isAllowedZibalCheckoutUrl,
 } from "@/lib/payment/payment-guards";
 import {
+  commerceOrderPayableTarget,
+  registrationPayableTarget,
+} from "@/lib/payment/payable";
+import {
   assertPaymentTransition,
   isRetryablePaymentStatus,
   isTerminalPaymentStatus,
 } from "@/lib/payment/status-machine";
 import { prisma } from "@/lib/prisma";
-import { registrationPayableTarget } from "@/lib/payment/payable";
 import { recordRegistrationActivity } from "@/lib/registration/activity";
 
 const INTENT_TTL_MS = 60 * 60 * 1000;
@@ -63,7 +72,8 @@ export type VerifyCallbackResult =
       alreadyFinalized: boolean;
       paymentIntentId: string;
       status: PaymentStatus;
-      registrationNumber: string;
+      /** Registration number when payable is REGISTRATION; otherwise null. */
+      registrationNumber: string | null;
       redirectPath: string;
     }
   | { ok: false; error: string };
@@ -339,6 +349,200 @@ export async function startCheckoutForRegistration(params: {
 }
 
 /**
+ * Create or reuse unpaid PaymentIntent for a commerce order and open checkout.
+ */
+export async function startCheckoutForCommerceOrder(params: {
+  organizationId: string;
+  orderId: string;
+}): Promise<StartCheckoutResult> {
+  const order = await prisma.commerceOrder.findFirst({
+    where: {
+      id: params.orderId,
+      organizationId: params.organizationId,
+    },
+    select: {
+      id: true,
+      orderNumber: true,
+      status: true,
+      paymentStatus: true,
+      grandTotalRials: true,
+      currency: true,
+      buyerMobile: true,
+      items: {
+        take: 1,
+        select: { titleSnapshot: true },
+      },
+    },
+  });
+
+  if (!order) {
+    return { ok: false, error: "سفارش یافت نشد." };
+  }
+
+  if (order.paymentStatus === CommerceOrderPaymentStatus.PAID) {
+    return { ok: false, error: "این سفارش قبلاً پرداخت شده است." };
+  }
+
+  if (order.status === CommerceOrderStatus.CANCELLED) {
+    return { ok: false, error: "این سفارش لغو شده است." };
+  }
+
+  const provider = getPaymentProvider();
+  const idempotencyKey = `commerce-order:${order.id}:${order.grandTotalRials}`;
+  const productTitle = order.items[0]?.titleSnapshot ?? "محصول";
+  const description = `خرید ${productTitle} — ${order.orderNumber}`;
+
+  let intent = await prisma.paymentIntent.findFirst({
+    where: {
+      organizationId: params.organizationId,
+      idempotencyKey,
+    },
+  });
+
+  if (intent && intent.status === PaymentStatus.PAID) {
+    return { ok: false, error: "پرداخت این سفارش قبلاً انجام شده است." };
+  }
+
+  if (!intent) {
+    const payable = commerceOrderPayableTarget(order.id);
+    intent = await prisma.paymentIntent.create({
+      data: {
+        organizationId: params.organizationId,
+        registrationId: payable.registrationId,
+        payableType: payable.payableType,
+        payableId: payable.payableId,
+        idempotencyKey,
+        status: PaymentStatus.PENDING,
+        provider: provider.id,
+        amountRials: order.grandTotalRials,
+        discountRials: 0,
+        finalAmountRials: order.grandTotalRials,
+        currency: order.currency,
+        description,
+        expiresAt: new Date(Date.now() + INTENT_TTL_MS),
+      },
+    });
+
+    await logPaymentEvent({
+      organizationId: params.organizationId,
+      paymentIntentId: intent.id,
+      fromStatus: null,
+      toStatus: PaymentStatus.PENDING,
+      event: "intent.created",
+      message: "Commerce payment intent created",
+    });
+  }
+
+  if (
+    intent.status !== PaymentStatus.PENDING &&
+    !isRetryablePaymentStatus(intent.status) &&
+    intent.status !== PaymentStatus.PROCESSING
+  ) {
+    return {
+      ok: false,
+      error: "امکان شروع پرداخت برای این وضعیت وجود ندارد.",
+    };
+  }
+
+  const fromStatus = intent.status;
+  if (fromStatus !== PaymentStatus.PROCESSING) {
+    assertPaymentTransition(fromStatus, PaymentStatus.PROCESSING);
+  }
+
+  const callbackToken = newCallbackToken();
+  const callbackPath = `/payments/callback/${provider.id}`;
+
+  const requested = await provider.requestPayment({
+    organizationId: params.organizationId,
+    paymentIntentId: intent.id,
+    amountRials: intent.finalAmountRials,
+    currency: intent.currency,
+    description: intent.description ?? description,
+    callbackPath,
+    callbackToken,
+    metadata: {
+      commerceOrderId: order.id,
+      orderNumber: order.orderNumber,
+      ...(order.buyerMobile ? { mobile: order.buyerMobile } : {}),
+    },
+  });
+
+  if (!requested.ok) {
+    return { ok: false, error: requested.error };
+  }
+
+  const checkoutUrl = requested.checkoutUrl?.trim() ?? "";
+  if (!checkoutUrl) {
+    return {
+      ok: false,
+      error:
+        "لینک درگاه پرداخت دریافت نشد. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.",
+    };
+  }
+
+  if (provider.id === "zibal" && !isAllowedZibalCheckoutUrl(checkoutUrl)) {
+    return { ok: false, error: "آدرس درگاه پرداخت نامعتبر است." };
+  }
+
+  const session = await prisma.$transaction(async (tx) => {
+    const updatedIntent = await tx.paymentIntent.update({
+      where: { id: intent!.id },
+      data: {
+        status: PaymentStatus.PROCESSING,
+        provider: provider.id,
+        trackingCode: requested.trackingCode,
+        failedAt: null,
+        cancelledAt: null,
+      },
+    });
+
+    await logPaymentEvent({
+      organizationId: params.organizationId,
+      paymentIntentId: updatedIntent.id,
+      fromStatus,
+      toStatus: PaymentStatus.PROCESSING,
+      event: "checkout.started",
+      message: "Commerce checkout session opened",
+      metadata: { providerSessionId: requested.providerSessionId },
+      tx,
+    });
+
+    const createdSession = await tx.paymentSession.create({
+      data: {
+        organizationId: params.organizationId,
+        paymentIntentId: updatedIntent.id,
+        provider: provider.id,
+        providerSessionId: requested.providerSessionId,
+        status: PaymentStatus.PROCESSING,
+        checkoutUrl,
+        callbackToken,
+        rawRequestJson: requested.raw as Prisma.InputJsonValue,
+        expiresAt: new Date(Date.now() + INTENT_TTL_MS),
+      },
+    });
+
+    await tx.commerceOrder.update({
+      where: { id: order.id },
+      data: {
+        status: CommerceOrderStatus.AWAITING_PAYMENT,
+        paymentStatus: CommerceOrderPaymentStatus.PENDING,
+      },
+    });
+
+    return createdSession;
+  });
+
+  return {
+    ok: true,
+    paymentIntentId: intent.id,
+    paymentSessionId: session.id,
+    checkoutUrl: requested.checkoutUrl,
+    trackingCode: requested.trackingCode,
+    provider: provider.id,
+  };
+}
+
+/**
  * Idempotent callback verification.
  * Duplicate / refresh safe: terminal intents return the same redirect without re-CRM.
  */
@@ -376,10 +580,10 @@ export async function verifyPaymentCallback(params: {
 
   const intent = session.paymentIntent;
   const registration = intent.registration;
+  const isCommerce =
+    intent.payableType === PaymentPayableType.COMMERCE_ORDER;
 
-  // Phase 1: callback completion still finalizes Registration side-effects only.
-  // Commerce order completion will be wired when checkout initiation lands.
-  if (!registration) {
+  if (!isCommerce && !registration) {
     console.error("[payment] missing registration on payment intent", {
       paymentIntentId: intent.id,
       payableType: intent.payableType,
@@ -387,8 +591,21 @@ export async function verifyPaymentCallback(params: {
     });
     return {
       ok: false,
-      error: "هدف پرداخت (ثبت‌نام) برای این نشست یافت نشد.",
+      error: "هدف پرداخت برای این نشست یافت نشد.",
     };
+  }
+
+  if (isCommerce) {
+    const orderExists = await prisma.commerceOrder.findFirst({
+      where: {
+        id: intent.payableId,
+        organizationId: params.organizationId,
+      },
+      select: { id: true, orderNumber: true },
+    });
+    if (!orderExists) {
+      return { ok: false, error: "سفارش مرتبط با پرداخت یافت نشد." };
+    }
   }
 
   if (isTerminalPaymentStatus(intent.status) || intent.status === PaymentStatus.PAID) {
@@ -397,7 +614,7 @@ export async function verifyPaymentCallback(params: {
       alreadyFinalized: true,
       paymentIntentId: intent.id,
       status: intent.status,
-      registrationNumber: registration.registrationNumber,
+      registrationNumber: registration?.registrationNumber ?? null,
       redirectPath: buildSafePaymentRedirectPath(intent.status, intent.id),
     };
   }
@@ -411,7 +628,7 @@ export async function verifyPaymentCallback(params: {
       alreadyFinalized: true,
       paymentIntentId: intent.id,
       status: intent.status,
-      registrationNumber: registration.registrationNumber,
+      registrationNumber: registration?.registrationNumber ?? null,
       redirectPath: buildSafePaymentRedirectPath(intent.status, intent.id),
     };
   }
@@ -510,27 +727,85 @@ export async function verifyPaymentCallback(params: {
       tx,
     });
 
-    if (nextStatus === PaymentStatus.PAID) {
-      await tx.registration.update({
-        where: { id: registration.id },
-        data: {
-          status: RegistrationStatus.APPROVED,
-          paymentStatus: RegistrationPaymentStatus.PAID,
-          trackingCode,
-          paymentRef: verified.providerRef,
-          paymentProvider: provider.id,
-        },
-      });
-    } else {
-      await tx.registration.update({
-        where: { id: registration.id },
-        data: {
-          status: RegistrationStatus.WAITING_PAYMENT,
-          paymentStatus: RegistrationPaymentStatus.FAILED,
-          trackingCode,
-          paymentRef: verified.providerRef,
-        },
-      });
+    if (isCommerce) {
+      if (nextStatus === PaymentStatus.PAID) {
+        const paidOnce = await tx.commerceOrder.updateMany({
+          where: {
+            id: intent.payableId,
+            organizationId: params.organizationId,
+            paymentStatus: { not: CommerceOrderPaymentStatus.PAID },
+          },
+          data: {
+            status: CommerceOrderStatus.PAID,
+            paymentStatus: CommerceOrderPaymentStatus.PAID,
+            fulfillmentStatus: CommerceFulfillmentStatus.AWAITING_PICKUP,
+          },
+        });
+
+        // Inventory decrements exactly once — gated by first PAID transition.
+        if (paidOnce.count === 1) {
+          const lines = await tx.commerceOrderItem.findMany({
+            where: {
+              organizationId: params.organizationId,
+              orderId: intent.payableId,
+              itemId: { not: null },
+            },
+            select: { itemId: true, quantity: true },
+          });
+
+          for (const line of lines) {
+            if (!line.itemId) continue;
+            const stock = await decrementCommerceItemStock({
+              tx,
+              organizationId: params.organizationId,
+              itemId: line.itemId,
+              quantity: line.quantity,
+            });
+            if (!stock.ok) {
+              console.error("[payment] commerce stock decrement failed", {
+                orderId: intent.payableId,
+                itemId: line.itemId,
+                error: stock.error,
+              });
+            }
+          }
+        }
+      } else {
+        await tx.commerceOrder.updateMany({
+          where: {
+            id: intent.payableId,
+            organizationId: params.organizationId,
+            paymentStatus: { not: CommerceOrderPaymentStatus.PAID },
+          },
+          data: {
+            status: CommerceOrderStatus.AWAITING_PAYMENT,
+            paymentStatus: CommerceOrderPaymentStatus.FAILED,
+          },
+        });
+      }
+    } else if (registration) {
+      if (nextStatus === PaymentStatus.PAID) {
+        await tx.registration.update({
+          where: { id: registration.id },
+          data: {
+            status: RegistrationStatus.APPROVED,
+            paymentStatus: RegistrationPaymentStatus.PAID,
+            trackingCode,
+            paymentRef: verified.providerRef,
+            paymentProvider: provider.id,
+          },
+        });
+      } else {
+        await tx.registration.update({
+          where: { id: registration.id },
+          data: {
+            status: RegistrationStatus.WAITING_PAYMENT,
+            paymentStatus: RegistrationPaymentStatus.FAILED,
+            trackingCode,
+            paymentRef: verified.providerRef,
+          },
+        });
+      }
     }
   });
 
@@ -542,6 +817,28 @@ export async function verifyPaymentCallback(params: {
 
   if (!fresh) {
     return { ok: false, error: "پرداخت یافت نشد." };
+  }
+
+  if (isCommerce) {
+    if (fresh.status === PaymentStatus.PAID) {
+      await enqueueCommerceOrderPaidSms({
+        organizationId: params.organizationId,
+        orderId: intent.payableId,
+      });
+    }
+
+    return {
+      ok: true,
+      alreadyFinalized: false,
+      paymentIntentId: fresh.id,
+      status: fresh.status,
+      registrationNumber: null,
+      redirectPath: buildSafePaymentRedirectPath(fresh.status, fresh.id),
+    };
+  }
+
+  if (!registration) {
+    return { ok: false, error: "هدف پرداخت یافت نشد." };
   }
 
   // CRM only when we actually transitioned (status matches expected outcome)
@@ -667,7 +964,7 @@ export async function getPaymentIntentPublicView(
   organizationId: string,
   intentId: string,
 ) {
-  return prisma.paymentIntent.findFirst({
+  const intent = await prisma.paymentIntent.findFirst({
     where: {
       id: intentId,
       organizationId,
@@ -690,6 +987,31 @@ export async function getPaymentIntentPublicView(
       },
     },
   });
+
+  if (!intent) return null;
+
+  if (intent.payableType === PaymentPayableType.COMMERCE_ORDER) {
+    const commerceOrder = await prisma.commerceOrder.findFirst({
+      where: {
+        id: intent.payableId,
+        organizationId,
+      },
+      include: {
+        items: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            titleSnapshot: true,
+            quantity: true,
+            unitPriceRials: true,
+            totalRials: true,
+          },
+        },
+      },
+    });
+    return { ...intent, commerceOrder };
+  }
+
+  return { ...intent, commerceOrder: null };
 }
 
 export async function getMockCheckoutSession(

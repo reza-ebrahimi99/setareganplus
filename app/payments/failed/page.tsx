@@ -19,7 +19,7 @@ export async function generateMetadata() {
   return createPageMetadata({
     path: "/payments/failed",
     title: "پرداخت ناموفق | ستارگان پلاس",
-    description: "پرداخت ثبت‌نام انجام نشد.",
+    description: "پرداخت انجام نشد.",
     robots: { index: false, follow: false },
   });
 }
@@ -38,10 +38,10 @@ export default async function PaymentFailedPage({ searchParams }: PageProps) {
             {errorHint || "اطلاعات پرداخت در دسترس نیست."}
           </p>
           <Link
-            href="/ghalamchi/register/wizard"
+            href="/"
             className="mt-6 inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-5 text-sm font-semibold text-white"
           >
-            بازگشت به ثبت‌نام
+            بازگشت
           </Link>
         </article>
       </PublicFormShell>
@@ -57,6 +57,44 @@ export default async function PaymentFailedPage({ searchParams }: PageProps) {
 
   const intent = await getPaymentIntentPublicView(organization.id, intentId);
   if (!intent) notFound();
+
+  const commerceOrder = intent.commerceOrder;
+  if (commerceOrder) {
+    return (
+      <PublicFormShell>
+        <article className="mx-auto max-w-lg space-y-5 rounded-3xl border border-border bg-surface p-6 shadow-[0_12px_40px_rgb(15_23_42_/_0.06)] sm:p-8">
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-6 text-center">
+            <h1 className="text-xl font-bold text-red-900">پرداخت ناموفق بود</h1>
+            <p className="mt-3 text-sm leading-7 text-red-800">
+              سفارش شما محفوظ است. می‌توانید دوباره از صفحه محصول اقدام کنید.
+            </p>
+          </div>
+
+          <dl className="grid gap-3 text-sm">
+            <div className="flex justify-between gap-3 rounded-xl border border-border px-3 py-2.5">
+              <dt className="text-muted">شماره سفارش</dt>
+              <dd dir="ltr" className="font-medium">
+                {toPersianDigits(commerceOrder.orderNumber)}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3 rounded-xl border border-border px-3 py-2.5">
+              <dt className="text-muted">مبلغ</dt>
+              <dd className="font-bold text-primary">
+                {formatRials(intent.finalAmountRials)}
+              </dd>
+            </div>
+          </dl>
+
+          <Link
+            href="/"
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-border bg-white px-5 text-sm font-medium text-foreground hover:bg-background"
+          >
+            بازگشت
+          </Link>
+        </article>
+      </PublicFormShell>
+    );
+  }
 
   const reg = intent.registration;
   if (!reg) notFound();

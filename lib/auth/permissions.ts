@@ -154,6 +154,7 @@ const ROLE_PERMISSIONS: Readonly<Partial<Record<SystemRoleValue, ReadonlySet<Per
     "reports.view",
     "commerce.view",
     "commerce.orders.view",
+    "commerce.orders.manage",
     "commerce.payments.view",
     "commerce.reports.view",
   ]),

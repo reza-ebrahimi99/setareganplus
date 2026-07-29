@@ -34,7 +34,12 @@ export const COMMERCE_SYSTEM_KINDS = [
 
 export type CommerceSystemKindValue = (typeof COMMERCE_SYSTEM_KINDS)[number];
 
-export const COMMERCE_ITEM_STATUSES = ["DRAFT", "ACTIVE", "ARCHIVED"] as const;
+export const COMMERCE_ITEM_STATUSES = [
+  "DRAFT",
+  "ACTIVE",
+  "OUT_OF_STOCK",
+  "ARCHIVED",
+] as const;
 export type CommerceItemStatusValue = (typeof COMMERCE_ITEM_STATUSES)[number];
 
 export type CommerceCategorySeedDefinition = {
@@ -91,8 +96,9 @@ export function defaultFulfillmentHints(
 ): FulfillmentHints {
   switch (systemKind) {
     case "PHYSICAL":
+      // Institute MVP: physical goods are on-site pickup only (no postal shipping).
       return {
-        requiresShipping: true,
+        requiresShipping: false,
         grantsDigitalAccess: false,
         requiresScheduling: false,
         requiresEnrollment: false,
