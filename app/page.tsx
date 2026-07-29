@@ -1,6 +1,7 @@
 import { AboutSection } from "@/components/home/AboutSection";
 import { AchievementsSection } from "@/components/home/AchievementsSection";
 import { FaqPreview } from "@/components/home/FaqPreview";
+import { FeaturedShopSection } from "@/components/home/FeaturedShopSection";
 import { FinalCta } from "@/components/home/FinalCta";
 import { GallerySection } from "@/components/home/GallerySection";
 import { NewsSection } from "@/components/home/NewsSection";
@@ -33,6 +34,7 @@ export default async function Home() {
       <AboutSection />
       <TrustSection />
       <PremiumServices />
+      <FeaturedShopSection />
       <AchievementsSection />
       <PartnershipSection />
       <SuccessStoriesSection />

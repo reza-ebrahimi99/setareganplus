@@ -2,7 +2,6 @@
  * Commerce catalog admin + public loaders / writers.
  */
 
-import type { Prisma } from "@/generated/prisma/client";
 import {
   CommerceBindingType,
   CommerceFormatSize,
@@ -278,7 +277,7 @@ export async function upsertCommerceItemFromForm(params: {
     if (!media) return { ok: false, error: "تصویر جلد معتبر نیست." };
   }
 
-  const data: Prisma.CommerceItemUncheckedCreateInput = {
+  const data = {
     organizationId: params.organizationId,
     title,
     slug,
@@ -350,7 +349,7 @@ export async function upsertCommerceItemFromForm(params: {
             printType: data.printType,
             bindingType: data.bindingType,
             formatSize: data.formatSize,
-            features: data.features as Prisma.InputJsonValue,
+            features: data.features,
           },
         });
         await tx.commerceItemCategory.deleteMany({
@@ -406,33 +405,93 @@ export type PublicCommerceProduct = {
   pricing: ReturnType<typeof resolveCommercePrice>;
 };
 
-export async function getPublicCommerceProductBySlug(params: {
+export type ListPublicCommerceProductsInput = {
   organizationId: string;
-  slug: string;
-}): Promise<PublicCommerceProduct | null> {
-  const item = await prisma.commerceItem.findFirst({
-    where: {
-      organizationId: params.organizationId,
-      slug: params.slug,
-      deletedAt: null,
-      isVisible: true,
-      status: {
-        in: [CommerceItemStatus.ACTIVE, CommerceItemStatus.OUT_OF_STOCK],
-      },
-    },
-    include: {
-      primaryImage: {
-        select: { storageKey: true, status: true, altText: true },
-      },
-      categoryLinks: {
-        take: 1,
-        orderBy: { sortOrder: "asc" },
-        include: { category: { select: { title: true } } },
-      },
-    },
-  });
-  if (!item) return null;
+  q?: string;
+  gradeLabel?: string;
+  subject?: string;
+  limit?: number;
+};
 
+type PublicCommerceProductRow = {
+  id: string;
+  title: string;
+  slug: string;
+  shortDescription: string;
+  description: string;
+  authors: string;
+  subject: string | null;
+  gradeLabel: string | null;
+  pageCount: number | null;
+  editionYear: number | null;
+  printType: CommercePrintType | null;
+  bindingType: CommerceBindingType | null;
+  formatSize: CommerceFormatSize | null;
+  features: unknown;
+  stockQuantity: number | null;
+  unlimitedStock: boolean;
+  status: CommerceItemStatus;
+  trackInventory: boolean;
+  basePriceRials: number;
+  salePriceRials: number | null;
+  priceStartsAt: Date | null;
+  priceEndsAt: Date | null;
+  primaryImage: {
+    storageKey: string;
+    status: string;
+    altText: string | null;
+  } | null;
+  categoryLinks: Array<{
+    category: {
+      title: string;
+    };
+  }>;
+};
+
+function publicCommerceProductWhere(
+  params: Pick<
+    ListPublicCommerceProductsInput,
+    "organizationId" | "q" | "gradeLabel" | "subject"
+  >,
+) {
+  const q = params.q?.trim();
+  const gradeLabel = params.gradeLabel?.trim();
+  const subject = params.subject?.trim();
+
+  return {
+    organizationId: params.organizationId,
+    deletedAt: null,
+    isVisible: true,
+    status: CommerceItemStatus.ACTIVE,
+    AND: [
+      {
+        OR: [
+          { trackInventory: false },
+          { unlimitedStock: true },
+          { stockQuantity: { gt: 0 } },
+        ],
+      },
+      ...(q
+        ? [
+            {
+              OR: [
+                { title: { contains: q, mode: "insensitive" as const } },
+                { authors: { contains: q, mode: "insensitive" as const } },
+                { subject: { contains: q, mode: "insensitive" as const } },
+                { gradeLabel: { contains: q, mode: "insensitive" as const } },
+              ],
+            },
+          ]
+        : []),
+      ...(gradeLabel ? [{ gradeLabel }] : []),
+      ...(subject ? [{ subject }] : []),
+    ],
+  };
+}
+
+function mapPublicCommerceProduct(
+  item: PublicCommerceProductRow,
+): PublicCommerceProduct {
   const stock = item.stockQuantity ?? 0;
   const inStock =
     item.status === CommerceItemStatus.ACTIVE &&
@@ -469,4 +528,92 @@ export async function getPublicCommerceProductBySlug(params: {
       priceEndsAt: item.priceEndsAt,
     }),
   };
+}
+
+export async function listPublicCommerceProducts(
+  params: ListPublicCommerceProductsInput,
+): Promise<PublicCommerceProduct[]> {
+  const items = await prisma.commerceItem.findMany({
+    where: publicCommerceProductWhere(params),
+    orderBy: [{ isFeatured: "desc" }, { updatedAt: "desc" }],
+    take: params.limit,
+    include: {
+      primaryImage: {
+        select: { storageKey: true, status: true, altText: true },
+      },
+      categoryLinks: {
+        take: 1,
+        orderBy: { sortOrder: "asc" },
+        include: { category: { select: { title: true } } },
+      },
+    },
+  });
+
+  return items.map(mapPublicCommerceProduct);
+}
+
+export async function listPublicCommerceFilters(organizationId: string): Promise<{
+  grades: string[];
+  subjects: string[];
+}> {
+  const items = await prisma.commerceItem.findMany({
+    where: publicCommerceProductWhere({ organizationId }),
+    select: {
+      gradeLabel: true,
+      subject: true,
+    },
+  });
+
+  const grades = Array.from(
+    new Set(
+      items
+        .map((item: { gradeLabel: string | null }) => item.gradeLabel?.trim() ?? "")
+        .filter((value: string) => value.length > 0),
+    ),
+  ).sort((a: string, b: string) => a.localeCompare(b, "fa"));
+  const subjects = Array.from(
+    new Set(
+      items
+        .map((item: { subject: string | null }) => item.subject?.trim() ?? "")
+        .filter((value: string) => value.length > 0),
+    ),
+  ).sort((a: string, b: string) => a.localeCompare(b, "fa"));
+
+  return { grades, subjects };
+}
+
+export async function getPublicCommerceProductBySlug(params: {
+  organizationId: string;
+  slug: string;
+}): Promise<PublicCommerceProduct | null> {
+  const item = await prisma.commerceItem.findFirst({
+    where: {
+      organizationId: params.organizationId,
+      slug: params.slug,
+      deletedAt: null,
+      isVisible: true,
+      status: {
+        in: [CommerceItemStatus.ACTIVE, CommerceItemStatus.OUT_OF_STOCK],
+      },
+    },
+    include: {
+      primaryImage: {
+        select: { storageKey: true, status: true, altText: true },
+      },
+      categoryLinks: {
+        take: 1,
+        orderBy: { sortOrder: "asc" },
+        include: { category: { select: { title: true } } },
+      },
+    },
+  });
+  if (!item) return null;
+
+  const stock = item.stockQuantity ?? 0;
+  const inStock =
+    item.status === CommerceItemStatus.ACTIVE &&
+    (!item.trackInventory || item.unlimitedStock || stock > 0);
+  if (!inStock) return null;
+
+  return mapPublicCommerceProduct(item);
 }

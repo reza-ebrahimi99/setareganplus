@@ -4,6 +4,7 @@
  */
 export const publicNavLinks = [
   { href: "/", label: "صفحه اصلی" },
+  { href: "/shop", label: "فروشگاه" },
   { href: "/team", label: "تیم ما" },
   { href: "/achievements", label: "افتخارات" },
   { href: "/gallery", label: "گالری" },

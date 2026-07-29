@@ -1,6 +1,6 @@
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ShopCheckoutForm } from "@/components/shop/ShopCheckoutForm";
+import { ShopProductCover } from "@/components/shop/ShopProductCover";
 import { PublicFormShell } from "@/components/forms/PublicFormShell";
 import {
   COMMERCE_BINDING_TYPE_LABELS,
@@ -49,12 +49,6 @@ export default async function ShopProductPage({ params }: PageProps) {
   if (!product) notFound();
 
   const { pricing } = product;
-  // /media/* is served by Nginx from STAROS_MEDIA_ROOT (outside public/).
-  // Next.js image optimizer would request /_next/image?... and break covers.
-  const coverUnoptimized =
-    !product.imageUrl ||
-    product.imageUrl.startsWith("/media/") ||
-    !product.imageUrl.startsWith("/");
 
   const specs: Array<{ label: string; value: string }> = [
     { label: "مؤلف", value: product.authors || "—" },
@@ -104,14 +98,11 @@ export default async function ShopProductPage({ params }: PageProps) {
         <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-[0_16px_48px_rgb(15_23_42_/_0.08)]">
           <div className="relative aspect-[3/4] w-full bg-gradient-to-b from-slate-100 to-slate-200">
             {product.imageUrl ? (
-              <Image
-                src={product.imageUrl}
-                alt={product.imageAlt ?? product.title}
-                fill
-                className="object-cover"
+              <ShopProductCover
+                imageUrl={product.imageUrl}
+                imageAlt={product.imageAlt ?? product.title}
                 sizes="(max-width: 640px) 100vw, 512px"
                 priority
-                unoptimized={coverUnoptimized}
               />
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-muted">

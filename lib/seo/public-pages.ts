@@ -11,6 +11,7 @@ type PublicPageKey =
   | "home"
   | "about"
   | "gallery"
+  | "shop"
   | "contact"
   | "faq"
   | "courses"
@@ -54,6 +55,13 @@ const PUBLIC_PAGE_SEO: Record<PublicPageKey, CreatePageMetadataInput> = {
     description:
       "مشاهده تصاویر فضای آموزشی، رویدادها و فعالیت‌های مجموعه ستارگان در نسیم‌شهر؛ بدون انتشار هویت فردی دانش‌آموزان.",
     keywords: ["گالری ستارگان پلاس", "تصاویر مدرسه نسیم شهر", "رویدادهای آموزشی"],
+  },
+  shop: {
+    path: "/shop",
+    title: "فروشگاه محصولات آموزشی | ستارگان پلاس",
+    description:
+      "فهرست جزوه‌ها و محصولات آموزشی ستارگان پلاس با امکان مشاهده مشخصات، قیمت و خرید آنلاین.",
+    keywords: ["فروشگاه آموزشی", "جزوه ستارگان", "خرید جزوه آموزشی"],
   },
   contact: {
     path: "/contact",
