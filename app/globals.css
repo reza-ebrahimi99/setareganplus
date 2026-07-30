@@ -257,6 +257,50 @@ body {
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
 }
 
+/* Admissions Workspace — glass surface (theme-preserving) */
+.admin-glass {
+  border: 1px solid rgb(226 232 240 / 0.9);
+  border-radius: 0.875rem;
+  background:
+    linear-gradient(
+      165deg,
+      rgb(255 255 255 / 0.88) 0%,
+      rgb(255 255 255 / 0.72) 100%
+    );
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.04),
+    inset 0 1px 0 rgb(255 255 255 / 0.7);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+@keyframes admissions-workspace-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.4rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admissions-rise {
+  animation: admissions-workspace-rise 0.45s ease-out both;
+}
+
+.admissions-rise-delay-1 {
+  animation-delay: 0.06s;
+}
+
+.admissions-rise-delay-2 {
+  animation-delay: 0.12s;
+}
+
+.admissions-rise-delay-3 {
+  animation-delay: 0.18s;
+}
+
 .admin-nav-link-active {
   background: rgb(255 255 255 / 0.08);
   border-inline-end: 3px solid var(--secondary);

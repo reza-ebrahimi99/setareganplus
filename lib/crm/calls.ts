@@ -5,7 +5,9 @@ import {
   CrmTaskPriority,
   CrmTaskStatus,
   CrmTaskType,
+  DomainEventType,
 } from "@/generated/prisma/enums";
+import { enqueueDomainEvent } from "@/lib/automation/enqueue";
 import { permissionsForRole } from "@/lib/auth/permissions";
 import { stageTypeToLeadStatus } from "@/lib/crm/pipeline";
 import { prisma } from "@/lib/prisma";
@@ -221,6 +223,20 @@ export async function logCrmCall(input: LogCrmCallInput): Promise<{ id: string; 
           entityId: call.id,
           metadata: { outcome: input.outcome, durationSeconds, createdTask: Boolean(createdTaskId) },
         },
+      });
+      await enqueueDomainEvent({
+        organizationId: input.organizationId,
+        branchId: lead.branchId,
+        eventType: DomainEventType.CALL_LOGGED,
+        aggregateType: "CrmCallLog",
+        aggregateId: call.id,
+        dedupeKey: `CALL_LOGGED:${call.id}`,
+        payload: {
+          callLogId: call.id,
+          leadId: input.leadId,
+          outcome: input.outcome,
+        },
+        tx,
       });
       return { id: call.id, created: true };
     });

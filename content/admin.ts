@@ -57,6 +57,13 @@ export const adminNavGroups: ReadonlyArray<{
         permission: "crm.view_assigned",
       },
       {
+        href: "/admin/admissions",
+        label: "میز کار پذیرش",
+        icon: "leads",
+        enabled: true,
+        permission: "reports.view",
+      },
+      {
         href: "/admin/leads",
         label: "متقاضیان و CRM",
         icon: "leads",
@@ -284,6 +291,10 @@ export const adminBreadcrumbs = {
   dashboard: [
     { label: "مدیریت", href: "/admin" },
     { label: "نمای کلی" },
+  ],
+  admissions: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "میز کار پذیرش" },
   ],
   leads: [
     { label: "مدیریت", href: "/admin" },

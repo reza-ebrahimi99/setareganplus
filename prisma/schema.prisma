@@ -397,6 +397,17 @@ enum DomainEventType {
   REGISTRATION_NEEDS_CORRECTION
   DISCOUNT_EXPIRING
   REGISTRATION_DEADLINE_REMINDER
+  /// Sprint 5 — Automation Engine catalog
+  LEAD_CREATED
+  LEAD_ASSIGNED
+  LEAD_REASSIGNED
+  FOLLOWUP_DUE
+  CALL_LOGGED
+  REGISTRATION_CREATED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  SLA_BREACHED
+  QUEUE_ITEM_ESCALATED
 }
 
 // ─── Smart Booking Engine (StarOS v0.5) ─────────────────────────────────────
@@ -543,6 +554,17 @@ model Organization {
   commerceItemCategories               CommerceItemCategory[]
   commerceOrders                       CommerceOrder[]
   commerceOrderItems                   CommerceOrderItem[]
+  leadOwnershipHistories               LeadOwnershipHistory[]
+  attributionPolicies                  AttributionPolicy[]
+  attributionSnapshots                 AttributionSnapshot[]
+  kpiComputationCaches                 KpiComputationCache[]
+  opsSlaPolicies                       OpsSlaPolicy[]
+  opsCapacityPolicies                  OpsCapacityPolicy[]
+  opsEscalations                       OpsEscalation[]
+  opsQueueClaims                       OpsQueueClaim[]
+  automationActionLogs                 AutomationActionLog[]
+  staffNotifications                   StaffNotification[]
+  dashboardWidgetCaches                DashboardWidgetCache[]
 
   @@map("organizations")
 }
@@ -619,6 +641,10 @@ model User {
   registrationNotes           RegistrationNote[]       @relation("RegistrationNoteActor")
   registrationActivities      RegistrationActivity[]   @relation("RegistrationActivityActor")
   commerceOrdersDelivered     CommerceOrder[]          @relation("CommerceOrderDeliveredBy")
+  leadOwnershipHistoryAsOwner LeadOwnershipHistory[]   @relation("LeadOwnershipHistoryOwner")
+  leadOwnershipHistoryAsActor LeadOwnershipHistory[]   @relation("LeadOwnershipHistoryActor")
+  attributedSnapshots         AttributionSnapshot[]    @relation("AttributionSnapshotUser")
+  staffNotifications          StaffNotification[]
 
   @@index([status])
   @@index([deletedAt])
@@ -790,6 +816,8 @@ model Lead {
   bookingReservations BookingReservation[]
   registrations       Registration[]
   commerceOrders      CommerceOrder[]
+  ownershipHistories  LeadOwnershipHistory[]
+  attributionSnapshots AttributionSnapshot[]
 
   @@unique([organizationId, branchId, id])
   @@unique([organizationId, id])
@@ -807,6 +835,268 @@ model Lead {
   @@index([organizationId, createdAt])
   @@index([organizationId, deletedAt])
   @@map("leads")
+}
+
+// ─── Admissions CRM v2 Sprint 2 — Attribution Engine ─────────────────────────
+
+enum LeadOwnershipHistorySource {
+  MANUAL
+  BULK
+  AUTOMATION
+  IMPORT
+  SYSTEM
+}
+
+/// Append-only ownership periods. effectiveTo = null means the current open period.
+model LeadOwnershipHistory {
+  id             String                      @id @default(cuid())
+  organizationId String
+  leadId         String
+  ownerUserId    String?
+  effectiveFrom  DateTime
+  effectiveTo    DateTime?
+  source         LeadOwnershipHistorySource  @default(SYSTEM)
+  actorUserId    String?
+  createdAt      DateTime                    @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lead         Lead         @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  owner        User?        @relation("LeadOwnershipHistoryOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  actor        User?        @relation("LeadOwnershipHistoryActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, leadId, effectiveFrom])
+  @@index([organizationId, leadId, effectiveTo])
+  @@index([organizationId, ownerUserId, effectiveFrom])
+  /// Partial unique (SQL): at most one open period per lead — see migration.
+  @@map("lead_ownership_histories")
+}
+
+enum AttributionPolicyMode {
+  /// Credit the lead's owner at the moment of the revenue event.
+  CURRENT_OWNER_AT_EVENT
+  /// Credit the earliest non-null owner in ownership history (else current).
+  FIRST_OWNER
+}
+
+/// ATTRIBUTED rows are immutable. PENDING_ATTRIBUTION may complete once when lead appears.
+enum AttributionSnapshotStatus {
+  PENDING_ATTRIBUTION
+  ATTRIBUTED
+}
+
+model AttributionPolicy {
+  id             String                @id @default(cuid())
+  organizationId String
+  policyKey      String
+  version        Int                   @default(1)
+  mode           AttributionPolicyMode @default(CURRENT_OWNER_AT_EVENT)
+  name           String
+  isDefault      Boolean               @default(false)
+  isActive       Boolean               @default(true)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  snapshots    AttributionSnapshot[]
+
+  @@unique([organizationId, policyKey, version])
+  @@unique([organizationId, id])
+  @@index([organizationId, isDefault, isActive])
+  @@map("attribution_policies")
+}
+
+/// Revenue attribution freeze. ATTRIBUTED = immutable; PENDING may complete once.
+model AttributionSnapshot {
+  id                 String                     @id @default(cuid())
+  organizationId     String
+  /// Idempotency key, e.g. PAYMENT_INTENT:{id} or REGISTRATION_WAIVED:{id}
+  revenueKey         String
+  status             AttributionSnapshotStatus  @default(ATTRIBUTED)
+  /// Null only while status = PENDING_ATTRIBUTION (recoverable).
+  leadId             String?
+  registrationId     String?
+  paymentIntentId    String?
+  amountRials        Int
+  attributedUserId   String?
+  policyId           String
+  policyKey          String
+  policyVersion      Int
+  policyMode         AttributionPolicyMode
+  attributedAt       DateTime
+  createdAt          DateTime                   @default(now())
+
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lead           Lead?              @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  registration   Registration?      @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
+  paymentIntent  PaymentIntent?     @relation(fields: [organizationId, paymentIntentId], references: [organizationId, id], onDelete: Restrict)
+  attributedUser User?              @relation("AttributionSnapshotUser", fields: [attributedUserId], references: [id], onDelete: Restrict)
+  policy         AttributionPolicy  @relation(fields: [organizationId, policyId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, revenueKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, leadId, attributedAt])
+  @@index([organizationId, attributedUserId, attributedAt])
+  @@index([organizationId, registrationId])
+  @@index([organizationId, paymentIntentId])
+  @@index([organizationId, status, createdAt])
+  @@map("attribution_snapshots")
+}
+
+// ─── Admissions CRM v2 Sprint 4 — Operational Queue Engine ───────────────────
+
+enum OpsDispatchStrategy {
+  MANUAL
+  ROUND_ROBIN
+  LEAST_LOAD
+  /// Reserved — not implemented in Sprint 4
+  WEIGHTED
+  /// Reserved — not implemented in Sprint 4
+  SKILL_BASED
+  /// Reserved — not implemented in Sprint 4
+  AI
+}
+
+enum OpsEscalationStatus {
+  OPEN
+  RESOLVED
+}
+
+enum OpsQueueId {
+  ASSIGNMENT
+  FOLLOW_UP
+  CALL
+  SLA
+  ESCALATION
+}
+
+enum OpsEntityType {
+  LEAD
+  CRM_TASK
+  REGISTRATION
+}
+
+/// Org SLA clocks (hours). Resolved at runtime — never hardcode in queue logic.
+model OpsSlaPolicy {
+  id                      String   @id @default(cuid())
+  organizationId          String
+  /// Hours from lead.createdAt without lastContactAt
+  firstContactHours       Int      @default(24)
+  /// Grace hours after nextFollowUpAt / task dueAt
+  followUpGraceHours      Int      @default(0)
+  /// Hours in RegistrationStatus.NEEDS_CALL
+  registrationNeedsCallHours Int   @default(48)
+  isActive                Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId])
+  @@map("ops_sla_policies")
+}
+
+model OpsCapacityPolicy {
+  id                 String              @id @default(cuid())
+  organizationId     String
+  dispatchStrategy   OpsDispatchStrategy @default(MANUAL)
+  softLimitOwnedLeads Int?
+  hardLimitOwnedLeads Int?
+  /// Last user id used for ROUND_ROBIN (org-scoped)
+  roundRobinCursorUserId String?
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId])
+  @@map("ops_capacity_policies")
+}
+
+/// Append-only escalation cases. Reassignment must call setLeadOwner.
+/// One OPEN per org+entity enforced by partial unique index in SQL:
+/// ops_escalations_one_open_per_entity (Sprint 6.6).
+model OpsEscalation {
+  id               String               @id @default(cuid())
+  organizationId   String
+  entityType       OpsEntityType
+  entityId         String
+  leadId           String?
+  queueId          OpsQueueId
+  reason           String
+  status           OpsEscalationStatus  @default(OPEN)
+  openedAt         DateTime             @default(now())
+  resolvedAt       DateTime?
+  resolvedByUserId String?
+  metadata         Json?
+  createdAt        DateTime             @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, status, openedAt])
+  @@index([organizationId, leadId, status])
+  @@index([organizationId, entityType, entityId])
+  @@map("ops_escalations")
+}
+
+/// Short-lived claim lock — one active claim per org+queue+entity.
+model OpsQueueClaim {
+  id             String      @id @default(cuid())
+  organizationId String
+  queueId        OpsQueueId
+  entityType     OpsEntityType
+  entityId       String
+  claimedByUserId String
+  claimedAt      DateTime   @default(now())
+  heartbeatAt    DateTime   @default(now())
+  expiresAt      DateTime
+  releasedAt     DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, queueId, entityType, entityId])
+  @@index([organizationId, expiresAt])
+  @@index([organizationId, claimedByUserId, releasedAt])
+  @@map("ops_queue_claims")
+}
+
+/// TTL cache for KPI Computation Engine (Sprint 3). Additive; not a ledger.
+model KpiComputationCache {
+  id             String   @id @default(cuid())
+  organizationId String
+  cacheKey       String
+  payload        Json
+  computedAt     DateTime @default(now())
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, cacheKey])
+  @@index([organizationId, expiresAt])
+  @@map("kpi_computation_caches")
+}
+
+/// TTL cache for Dashboard Platform widget payloads (Sprint 6). Presentation only.
+model DashboardWidgetCache {
+  id             String   @id @default(cuid())
+  organizationId String
+  cacheKey       String
+  widgetId       String
+  payload        Json
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, cacheKey])
+  @@index([organizationId, expiresAt])
+  @@index([organizationId, widgetId])
+  @@map("dashboard_widget_caches")
 }
 
 /// CRM-specific import outcome summary. Source files remain ephemeral; only the
@@ -1479,11 +1769,16 @@ model AutomationRule {
   pipelineId       String?
   stageId          String?
   name             String
+  description      String?
   trigger          DomainEventType
   isEnabled        Boolean         @default(false)
-  /// Safe condition JSON — see lib/crm/automation-contract.ts
+  /// Lower runs first. Default 100.
+  priority         Int             @default(100)
+  /// When true, stop evaluating further rules after a successful match.
+  stopOnMatch      Boolean         @default(false)
+  /// Safe condition JSON — see lib/automation/rules/contract.ts
   conditions       Json            @default("{}")
-  /// Safe action list JSON — see lib/crm/automation-contract.ts
+  /// Safe action list JSON — see lib/automation/rules/contract.ts
   actionConfig     Json            @default("{}")
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
@@ -1513,6 +1808,8 @@ model DomainEventOutbox {
   aggregateType  String
   aggregateId    String
   payload        Json
+  /// Optional clock/payment dedupe key (unique per org when set).
+  dedupeKey      String?
   status         DomainEventStatus @default(PENDING)
   attemptCount   Int               @default(0)
   availableAt    DateTime          @default(now())
@@ -1523,6 +1820,7 @@ model DomainEventOutbox {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   branch       Branch?      @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
 
+  @@unique([organizationId, dedupeKey])
   @@index([status, availableAt])
   @@index([organizationId, eventType, createdAt])
   @@index([organizationId, aggregateType, aggregateId])
@@ -2163,8 +2461,9 @@ model AutomationExecution {
   createdAt        DateTime                  @default(now())
   updatedAt        DateTime                  @updatedAt
 
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  automationRule AutomationRule @relation(fields: [organizationId, automationRuleId], references: [organizationId, id], onDelete: Restrict)
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  automationRule AutomationRule        @relation(fields: [organizationId, automationRuleId], references: [organizationId, id], onDelete: Restrict)
+  actionLogs     AutomationActionLog[]
 
   @@unique([organizationId, automationRuleId, domainEventId])
   @@unique([organizationId, idempotencyKey])
@@ -2172,6 +2471,48 @@ model AutomationExecution {
   @@index([organizationId, status, createdAt])
   @@index([organizationId, domainEventId])
   @@map("automation_executions")
+}
+
+/// Append-only per-action history for AutomationExecution (Sprint 5).
+model AutomationActionLog {
+  id                    String                    @id @default(cuid())
+  organizationId        String
+  automationExecutionId String
+  actionIndex           Int
+  actionType            String
+  status                AutomationExecutionStatus
+  inputSummary          Json?
+  outputSummary         Json?
+  errorCode             String?
+  createdAt             DateTime                  @default(now())
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  execution    AutomationExecution @relation(fields: [automationExecutionId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, automationExecutionId])
+  @@index([organizationId, createdAt])
+  @@map("automation_action_logs")
+}
+
+/// Staff inbox rows written by automation NOTIFY_USER (no UI required in Sprint 5).
+model StaffNotification {
+  id                    String    @id @default(cuid())
+  organizationId        String
+  userId                String
+  title                 String
+  body                  String?
+  entityType            String?
+  entityId              String?
+  automationExecutionId String?
+  readAt                DateTime?
+  createdAt             DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, userId, readAt])
+  @@index([organizationId, createdAt])
+  @@map("staff_notifications")
 }
 
 // ─── Institute website team CMS (not school-specific; not staff login accounts) ─
@@ -3083,10 +3424,11 @@ model Registration {
   branch           Branch                 @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
   lead             Lead?                  @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
   registrationFlow RegistrationFlow?      @relation(fields: [organizationId, registrationFlowId], references: [organizationId, id], onDelete: Restrict)
-  paymentIntents   PaymentIntent[]
-  documents        RegistrationDocument[]
-  notes            RegistrationNote[]
-  activities       RegistrationActivity[]
+  paymentIntents         PaymentIntent[]
+  documents              RegistrationDocument[]
+  notes                  RegistrationNote[]
+  activities             RegistrationActivity[]
+  attributionSnapshots   AttributionSnapshot[]
 
   @@unique([organizationId, registrationNumber])
   @@unique([organizationId, id])
@@ -3162,6 +3504,7 @@ model PaymentIntent {
   registration Registration?     @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
   sessions     PaymentSession[]
   eventLogs    PaymentEventLog[]
+   attributionSnapshots AttributionSnapshot[]
 
   @@unique([organizationId, idempotencyKey])
   @@unique([organizationId, id])

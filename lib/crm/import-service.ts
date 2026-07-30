@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import {
   AuditAction,
   CrmActivityType,
+  LeadOwnershipHistorySource,
   LeadSourceType,
   SystemRole,
 } from "@/generated/prisma/enums";
@@ -724,6 +725,20 @@ export async function importCrmLeads(params: {
                 sourceType: LeadSourceType.IMPORT,
                 excelRowNumber: row.excelRowNumber,
               },
+            })),
+          });
+          // Open unassigned periods first; setLeadOwnersBulk closes/opens on assign.
+          const periodFrom = new Date();
+          await tx.leadOwnershipHistory.createMany({
+            data: pendingCreates.map(({ leadId }) => ({
+              id: randomUUID(),
+              organizationId: params.actor.organizationId,
+              leadId,
+              ownerUserId: null,
+              effectiveFrom: periodFrom,
+              effectiveTo: null,
+              source: LeadOwnershipHistorySource.IMPORT,
+              actorUserId: params.actor.userId,
             })),
           });
           const assigned = pendingCreates.filter((item) => item.ownerUserId);

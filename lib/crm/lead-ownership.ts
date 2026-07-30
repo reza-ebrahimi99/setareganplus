@@ -8,9 +8,11 @@
  * CRM workflows.
  */
 import type { Prisma } from "@/generated/prisma/client";
-import { AuditAction, CrmActivityType } from "@/generated/prisma/enums";
+import { AuditAction, CrmActivityType, DomainEventType } from "@/generated/prisma/enums";
+import { enqueueDomainEvent } from "@/lib/automation/enqueue";
 import { permissionsForRole } from "@/lib/auth/permissions";
 import { recordCrmActivity } from "@/lib/crm/activity";
+import { recordOwnershipPeriodChange } from "@/lib/crm/ownership-history";
 import { prisma } from "@/lib/prisma";
 
 export type LeadOwnershipSource =
@@ -165,6 +167,35 @@ export async function setLeadOwner(params: {
     });
   }
 
+  await recordOwnershipPeriodChange({
+    organizationId: params.organizationId,
+    leadId: lead.id,
+    previousOwnerUserId: lead.ownerUserId,
+    ownerUserId: params.ownerUserId,
+    source,
+    actorUserId: params.actorUserId,
+    tx: params.tx,
+  });
+
+  const eventType = lead.ownerUserId
+    ? DomainEventType.LEAD_REASSIGNED
+    : DomainEventType.LEAD_ASSIGNED;
+  await enqueueDomainEvent({
+    organizationId: params.organizationId,
+    branchId: lead.branchId,
+    eventType,
+    aggregateType: "Lead",
+    aggregateId: lead.id,
+    payload: {
+      leadId: lead.id,
+      previousOwnerUserId: lead.ownerUserId,
+      ownerUserId: params.ownerUserId,
+      source,
+      ownershipSource: source,
+    },
+    tx: params.tx,
+  });
+
   return {
     ok: true,
     changed: true,
@@ -275,6 +306,38 @@ export async function setLeadOwnersBulk(params: {
       },
     })),
   });
+
+  const at = new Date();
+  for (const lead of changedLeads) {
+    await recordOwnershipPeriodChange({
+      organizationId: params.organizationId,
+      leadId: lead.id,
+      previousOwnerUserId: lead.ownerUserId,
+      ownerUserId: params.ownerUserId,
+      source: params.source,
+      actorUserId: params.actorUserId,
+      at,
+      tx: params.tx,
+    });
+    const eventType = lead.ownerUserId
+      ? DomainEventType.LEAD_REASSIGNED
+      : DomainEventType.LEAD_ASSIGNED;
+    await enqueueDomainEvent({
+      organizationId: params.organizationId,
+      branchId: lead.branchId,
+      eventType,
+      aggregateType: "Lead",
+      aggregateId: lead.id,
+      payload: {
+        leadId: lead.id,
+        previousOwnerUserId: lead.ownerUserId,
+        ownerUserId: params.ownerUserId,
+        source: params.source,
+        ownershipSource: params.source,
+      },
+      tx: params.tx,
+    });
+  }
 
   return {
     ok: true,

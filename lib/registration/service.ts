@@ -14,8 +14,18 @@ import {
   RegistrationStatus,
   ServiceInterest,
 } from "@/generated/prisma/enums";
+
 import { enqueueRegistrationCompletedSms } from "@/lib/communication/registration-sms";
+
+import { enqueueDomainEvent } from "@/lib/automation/enqueue";
+
 import { recordCrmActivity } from "@/lib/crm/activity";
+import {
+  createAttributionSnapshotForRevenueEvent,
+  recoverPendingAttributionForRegistration,
+  registrationWaivedRevenueKey,
+} from "@/lib/crm/attribution-snapshot";
+import { shouldEmitRegistrationWaivedSnapshot } from "@/lib/crm/attribution-revenue-contract";
 import { upsertLead } from "@/lib/crm/leads";
 import { normalizeEmail } from "@/lib/forms/normalize-email";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
@@ -429,6 +439,7 @@ export async function createRegistration(
     throw error;
   }
 
+
   const leadResult = mobileNormalized
     ? await upsertLead({
         organizationId: organization.id,
@@ -453,6 +464,54 @@ export async function createRegistration(
       })
     : { ok: false as const };
 
+  await recordRegistrationActivity({
+    organizationId: organization.id,
+    registrationId: registration.id,
+    activityType: RegistrationActivityType.PAYMENT_STARTED,
+    title: "آماده پرداخت",
+    summary: registration.registrationNumber,
+  });
+
+  // Emit only when a new registration row was created (not draft resume).
+  if (!existingDraft) {
+    await enqueueDomainEvent({
+      organizationId: organization.id,
+      branchId,
+      eventType: DomainEventType.REGISTRATION_CREATED,
+      aggregateType: "Registration",
+      aggregateId: registration.id,
+      dedupeKey: `REGISTRATION_CREATED:${registration.id}`,
+      payload: {
+        registrationId: registration.id,
+        registrationStatus: registration.status,
+        registrationNumber: registration.registrationNumber,
+      },
+    }).catch(() => undefined);
+  }
+
+  const leadResult = await upsertLead({
+    organizationId: organization.id,
+    branchId,
+    firstName: input.student.firstName.trim(),
+    lastName: input.student.lastName.trim(),
+    mobile: mobile.normalized,
+    mobileRaw: input.parent.mobile,
+    fatherName:
+      input.parent.relationship === RegistrationParentRelationship.FATHER
+        ? input.parent.parentName.trim()
+        : null,
+    school: input.student.schoolName.trim(),
+    gradeLevel: input.student.gradeLabel.trim(),
+    email: email.email,
+    nationalCode: national.normalized,
+    source: `REGISTRATION:${catalog.flowKey}`,
+    sourceType: LeadSourceType.REGISTRATION,
+    serviceInterest: ServiceInterest.EXAMS,
+    applyScoring: true,
+    createInitialTask: false,
+  });
+
+
   if (leadResult.ok) {
     await prisma.lead.update({
       where: { id: leadResult.leadId },
@@ -471,6 +530,12 @@ export async function createRegistration(
     await prisma.registration.update({
       where: { id: registration.id },
       data: { leadId: leadResult.leadId },
+    });
+
+    await recoverPendingAttributionForRegistration({
+      organizationId: organization.id,
+      registrationId: registration.id,
+      leadId: leadResult.leadId,
     });
 
     await recordCrmActivity({
@@ -539,6 +604,18 @@ export async function createRegistration(
           : "پرداخت اختیاری رد شد — ثبت‌نام قابل پیگیری است",
       metadata: { paymentMode, finalAmountRials },
     });
+
+    // Revenue contract: only terminal FREE emits REGISTRATION_WAIVED.
+    // OPTIONAL skip must not snapshot (payment may follow → PAYMENT_INTENT).
+    if (shouldEmitRegistrationWaivedSnapshot(paymentMode)) {
+      await createAttributionSnapshotForRevenueEvent({
+        organizationId: organization.id,
+        revenueKey: registrationWaivedRevenueKey(registration.id),
+        leadId: leadResult.ok ? leadResult.leadId : null,
+        registrationId: registration.id,
+        amountRials: finalAmountRials,
+      });
+    }
 
     return {
       ok: true,

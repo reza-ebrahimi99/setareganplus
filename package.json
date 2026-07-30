@@ -38,6 +38,12 @@
     "test:commerce-foundation": "tsx scripts/commerce-foundation-unit-tests.ts",
     "test:crm-import:integration": "tsx --env-file=.env scripts/crm-import-integration-tests.ts",
     "test:crm-dashboard": "tsx scripts/crm-dashboard-unit-tests.ts",
+    "test:attribution": "tsx scripts/attribution-unit-tests.ts",
+    "test:kpi": "tsx scripts/kpi-unit-tests.ts",
+    "test:ops-queues": "tsx scripts/ops-queue-unit-tests.ts",
+    "test:automation": "tsx scripts/automation-unit-tests.ts",
+    "test:dashboard": "tsx scripts/dashboard-unit-tests.ts",
+    "test:hardening": "tsx scripts/production-hardening-unit-tests.ts",
     "test:staff-smoke": "prisma generate && tsx scripts/staff-rbac-smoke.ts",
     "test:staff": "tsx --env-file=scripts/staff-test.env --env-file=.env scripts/staff-integration-tests.ts"
   },

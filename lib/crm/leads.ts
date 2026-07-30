@@ -17,11 +17,13 @@
 import {
   AuditAction,
   CrmActivityType,
+  DomainEventType,
   LeadScoreBand,
   LeadSourceType,
   LeadStatus,
   ServiceInterest,
 } from "@/generated/prisma/enums";
+import { enqueueDomainEvent } from "@/lib/automation/enqueue";
 import { recordCrmActivity } from "@/lib/crm/activity";
 import {
   assertStageInOrg,
@@ -36,6 +38,7 @@ import {
   setLeadOwner,
   type LeadOwnershipSource,
 } from "@/lib/crm/lead-ownership";
+import { ensureOpenOwnershipPeriod } from "@/lib/crm/ownership-history";
 import { prisma } from "@/lib/prisma";
 
 export type LeadIdentityInput = {
@@ -206,60 +209,74 @@ export async function upsertLead(input: LeadIdentityInput): Promise<UpsertLeadRe
       return { ok: true, leadId: existing.id, created: false };
     }
 
-    const lead = await prisma.lead.create({
-      data: {
-        organizationId: input.organizationId,
-        branchId: input.branchId,
-        status: stageTypeToLeadStatus(stage.stageType),
-        firstName,
-        lastName,
-        fatherName: input.fatherName?.trim() || null,
-        mobile: mobile.normalized,
-        mobileRaw: input.mobileRaw?.trim() || mobile.raw,
-        normalizedMobile: mobile.normalized,
-        school: input.school?.trim() || null,
-        gradeLevel: input.gradeLevel?.trim() || null,
-        nationalCode: input.nationalCode?.trim() || null,
-        serviceInterest: input.serviceInterest ?? ServiceInterest.UNDECIDED,
-        source: input.source,
-        sourceType: input.sourceType,
-        sourceFormSubmissionId: input.sourceFormSubmissionId ?? null,
-        sourceBookingReservationId: input.sourceBookingReservationId ?? null,
-        pipelineId,
-        stageId,
-        ownerUserId: input.ownerUserId ?? null,
-        score: scoreResult?.score ?? 0,
-        scoreBand: scoreResult?.band ?? LeadScoreBand.COLD,
-        scoreBreakdown: scoreResult?.breakdown ?? undefined,
-      },
-      select: { id: true },
-    });
+    const lead = await prisma.$transaction(async (tx) => {
+      const created = await tx.lead.create({
+        data: {
+          organizationId: input.organizationId,
+          branchId: input.branchId,
+          status: stageTypeToLeadStatus(stage.stageType),
+          firstName,
+          lastName,
+          fatherName: input.fatherName?.trim() || null,
+          mobile: mobile.normalized,
+          mobileRaw: input.mobileRaw?.trim() || mobile.raw,
+          normalizedMobile: mobile.normalized,
+          school: input.school?.trim() || null,
+          gradeLevel: input.gradeLevel?.trim() || null,
+          nationalCode: input.nationalCode?.trim() || null,
+          serviceInterest: input.serviceInterest ?? ServiceInterest.UNDECIDED,
+          source: input.source,
+          sourceType: input.sourceType,
+          sourceFormSubmissionId: input.sourceFormSubmissionId ?? null,
+          sourceBookingReservationId: input.sourceBookingReservationId ?? null,
+          pipelineId,
+          stageId,
+          ownerUserId: input.ownerUserId ?? null,
+          score: scoreResult?.score ?? 0,
+          scoreBand: scoreResult?.band ?? LeadScoreBand.COLD,
+          scoreBreakdown: scoreResult?.breakdown ?? undefined,
+        },
+        select: { id: true },
+      });
 
-    await recordCrmActivity({
-      organizationId: input.organizationId,
-      leadId: lead.id,
-      activityType: CrmActivityType.LEAD_CREATED,
-      title: "لید ایجاد شد",
-      summary: input.source,
-      relatedFormSubmissionId: input.sourceFormSubmissionId,
-      relatedBookingReservationId: input.sourceBookingReservationId,
-      metadata: scoreResult
-        ? { score: scoreResult.score, band: scoreResult.band }
-        : null,
-    });
-    if (input.ownerUserId) {
       await recordCrmActivity({
         organizationId: input.organizationId,
-        leadId: lead.id,
-        activityType: CrmActivityType.OWNER_ASSIGNED,
-        title: "تخصیص مسئول",
-        metadata: {
-          previousOwnerUserId: null,
-          ownerUserId: input.ownerUserId,
-          source: "SYSTEM",
-        },
+        leadId: created.id,
+        activityType: CrmActivityType.LEAD_CREATED,
+        title: "لید ایجاد شد",
+        summary: input.source,
+        relatedFormSubmissionId: input.sourceFormSubmissionId,
+        relatedBookingReservationId: input.sourceBookingReservationId,
+        metadata: scoreResult
+          ? { score: scoreResult.score, band: scoreResult.band }
+          : null,
+        tx,
       });
-    }
+      if (input.ownerUserId) {
+        await recordCrmActivity({
+          organizationId: input.organizationId,
+          leadId: created.id,
+          activityType: CrmActivityType.OWNER_ASSIGNED,
+          title: "تخصیص مسئول",
+          metadata: {
+            previousOwnerUserId: null,
+            ownerUserId: input.ownerUserId,
+            source: "SYSTEM",
+          },
+          tx,
+        });
+      }
+
+      await ensureOpenOwnershipPeriod({
+        organizationId: input.organizationId,
+        leadId: created.id,
+        ownerUserId: input.ownerUserId ?? null,
+        source: "SYSTEM",
+        tx,
+      });
+
+      return created;
+    });
 
     if (input.createInitialTask) {
       await createCrmTask({
@@ -272,6 +289,20 @@ export async function upsertLead(input: LeadIdentityInput): Promise<UpsertLeadRe
         idempotencyKey: `lead_initial_task:${lead.id}`,
       });
     }
+
+    await enqueueDomainEvent({
+      organizationId: input.organizationId,
+      branchId: input.branchId,
+      eventType: DomainEventType.LEAD_CREATED,
+      aggregateType: "Lead",
+      aggregateId: lead.id,
+      dedupeKey: `LEAD_CREATED:${lead.id}`,
+      payload: {
+        leadId: lead.id,
+        sourceType: input.sourceType,
+        ownerUserId: input.ownerUserId ?? null,
+      },
+    }).catch(() => undefined);
 
     return { ok: true, leadId: lead.id, created: true };
   } catch {

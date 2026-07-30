@@ -10,15 +10,26 @@ import {
   CommerceOrderPaymentStatus,
   CommerceOrderStatus,
   CrmActivityType,
+
   PaymentPayableType,
+
+  DomainEventType,
   PaymentStatus,
   RegistrationActivityType,
   RegistrationPaymentStatus,
   RegistrationStatus,
 } from "@/generated/prisma/enums";
+
 import { enqueueCommerceOrderPaidSms } from "@/lib/commerce/commerce-sms";
 import { decrementCommerceItemStock } from "@/lib/commerce/inventory";
+
+import { enqueueDomainEvent } from "@/lib/automation/enqueue";
+
 import { recordCrmActivity } from "@/lib/crm/activity";
+import {
+  createAttributionSnapshotForRevenueEvent,
+  paymentIntentRevenueKey,
+} from "@/lib/crm/attribution-snapshot";
 import { getPaymentProvider } from "@/lib/payment/get-provider";
 import { logPaymentEvent } from "@/lib/payment/logger";
 import {
@@ -564,6 +575,7 @@ export async function verifyPaymentCallback(params: {
           registration: {
             select: {
               id: true,
+              branchId: true,
               leadId: true,
               registrationNumber: true,
               status: true,
@@ -609,6 +621,25 @@ export async function verifyPaymentCallback(params: {
   }
 
   if (isTerminalPaymentStatus(intent.status) || intent.status === PaymentStatus.PAID) {
+
+
+    // Heal missing snapshots on idempotent retries (create-once by revenueKey).
+    if (intent.status === PaymentStatus.PAID) {
+      await createAttributionSnapshotForRevenueEvent({
+        organizationId: params.organizationId,
+        revenueKey: paymentIntentRevenueKey(intent.id),
+        leadId: registration.leadId,
+        registrationId: registration.id,
+        paymentIntentId: intent.id,
+        amountRials: intent.finalAmountRials,
+        attributedAt: intent.paidAt ?? undefined,
+      });
+    }
+    const redirectPath =
+      intent.status === PaymentStatus.PAID
+        ? `/payments/success?intent=${encodeURIComponent(intent.id)}`
+        : `/payments/failed?intent=${encodeURIComponent(intent.id)}`;
+
     return {
       ok: true,
       alreadyFinalized: true,
@@ -727,6 +758,7 @@ export async function verifyPaymentCallback(params: {
       tx,
     });
 
+
     if (isCommerce) {
       if (nextStatus === PaymentStatus.PAID) {
         const paidOnce = await tx.commerceOrder.updateMany({
@@ -806,6 +838,38 @@ export async function verifyPaymentCallback(params: {
           },
         });
       }
+
+    if (nextStatus === PaymentStatus.PAID) {
+      await tx.registration.update({
+        where: { id: registration.id },
+        data: {
+          status: RegistrationStatus.APPROVED,
+          paymentStatus: RegistrationPaymentStatus.PAID,
+          trackingCode,
+          paymentRef: verified.providerRef,
+          paymentProvider: provider.id,
+        },
+      });
+      await createAttributionSnapshotForRevenueEvent({
+        organizationId: params.organizationId,
+        revenueKey: paymentIntentRevenueKey(intent.id),
+        leadId: registration.leadId,
+        registrationId: registration.id,
+        paymentIntentId: intent.id,
+        amountRials: intent.finalAmountRials,
+        tx,
+      });
+    } else {
+      await tx.registration.update({
+        where: { id: registration.id },
+        data: {
+          status: RegistrationStatus.WAITING_PAYMENT,
+          paymentStatus: RegistrationPaymentStatus.FAILED,
+          trackingCode,
+          paymentRef: verified.providerRef,
+        },
+      });
+
     }
   });
 
@@ -818,6 +882,7 @@ export async function verifyPaymentCallback(params: {
   if (!fresh) {
     return { ok: false, error: "پرداخت یافت نشد." };
   }
+
 
   if (isCommerce) {
     if (fresh.status === PaymentStatus.PAID) {
@@ -839,6 +904,18 @@ export async function verifyPaymentCallback(params: {
 
   if (!registration) {
     return { ok: false, error: "هدف پرداخت یافت نشد." };
+
+  // Idempotent snapshot (covers concurrent verify where this tx lost the lock).
+  if (fresh.status === PaymentStatus.PAID) {
+    await createAttributionSnapshotForRevenueEvent({
+      organizationId: params.organizationId,
+      revenueKey: paymentIntentRevenueKey(intent.id),
+      leadId: registration.leadId,
+      registrationId: registration.id,
+      paymentIntentId: intent.id,
+      amountRials: intent.finalAmountRials,
+    });
+
   }
 
   // CRM only when we actually transitioned (status matches expected outcome)
@@ -893,6 +970,21 @@ export async function verifyPaymentCallback(params: {
           amountRials: intent.finalAmountRials,
         },
       });
+      await enqueueDomainEvent({
+        organizationId: params.organizationId,
+        branchId: registration.branchId,
+        eventType: DomainEventType.PAYMENT_SUCCESS,
+        aggregateType: "PaymentIntent",
+        aggregateId: intent.id,
+        dedupeKey: `PAYMENT_SUCCESS:${intent.id}`,
+        payload: {
+          paymentIntentId: intent.id,
+          registrationId: registration.id,
+          leadId: registration.leadId,
+          paymentStatus: PaymentStatus.PAID,
+          amountRials: intent.finalAmountRials,
+        },
+      }).catch(() => undefined);
     } else if (fresh.status === PaymentStatus.CANCELLED) {
       if (registration.leadId) {
         await recordPaymentCrm({
@@ -947,6 +1039,20 @@ export async function verifyPaymentCallback(params: {
           status: fresh.status,
         },
       });
+      await enqueueDomainEvent({
+        organizationId: params.organizationId,
+        branchId: registration.branchId,
+        eventType: DomainEventType.PAYMENT_FAILED,
+        aggregateType: "PaymentIntent",
+        aggregateId: intent.id,
+        dedupeKey: `PAYMENT_FAILED:${intent.id}`,
+        payload: {
+          paymentIntentId: intent.id,
+          registrationId: registration.id,
+          leadId: registration.leadId,
+          paymentStatus: PaymentStatus.FAILED,
+        },
+      }).catch(() => undefined);
     }
   }
 

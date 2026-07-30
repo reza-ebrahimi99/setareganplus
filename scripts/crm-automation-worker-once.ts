@@ -9,7 +9,7 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
-import { processPendingAutomationBatch } from "../lib/crm/automation-processor";
+import { processPendingAutomationBatch } from "../lib/automation/worker";
 import { prisma } from "../lib/prisma";
 
 async function main() {
