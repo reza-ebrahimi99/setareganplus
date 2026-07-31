@@ -334,9 +334,16 @@ export async function createRegistration(
     resumeToken: string | null;
     publicTrackingCode: string | null;
   };
-
+  let existingDraft:
+  | {
+      id: string;
+      registrationNumber: string;
+      resumeToken: string | null;
+      publicTrackingCode: string | null;
+    }
+  | null = null;
   try {
-    const existingDraft = input.resumeToken
+    existingDraft = input.resumeToken
       ? await prisma.registration.findFirst({
           where: {
             organizationId: organization.id,
@@ -488,30 +495,6 @@ export async function createRegistration(
       },
     }).catch(() => undefined);
   }
-
-  const leadResult = await upsertLead({
-    organizationId: organization.id,
-    branchId,
-    firstName: input.student.firstName.trim(),
-    lastName: input.student.lastName.trim(),
-    mobile: mobile.normalized,
-    mobileRaw: input.parent.mobile,
-    fatherName:
-      input.parent.relationship === RegistrationParentRelationship.FATHER
-        ? input.parent.parentName.trim()
-        : null,
-    school: input.student.schoolName.trim(),
-    gradeLevel: input.student.gradeLabel.trim(),
-    email: email.email,
-    nationalCode: national.normalized,
-    source: `REGISTRATION:${catalog.flowKey}`,
-    sourceType: LeadSourceType.REGISTRATION,
-    serviceInterest: ServiceInterest.EXAMS,
-    applyScoring: true,
-    createInitialTask: false,
-  });
-
-
   if (leadResult.ok) {
     await prisma.lead.update({
       where: { id: leadResult.leadId },

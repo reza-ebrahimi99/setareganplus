@@ -624,7 +624,7 @@ export async function verifyPaymentCallback(params: {
 
 
     // Heal missing snapshots on idempotent retries (create-once by revenueKey).
-    if (intent.status === PaymentStatus.PAID) {
+    if (intent.status === PaymentStatus.PAID && registration) {
       await createAttributionSnapshotForRevenueEvent({
         organizationId: params.organizationId,
         revenueKey: paymentIntentRevenueKey(intent.id),
@@ -844,9 +844,9 @@ export async function verifyPaymentCallback(params: {
           paymentStatus: RegistrationPaymentStatus.FAILED,
           trackingCode,
           paymentRef: verified.providerRef,
-        },
+        }
       });
-
+     }
     }
   });
 
@@ -881,7 +881,7 @@ export async function verifyPaymentCallback(params: {
 
   if (!registration) {
     return { ok: false, error: "هدف پرداخت یافت نشد." };
-
+  }
   // Idempotent snapshot (covers concurrent verify where this tx lost the lock).
   if (fresh.status === PaymentStatus.PAID) {
     await createAttributionSnapshotForRevenueEvent({
