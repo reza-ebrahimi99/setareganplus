@@ -814,31 +814,8 @@ export async function verifyPaymentCallback(params: {
             paymentStatus: CommerceOrderPaymentStatus.FAILED,
           },
         });
-      }
-    } else if (registration) {
-      if (nextStatus === PaymentStatus.PAID) {
-        await tx.registration.update({
-          where: { id: registration.id },
-          data: {
-            status: RegistrationStatus.APPROVED,
-            paymentStatus: RegistrationPaymentStatus.PAID,
-            trackingCode,
-            paymentRef: verified.providerRef,
-            paymentProvider: provider.id,
-          },
-        });
-      } else {
-        await tx.registration.update({
-          where: { id: registration.id },
-          data: {
-            status: RegistrationStatus.WAITING_PAYMENT,
-            paymentStatus: RegistrationPaymentStatus.FAILED,
-            trackingCode,
-            paymentRef: verified.providerRef,
-          },
-        });
-      }
-
+      } 
+  } else if (registration) {
     if (nextStatus === PaymentStatus.PAID) {
       await tx.registration.update({
         where: { id: registration.id },
