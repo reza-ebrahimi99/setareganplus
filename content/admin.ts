@@ -265,6 +265,13 @@ export const adminNavGroups: ReadonlyArray<{
         permission: "communication.manage",
       },
       {
+        href: "/admin/settings/commerce-notifications",
+        label: "اعلان‌های فروشگاه",
+        icon: "settings",
+        enabled: true,
+        permission: "commerce.orders.manage",
+      },
+      {
         href: "/admin/settings/automations",
         label: "اتوماسیون CRM",
         icon: "settings",
@@ -367,6 +374,10 @@ export const adminBreadcrumbs = {
     { label: "مدیریت", href: "/admin" },
     { label: "فروشگاه", href: "/admin/commerce" },
     { label: "سفارش‌ها" },
+  ],
+  commerceNotifications: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "اعلان‌های فروشگاه" },
   ],
   commercePayments: [
     { label: "مدیریت", href: "/admin" },

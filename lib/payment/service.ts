@@ -863,7 +863,8 @@ export async function verifyPaymentCallback(params: {
 
   if (isCommerce) {
     if (fresh.status === PaymentStatus.PAID) {
-      await enqueueCommerceOrderPaidSms({
+      // Queue SMS off the critical path — send happens in communication worker.
+      void enqueueCommerceOrderPaidSms({
         organizationId: params.organizationId,
         orderId: intent.payableId,
       });

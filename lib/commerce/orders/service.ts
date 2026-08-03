@@ -2,6 +2,7 @@
  * Single-item commerce order create + fulfillment helpers.
  */
 
+import type { Prisma } from "@/generated/prisma/client";
 import {
   CommerceDeliveryMethod,
   CommerceFulfillmentStatus,
@@ -253,6 +254,8 @@ export type AdminCommerceOrderRow = {
   buyerName: string | null;
   buyerMobile: string | null;
   productTitle: string;
+  quantity: number;
+  lineTotalRials: number;
   grandTotalRials: number;
   paymentStatus: CommerceOrderPaymentStatus;
   fulfillmentStatus: CommerceFulfillmentStatus | null;
@@ -262,47 +265,135 @@ export type AdminCommerceOrderRow = {
   deliveredByName: string | null;
 };
 
-export async function listAdminCommerceOrders(params: {
+export type AdminCommerceOrderListFilters = {
   organizationId: string;
   q?: string;
+  buyerName?: string;
+  buyerMobile?: string;
+  productQuery?: string;
+  itemId?: string;
   paymentStatus?: CommerceOrderPaymentStatus | "";
   fulfillmentStatus?: CommerceFulfillmentStatus | "";
-}): Promise<AdminCommerceOrderRow[]> {
-  const q = (params.q ?? "").trim();
+  /** Shortcut: only PAID */
+  paidOnly?: boolean;
+  /** Shortcut: not DELIVERED (includes AWAITING_PICKUP / null) */
+  undeliveredOnly?: boolean;
+  /** YYYY-MM-DD (inclusive start, Tehran calendar day → UTC range) */
+  dateFrom?: string;
+  /** YYYY-MM-DD (inclusive end) */
+  dateTo?: string;
+  take?: number;
+};
 
-  const orders = await prisma.commerceOrder.findMany({
-    where: {
-      organizationId: params.organizationId,
-      ...(params.paymentStatus
-        ? { paymentStatus: params.paymentStatus }
-        : {}),
-      ...(params.fulfillmentStatus
-        ? { fulfillmentStatus: params.fulfillmentStatus }
-        : {}),
-      ...(q
-        ? {
-            OR: [
-              { orderNumber: { contains: q, mode: "insensitive" } },
-              { buyerName: { contains: q, mode: "insensitive" } },
-              { buyerMobile: { contains: q } },
-              {
-                items: {
-                  some: {
-                    titleSnapshot: { contains: q, mode: "insensitive" },
-                  },
-                },
+function parseDateBound(raw: string | undefined, endOfDay: boolean): Date | null {
+  const value = (raw ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [y, m, d] = value.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  // Interpret as Tehran civil day via midday offset then snap — use UTC date parts for filter simplicity.
+  // Store filter as UTC midnight of the given calendar date (admin date inputs).
+  const date = new Date(Date.UTC(y, m - 1, d, endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function buildAdminCommerceOrderWhere(
+  params: AdminCommerceOrderListFilters,
+): Prisma.CommerceOrderWhereInput {
+  const q = (params.q ?? "").trim();
+  const buyerName = (params.buyerName ?? "").trim();
+  const buyerMobile = (params.buyerMobile ?? "").trim();
+  const productQuery = (params.productQuery ?? "").trim();
+  const itemId = (params.itemId ?? "").trim();
+  const from = parseDateBound(params.dateFrom, false);
+  const to = parseDateBound(params.dateTo, true);
+
+  const paymentStatus = params.paidOnly
+    ? CommerceOrderPaymentStatus.PAID
+    : params.paymentStatus || undefined;
+
+  const where: Prisma.CommerceOrderWhereInput = {
+    organizationId: params.organizationId,
+  };
+
+  if (paymentStatus) where.paymentStatus = paymentStatus;
+
+  if (params.undeliveredOnly) {
+    where.OR = [
+      { fulfillmentStatus: CommerceFulfillmentStatus.AWAITING_PICKUP },
+      { fulfillmentStatus: null },
+    ];
+  } else if (params.fulfillmentStatus) {
+    where.fulfillmentStatus = params.fulfillmentStatus;
+  }
+
+  if (from || to) {
+    where.createdAt = {
+      ...(from ? { gte: from } : {}),
+      ...(to ? { lte: to } : {}),
+    };
+  }
+
+  if (buyerName) {
+    where.buyerName = { contains: buyerName, mode: "insensitive" };
+  }
+  if (buyerMobile) {
+    where.buyerMobile = { contains: buyerMobile };
+  }
+
+  if (itemId || productQuery) {
+    where.items = {
+      some: {
+        ...(itemId ? { itemId } : {}),
+        ...(productQuery
+          ? {
+              titleSnapshot: {
+                contains: productQuery,
+                mode: "insensitive",
               },
-            ],
-          }
-        : {}),
-    },
+            }
+          : {}),
+      },
+    };
+  }
+
+  if (q) {
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+      {
+        OR: [
+          { orderNumber: { contains: q, mode: "insensitive" } },
+          { buyerName: { contains: q, mode: "insensitive" } },
+          { buyerMobile: { contains: q } },
+          {
+            items: {
+              some: {
+                titleSnapshot: { contains: q, mode: "insensitive" },
+              },
+            },
+          },
+        ],
+      },
+    ];
+  }
+
+  return where;
+}
+
+export async function listAdminCommerceOrders(
+  params: AdminCommerceOrderListFilters,
+): Promise<AdminCommerceOrderRow[]> {
+  const orders = await prisma.commerceOrder.findMany({
+    where: buildAdminCommerceOrderWhere(params),
     orderBy: { createdAt: "desc" },
-    take: 200,
+    take: Math.min(Math.max(params.take ?? 200, 1), 2000),
     include: {
       items: {
-        take: 1,
         orderBy: { createdAt: "asc" },
-        select: { titleSnapshot: true },
+        select: {
+          titleSnapshot: true,
+          quantity: true,
+          totalRials: true,
+        },
       },
       deliveredBy: {
         select: { firstName: true, lastName: true },
@@ -335,22 +426,109 @@ export async function listAdminCommerceOrders(params: {
     }
   }
 
-  return orders.map((order) => ({
-    id: order.id,
-    orderNumber: order.orderNumber,
-    buyerName: order.buyerName,
-    buyerMobile: order.buyerMobile,
-    productTitle: order.items[0]?.titleSnapshot ?? "—",
-    grandTotalRials: order.grandTotalRials,
-    paymentStatus: order.paymentStatus,
-    fulfillmentStatus: order.fulfillmentStatus,
-    createdAt: order.createdAt,
-    trackingCode: trackingByOrder.get(order.id) ?? null,
-    deliveredAt: order.deliveredAt,
-    deliveredByName: order.deliveredBy
-      ? `${order.deliveredBy.firstName} ${order.deliveredBy.lastName}`.trim()
-      : null,
-  }));
+  return orders.map((order) => {
+    const first = order.items[0];
+    const productTitle =
+      order.items.length > 1
+        ? order.items.map((i) => i.titleSnapshot).join("، ")
+        : (first?.titleSnapshot ?? "—");
+    const quantity = order.items.reduce((sum, i) => sum + i.quantity, 0);
+    return {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      buyerName: order.buyerName,
+      buyerMobile: order.buyerMobile,
+      productTitle,
+      quantity: quantity || 1,
+      lineTotalRials: first?.totalRials ?? order.grandTotalRials,
+      grandTotalRials: order.grandTotalRials,
+      paymentStatus: order.paymentStatus,
+      fulfillmentStatus: order.fulfillmentStatus,
+      createdAt: order.createdAt,
+      trackingCode: trackingByOrder.get(order.id) ?? null,
+      deliveredAt: order.deliveredAt,
+      deliveredByName: order.deliveredBy
+        ? `${order.deliveredBy.firstName} ${order.deliveredBy.lastName}`.trim()
+        : null,
+    };
+  });
+}
+
+/** Flat item rows for Excel (one row per order line). */
+export type AdminCommerceOrderExportRow = {
+  orderNumber: string;
+  createdAt: Date;
+  buyerName: string | null;
+  buyerMobile: string | null;
+  productTitle: string;
+  quantity: number;
+  amountRials: number;
+  paymentStatus: CommerceOrderPaymentStatus;
+  fulfillmentStatus: CommerceFulfillmentStatus | null;
+};
+
+export async function listAdminCommerceOrdersForExport(
+  params: AdminCommerceOrderListFilters,
+): Promise<AdminCommerceOrderExportRow[]> {
+  const orders = await prisma.commerceOrder.findMany({
+    where: buildAdminCommerceOrderWhere(params),
+    orderBy: { createdAt: "desc" },
+    take: Math.min(Math.max(params.take ?? 5000, 1), 10000),
+    include: {
+      items: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          titleSnapshot: true,
+          quantity: true,
+          totalRials: true,
+        },
+      },
+    },
+  });
+
+  const rows: AdminCommerceOrderExportRow[] = [];
+  for (const order of orders) {
+    if (order.items.length === 0) {
+      rows.push({
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt,
+        buyerName: order.buyerName,
+        buyerMobile: order.buyerMobile,
+        productTitle: "—",
+        quantity: 0,
+        amountRials: order.grandTotalRials,
+        paymentStatus: order.paymentStatus,
+        fulfillmentStatus: order.fulfillmentStatus,
+      });
+      continue;
+    }
+    for (const item of order.items) {
+      rows.push({
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt,
+        buyerName: order.buyerName,
+        buyerMobile: order.buyerMobile,
+        productTitle: item.titleSnapshot,
+        quantity: item.quantity,
+        amountRials: item.totalRials,
+        paymentStatus: order.paymentStatus,
+        fulfillmentStatus: order.fulfillmentStatus,
+      });
+    }
+  }
+  return rows;
+}
+
+export async function listCommerceProductFilterOptions(organizationId: string) {
+  return prisma.commerceItem.findMany({
+    where: {
+      organizationId,
+      deletedAt: null,
+    },
+    orderBy: { title: "asc" },
+    take: 200,
+    select: { id: true, title: true },
+  });
 }
 
 export async function getCommerceOrderPublicReceipt(params: {

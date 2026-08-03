@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
   CommerceFulfillmentStatus,
   CommerceOrderPaymentStatus,
@@ -7,11 +8,15 @@ import { markOrderDeliveredAction } from "@/app/admin/(dashboard)/commerce/actio
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminBreadcrumbs } from "@/content/admin";
+import { hasPermission } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-admin";
 import {
   COMMERCE_FULFILLMENT_STATUS_LABELS,
 } from "@/lib/commerce/booklet";
-import { listAdminCommerceOrders } from "@/lib/commerce/orders/service";
+import {
+  listAdminCommerceOrders,
+  listCommerceProductFilterOptions,
+} from "@/lib/commerce/orders/service";
 import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import { formatRials } from "@/lib/registration/format";
 import { toPersianDigits } from "@/lib/persian";
@@ -46,17 +51,52 @@ export default async function AdminCommerceOrdersPage({
   const session = await requirePermission("commerce.orders.view");
   const params = await searchParams;
   const q = first(params.q);
+  const buyerName = first(params.buyerName);
+  const buyerMobile = first(params.buyerMobile);
+  const productQuery = first(params.productQuery);
+  const itemId = first(params.itemId);
   const paymentStatus = first(params.paymentStatus);
   const fulfillmentStatus = first(params.fulfillmentStatus);
+  const paidOnly = first(params.paidOnly) === "1";
+  const undeliveredOnly = first(params.undeliveredOnly) === "1";
+  const dateFrom = first(params.dateFrom);
+  const dateTo = first(params.dateTo);
 
-  const orders = await listAdminCommerceOrders({
-    organizationId: session.organization.id,
-    q,
-    paymentStatus: paymentStatus as CommerceOrderPaymentStatus | "",
-    fulfillmentStatus: fulfillmentStatus as CommerceFulfillmentStatus | "",
-  });
+  const [orders, products] = await Promise.all([
+    listAdminCommerceOrders({
+      organizationId: session.organization.id,
+      q,
+      buyerName,
+      buyerMobile,
+      productQuery,
+      itemId,
+      paymentStatus: paymentStatus as CommerceOrderPaymentStatus | "",
+      fulfillmentStatus: fulfillmentStatus as CommerceFulfillmentStatus | "",
+      paidOnly,
+      undeliveredOnly,
+      dateFrom,
+      dateTo,
+    }),
+    listCommerceProductFilterOptions(session.organization.id),
+  ]);
 
-  const canManage = true;
+  const canManage = hasPermission(session, "commerce.orders.manage");
+
+  const exportParams = new URLSearchParams();
+  if (q) exportParams.set("q", q);
+  if (buyerName) exportParams.set("buyerName", buyerName);
+  if (buyerMobile) exportParams.set("buyerMobile", buyerMobile);
+  if (productQuery) exportParams.set("productQuery", productQuery);
+  if (itemId) exportParams.set("itemId", itemId);
+  if (paymentStatus) exportParams.set("paymentStatus", paymentStatus);
+  if (fulfillmentStatus) exportParams.set("fulfillmentStatus", fulfillmentStatus);
+  if (paidOnly) exportParams.set("paidOnly", "1");
+  if (undeliveredOnly) exportParams.set("undeliveredOnly", "1");
+  if (dateFrom) exportParams.set("dateFrom", dateFrom);
+  if (dateTo) exportParams.set("dateTo", dateTo);
+  const exportHref = `/admin/commerce/orders/export.xlsx${
+    exportParams.toString() ? `?${exportParams.toString()}` : ""
+  }`;
 
   return (
     <>
@@ -67,9 +107,106 @@ export default async function AdminCommerceOrdersPage({
         compact
       />
 
-      <form className="mb-4 grid gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted">
+          {toPersianDigits(orders.length)} سفارش در نتیجه فیلتر
+        </p>
+        <Link
+          href={exportHref}
+          className="inline-flex min-h-11 items-center rounded-xl border border-border bg-surface px-4 text-sm font-medium text-primary hover:bg-background"
+        >
+          خروجی اکسل
+        </Link>
+      </div>
+
+      <form className="mb-4 grid gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4">
+        <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-2">
+          <input
+            type="checkbox"
+            name="paidOnly"
+            value="1"
+            defaultChecked={paidOnly}
+            className="size-4 rounded border-border"
+          />
+          <span>فقط پرداخت شده</span>
+        </label>
+        <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-2">
+          <input
+            type="checkbox"
+            name="undeliveredOnly"
+            value="1"
+            defaultChecked={undeliveredOnly}
+            className="size-4 rounded border-border"
+          />
+          <span>فقط تحویل نشده</span>
+        </label>
+
+        <label className="block text-sm">
+          <span className="mb-1.5 block text-muted">از تاریخ</span>
+          <input
+            type="date"
+            name="dateFrom"
+            defaultValue={dateFrom}
+            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="mb-1.5 block text-muted">تا تاریخ</span>
+          <input
+            type="date"
+            name="dateTo"
+            defaultValue={dateTo}
+            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
+          />
+        </label>
+
+        <label className="block text-sm">
+          <span className="mb-1.5 block text-muted">محصول</span>
+          <select
+            name="itemId"
+            defaultValue={itemId}
+            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
+          >
+            <option value="">همه محصولات</option>
+            {products.map((product) => (
+              <option key={product.id} value={product.id}>
+                {product.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-sm">
+          <span className="mb-1.5 block text-muted">جستجوی محصول</span>
+          <input
+            name="productQuery"
+            defaultValue={productQuery}
+            placeholder="عنوان محصول"
+            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
+          />
+        </label>
+
+        <label className="block text-sm">
+          <span className="mb-1.5 block text-muted">جستجوی نام</span>
+          <input
+            name="buyerName"
+            defaultValue={buyerName}
+            placeholder="نام خریدار"
+            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="mb-1.5 block text-muted">جستجوی موبایل</span>
+          <input
+            name="buyerMobile"
+            defaultValue={buyerMobile}
+            placeholder="09…"
+            dir="ltr"
+            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
+          />
+        </label>
+
         <label className="block text-sm sm:col-span-2">
-          <span className="mb-1.5 block text-muted">جستجو</span>
+          <span className="mb-1.5 block text-muted">جستجوی کلی</span>
           <input
             name="q"
             defaultValue={q}
@@ -81,8 +218,9 @@ export default async function AdminCommerceOrdersPage({
           <span className="mb-1.5 block text-muted">وضعیت پرداخت</span>
           <select
             name="paymentStatus"
-            defaultValue={paymentStatus}
-            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
+            defaultValue={paidOnly ? "" : paymentStatus}
+            disabled={paidOnly}
+            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5 disabled:opacity-60"
           >
             <option value="">همه</option>
             {Object.entries(PAYMENT_LABELS).map(([value, label]) => (
@@ -96,8 +234,9 @@ export default async function AdminCommerceOrdersPage({
           <span className="mb-1.5 block text-muted">وضعیت تحویل</span>
           <select
             name="fulfillmentStatus"
-            defaultValue={fulfillmentStatus}
-            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
+            defaultValue={undeliveredOnly ? "" : fulfillmentStatus}
+            disabled={undeliveredOnly}
+            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5 disabled:opacity-60"
           >
             <option value="">همه</option>
             {Object.entries(COMMERCE_FULFILLMENT_STATUS_LABELS).map(
@@ -109,13 +248,19 @@ export default async function AdminCommerceOrdersPage({
             )}
           </select>
         </label>
-        <div className="sm:col-span-4">
+        <div className="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-4">
           <button
             type="submit"
             className="min-h-11 rounded-xl bg-primary px-4 text-sm font-medium text-white"
           >
             اعمال فیلتر
           </button>
+          <Link
+            href="/admin/commerce/orders"
+            className="inline-flex min-h-11 items-center rounded-xl border border-border px-4 text-sm text-muted"
+          >
+            پاک کردن
+          </Link>
         </div>
       </form>
 
@@ -132,8 +277,8 @@ export default async function AdminCommerceOrdersPage({
                 <th className="px-3 py-3 text-right font-medium">خریدار</th>
                 <th className="px-3 py-3 text-right font-medium">محصول</th>
                 <th className="px-3 py-3 text-right font-medium">مبلغ</th>
-                <th className="px-3 py-3 text-right font-medium">پرداخت</th>
-                <th className="px-3 py-3 text-right font-medium">تحویل</th>
+                <th className="px-3 py-3 text-right font-medium">وضعیت پرداخت</th>
+                <th className="px-3 py-3 text-right font-medium">وضعیت تحویل</th>
                 <th className="px-3 py-3 text-right font-medium">تاریخ</th>
                 <th className="px-3 py-3 text-right font-medium">پیگیری</th>
                 <th className="px-3 py-3 text-right font-medium">عملیات</th>
@@ -165,7 +310,7 @@ export default async function AdminCommerceOrdersPage({
                       ? COMMERCE_FULFILLMENT_STATUS_LABELS[
                           order.fulfillmentStatus
                         ]
-                      : "—"}
+                      : "در انتظار تحویل"}
                     {order.deliveredAt ? (
                       <p className="mt-1 text-xs text-muted">
                         {formatJalaliDateTimeShort(order.deliveredAt)}
@@ -194,7 +339,7 @@ export default async function AdminCommerceOrdersPage({
                           type="submit"
                           className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-900"
                         >
-                          تحویل داده شد
+                          ثبت تحویل
                         </button>
                       </form>
                     ) : (

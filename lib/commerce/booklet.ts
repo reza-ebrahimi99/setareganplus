@@ -54,8 +54,8 @@ export const COMMERCE_FULFILLMENT_STATUS_LABELS: Record<
   CommerceFulfillmentStatusValue,
   string
 > = {
-  AWAITING_PICKUP: "در انتظار تحویل حضوری",
-  DELIVERED: "تحویل داده شد",
+  AWAITING_PICKUP: "در انتظار تحویل",
+  DELIVERED: "تحویل شد",
   CANCELLED: "لغو شده",
 };
 
