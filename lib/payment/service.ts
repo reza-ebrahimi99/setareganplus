@@ -863,10 +863,15 @@ export async function verifyPaymentCallback(params: {
 
   if (isCommerce) {
     if (fresh.status === PaymentStatus.PAID) {
-      // Queue SMS off the critical path — send happens in communication worker.
+      // Provider send (form verify template) — never block payment.
       void enqueueCommerceOrderPaidSms({
         organizationId: params.organizationId,
         orderId: intent.payableId,
+      }).catch((error) => {
+        console.error("[payment] commerce SMS notify failed", {
+          orderId: intent.payableId,
+          error: error instanceof Error ? error.message : error,
+        });
       });
     }
 
