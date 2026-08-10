@@ -27,6 +27,7 @@ export default async function Home() {
   return (
     <SiteShell activePath="/">
       <PremiumHero />
+      <div id="discover" tabIndex={-1} className="h-0 w-0 overflow-hidden" />
       <FeaturedTeamSection />
       {/* 1) Qalamchi first — never place school content above this */}
       <QalamchiBranchesSection cards={qalamchiCards} />

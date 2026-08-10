@@ -3,6 +3,9 @@ import {
   heroCtas,
   heroDisplayStats,
   heroMedia,
+  heroSceneIntervalMs,
+  heroScenes,
+  heroTickerItems,
 } from "@/content/home";
 import { PremiumHeroStage } from "@/components/home/PremiumHeroStage";
 
@@ -29,8 +32,8 @@ export function PremiumHero() {
       variant: "outline" as const,
     },
     {
-      label: heroCtas.gallery.label,
-      href: heroCtas.gallery.href,
+      label: heroCtas.shop.label,
+      href: heroCtas.shop.href,
       variant: "outline" as const,
     },
   ];
@@ -39,13 +42,16 @@ export function PremiumHero() {
     <PremiumHeroStage
       eyebrow={heroContent.eyebrow}
       title={heroContent.title}
-      subtitle={heroContent.subtitle}
       description={heroContent.description}
       slogan={heroContent.slogan}
+      scrollHint={heroContent.scrollHint}
       logo={heroMedia.logo}
       ghalamchiLogo={heroMedia.ghalamchiLogo}
       video={heroMedia.video}
       background={heroMedia.background}
+      scenes={heroScenes}
+      sceneIntervalMs={heroSceneIntervalMs}
+      tickerItems={heroTickerItems}
       stats={heroDisplayStats}
       ctas={ctas}
     />

@@ -91,7 +91,58 @@ export const heroContent = {
   description:
     "خدمات آموزشی، آزمون و مشاوره با تیمی از ۸۷ دبیر و مشاور آموزشی و سوابق تأییدشده در کنکور و مدارس تیزهوشان.",
   eyebrow: "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی)",
+  /** Scroll cue — CMS-ready */
+  scrollHint: "کشف بیشتر",
 } as const;
+
+/**
+ * Cinematic hero scenes — rotate in PremiumHeroStage.
+ * CMS-ready: headline / support can later load from StarOS content.
+ */
+export const heroScenes = [
+  {
+    id: "platform",
+    headline: "سامانه یکپارچه آموزش، مشاوره و برنامه‌ریزی",
+    support: "مسیر یکپارچه از کلاس تا مشاوره و برنامه‌ریزی تحصیلی",
+  },
+  {
+    id: "gifted",
+    headline: "۹ قبولی مدارس تیزهوشان",
+    support: "نتیجه مسیر آموزشی دبستان ستارگان آینده",
+  },
+  {
+    id: "graduates",
+    headline: "۲۵۵ فارغ‌التحصیل",
+    support: "فارغ‌التحصیلان دبستان غیردولتی ستارگان آینده",
+  },
+  {
+    id: "enrollment",
+    headline: "ثبت‌نام سال تحصیلی جدید",
+    support: "پیش‌ثبت‌نام و رزرو مشاوره از همین‌جا آغاز می‌شود",
+  },
+] as const;
+
+/** Live success ticker — CMS-ready items for homepage hero */
+export const heroTickerItems = [
+  {
+    id: "gifted-congrats",
+    emoji: "🏆",
+    text: "تبریک به پذیرفته‌شدگان مدارس تیزهوشان",
+  },
+  {
+    id: "enrollment-open",
+    emoji: "🎉",
+    text: "ثبت نام سال جدید آغاز شد",
+  },
+  {
+    id: "summer-club",
+    emoji: "⭐",
+    text: "باشگاه تابستانی فعال است",
+  },
+] as const;
+
+/** Scene dwell time (ms) — keep in sync with stage client timer */
+export const heroSceneIntervalMs = 7500;
 
 /** StarOS media slots — assign url from media library when available */
 export const heroMedia = {
@@ -149,10 +200,12 @@ export const founderContent = {
 } as const;
 
 export const heroCtas = {
-  primary: { label: "ثبت‌نام", href: "/pre-registration" },
-  secondary: { label: "رزرو مشاوره", href: "/consultation" },
-  tertiary: { label: "افتخارات", href: "/achievements" },
-  gallery: { label: "گالری", href: "/gallery" },
+  primary: { label: "ثبت نام آنلاین", href: "/pre-registration" },
+  secondary: { label: "مشاهده افتخارات", href: "/achievements" },
+  tertiary: { label: "رزرو مشاوره", href: "/consultation" },
+  shop: { label: "فروشگاه آموزشی", href: "/shop" },
+  /** @deprecated Use shop — kept for gradual migration */
+  gallery: { label: "فروشگاه آموزشی", href: "/shop" },
 } as const;
 
 /**
@@ -338,6 +391,13 @@ export const achievementsContent = {
   heading: "دستاوردهای مجموعه",
   description:
     "دستاوردهای تأییدشده مرکز آموزشی ستارگان پلاس و نمایندگی قلم‌چی نسیم‌شهر.",
+  showcaseEyebrow: "ویترین افتخارات",
+  showcaseHeading: "موفقیت‌هایی که مسیر را روشن می‌کند",
+  showcaseDescription:
+    "افتخارات برجسته، مسیر زمانی موفقیت‌ها و آمار تأییدشده مجموعه — بدون انتشار هویت فردی.",
+  showcaseCta: { label: "مشاهده همه افتخارات", href: "/achievements" },
+  timelineHeading: "مسیر زمانی افتخارات",
+  timelineDescription: "نگاهی فشرده به موفقیت‌های اخیر بر اساس سال تحصیلی.",
 } as const;
 
 export const achievementItems = [

@@ -1,33 +1,42 @@
-import { Container } from "@/components/ui/Container";
-import { FeatureCard } from "@/components/ui/FeatureCard";
-import { Section } from "@/components/ui/Section";
-import { SectionHeader } from "@/components/ui/SectionHeader";
-import { achievementItems, achievementsContent } from "@/content/home";
+import { AchievementShowcase } from "@/components/achievements/AchievementShowcase";
+import {
+  achievementItems,
+  achievementsContent,
+} from "@/content/home";
+import {
+  HOMEPAGE_ACHIEVEMENT_TIMELINE_LIMIT,
+  loadFeaturedAchievements,
+  loadPublicAchievementTimeline,
+} from "@/lib/website/achievements";
 
 const headingId = "achievements-heading";
 
-export function AchievementsSection() {
+/**
+ * Homepage achievements showcase —
+ * institution metrics + featured cards + compact timeline.
+ * Data from StarOS achievements library; copy from content/home.
+ */
+export async function AchievementsSection() {
+  const [featured, timeline] = await Promise.all([
+    loadFeaturedAchievements(),
+    loadPublicAchievementTimeline({
+      limit: HOMEPAGE_ACHIEVEMENT_TIMELINE_LIMIT,
+    }),
+  ]);
+
   return (
-    <Section ariaLabelledby={headingId}>
-      <Container>
-        <SectionHeader
-          eyebrow={achievementsContent.eyebrow}
-          heading={achievementsContent.heading}
-          description={achievementsContent.description}
-          headingId={headingId}
-        />
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {achievementItems.map((item) => (
-            <li key={item.title}>
-              <FeatureCard
-                metric={item.metric}
-                title={item.title}
-                description={item.description}
-              />
-            </li>
-          ))}
-        </ul>
-      </Container>
-    </Section>
+    <AchievementShowcase
+      eyebrow={achievementsContent.showcaseEyebrow}
+      heading={achievementsContent.showcaseHeading}
+      description={achievementsContent.showcaseDescription}
+      headingId={headingId}
+      metrics={achievementItems}
+      featured={featured}
+      timeline={timeline}
+      timelineHeading={achievementsContent.timelineHeading}
+      timelineDescription={achievementsContent.timelineDescription}
+      cta={achievementsContent.showcaseCta}
+      variant="home"
+    />
   );
 }

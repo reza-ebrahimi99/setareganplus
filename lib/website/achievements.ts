@@ -1,3 +1,4 @@
+import { utcToJalaliInTehran } from "@/lib/datetime/jalali";
 import {
   publicCertificateUrl,
   publicCoverUrl,
@@ -5,10 +6,13 @@ import {
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { prisma } from "@/lib/prisma";
 import { listPublicAchievementCategories } from "@/lib/website/achievement-categories";
+import { toPersianDigits } from "@/lib/persian";
 
 export { listPublicAchievementCategories };
 
 export const HOMEPAGE_FEATURED_ACHIEVEMENT_LIMIT = 6;
+export const HOMEPAGE_ACHIEVEMENT_TIMELINE_LIMIT = 10;
+export const PUBLIC_ACHIEVEMENT_TIMELINE_LIMIT = 36;
 export const PUBLIC_ACHIEVEMENT_PAGE_SIZE = 24;
 
 export type PublicAchievementCard = {
@@ -111,6 +115,125 @@ function publicAchievementWhere(
   };
 }
 
+const publicCardSelect = {
+  id: true,
+  slug: true,
+  title: true,
+  shortDescription: true,
+  schoolYear: true,
+  place: true,
+  level: true,
+  achievementDate: true,
+  isFeatured: true,
+  category: { select: { name: true, slug: true, color: true } },
+  student: {
+    select: {
+      grade: { select: { name: true } },
+    },
+  },
+  coverMedia: { select: mediaSelect },
+} as const;
+
+type PublicCardRow = {
+  id: string;
+  slug: string;
+  title: string;
+  shortDescription: string;
+  schoolYear: string | null;
+  place: string | null;
+  level: string | null;
+  achievementDate: Date | null;
+  isFeatured: boolean;
+  category: { name: string; slug: string; color: string | null };
+  student: { grade: { name: string } };
+  coverMedia: {
+    storageKey: string;
+    altText: string | null;
+    metadata: unknown;
+  } | null;
+};
+
+function toPublicAchievementCard(row: PublicCardRow): PublicAchievementCard {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    shortDescription: row.shortDescription,
+    schoolYear: row.schoolYear,
+    place: row.place,
+    level: row.level,
+    achievementDate: row.achievementDate,
+    isFeatured: row.isFeatured,
+    categoryName: row.category.name,
+    categorySlug: row.category.slug,
+    categoryColor: row.category.color,
+    gradeName: row.student.grade.name,
+    ...mapCover(row.coverMedia, row.title),
+  };
+}
+
+export type AchievementTimelineGroup = {
+  key: string;
+  label: string;
+  achievements: PublicAchievementCard[];
+};
+
+function timelineBucket(achievement: PublicAchievementCard): {
+  key: string;
+  label: string;
+  sortKey: string;
+} {
+  const schoolYear = achievement.schoolYear?.trim();
+  if (schoolYear) {
+    return {
+      key: `sy:${schoolYear}`,
+      label: toPersianDigits(schoolYear),
+      sortKey: `2:${schoolYear}`,
+    };
+  }
+  if (achievement.achievementDate) {
+    const year = utcToJalaliInTehran(achievement.achievementDate).jy;
+    return {
+      key: `jy:${year}`,
+      label: toPersianDigits(year),
+      sortKey: `1:${year}`,
+    };
+  }
+  return { key: "other", label: "سایر", sortKey: "0:other" };
+}
+
+export function groupAchievementsByTimeline(
+  achievements: PublicAchievementCard[],
+): AchievementTimelineGroup[] {
+  const groups = new Map<
+    string,
+    AchievementTimelineGroup & { sortKey: string }
+  >();
+
+  for (const achievement of achievements) {
+    const bucket = timelineBucket(achievement);
+    const existing = groups.get(bucket.key);
+    if (existing) {
+      existing.achievements.push(achievement);
+    } else {
+      groups.set(bucket.key, {
+        key: bucket.key,
+        label: bucket.label,
+        sortKey: bucket.sortKey,
+        achievements: [achievement],
+      });
+    }
+  }
+
+  return [...groups.values()]
+    .sort((a, b) => b.sortKey.localeCompare(a.sortKey, "en"))
+    .map(({ key, label, achievements: items }) => ({
+      key,
+      label,
+      achievements: items,
+    }));
+}
+
 export async function loadFeaturedAchievements(): Promise<
   PublicAchievementCard[]
 > {
@@ -129,45 +252,52 @@ export async function loadFeaturedAchievements(): Promise<
         { displayOrder: "asc" },
       ],
       take: HOMEPAGE_FEATURED_ACHIEVEMENT_LIMIT,
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        shortDescription: true,
-        schoolYear: true,
-        place: true,
-        level: true,
-        achievementDate: true,
-        isFeatured: true,
-        category: { select: { name: true, slug: true, color: true } },
-        student: {
-          select: {
-            grade: { select: { name: true } },
-          },
-        },
-        coverMedia: { select: mediaSelect },
-      },
+      select: publicCardSelect,
     });
 
-    return rows.map((row) => ({
-      id: row.id,
-      slug: row.slug,
-      title: row.title,
-      shortDescription: row.shortDescription,
-      schoolYear: row.schoolYear,
-      place: row.place,
-      level: row.level,
-      achievementDate: row.achievementDate,
-      isFeatured: row.isFeatured,
-      categoryName: row.category.name,
-      categorySlug: row.category.slug,
-      categoryColor: row.category.color,
-      gradeName: row.student.grade.name,
-      ...mapCover(row.coverMedia, row.title),
-    }));
+    return rows.map(toPublicAchievementCard);
   } catch {
     return [];
   }
+}
+
+export async function loadPublicAchievementTimeline(options?: {
+  limit?: number;
+}): Promise<AchievementTimelineGroup[]> {
+  try {
+    const organization = await getCurrentOrganization();
+    if (!organization) return [];
+
+    const limit = options?.limit ?? PUBLIC_ACHIEVEMENT_TIMELINE_LIMIT;
+    const rows = await prisma.achievement.findMany({
+      where: publicAchievementWhere(organization.id),
+      orderBy: [
+        { isFeatured: "desc" },
+        { achievementDate: "desc" },
+        { featuredPriority: "asc" },
+        { displayOrder: "asc" },
+      ],
+      take: limit,
+      select: publicCardSelect,
+    });
+
+    return groupAchievementsByTimeline(rows.map(toPublicAchievementCard));
+  } catch {
+    return [];
+  }
+}
+
+export async function loadHomepageAchievementShowcase(): Promise<{
+  featured: PublicAchievementCard[];
+  timeline: AchievementTimelineGroup[];
+}> {
+  const [featured, timeline] = await Promise.all([
+    loadFeaturedAchievements(),
+    loadPublicAchievementTimeline({
+      limit: HOMEPAGE_ACHIEVEMENT_TIMELINE_LIMIT,
+    }),
+  ]);
+  return { featured, timeline };
 }
 
 export type PublicAchievementPageData = {
@@ -222,43 +352,11 @@ export async function loadPublicAchievementPage(filters?: {
     ],
     skip: (page - 1) * pageSize,
     take: pageSize,
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      shortDescription: true,
-      schoolYear: true,
-      place: true,
-      level: true,
-      achievementDate: true,
-      isFeatured: true,
-      category: { select: { name: true, slug: true, color: true } },
-      student: {
-        select: {
-          grade: { select: { name: true } },
-        },
-      },
-      coverMedia: { select: mediaSelect },
-    },
+    select: publicCardSelect,
   });
 
   return {
-    achievements: rows.map((row) => ({
-      id: row.id,
-      slug: row.slug,
-      title: row.title,
-      shortDescription: row.shortDescription,
-      schoolYear: row.schoolYear,
-      place: row.place,
-      level: row.level,
-      achievementDate: row.achievementDate,
-      isFeatured: row.isFeatured,
-      categoryName: row.category.name,
-      categorySlug: row.category.slug,
-      categoryColor: row.category.color,
-      gradeName: row.student.grade.name,
-      ...mapCover(row.coverMedia, row.title),
-    })),
+    achievements: rows.map(toPublicAchievementCard),
     total,
     page,
     pageSize,

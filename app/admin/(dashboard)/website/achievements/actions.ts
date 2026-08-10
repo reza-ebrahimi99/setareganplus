@@ -41,6 +41,7 @@ function readString(formData: FormData, key: string): string {
 function revalidateAchievements(slug?: string) {
   revalidatePath("/admin/website/achievements");
   revalidatePath(CATEGORY_ADMIN_PATH);
+  revalidatePath("/");
   revalidatePath("/achievements");
   if (slug) revalidatePath(`/achievements/${slug}`);
 }
