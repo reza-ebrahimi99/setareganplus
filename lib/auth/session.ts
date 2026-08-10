@@ -1,11 +1,12 @@
 import { cookies, headers } from "next/headers";
+import { MembershipStatus, UserStatus } from "@/generated/prisma/enums";
+import { isAdminPortalRole } from "@/lib/auth/constants";
 import {
   ADMIN_SESSION_COOKIE,
   ADMIN_SESSION_TTL_MS,
 } from "@/lib/auth/cookie";
 import { createSessionToken, hashSessionToken } from "@/lib/auth/crypto";
 import { prisma } from "@/lib/prisma";
-import { MembershipStatus, UserStatus } from "@/generated/prisma/enums";
 
 export async function createAdminSession(params: {
   userId: string;
@@ -22,9 +23,19 @@ export async function createAdminSession(params: {
       organization: { isActive: true, deletedAt: null },
       user: { status: UserStatus.ACTIVE, deletedAt: null },
     },
-    select: { id: true },
+    select: {
+      id: true,
+      role: true,
+      user: { select: { isPlatformAdmin: true } },
+    },
   });
   if (!membership) throw new Error("INVALID_SESSION_MEMBERSHIP");
+  if (
+    !membership.user.isPlatformAdmin &&
+    !isAdminPortalRole(membership.role)
+  ) {
+    throw new Error("FORBIDDEN_PORTAL_ROLE");
+  }
 
   const token = createSessionToken();
   const tokenHash = hashSessionToken(token);
@@ -42,6 +53,17 @@ export async function createAdminSession(params: {
   });
 
   return { token, expiresAt };
+}
+
+/** Revoke all active admin sessions for a user (password reset / security). */
+export async function revokeAllAdminSessionsForUser(
+  userId: string,
+): Promise<number> {
+  const result = await prisma.adminSession.updateMany({
+    where: { userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+  return result.count;
 }
 
 export async function readSessionRequestMetadata(): Promise<{

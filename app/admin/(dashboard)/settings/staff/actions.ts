@@ -8,14 +8,15 @@ import {
   SystemRole,
   UserStatus,
 } from "@/generated/prisma/enums";
+import { isPortalOnlyRole } from "@/lib/auth/constants";
 import {
   STAFF_ASSIGNABLE_ROLES,
   assertPermission,
 } from "@/lib/auth/permissions";
 import { requireAdminSession } from "@/lib/auth/require-admin";
+import { requestOtp } from "@/lib/communication/otp";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { prisma } from "@/lib/prisma";
-import { requestOtp } from "@/lib/communication/otp";
 
 function value(formData: FormData, key: string): string {
   const item = formData.get(key);
@@ -132,13 +133,32 @@ export async function createStaffAction(formData: FormData): Promise<void> {
         ...(email ? [{ email }] : []),
       ],
     },
-    include: { memberships: { select: { organizationId: true } } },
+    include: {
+      memberships: {
+        where: { organizationId, deletedAt: null },
+        select: { organizationId: true, role: true },
+      },
+    },
   });
   if (
     existing &&
-    !existing.memberships.some((membership) => membership.organizationId === organizationId)
+    existing.memberships.length === 0 &&
+    (await prisma.organizationMembership.findFirst({
+      where: {
+        userId: existing.id,
+        deletedAt: null,
+        organizationId: { not: organizationId },
+      },
+      select: { id: true },
+    }))
   ) {
     throw new Error("IDENTITY_ALREADY_USED");
+  }
+
+  const existingOrgMembership = existing?.memberships[0];
+  if (existingOrgMembership && isPortalOnlyRole(existingOrgMembership.role)) {
+    // Do not promote student/parent portal accounts into staff via this screen.
+    throw new Error("PORTAL_ACCOUNT_NOT_STAFF");
   }
 
   const membership = await prisma.$transaction(async (tx) => {
@@ -208,6 +228,9 @@ export async function updateStaffAction(formData: FormData): Promise<void> {
       branchMemberships: { where: { deletedAt: null }, select: { branchId: true } },
     },
   });
+  if (target && isPortalOnlyRole(target.role)) {
+    throw new Error("PORTAL_ACCOUNT_NOT_STAFF");
+  }
   if (!target) throw new Error("NOT_FOUND");
   if (target.role === SystemRole.ORGANIZATION_OWNER) throw new Error("OWNER_PROTECTED");
 
@@ -289,6 +312,7 @@ export async function setStaffActiveAction(formData: FormData): Promise<void> {
     },
   });
   if (!target) throw new Error("NOT_FOUND");
+  if (isPortalOnlyRole(target.role)) throw new Error("PORTAL_ACCOUNT_NOT_STAFF");
   if (target.role === SystemRole.ORGANIZATION_OWNER) throw new Error("OWNER_PROTECTED");
 
   await prisma.organizationMembership.update({
@@ -333,9 +357,10 @@ export async function revokeStaffSessionsAction(formData: FormData): Promise<voi
   const membershipId = value(formData, "membershipId");
   const target = await prisma.organizationMembership.findFirst({
     where: { id: membershipId, organizationId, deletedAt: null },
-    select: { id: true, userId: true },
+    select: { id: true, userId: true, role: true },
   });
   if (!target) throw new Error("NOT_FOUND");
+  if (isPortalOnlyRole(target.role)) throw new Error("PORTAL_ACCOUNT_NOT_STAFF");
   await prisma.adminSession.updateMany({
     where: {
       revokedAt: null,
@@ -369,9 +394,10 @@ export async function sendStaffInvitationAction(formData: FormData): Promise<voi
       status: MembershipStatus.ACTIVE,
       deletedAt: null,
     },
-    select: { id: true, user: { select: { mobile: true } } },
+    select: { id: true, role: true, user: { select: { mobile: true } } },
   });
   if (!target?.user.mobile) return;
+  if (isPortalOnlyRole(target.role)) throw new Error("PORTAL_ACCOUNT_NOT_STAFF");
   const requested = await requestOtp({
     organizationId,
     mobile: target.user.mobile,

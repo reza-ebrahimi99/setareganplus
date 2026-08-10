@@ -7,7 +7,9 @@ import {
 
 /**
  * Cookie-presence gates for /admin and /portal.
- * Full session verification happens in route loaders / actions.
+ * Role enforcement (staff-only for /admin; portal links for /portal)
+ * happens in getAdminSession / portal resolvers — opaque session tokens
+ * cannot encode role in middleware without a DB round-trip.
  */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

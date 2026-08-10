@@ -55,6 +55,17 @@ export type SmsTemplateMessageRequest =
       };
       correlationId?: string;
       signal?: AbortSignal;
+    }
+  | {
+      kind: "commerce";
+      toMobile: string;
+      variables: {
+        fullName: string;
+        product: string;
+        amount: string;
+      };
+      correlationId?: string;
+      signal?: AbortSignal;
     };
 
 export type SmsPatternTemplateRequest = {

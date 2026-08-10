@@ -1,13 +1,10 @@
 /**
- * Commerce order paid SMS — production provider path (same as Registration delivery).
+ * Commerce order paid SMS.
  *
- * Root cause of prior failure: free-text sendText is unsupported by SMS.ir.
- * Registration/Booking succeed because they use sendTemplateMessage (form/booking
- * verify templates), not free text.
+ * Buyer: dedicated Commerce verify pattern (FULLNAME / PRODUCT / AMOUNT).
+ * Manager: unchanged form verify template path.
  *
- * This module calls sendTemplateMessage({ kind: "form" }) directly via
- * lib/communication/send.ts, with sms_messages used only for idempotency/audit
- * (CRM-style). No worker dependency. Payment must never fail because of SMS.
+ * Payment must never fail because of SMS.
  */
 
 import { SmsMessageStatus } from "@/generated/prisma/enums";
@@ -20,19 +17,25 @@ import { formatRials } from "@/lib/registration/format";
 import { prisma } from "@/lib/prisma";
 
 function buildBuyerAuditBody(params: {
-  orderNumber: string;
+  fullName: string;
+  product: string;
   amount: string;
 }): string {
   return [
-    "خرید شما از فروشگاه ستارگان با موفقیت ثبت شد.",
+    `${params.fullName} عزیز`,
     "",
-    "شماره سفارش:",
-    params.orderNumber,
+    "خرید شما با موفقیت انجام شد.",
     "",
-    "مبلغ:",
+    "📚 محصول:",
+    params.product,
+    "",
+    "💰 مبلغ:",
     params.amount,
     "",
-    "از خرید شما سپاسگزاریم.",
+    "به‌زودی جهت هماهنگی تحویل با شما تماس خواهیم گرفت.",
+    "",
+    "ستارگان پلاس",
+    "setareganplus.ir",
   ].join("\n");
 }
 
@@ -63,8 +66,15 @@ function buildAdminAuditBody(params: {
   ].join("\n");
 }
 
+function joinProductTitles(
+  items: ReadonlyArray<{ titleSnapshot: string }>,
+): string {
+  if (items.length === 0) return "—";
+  return items.map((item) => item.titleSnapshot.trim()).filter(Boolean).join("، ") || "—";
+}
+
 /**
- * Idempotent immediate send via SMS.ir form verify template (Registration path).
+ * Manager SMS — unchanged Registration/form verify path.
  */
 async function sendCommerceFormSms(params: {
   organizationId: string;
@@ -100,12 +110,9 @@ async function sendCommerceFormSms(params: {
       organizationId: params.organizationId,
       idempotencyKey: params.idempotencyKey,
     },
-    select: { id: true, status: true },
+    select: { id: true },
   });
-  if (existing) {
-    // Already attempted for this order+recipient — avoid duplicate send.
-    return;
-  }
+  if (existing) return;
 
   let messageId: string;
   try {
@@ -135,7 +142,6 @@ async function sendCommerceFormSms(params: {
     });
     messageId = created.id;
   } catch {
-    // Unique race on idempotencyKey — treat as already handled.
     return;
   }
 
@@ -172,6 +178,107 @@ async function sendCommerceFormSms(params: {
 }
 
 /**
+ * Buyer SMS — dedicated Commerce verify pattern (FULLNAME / PRODUCT / AMOUNT).
+ */
+async function sendCommercePurchaseSms(params: {
+  organizationId: string;
+  toMobile: string;
+  body: string;
+  idempotencyKey: string;
+  relatedId: string;
+  fullName: string;
+  product: string;
+  amount: string;
+  metadata?: Record<string, string | number | boolean | null>;
+}): Promise<void> {
+  const mobile = normalizeIranianMobile(params.toMobile);
+  if (!mobile.ok) {
+    console.error("[commerce-sms] invalid buyer mobile", {
+      error: mobile.error,
+    });
+    return;
+  }
+
+  const fullName = truncateSmsParam(params.fullName);
+  const product = truncateSmsParam(params.product);
+  const amount = truncateSmsParam(params.amount);
+  if (!fullName || !product || !amount) {
+    console.error("[commerce-sms] missing commerce template params");
+    return;
+  }
+
+  const existing = await prisma.smsMessage.findFirst({
+    where: {
+      organizationId: params.organizationId,
+      idempotencyKey: params.idempotencyKey,
+    },
+    select: { id: true },
+  });
+  if (existing) return;
+
+  let messageId: string;
+  try {
+    const created = await prisma.smsMessage.create({
+      data: {
+        organizationId: params.organizationId,
+        toMobile: mobile.normalized,
+        body: params.body,
+        status: SmsMessageStatus.PROCESSING,
+        provider: readSmsProviderName(),
+        purpose: "commerce_order_paid",
+        relatedType: "CommerceOrder",
+        relatedId: params.relatedId,
+        attemptCount: 1,
+        maxAttempts: 1,
+        idempotencyKey: params.idempotencyKey,
+        metadata: {
+          ...(params.metadata ?? {}),
+          templateDelivery: {
+            version: 1,
+            kind: "commerce",
+            variables: { fullName, product, amount },
+          },
+        },
+      },
+      select: { id: true },
+    });
+    messageId = created.id;
+  } catch {
+    return;
+  }
+
+  const result = await sendTemplateMessage({
+    kind: "commerce",
+    toMobile: mobile.normalized,
+    variables: { fullName, product, amount },
+    correlationId: messageId,
+  });
+
+  const sentAt = new Date();
+  await prisma.smsMessage.update({
+    where: { id: messageId },
+    data: result.ok
+      ? {
+          status: SmsMessageStatus.SENT,
+          sentAt,
+          providerMessageId: result.providerMessageId,
+          lastError: null,
+        }
+      : {
+          status: SmsMessageStatus.FAILED,
+          lastError: result.safeMessage,
+        },
+  });
+
+  if (!result.ok) {
+    console.error("[commerce-sms] buyer send failed", {
+      messageId,
+      error: result.safeMessage,
+    });
+  }
+}
+
+/**
  * Buyer + manager SMS after commerce payment PAID.
  * Safe to fire-and-forget from payment callback.
  */
@@ -195,7 +302,6 @@ export async function enqueueCommerceOrderPaidSms(params: {
           orderBy: { createdAt: "asc" },
           select: {
             titleSnapshot: true,
-            quantity: true,
           },
         },
       },
@@ -205,30 +311,30 @@ export async function enqueueCommerceOrderPaidSms(params: {
     const orderNumber = order.orderNumber;
     const customerName = (order.buyerName ?? "خریدار").trim() || "خریدار";
     const mobileDisplay = (order.buyerMobile ?? "—").trim() || "—";
-    const products =
-      order.items.length > 0
-        ? order.items
-            .map((item) => `${item.titleSnapshot} × ${item.quantity}`)
-            .join("، ")
-        : "—";
+    const products = joinProductTitles(order.items);
     const amount = formatRials(order.grandTotalRials);
 
     const jobs: Array<Promise<void>> = [];
 
     if (order.buyerMobile) {
       jobs.push(
-        sendCommerceFormSms({
+        sendCommercePurchaseSms({
           organizationId: params.organizationId,
           toMobile: order.buyerMobile,
-          body: buildBuyerAuditBody({ orderNumber, amount }),
-          purpose: "commerce_order_paid",
+          body: buildBuyerAuditBody({
+            fullName: customerName,
+            product: products,
+            amount,
+          }),
           idempotencyKey: `commerce_order_paid:${order.id}:user`,
           relatedId: order.id,
-          name: customerName,
-          tracking: orderNumber,
+          fullName: customerName,
+          product: products,
+          amount,
           metadata: {
             orderNumber,
             amount,
+            products,
             recipientRole: "buyer",
           },
         }),

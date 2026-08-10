@@ -108,6 +108,14 @@ export const heroMedia = {
     url: "/images/brand/ghalamchi.jpg",
     alt: "لوگوی کانون فرهنگی آموزش قلم‌چی — نمایندگی نسیم‌شهر",
   } satisfies MediaAsset,
+  /**
+   * Optional cinematic hero video (mp4/webm). When null, cover image is used.
+   * Assign from StarOS media / public assets when available — never broken URL.
+   */
+  video: {
+    url: null as string | null,
+    alt: "ویدیوی معرفی فضای آموزشی ستارگان پلاس",
+  } satisfies MediaAsset,
   background: {
     url: "/images/hero/hero.jpg",
     alt: "دانش‌آموزان و فضای آموزشی نمایندگی قلم‌چی نسیم‌شهر",
@@ -141,20 +149,33 @@ export const founderContent = {
 } as const;
 
 export const heroCtas = {
-  primary: { label: "پیش‌ثبت‌نام", href: "/pre-registration" },
-  secondary: { label: "دوره‌ها", href: "/courses" },
-  tertiary: { label: "مشاوره", href: "/consultation" },
+  primary: { label: "ثبت‌نام", href: "/pre-registration" },
+  secondary: { label: "رزرو مشاوره", href: "/consultation" },
+  tertiary: { label: "افتخارات", href: "/achievements" },
+  gallery: { label: "گالری", href: "/gallery" },
 } as const;
 
 /**
  * Hero presentation stats — دبستان ستارگان آینده (presentation Phase 1).
- * Distinct from institutionStats used in achievements / trust.
+ * Derived from schoolStats; distinct from institutionStats in achievements / trust.
  */
 export const heroDisplayStats = [
-  { value: "۹", label: "کلاس درس" },
-  { value: "۲۳", label: "دبیر" },
-  { value: "۲۵۵", label: "فارغ‌التحصیل" },
-  { value: "۴۳", label: "قبولی تیزهوشان و نمونه‌دولتی" },
+  {
+    value: String(schoolStats.giftedAdmissions),
+    label: "قبولی تیزهوشان",
+  },
+  {
+    value: String(schoolStats.graduates),
+    label: "فارغ‌التحصیل",
+  },
+  {
+    value: String(schoolStats.teachers),
+    label: "معلم",
+  },
+  {
+    value: schoolStats.foundedYear,
+    label: "سال تأسیس",
+  },
 ] as const;
 
 // ─── Contact (verified — shared by FinalCta and Contact sections) ────────────

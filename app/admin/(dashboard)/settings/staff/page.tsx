@@ -4,6 +4,7 @@ import {
   SystemRole,
 } from "@/generated/prisma/enums";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { PORTAL_ONLY_ROLE_LIST } from "@/lib/auth/constants";
 import {
   ROLE_LABELS,
   STAFF_ASSIGNABLE_ROLES,
@@ -74,7 +75,12 @@ export default async function StaffPage() {
   const organizationId = session.organization.id;
   const [staff, branches] = await Promise.all([
     prisma.organizationMembership.findMany({
-      where: { organizationId, deletedAt: null },
+      where: {
+        organizationId,
+        deletedAt: null,
+        // Students / parents belong to Website → Students / Guardians — never Staff.
+        role: { notIn: [...PORTAL_ONLY_ROLE_LIST] },
+      },
       orderBy: { createdAt: "asc" },
       take: 200,
       select: {
@@ -113,7 +119,7 @@ export default async function StaffPage() {
 
   return (
     <>
-      <AdminPageHeader title="مدیریت همکاران" description="حساب مستقل، نقش، شعب مجاز و نشست‌های هر همکار" breadcrumbs={[{ label: "مدیریت", href: "/admin" }, { label: "تنظیمات" }, { label: "همکاران" }]} compact />
+      <AdminPageHeader title="مدیریت همکاران" description="فقط حساب همکاران سازمانی (مدرس، پذیرش، مالی، CRM و …). دانش‌آموزان و اولیا در وب‌سایت → دانش‌آموزان / اولیا مدیریت می‌شوند." breadcrumbs={[{ label: "مدیریت", href: "/admin" }, { label: "تنظیمات" }, { label: "همکاران" }]} compact />
       <details className="admin-card mb-6 p-5">
         <summary className="cursor-pointer font-semibold text-primary">افزودن همکار</summary>
         <form action={createStaffAction} className="mt-5 space-y-4">

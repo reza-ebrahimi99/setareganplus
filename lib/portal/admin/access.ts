@@ -10,10 +10,15 @@ import {
   UserStatus,
   type GuardianRelationshipType,
 } from "@/generated/prisma/enums";
+import { isAdminPortalRole, isPortalOnlyRole } from "@/lib/auth/constants";
 import { prisma } from "@/lib/prisma";
 
 type DbClient = typeof prisma;
 
+/**
+ * Ensures a portal-facing OrganizationMembership exists.
+ * Never upgrades/downgrades staff roles — staff stay staff; portal-only stay portal-only.
+ */
 async function ensurePortalMembership(
   db: DbClient,
   params: {
@@ -33,13 +38,23 @@ async function ensurePortalMembership(
       userId: params.userId,
       deletedAt: null,
     },
-    select: { id: true, status: true },
+    select: { id: true, status: true, role: true },
   });
   if (existing) {
-    if (existing.status !== MembershipStatus.ACTIVE) {
+    // Staff memberships must not be rewritten to STUDENT/PARENT.
+    if (isAdminPortalRole(existing.role)) {
+      return existing.id;
+    }
+    if (
+      existing.status !== MembershipStatus.ACTIVE ||
+      (isPortalOnlyRole(existing.role) && existing.role !== role)
+    ) {
       await db.organizationMembership.update({
         where: { id: existing.id },
-        data: { status: MembershipStatus.ACTIVE },
+        data: {
+          status: MembershipStatus.ACTIVE,
+          ...(isPortalOnlyRole(existing.role) ? { role } : {}),
+        },
       });
     }
     return existing.id;

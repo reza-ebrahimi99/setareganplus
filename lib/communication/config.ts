@@ -55,9 +55,11 @@ export function getSmsSecretStatus(): {
   otpTemplateConfigured: boolean;
   bookingTemplateConfigured: boolean;
   formTemplateConfigured: boolean;
+  commerceTemplateConfigured: boolean;
   otpParameterConfigured: boolean;
   bookingParametersConfigured: boolean;
   formParametersConfigured: boolean;
+  commerceParametersConfigured: boolean;
   providerConfigured: boolean;
 } {
   const apiKey = process.env.SMSIR_API_KEY;
@@ -74,9 +76,11 @@ export function getSmsSecretStatus(): {
     otpTemplateConfigured: status.otpTemplateConfigured,
     bookingTemplateConfigured: status.bookingTemplateConfigured,
     formTemplateConfigured: status.formTemplateConfigured,
+    commerceTemplateConfigured: status.commerceTemplateConfigured,
     otpParameterConfigured: status.otpParameterConfigured,
     bookingParametersConfigured: status.bookingParametersConfigured,
     formParametersConfigured: status.formParametersConfigured,
+    commerceParametersConfigured: status.commerceParametersConfigured,
     providerConfigured: status.providerConfigured,
   };
 }

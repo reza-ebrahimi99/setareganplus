@@ -93,11 +93,12 @@ export const ROLE_LABELS: Readonly<Record<SystemRoleValue, string>> = {
   FINANCE: "امور مالی",
   REGISTRATION_STAFF: "کارشناس ثبت‌نام",
   SUPPORT: "پشتیبانی",
-  CONTENT_MANAGER: "مدیر محتوا",
+  CONTENT_MANAGER: "مدیر محتوا / بازاریابی",
   STUDENT: "دانش‌آموز",
   PARENT: "والد",
 };
 
+/** Staff creation/edit only — never STUDENT or PARENT. */
 export const STAFF_ASSIGNABLE_ROLES = [
   SystemRole.ORGANIZATION_ADMIN,
   SystemRole.BRANCH_MANAGER,
@@ -106,6 +107,11 @@ export const STAFF_ASSIGNABLE_ROLES = [
   SystemRole.ADVISOR,
   SystemRole.CALL_OPERATOR,
   SystemRole.REPORT_VIEWER,
+  SystemRole.REGISTRATION_STAFF,
+  SystemRole.CONTENT_MANAGER,
+  SystemRole.TEACHER,
+  SystemRole.FINANCE,
+  SystemRole.SUPPORT,
 ] as const;
 
 const ROLE_PERMISSIONS: Readonly<Partial<Record<SystemRoleValue, ReadonlySet<Permission>>>> = {
@@ -149,6 +155,10 @@ const ROLE_PERMISSIONS: Readonly<Partial<Record<SystemRoleValue, ReadonlySet<Per
     "commerce.view",
     "commerce.categories.manage",
     "commerce.products.manage",
+  ]),
+  TEACHER: new Set([
+    "booking.view_assigned",
+    "website.manage",
   ]),
   FINANCE: new Set([
     "reports.view",

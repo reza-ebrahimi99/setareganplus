@@ -15,7 +15,7 @@ const DEFAULT_TIMEOUT_MS = 8_000;
 const MAX_TIMEOUT_MS = 30_000;
 const MAX_PARAMETER_VALUE_LENGTH = 25;
 
-type SmsIrTemplateKind = "otp" | "booking" | "form";
+type SmsIrTemplateKind = "otp" | "booking" | "form" | "commerce";
 
 type SmsIrRuntimeConfig = {
   apiKey: string | null;
@@ -30,6 +30,9 @@ type SmsIrRuntimeConfig = {
     bookingTracking: string | null;
     formName: string | null;
     formTracking: string | null;
+    commerceFullName: string | null;
+    commerceProduct: string | null;
+    commerceAmount: string | null;
   };
 };
 
@@ -41,9 +44,11 @@ export type SmsIrConfigurationStatus = {
   otpTemplateConfigured: boolean;
   bookingTemplateConfigured: boolean;
   formTemplateConfigured: boolean;
+  commerceTemplateConfigured: boolean;
   otpParameterConfigured: boolean;
   bookingParametersConfigured: boolean;
   formParametersConfigured: boolean;
+  commerceParametersConfigured: boolean;
   providerConfigured: boolean;
 };
 
@@ -105,6 +110,7 @@ function readSmsIrRuntimeConfig(): SmsIrRuntimeConfig {
       otp: readPositiveInteger(process.env.SMSIR_OTP_TEMPLATE_ID),
       booking: readPositiveInteger(process.env.SMSIR_BOOKING_TEMPLATE_ID),
       form: readPositiveInteger(process.env.SMSIR_FORM_TEMPLATE_ID),
+      commerce: readPositiveInteger(process.env.SMSIR_COMMERCE_TEMPLATE_ID),
     },
     parameterNames: {
       otpCode: readParameterName(
@@ -132,6 +138,18 @@ function readSmsIrRuntimeConfig(): SmsIrRuntimeConfig {
         process.env.SMSIR_FORM_PARAM_TRACKING,
         "TRACKING",
       ),
+      commerceFullName: readParameterName(
+        process.env.SMSIR_COMMERCE_PARAM_FULLNAME,
+        "FULLNAME",
+      ),
+      commerceProduct: readParameterName(
+        process.env.SMSIR_COMMERCE_PARAM_PRODUCT,
+        "PRODUCT",
+      ),
+      commerceAmount: readParameterName(
+        process.env.SMSIR_COMMERCE_PARAM_AMOUNT,
+        "AMOUNT",
+      ),
     },
   };
 }
@@ -147,6 +165,10 @@ export function getSmsIrConfigurationStatus(): SmsIrConfigurationStatus {
   const formParametersConfigured =
     config.parameterNames.formName !== null &&
     config.parameterNames.formTracking !== null;
+  const commerceParametersConfigured =
+    config.parameterNames.commerceFullName !== null &&
+    config.parameterNames.commerceProduct !== null &&
+    config.parameterNames.commerceAmount !== null;
 
   return {
     apiKeyConfigured: config.apiKey !== null,
@@ -156,9 +178,12 @@ export function getSmsIrConfigurationStatus(): SmsIrConfigurationStatus {
     otpTemplateConfigured: config.templateIds.otp !== null,
     bookingTemplateConfigured: config.templateIds.booking !== null,
     formTemplateConfigured: config.templateIds.form !== null,
+    commerceTemplateConfigured: config.templateIds.commerce !== null,
     otpParameterConfigured,
     bookingParametersConfigured,
     formParametersConfigured,
+    commerceParametersConfigured,
+    // Commerce template is optional — does not gate existing OTP/booking/form readiness.
     providerConfigured:
       config.apiKey !== null &&
       config.baseUrl !== null &&
@@ -385,6 +410,28 @@ export class SmsIrProvider implements SmsProvider {
           {
             name: config.parameterNames.bookingTracking,
             value: request.variables.tracking,
+          },
+        ],
+        request.signal,
+        config,
+      );
+    }
+    if (request.kind === "commerce") {
+      return this.sendVerify(
+        request.toMobile,
+        config.templateIds.commerce,
+        [
+          {
+            name: config.parameterNames.commerceFullName,
+            value: request.variables.fullName,
+          },
+          {
+            name: config.parameterNames.commerceProduct,
+            value: request.variables.product,
+          },
+          {
+            name: config.parameterNames.commerceAmount,
+            value: request.variables.amount,
           },
         ],
         request.signal,
