@@ -3,26 +3,16 @@ import {
   achievementItems,
   achievementsContent,
 } from "@/content/home";
-import {
-  HOMEPAGE_ACHIEVEMENT_TIMELINE_LIMIT,
-  loadFeaturedAchievements,
-  loadPublicAchievementTimeline,
-} from "@/lib/website/achievements";
+import { loadHomepageAchievementShowcase } from "@/lib/website/achievements";
 
 const headingId = "achievements-heading";
 
 /**
  * Homepage achievements showcase —
- * institution metrics + featured cards + compact timeline.
- * Data from StarOS achievements library; copy from content/home.
+ * CMS placements: Homepage Hero / Slider / Ticker.
  */
 export async function AchievementsSection() {
-  const [featured, timeline] = await Promise.all([
-    loadFeaturedAchievements(),
-    loadPublicAchievementTimeline({
-      limit: HOMEPAGE_ACHIEVEMENT_TIMELINE_LIMIT,
-    }),
-  ]);
+  const { hero, slider, ticker } = await loadHomepageAchievementShowcase();
 
   return (
     <AchievementShowcase
@@ -31,10 +21,10 @@ export async function AchievementsSection() {
       description={achievementsContent.showcaseDescription}
       headingId={headingId}
       metrics={achievementItems}
-      featured={featured}
-      timeline={timeline}
-      timelineHeading={achievementsContent.timelineHeading}
-      timelineDescription={achievementsContent.timelineDescription}
+      heroItems={hero}
+      sliderItems={slider}
+      tickerSource={ticker}
+      gallerySource={[...hero, ...slider]}
       cta={achievementsContent.showcaseCta}
       variant="home"
     />

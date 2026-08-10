@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import {
   createAchievement,
   updateAchievement,
@@ -9,6 +9,7 @@ import {
   uploadCover,
   type AchievementActionState,
 } from "@/app/admin/(dashboard)/website/achievements/actions";
+import { AchievementCinematicAdminPanel } from "@/components/admin/website/AchievementCinematicAdminPanel";
 
 type Option = { id: string; name: string };
 
@@ -39,12 +40,84 @@ type AchievementFormProps = {
     archivedAt: Date | null;
     coverUrl: string | null;
     certificateUrl: string | null;
+    /** Preserved on save if present — not edited in this UI phase */
+    showInHomepageHero?: boolean;
+    showInHomepageSlider?: boolean;
+    showInHomepageTicker?: boolean;
+    showInAchievementHero?: boolean;
+    showInAchievementGallery?: boolean;
+    heroPublishFrom?: string;
+    heroPublishUntil?: string;
+    desktopFocusX?: number;
+    desktopFocusY?: number;
+    mobileFocusX?: number;
+    mobileFocusY?: number;
   };
 };
 
 const initial: AchievementActionState = {};
 const inputClass =
   "mt-1.5 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm";
+
+function PlacementPreserveFields({
+  achievement,
+}: {
+  achievement: NonNullable<AchievementFormProps["achievement"]>;
+}) {
+  return (
+    <>
+      {achievement.showInHomepageHero ? (
+        <input type="hidden" name="showInHomepageHero" value="true" />
+      ) : null}
+      {achievement.showInHomepageSlider ? (
+        <input type="hidden" name="showInHomepageSlider" value="true" />
+      ) : null}
+      {achievement.showInHomepageTicker ? (
+        <input type="hidden" name="showInHomepageTicker" value="true" />
+      ) : null}
+      {achievement.showInAchievementHero ? (
+        <input type="hidden" name="showInAchievementHero" value="true" />
+      ) : null}
+      {achievement.showInAchievementGallery ? (
+        <input type="hidden" name="showInAchievementGallery" value="true" />
+      ) : null}
+      {achievement.heroPublishFrom ? (
+        <input
+          type="hidden"
+          name="heroPublishFrom"
+          value={achievement.heroPublishFrom}
+        />
+      ) : null}
+      {achievement.heroPublishUntil ? (
+        <input
+          type="hidden"
+          name="heroPublishUntil"
+          value={achievement.heroPublishUntil}
+        />
+      ) : null}
+      <input
+        type="hidden"
+        name="desktopFocusX"
+        value={String(achievement.desktopFocusX ?? 50)}
+      />
+      <input
+        type="hidden"
+        name="desktopFocusY"
+        value={String(achievement.desktopFocusY ?? 42)}
+      />
+      <input
+        type="hidden"
+        name="mobileFocusX"
+        value={String(achievement.mobileFocusX ?? 50)}
+      />
+      <input
+        type="hidden"
+        name="mobileFocusY"
+        value={String(achievement.mobileFocusY ?? 35)}
+      />
+    </>
+  );
+}
 
 export function AchievementForm({
   mode,
@@ -61,6 +134,20 @@ export function AchievementForm({
   const [certState, certAction, certPending] = useActionState(
     uploadCertificate,
     initial,
+  );
+
+  const [previewTitle, setPreviewTitle] = useState(achievement?.title ?? "");
+  const [previewShortDescription, setPreviewShortDescription] = useState(
+    achievement?.shortDescription ?? "",
+  );
+  const [previewCategoryId, setPreviewCategoryId] = useState(
+    achievement?.categoryId ?? "",
+  );
+
+  const previewCategoryName = useMemo(
+    () =>
+      categories.find((category) => category.id === previewCategoryId)?.name,
+    [categories, previewCategoryId],
   );
 
   return (
@@ -80,220 +167,235 @@ export function AchievementForm({
         </div>
       ) : null}
 
-      <form action={formAction} className="admin-card space-y-5 p-5 sm:p-6">
+      <form action={formAction} className="space-y-5">
         {mode === "edit" && achievement ? (
-          <input type="hidden" name="achievementId" value={achievement.id} />
+          <>
+            <input type="hidden" name="achievementId" value={achievement.id} />
+            <PlacementPreserveFields achievement={achievement} />
+          </>
         ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="text-sm sm:col-span-2">
-            <span className="font-medium text-primary">عنوان افتخار</span>
-            <input
-              name="title"
-              required
-              defaultValue={achievement?.title ?? ""}
-              className={inputClass}
-            />
-          </label>
-          <label className="text-sm sm:col-span-2">
-            <span className="font-medium text-primary">دانش‌آموز</span>
-            <select
-              name="studentId"
-              required
-              defaultValue={achievement?.studentId ?? ""}
-              className={inputClass}
-            >
-              <option value="">انتخاب دانش‌آموز</option>
-              {students.map((student) => (
-                <option key={student.id} value={student.id}>
-                  {student.name} · {student.gradeName}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm">
-            <span className="font-medium text-primary">دسته‌بندی</span>
-            <select
-              name="categoryId"
-              required
-              defaultValue={achievement?.categoryId ?? ""}
-              className={inputClass}
-            >
-              <option value="">انتخاب دسته</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm">
-            <span className="font-medium text-primary">تاریخ</span>
-            <input
-              name="achievementDate"
-              type="date"
-              dir="ltr"
-              defaultValue={achievement?.achievementDate ?? ""}
-              className={inputClass}
-            />
-          </label>
-          <label className="text-sm">
-            <span className="font-medium text-primary">سال تحصیلی</span>
-            <input
-              name="schoolYear"
-              placeholder="1404-1405"
-              defaultValue={achievement?.schoolYear ?? ""}
-              className={inputClass}
-            />
-          </label>
-          <label className="text-sm">
-            <span className="font-medium text-primary">صادرکننده</span>
-            <input
-              name="issuer"
-              defaultValue={achievement?.issuer ?? ""}
-              className={inputClass}
-            />
-          </label>
-          <label className="text-sm">
-            <span className="font-medium text-primary">سطح</span>
-            <input
-              name="level"
-              defaultValue={achievement?.level ?? ""}
-              className={inputClass}
-            />
-          </label>
-          <label className="text-sm">
-            <span className="font-medium text-primary">رتبه / مقام</span>
-            <input
-              name="place"
-              defaultValue={achievement?.place ?? ""}
-              className={inputClass}
-            />
-          </label>
-          <label className="text-sm">
-            <span className="font-medium text-primary">امتیاز / نمره</span>
-            <input
-              name="score"
-              defaultValue={achievement?.score ?? ""}
-              className={inputClass}
-            />
-          </label>
-          <label className="text-sm sm:col-span-2">
-            <span className="font-medium text-primary">توضیح کوتاه</span>
-            <input
-              name="shortDescription"
-              defaultValue={achievement?.shortDescription ?? ""}
-              className={inputClass}
-            />
-          </label>
-          <label className="text-sm sm:col-span-2">
-            <span className="font-medium text-primary">توضیحات کامل</span>
-            <textarea
-              name="description"
-              rows={5}
-              defaultValue={achievement?.description ?? ""}
-              className={inputClass}
-            />
-          </label>
-        </div>
+        <AchievementCinematicAdminPanel
+          title={previewTitle}
+          shortDescription={previewShortDescription}
+          categoryName={previewCategoryName}
+          coverUrl={achievement?.coverUrl ?? null}
+          initialFeatured={achievement?.isFeatured ?? false}
+        />
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="text-sm">
-            <span className="font-medium text-primary">Slug</span>
-            <input
-              name="slug"
-              dir="ltr"
-              defaultValue={achievement?.slug ?? ""}
-              className={inputClass}
-            />
-          </label>
-          <label className="text-sm">
-            <span className="font-medium text-primary">ترتیب نمایش</span>
-            <input
-              name="displayOrder"
-              type="number"
-              defaultValue={achievement?.displayOrder ?? 0}
-              className={inputClass}
-            />
-          </label>
-          <label className="text-sm">
-            <span className="font-medium text-primary">اولویت ویژه</span>
-            <input
-              name="featuredPriority"
-              type="number"
-              defaultValue={achievement?.featuredPriority ?? 0}
-              className={inputClass}
-            />
-          </label>
-          <label className="text-sm">
-            <span className="font-medium text-primary">عنوان SEO</span>
-            <input
-              name="seoTitle"
-              defaultValue={achievement?.seoTitle ?? ""}
-              className={inputClass}
-            />
-          </label>
-          <label className="text-sm sm:col-span-2">
-            <span className="font-medium text-primary">توضیح SEO</span>
-            <textarea
-              name="seoDescription"
-              rows={2}
-              defaultValue={achievement?.seoDescription ?? ""}
-              className={inputClass}
-            />
-          </label>
-        </div>
+        <div className="admin-card space-y-5 p-5 sm:p-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="text-sm sm:col-span-2">
+              <span className="font-medium text-primary">عنوان افتخار</span>
+              <input
+                name="title"
+                required
+                defaultValue={achievement?.title ?? ""}
+                className={inputClass}
+                onChange={(event) => setPreviewTitle(event.target.value)}
+              />
+            </label>
+            <label className="text-sm sm:col-span-2">
+              <span className="font-medium text-primary">دانش‌آموز</span>
+              <select
+                name="studentId"
+                required
+                defaultValue={achievement?.studentId ?? ""}
+                className={inputClass}
+              >
+                <option value="">انتخاب دانش‌آموز</option>
+                {students.map((student) => (
+                  <option key={student.id} value={student.id}>
+                    {student.name} · {student.gradeName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm">
+              <span className="font-medium text-primary">دسته‌بندی</span>
+              <select
+                name="categoryId"
+                required
+                defaultValue={achievement?.categoryId ?? ""}
+                className={inputClass}
+                onChange={(event) => setPreviewCategoryId(event.target.value)}
+              >
+                <option value="">انتخاب دسته</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm">
+              <span className="font-medium text-primary">تاریخ</span>
+              <input
+                name="achievementDate"
+                type="date"
+                dir="ltr"
+                defaultValue={achievement?.achievementDate ?? ""}
+                className={inputClass}
+              />
+            </label>
+            <label className="text-sm">
+              <span className="font-medium text-primary">سال تحصیلی</span>
+              <input
+                name="schoolYear"
+                placeholder="1404-1405"
+                defaultValue={achievement?.schoolYear ?? ""}
+                className={inputClass}
+              />
+            </label>
+            <label className="text-sm">
+              <span className="font-medium text-primary">صادرکننده</span>
+              <input
+                name="issuer"
+                defaultValue={achievement?.issuer ?? ""}
+                className={inputClass}
+              />
+            </label>
+            <label className="text-sm">
+              <span className="font-medium text-primary">سطح</span>
+              <input
+                name="level"
+                defaultValue={achievement?.level ?? ""}
+                className={inputClass}
+              />
+            </label>
+            <label className="text-sm">
+              <span className="font-medium text-primary">رتبه / مقام</span>
+              <input
+                name="place"
+                defaultValue={achievement?.place ?? ""}
+                className={inputClass}
+              />
+            </label>
+            <label className="text-sm">
+              <span className="font-medium text-primary">امتیاز / نمره</span>
+              <input
+                name="score"
+                defaultValue={achievement?.score ?? ""}
+                className={inputClass}
+              />
+            </label>
+            <label className="text-sm sm:col-span-2">
+              <span className="font-medium text-primary">توضیح کوتاه</span>
+              <input
+                name="shortDescription"
+                defaultValue={achievement?.shortDescription ?? ""}
+                className={inputClass}
+                onChange={(event) =>
+                  setPreviewShortDescription(event.target.value)
+                }
+              />
+            </label>
+            <label className="text-sm sm:col-span-2">
+              <span className="font-medium text-primary">توضیحات کامل</span>
+              <textarea
+                name="description"
+                rows={5}
+                defaultValue={achievement?.description ?? ""}
+                className={inputClass}
+              />
+            </label>
+          </div>
 
-        <div className="flex flex-wrap gap-4 text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              name="isPublished"
-              value="true"
-              defaultChecked={achievement?.isPublished ?? false}
-            />
-            منتشر شده
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              name="isFeatured"
-              value="true"
-              defaultChecked={achievement?.isFeatured ?? false}
-            />
-            ویژه
-          </label>
-          {mode === "edit" ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="text-sm">
+              <span className="font-medium text-primary">Slug</span>
+              <input
+                name="slug"
+                dir="ltr"
+                defaultValue={achievement?.slug ?? ""}
+                className={inputClass}
+              />
+            </label>
+            <label className="text-sm">
+              <span className="font-medium text-primary">ترتیب نمایش</span>
+              <input
+                name="displayOrder"
+                type="number"
+                defaultValue={achievement?.displayOrder ?? 0}
+                className={inputClass}
+              />
+            </label>
+            <label className="text-sm">
+              <span className="font-medium text-primary">اولویت ویژه</span>
+              <input
+                name="featuredPriority"
+                type="number"
+                defaultValue={achievement?.featuredPriority ?? 0}
+                className={inputClass}
+              />
+            </label>
+            <label className="text-sm">
+              <span className="font-medium text-primary">عنوان SEO</span>
+              <input
+                name="seoTitle"
+                defaultValue={achievement?.seoTitle ?? ""}
+                className={inputClass}
+              />
+            </label>
+            <label className="text-sm sm:col-span-2">
+              <span className="font-medium text-primary">توضیح SEO</span>
+              <textarea
+                name="seoDescription"
+                rows={2}
+                defaultValue={achievement?.seoDescription ?? ""}
+                className={inputClass}
+              />
+            </label>
+          </div>
+
+          <div className="flex flex-wrap gap-4 text-sm">
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
-                name="archived"
+                name="isPublished"
                 value="true"
-                defaultChecked={Boolean(achievement?.archivedAt)}
+                defaultChecked={achievement?.isPublished ?? false}
               />
-              بایگانی
+              منتشر شده
             </label>
-          ) : null}
-        </div>
+            {mode === "edit" ? (
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  name="archived"
+                  value="true"
+                  defaultChecked={Boolean(achievement?.archivedAt)}
+                />
+                بایگانی
+              </label>
+            ) : null}
+          </div>
 
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-white disabled:opacity-60"
-          >
-            {pending
-              ? "در حال ذخیره…"
-              : mode === "create"
-                ? "ثبت افتخار"
-                : "ذخیره تغییرات"}
-          </button>
-          <Link
-            href="/admin/website/achievements"
-            className="rounded-xl border border-border px-5 py-2.5 text-sm"
-          >
-            بازگشت
-          </Link>
+          <p className="text-xs text-muted">
+            وضعیت «نمایش در ویترین سینمایی» از پنل بالا کنترل می‌شود و همان فیلد
+            ویژه (Featured) را ذخیره می‌کند. فوکوس، ترتیب اسلاید و تیکر در این فاز
+            فقط پیش‌نمایش محلی هستند.
+          </p>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={pending}
+              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+            >
+              {pending
+                ? "در حال ذخیره…"
+                : mode === "create"
+                  ? "ثبت افتخار"
+                  : "ذخیره تغییرات"}
+            </button>
+            <Link
+              href="/admin/website/achievements"
+              className="rounded-xl border border-border px-5 py-2.5 text-sm"
+            >
+              بازگشت
+            </Link>
+          </div>
         </div>
       </form>
 

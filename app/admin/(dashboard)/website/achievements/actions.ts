@@ -103,6 +103,62 @@ function parseAchievementDate(raw: string): Date | null {
   return date;
 }
 
+function parseDateTimeLocal(raw: string): Date | null {
+  const value = raw.trim();
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
+function clampFocusPercent(raw: string, fallback = 50): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(100, Math.max(0, n));
+}
+
+function readHeroPlacementFields(formData: FormData) {
+  const showInHomepageHero =
+    readString(formData, "showInHomepageHero") === "true";
+  const showInHomepageSlider =
+    readString(formData, "showInHomepageSlider") === "true";
+  const showInHomepageTicker =
+    readString(formData, "showInHomepageTicker") === "true";
+  const showInAchievementHero =
+    readString(formData, "showInAchievementHero") === "true";
+  const showInAchievementGallery =
+    readString(formData, "showInAchievementGallery") === "true";
+  const placementFeatured =
+    showInHomepageHero ||
+    showInHomepageSlider ||
+    showInHomepageTicker ||
+    showInAchievementHero ||
+    showInAchievementGallery;
+
+  return {
+    showInHomepageHero,
+    showInHomepageSlider,
+    showInHomepageTicker,
+    showInAchievementHero,
+    showInAchievementGallery,
+    heroPublishFrom: parseDateTimeLocal(
+      readString(formData, "heroPublishFrom"),
+    ),
+    heroPublishUntil: parseDateTimeLocal(
+      readString(formData, "heroPublishUntil"),
+    ),
+    desktopFocusX: clampFocusPercent(readString(formData, "desktopFocusX")),
+    desktopFocusY: clampFocusPercent(
+      readString(formData, "desktopFocusY"),
+      42,
+    ),
+    mobileFocusX: clampFocusPercent(readString(formData, "mobileFocusX")),
+    mobileFocusY: clampFocusPercent(readString(formData, "mobileFocusY"), 35),
+    isFeatured:
+      readString(formData, "isFeatured") === "true" || placementFeatured,
+  };
+}
+
 async function cleanupUnusedMedia(mediaId: string | null | undefined) {
   if (!mediaId) return;
   const [teamUse, studentUse, formUse, certUse, coverUse] = await Promise.all([
@@ -190,6 +246,7 @@ export async function createAchievement(
   const featuredPriority = Number(
     readString(formData, "featuredPriority") || "0",
   );
+  const heroFields = readHeroPlacementFields(formData);
 
   await prisma.achievement.create({
     data: {
@@ -218,8 +275,19 @@ export async function createAchievement(
       featuredPriority: Number.isFinite(featuredPriority)
         ? featuredPriority
         : 0,
-      isFeatured: readString(formData, "isFeatured") === "true",
+      isFeatured: heroFields.isFeatured,
       isPublished: readString(formData, "isPublished") === "true",
+      showInHomepageHero: heroFields.showInHomepageHero,
+      showInHomepageSlider: heroFields.showInHomepageSlider,
+      showInHomepageTicker: heroFields.showInHomepageTicker,
+      showInAchievementHero: heroFields.showInAchievementHero,
+      showInAchievementGallery: heroFields.showInAchievementGallery,
+      heroPublishFrom: heroFields.heroPublishFrom,
+      heroPublishUntil: heroFields.heroPublishUntil,
+      desktopFocusX: heroFields.desktopFocusX,
+      desktopFocusY: heroFields.desktopFocusY,
+      mobileFocusX: heroFields.mobileFocusX,
+      mobileFocusY: heroFields.mobileFocusY,
     },
   });
 
@@ -286,6 +354,7 @@ export async function updateAchievement(
   const featuredPriority = Number(
     readString(formData, "featuredPriority") || "0",
   );
+  const heroFields = readHeroPlacementFields(formData);
 
   await prisma.achievement.update({
     where: { id: existing.id },
@@ -314,8 +383,19 @@ export async function updateAchievement(
       featuredPriority: Number.isFinite(featuredPriority)
         ? featuredPriority
         : 0,
-      isFeatured: readString(formData, "isFeatured") === "true",
+      isFeatured: heroFields.isFeatured,
       isPublished: readString(formData, "isPublished") === "true",
+      showInHomepageHero: heroFields.showInHomepageHero,
+      showInHomepageSlider: heroFields.showInHomepageSlider,
+      showInHomepageTicker: heroFields.showInHomepageTicker,
+      showInAchievementHero: heroFields.showInAchievementHero,
+      showInAchievementGallery: heroFields.showInAchievementGallery,
+      heroPublishFrom: heroFields.heroPublishFrom,
+      heroPublishUntil: heroFields.heroPublishUntil,
+      desktopFocusX: heroFields.desktopFocusX,
+      desktopFocusY: heroFields.desktopFocusY,
+      mobileFocusX: heroFields.mobileFocusX,
+      mobileFocusY: heroFields.mobileFocusY,
       archivedAt:
         readString(formData, "archived") === "true" ? new Date() : null,
     },

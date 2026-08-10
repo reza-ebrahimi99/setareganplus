@@ -24,6 +24,12 @@ function toDateInputValue(date: Date | null): string {
   return date.toISOString().slice(0, 10);
 }
 
+function toDateTimeLocalValue(date: Date | null): string {
+  if (!date) return "";
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
 export default async function EditAchievementPage({ params }: PageProps) {
   const { id } = await params;
   const session = await requirePermission("website.manage");
@@ -77,6 +83,17 @@ export default async function EditAchievementPage({ params }: PageProps) {
           featuredPriority: achievement.featuredPriority,
           isFeatured: achievement.isFeatured,
           isPublished: achievement.isPublished,
+          showInHomepageHero: achievement.showInHomepageHero,
+          showInHomepageSlider: achievement.showInHomepageSlider,
+          showInHomepageTicker: achievement.showInHomepageTicker,
+          showInAchievementHero: achievement.showInAchievementHero,
+          showInAchievementGallery: achievement.showInAchievementGallery,
+          heroPublishFrom: toDateTimeLocalValue(achievement.heroPublishFrom),
+          heroPublishUntil: toDateTimeLocalValue(achievement.heroPublishUntil),
+          desktopFocusX: achievement.desktopFocusX,
+          desktopFocusY: achievement.desktopFocusY,
+          mobileFocusX: achievement.mobileFocusX,
+          mobileFocusY: achievement.mobileFocusY,
           archivedAt: achievement.archivedAt,
           coverUrl: achievementCoverPublicUrl(achievement.coverMedia),
           certificateUrl: achievementCertificatePublicUrl(

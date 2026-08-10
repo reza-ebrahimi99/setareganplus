@@ -740,6 +740,14 @@ body {
   color: #ffffff;
 }
 
+.achievement-cinema-photo {
+  --focus-desktop-x: 50%;
+  --focus-desktop-y: 50%;
+  --focus-mobile-x: 50%;
+  --focus-mobile-y: 35%;
+  object-position: var(--focus-desktop-x) var(--focus-desktop-y);
+}
+
 .achievement-cinema-ticker {
   overflow: hidden;
   border-bottom: 1px solid rgb(212 175 55 / 0.22);
@@ -782,6 +790,7 @@ body {
   min-height: min(88svh, 46rem);
   touch-action: pan-y;
   background: #0b1220;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .achievement-cinema-slide {
@@ -1135,6 +1144,77 @@ body {
 .achievement-cinema-dot:focus-visible {
   outline: 2px solid rgb(212 175 55);
   outline-offset: 3px;
+}
+
+@media (max-width: 767px) {
+  .achievement-cinema-photo {
+    object-position: var(--focus-mobile-x) var(--focus-mobile-y);
+  }
+
+  .achievement-cinema-ticker-track {
+    gap: 1.5rem;
+    padding-block: 0.45rem;
+  }
+
+  .achievement-cinema-ticker-item {
+    font-size: 0.7rem;
+  }
+
+  .achievement-cinema-stage,
+  .achievement-cinema-foreground {
+    min-height: min(76svh, 38rem);
+  }
+
+  .achievement-cinema-foreground {
+    align-items: end;
+    gap: 1rem;
+    padding: 3.75rem 1rem calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .achievement-cinema-title {
+    max-width: 100%;
+    font-size: clamp(1.55rem, 7vw, 2.1rem);
+  }
+
+  .achievement-cinema-support {
+    font-size: 0.9rem;
+    line-height: 1.75;
+  }
+
+  .achievement-cinema-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .achievement-cinema-btn {
+    width: 100%;
+  }
+
+  .achievement-cinema-nav {
+    top: auto;
+    bottom: 3.35rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.25rem;
+    transform: none;
+  }
+
+  .achievement-cinema-nav--prev {
+    inset-inline-start: 0.65rem;
+  }
+
+  .achievement-cinema-nav--next {
+    inset-inline-end: 0.65rem;
+  }
+
+  .achievement-cinema-dots {
+    bottom: 0.75rem;
+  }
+
+  .achievement-cinema-panel {
+    display: none !important;
+  }
 }
 
 .achievement-cinema-counters {

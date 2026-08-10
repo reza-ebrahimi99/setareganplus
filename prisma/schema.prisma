@@ -2722,6 +2722,19 @@ model Achievement {
   isFeatured         Boolean   @default(false)
   featuredPriority   Int       @default(0)
   displayOrder       Int       @default(0)
+  /// CMS hero placements (cinematic showcase)
+  showInHomepageHero         Boolean   @default(false)
+  showInHomepageSlider       Boolean   @default(false)
+  showInHomepageTicker       Boolean   @default(false)
+  showInAchievementHero      Boolean   @default(false)
+  showInAchievementGallery   Boolean   @default(false)
+  heroPublishFrom            DateTime?
+  heroPublishUntil           DateTime?
+  /// Cover focus points (0–100 percent) for responsive object-position
+  desktopFocusX              Float     @default(50)
+  desktopFocusY              Float     @default(50)
+  mobileFocusX               Float     @default(50)
+  mobileFocusY               Float     @default(50)
   seoTitle           String?
   seoDescription     String?
   isPublished        Boolean   @default(false)
@@ -2744,6 +2757,10 @@ model Achievement {
   @@index([organizationId, isPublished, deletedAt])
   @@index([organizationId, schoolYear])
   @@index([organizationId, isPublished, archivedAt, deletedAt, achievementDate])
+  @@index([organizationId, showInHomepageSlider, featuredPriority])
+  @@index([organizationId, showInHomepageTicker, featuredPriority])
+  @@index([organizationId, showInAchievementHero, featuredPriority])
+  @@index([organizationId, showInAchievementGallery, featuredPriority])
   @@map("achievements")
 }
 

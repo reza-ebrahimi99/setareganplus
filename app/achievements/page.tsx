@@ -9,9 +9,8 @@ import {
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import {
   listPublicAchievementCategories,
-  loadFeaturedAchievements,
+  loadAchievementPageShowcase,
   loadPublicAchievementPage,
-  loadPublicAchievementTimeline,
 } from "@/lib/website/achievements";
 import { getPublicPageMetadata } from "@/lib/seo/public-pages";
 import { listPublicStudentGrades } from "@/lib/website/student-grades";
@@ -46,7 +45,7 @@ export default async function AchievementsPage({ searchParams }: PageProps) {
       : 1;
 
   const organization = await getCurrentOrganization();
-  const [data, categories, grades, featured, timeline] = await Promise.all([
+  const [data, categories, grades, showcase] = await Promise.all([
     loadPublicAchievementPage({
       q,
       categorySlug: category || undefined,
@@ -60,8 +59,7 @@ export default async function AchievementsPage({ searchParams }: PageProps) {
     organization
       ? listPublicStudentGrades(organization.id)
       : Promise.resolve([]),
-    loadFeaturedAchievements(),
-    loadPublicAchievementTimeline(),
+    loadAchievementPageShowcase(),
   ]);
 
   return (
@@ -72,8 +70,10 @@ export default async function AchievementsPage({ searchParams }: PageProps) {
         description="المپیادها، پذیرش مدارس استعداد، مسابقات، افتخارات قلم‌چی و گواهی‌های مؤسسه — بدون انتشار هویت فردی."
         headingId="page-heading"
         metrics={achievementItems}
-        featured={featured}
-        timeline={timeline}
+        heroItems={showcase.hero}
+        sliderItems={showcase.hero}
+        tickerSource={showcase.hero}
+        gallerySource={showcase.gallery}
         timelineHeading={achievementsContent.timelineHeading}
         timelineDescription={achievementsContent.timelineDescription}
         cta={achievementsContent.showcaseCta}

@@ -21,14 +21,33 @@ type AchievementShowcaseProps = {
   description: string;
   headingId?: string;
   metrics?: ReadonlyArray<AchievementShowcaseMetric>;
-  featured: PublicAchievementCard[];
-  timeline: AchievementTimelineGroup[];
+  /** Preferred slide sources (CMS placements) */
+  heroItems?: PublicAchievementCard[];
+  sliderItems?: PublicAchievementCard[];
+  tickerSource?: PublicAchievementCard[];
+  gallerySource?: PublicAchievementCard[];
+  /** @deprecated use sliderItems / heroItems */
+  featured?: PublicAchievementCard[];
+  /** @deprecated unused for placement-driven showcase */
+  timeline?: AchievementTimelineGroup[];
   timelineHeading?: string;
   timelineDescription?: string;
   cta: { label: string; href: string };
-  /** Kept for API compatibility — cinematic stage uses density via content only */
   variant?: "home" | "page";
 };
+
+function uniqueById(
+  items: ReadonlyArray<PublicAchievementCard>,
+): PublicAchievementCard[] {
+  const seen = new Set<string>();
+  const out: PublicAchievementCard[] = [];
+  for (const item of items) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    out.push(item);
+  }
+  return out;
+}
 
 function slideFromAchievement(
   achievement: PublicAchievementCard,
@@ -54,27 +73,15 @@ function slideFromAchievement(
     coverUrl: achievement.coverUrl,
     coverAlt: achievement.coverAlt,
     accent: achievement.categoryColor,
+    desktopFocusX: achievement.desktopFocusX,
+    desktopFocusY: achievement.desktopFocusY,
+    mobileFocusX: achievement.mobileFocusX,
+    mobileFocusY: achievement.mobileFocusY,
   };
 }
 
-function flattenTimeline(
-  timeline: AchievementTimelineGroup[],
-): PublicAchievementCard[] {
-  const seen = new Set<string>();
-  const items: PublicAchievementCard[] = [];
-  for (const group of timeline) {
-    for (const achievement of group.achievements) {
-      if (seen.has(achievement.id)) continue;
-      seen.add(achievement.id);
-      items.push(achievement);
-    }
-  }
-  return items;
-}
-
 /**
- * Server shell — maps CMS/loader data into the cinematic stage.
- * UI lives entirely in AchievementCinematicStage (no AchievementCard grid).
+ * Server shell — maps CMS placement loaders into the cinematic stage.
  */
 export function AchievementShowcase({
   eyebrow,
@@ -82,43 +89,47 @@ export function AchievementShowcase({
   description,
   headingId = "achievement-showcase-heading",
   metrics = [],
-  featured,
-  timeline,
+  heroItems = [],
+  sliderItems = [],
+  tickerSource = [],
+  gallerySource = [],
+  featured = [],
   cta,
+  variant = "home",
 }: AchievementShowcaseProps) {
-  const timelineItems = flattenTimeline(timeline);
+  const sliderPool = uniqueById([
+    ...heroItems,
+    ...sliderItems,
+    ...(sliderItems.length === 0 && heroItems.length === 0 ? featured : []),
+  ]);
 
   const slides: CinematicSlide[] =
-    featured.length > 0
-      ? featured.map((item) => slideFromAchievement(item, eyebrow))
-      : timelineItems.length > 0
-        ? timelineItems
-            .slice(0, 6)
-            .map((item) => slideFromAchievement(item, eyebrow))
-        : [
-            {
-              id: "fallback-showcase",
-              href: cta.href,
-              title: heading,
-              eyebrow,
-              support: description,
-              meta: "",
-              coverUrl: null,
-              coverAlt: heading,
-              accent: "#D4AF37",
-            },
-          ];
+    sliderPool.length > 0
+      ? sliderPool.map((item) => slideFromAchievement(item, eyebrow))
+      : [
+          {
+            id: "fallback-showcase",
+            href: cta.href,
+            title: heading,
+            eyebrow,
+            support: description,
+            meta: "",
+            coverUrl: null,
+            coverAlt: heading,
+            accent: "#D4AF37",
+            desktopFocusX: 50,
+            desktopFocusY: 42,
+            mobileFocusX: 50,
+            mobileFocusY: 35,
+          },
+        ];
 
-  const tickerSource =
-    featured.length > 0
-      ? featured
-      : timelineItems.length > 0
-        ? timelineItems
-        : [];
+  const tickerPool =
+    tickerSource.length > 0 ? tickerSource : sliderPool.slice(0, 8);
 
   const tickerItems: CinematicTickerItem[] =
-    tickerSource.length > 0
-      ? tickerSource.map((item) => ({
+    tickerPool.length > 0
+      ? tickerPool.map((item) => ({
           id: item.id,
           text: [item.title, item.categoryName, item.place]
             .filter(Boolean)
@@ -130,14 +141,11 @@ export function AchievementShowcase({
           { id: "t3", text: "المپیاد، پذیرش و گواهی‌های مؤسسه" },
         ];
 
-  const gallerySource = [
-    ...featured,
-    ...timelineItems.filter(
-      (item) => !featured.some((featuredItem) => featuredItem.id === item.id),
-    ),
-  ].slice(0, 12);
+  const galleryPool = uniqueById(
+    gallerySource.length > 0 ? gallerySource : sliderPool,
+  ).slice(0, 12);
 
-  const galleryItems: CinematicGalleryItem[] = gallerySource.map(
+  const galleryItems: CinematicGalleryItem[] = galleryPool.map(
     (item, index) => ({
       id: item.id,
       href: `/achievements/${item.slug}`,
@@ -149,6 +157,10 @@ export function AchievementShowcase({
       coverAlt: item.coverAlt,
       accent: item.categoryColor,
       tall: index % 5 === 0 || index % 5 === 3,
+      desktopFocusX: item.desktopFocusX,
+      desktopFocusY: item.desktopFocusY,
+      mobileFocusX: item.mobileFocusX,
+      mobileFocusY: item.mobileFocusY,
     }),
   );
 
@@ -164,6 +176,7 @@ export function AchievementShowcase({
       tickerItems={tickerItems}
       galleryItems={galleryItems}
       autoplayMs={8000}
+      variant={variant}
     />
   );
 }

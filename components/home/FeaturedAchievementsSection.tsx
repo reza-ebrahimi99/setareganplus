@@ -3,12 +3,13 @@ import { achievementsContent } from "@/content/home";
 import { loadHomepageAchievementShowcase } from "@/lib/website/achievements";
 
 /**
- * Featured achievements strip — same showcase engine as homepage section,
- * without institution metric cards. Safe to mount wherever a lighter strip is needed.
+ * Featured achievements strip — placement-driven cinematic showcase.
  */
 export async function FeaturedAchievementsSection() {
-  const { featured, timeline } = await loadHomepageAchievementShowcase();
-  if (featured.length === 0 && timeline.length === 0) return null;
+  const { hero, slider, ticker } = await loadHomepageAchievementShowcase();
+  if (hero.length === 0 && slider.length === 0 && ticker.length === 0) {
+    return null;
+  }
 
   return (
     <AchievementShowcase
@@ -16,10 +17,10 @@ export async function FeaturedAchievementsSection() {
       heading="افتخارات برجسته"
       description={achievementsContent.showcaseDescription}
       headingId="featured-achievements-heading"
-      featured={featured}
-      timeline={timeline}
-      timelineHeading={achievementsContent.timelineHeading}
-      timelineDescription={achievementsContent.timelineDescription}
+      heroItems={hero}
+      sliderItems={slider}
+      tickerSource={ticker}
+      gallerySource={[...hero, ...slider]}
       cta={achievementsContent.showcaseCta}
       variant="home"
     />

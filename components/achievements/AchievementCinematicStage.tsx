@@ -22,6 +22,10 @@ export type CinematicSlide = {
   coverUrl: string | null;
   coverAlt: string;
   accent: string | null;
+  desktopFocusX: number;
+  desktopFocusY: number;
+  mobileFocusX: number;
+  mobileFocusY: number;
 };
 
 export type CinematicMetric = {
@@ -44,6 +48,10 @@ export type CinematicGalleryItem = {
   coverAlt: string;
   accent: string | null;
   tall?: boolean;
+  desktopFocusX?: number;
+  desktopFocusY?: number;
+  mobileFocusX?: number;
+  mobileFocusY?: number;
 };
 
 export type AchievementCinematicStageProps = {
@@ -57,7 +65,22 @@ export type AchievementCinematicStageProps = {
   tickerItems: ReadonlyArray<CinematicTickerItem>;
   galleryItems: ReadonlyArray<CinematicGalleryItem>;
   autoplayMs?: number;
+  variant?: "home" | "page";
 };
+
+function focusStyle(slide: {
+  desktopFocusX: number;
+  desktopFocusY: number;
+  mobileFocusX: number;
+  mobileFocusY: number;
+}): CSSProperties {
+  return {
+    "--focus-desktop-x": `${slide.desktopFocusX}%`,
+    "--focus-desktop-y": `${slide.desktopFocusY}%`,
+    "--focus-mobile-x": `${slide.mobileFocusX}%`,
+    "--focus-mobile-y": `${slide.mobileFocusY}%`,
+  } as CSSProperties;
+}
 
 const PERSIAN_DIGIT_MAP: Record<string, string> = {
   "۰": "0",
@@ -142,6 +165,7 @@ export function AchievementCinematicStage({
   tickerItems,
   galleryItems,
   autoplayMs = 8000,
+  variant = "home",
 }: AchievementCinematicStageProps) {
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState<"next" | "prev">("next");
@@ -204,7 +228,10 @@ export function AchievementCinematicStage({
     tickerItems.length > 0 ? [...tickerItems, ...tickerItems] : [];
 
   return (
-    <section aria-labelledby={headingId} className="achievement-cinema">
+    <section
+      aria-labelledby={headingId}
+      className={`achievement-cinema achievement-cinema--${variant}`}
+    >
       {tickerLoop.length > 0 ? (
         <div
           className="achievement-cinema-ticker"
@@ -252,7 +279,8 @@ export function AchievementCinematicStage({
                     unoptimized
                     priority={slideIndex === 0}
                     sizes="100vw"
-                    className="object-cover"
+                    className="achievement-cinema-photo object-cover"
+                    style={focusStyle(slide)}
                   />
                 ) : (
                   <div
@@ -427,7 +455,13 @@ export function AchievementCinematicStage({
                       fill
                       unoptimized
                       sizes="(max-width: 768px) 50vw, 25vw"
-                      className="object-cover"
+                      className="achievement-cinema-photo object-cover"
+                      style={focusStyle({
+                        desktopFocusX: item.desktopFocusX ?? 50,
+                        desktopFocusY: item.desktopFocusY ?? 42,
+                        mobileFocusX: item.mobileFocusX ?? 50,
+                        mobileFocusY: item.mobileFocusY ?? 35,
+                      })}
                     />
                   ) : (
                     <span

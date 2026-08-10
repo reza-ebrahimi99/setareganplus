@@ -7,13 +7,25 @@ import { getCurrentOrganization } from "@/lib/organizations/get-current-organiza
 import { prisma } from "@/lib/prisma";
 import { listPublicAchievementCategories } from "@/lib/website/achievement-categories";
 import { toPersianDigits } from "@/lib/persian";
+import type { TeamPortraitVariantSize } from "@/lib/media/team-portrait";
 
 export { listPublicAchievementCategories };
 
 export const HOMEPAGE_FEATURED_ACHIEVEMENT_LIMIT = 6;
 export const HOMEPAGE_ACHIEVEMENT_TIMELINE_LIMIT = 10;
+export const HOMEPAGE_HERO_SLIDER_LIMIT = 8;
+export const HOMEPAGE_HERO_TICKER_LIMIT = 16;
+export const ACHIEVEMENT_PAGE_HERO_LIMIT = 8;
+export const ACHIEVEMENT_PAGE_GALLERY_LIMIT = 18;
 export const PUBLIC_ACHIEVEMENT_TIMELINE_LIMIT = 36;
 export const PUBLIC_ACHIEVEMENT_PAGE_SIZE = 24;
+
+export type AchievementHeroPlacement =
+  | "homepageHero"
+  | "homepageSlider"
+  | "homepageTicker"
+  | "achievementHero"
+  | "achievementGallery";
 
 export type PublicAchievementCard = {
   id: string;
@@ -31,6 +43,10 @@ export type PublicAchievementCard = {
   gradeName: string;
   coverUrl: string | null;
   coverAlt: string;
+  desktopFocusX: number;
+  desktopFocusY: number;
+  mobileFocusX: number;
+  mobileFocusY: number;
 };
 
 type MediaSelect = {
@@ -45,6 +61,11 @@ const mediaSelect = {
   metadata: true,
 } satisfies MediaSelect;
 
+function clampFocus(value: number | null | undefined): number {
+  if (!Number.isFinite(value)) return 50;
+  return Math.min(100, Math.max(0, Number(value)));
+}
+
 function mapCover(
   media: {
     storageKey: string;
@@ -52,9 +73,10 @@ function mapCover(
     metadata: unknown;
   } | null,
   title: string,
+  size: TeamPortraitVariantSize = "w480",
 ): { coverUrl: string | null; coverAlt: string } {
   return {
-    coverUrl: publicCoverUrl(media, "w480"),
+    coverUrl: publicCoverUrl(media, size),
     coverAlt: media?.altText?.trim() || title,
   };
 }
@@ -115,6 +137,34 @@ function publicAchievementWhere(
   };
 }
 
+function heroScheduleWhere(now = new Date()) {
+  return {
+    AND: [
+      {
+        OR: [{ heroPublishFrom: null }, { heroPublishFrom: { lte: now } }],
+      },
+      {
+        OR: [{ heroPublishUntil: null }, { heroPublishUntil: { gte: now } }],
+      },
+    ],
+  };
+}
+
+const placementField: Record<
+  AchievementHeroPlacement,
+  | "showInHomepageHero"
+  | "showInHomepageSlider"
+  | "showInHomepageTicker"
+  | "showInAchievementHero"
+  | "showInAchievementGallery"
+> = {
+  homepageHero: "showInHomepageHero",
+  homepageSlider: "showInHomepageSlider",
+  homepageTicker: "showInHomepageTicker",
+  achievementHero: "showInAchievementHero",
+  achievementGallery: "showInAchievementGallery",
+};
+
 const publicCardSelect = {
   id: true,
   slug: true,
@@ -125,6 +175,10 @@ const publicCardSelect = {
   level: true,
   achievementDate: true,
   isFeatured: true,
+  desktopFocusX: true,
+  desktopFocusY: true,
+  mobileFocusX: true,
+  mobileFocusY: true,
   category: { select: { name: true, slug: true, color: true } },
   student: {
     select: {
@@ -144,6 +198,10 @@ type PublicCardRow = {
   level: string | null;
   achievementDate: Date | null;
   isFeatured: boolean;
+  desktopFocusX: number;
+  desktopFocusY: number;
+  mobileFocusX: number;
+  mobileFocusY: number;
   category: { name: string; slug: string; color: string | null };
   student: { grade: { name: string } };
   coverMedia: {
@@ -153,7 +211,10 @@ type PublicCardRow = {
   } | null;
 };
 
-function toPublicAchievementCard(row: PublicCardRow): PublicAchievementCard {
+function toPublicAchievementCard(
+  row: PublicCardRow,
+  coverSize: TeamPortraitVariantSize = "w480",
+): PublicAchievementCard {
   return {
     id: row.id,
     slug: row.slug,
@@ -168,7 +229,11 @@ function toPublicAchievementCard(row: PublicCardRow): PublicAchievementCard {
     categorySlug: row.category.slug,
     categoryColor: row.category.color,
     gradeName: row.student.grade.name,
-    ...mapCover(row.coverMedia, row.title),
+    desktopFocusX: clampFocus(row.desktopFocusX),
+    desktopFocusY: clampFocus(row.desktopFocusY),
+    mobileFocusX: clampFocus(row.mobileFocusX),
+    mobileFocusY: clampFocus(row.mobileFocusY),
+    ...mapCover(row.coverMedia, row.title, coverSize),
   };
 }
 
@@ -234,9 +299,50 @@ export function groupAchievementsByTimeline(
     }));
 }
 
+export async function loadAchievementsByPlacement(
+  placement: AchievementHeroPlacement,
+  options?: { limit?: number; coverSize?: TeamPortraitVariantSize },
+): Promise<PublicAchievementCard[]> {
+  try {
+    const organization = await getCurrentOrganization();
+    if (!organization) return [];
+
+    const field = placementField[placement];
+    const limit = options?.limit ?? HOMEPAGE_HERO_SLIDER_LIMIT;
+    const coverSize = options?.coverSize ?? "w960";
+
+    const rows = await prisma.achievement.findMany({
+      where: {
+        ...publicAchievementWhere(organization.id),
+        ...heroScheduleWhere(),
+        [field]: true,
+      },
+      orderBy: [
+        { featuredPriority: "asc" },
+        { achievementDate: "desc" },
+        { displayOrder: "asc" },
+        { createdAt: "desc" },
+      ],
+      take: limit,
+      select: publicCardSelect,
+    });
+
+    return rows.map((row) => toPublicAchievementCard(row, coverSize));
+  } catch {
+    return [];
+  }
+}
+
+/** @deprecated Prefer loadAchievementsByPlacement("homepageSlider") */
 export async function loadFeaturedAchievements(): Promise<
   PublicAchievementCard[]
 > {
+  const placed = await loadAchievementsByPlacement("homepageSlider", {
+    limit: HOMEPAGE_FEATURED_ACHIEVEMENT_LIMIT,
+    coverSize: "w960",
+  });
+  if (placed.length > 0) return placed;
+
   try {
     const organization = await getCurrentOrganization();
     if (!organization) return [];
@@ -255,7 +361,7 @@ export async function loadFeaturedAchievements(): Promise<
       select: publicCardSelect,
     });
 
-    return rows.map(toPublicAchievementCard);
+    return rows.map((row) => toPublicAchievementCard(row, "w960"));
   } catch {
     return [];
   }
@@ -281,23 +387,58 @@ export async function loadPublicAchievementTimeline(options?: {
       select: publicCardSelect,
     });
 
-    return groupAchievementsByTimeline(rows.map(toPublicAchievementCard));
+    return groupAchievementsByTimeline(
+      rows.map((row) => toPublicAchievementCard(row, "w480")),
+    );
   } catch {
     return [];
   }
 }
 
 export async function loadHomepageAchievementShowcase(): Promise<{
+  hero: PublicAchievementCard[];
+  slider: PublicAchievementCard[];
+  ticker: PublicAchievementCard[];
+  /** @deprecated use slider */
   featured: PublicAchievementCard[];
   timeline: AchievementTimelineGroup[];
 }> {
-  const [featured, timeline] = await Promise.all([
-    loadFeaturedAchievements(),
+  const [hero, slider, ticker, timeline] = await Promise.all([
+    loadAchievementsByPlacement("homepageHero", {
+      limit: HOMEPAGE_HERO_SLIDER_LIMIT,
+      coverSize: "w960",
+    }),
+    loadAchievementsByPlacement("homepageSlider", {
+      limit: HOMEPAGE_HERO_SLIDER_LIMIT,
+      coverSize: "w960",
+    }),
+    loadAchievementsByPlacement("homepageTicker", {
+      limit: HOMEPAGE_HERO_TICKER_LIMIT,
+      coverSize: "w480",
+    }),
     loadPublicAchievementTimeline({
       limit: HOMEPAGE_ACHIEVEMENT_TIMELINE_LIMIT,
     }),
   ]);
-  return { featured, timeline };
+
+  return { hero, slider, ticker, featured: slider, timeline };
+}
+
+export async function loadAchievementPageShowcase(): Promise<{
+  hero: PublicAchievementCard[];
+  gallery: PublicAchievementCard[];
+}> {
+  const [hero, gallery] = await Promise.all([
+    loadAchievementsByPlacement("achievementHero", {
+      limit: ACHIEVEMENT_PAGE_HERO_LIMIT,
+      coverSize: "w960",
+    }),
+    loadAchievementsByPlacement("achievementGallery", {
+      limit: ACHIEVEMENT_PAGE_GALLERY_LIMIT,
+      coverSize: "w480",
+    }),
+  ]);
+  return { hero, gallery };
 }
 
 export type PublicAchievementPageData = {
@@ -356,7 +497,7 @@ export async function loadPublicAchievementPage(filters?: {
   });
 
   return {
-    achievements: rows.map(toPublicAchievementCard),
+    achievements: rows.map((row) => toPublicAchievementCard(row, "w480")),
     total,
     page,
     pageSize,
@@ -412,6 +553,10 @@ export async function loadPublicAchievementBySlug(
       issuer: true,
       achievementDate: true,
       isFeatured: true,
+      desktopFocusX: true,
+      desktopFocusY: true,
+      mobileFocusX: true,
+      mobileFocusY: true,
       seoTitle: true,
       seoDescription: true,
       category: { select: { name: true, slug: true, color: true } },
@@ -422,14 +567,19 @@ export async function loadPublicAchievementBySlug(
       },
       coverMedia: { select: mediaSelect },
       certificateMedia: {
-        select: { storageKey: true, altText: true, metadata: true, mimeType: true },
+        select: {
+          storageKey: true,
+          altText: true,
+          metadata: true,
+          mimeType: true,
+        },
       },
     },
   });
 
   if (!row) return null;
 
-  const cover = mapCover(row.coverMedia, row.title);
+  const cover = mapCover(row.coverMedia, row.title, "w480");
   const certificateMeta = row.certificateMedia?.metadata;
   const certificateIsPdf =
     Boolean(
@@ -459,6 +609,10 @@ export async function loadPublicAchievementBySlug(
     categorySlug: row.category.slug,
     categoryColor: row.category.color,
     gradeName: row.student.grade.name,
+    desktopFocusX: clampFocus(row.desktopFocusX),
+    desktopFocusY: clampFocus(row.desktopFocusY),
+    mobileFocusX: clampFocus(row.mobileFocusX),
+    mobileFocusY: clampFocus(row.mobileFocusY),
     ...cover,
     coverUrlLarge: publicCoverUrl(row.coverMedia, "w960"),
     certificateUrl: publicCertificateUrl(row.certificateMedia),
