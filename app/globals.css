@@ -740,28 +740,52 @@ body {
   color: #ffffff;
 }
 
+/*
+ * Framing engine — per-slide CMS values via CSS vars on media/photo:
+ * object-position + --frame-zoom per breakpoint (mobile zoom may be < 1).
+ * Ken Burns multiplies --frame-zoom; idle/active timing unchanged.
+ */
+.achievement-cinema-media,
+.achievement-cinema-tile-media,
 .achievement-cinema-photo {
   --focus-desktop-x: 50%;
   --focus-desktop-y: 50%;
+  --focus-tablet-x: 50%;
+  --focus-tablet-y: 40%;
   --focus-mobile-x: 50%;
   --focus-mobile-y: 35%;
-  /*
-   * Large screens (default / ≥1024px): desktop focus only.
-   * Tablet + phone overrides are scoped media queries below —
-   * do not change this rule or desktop will shift.
-   */
+  --zoom-desktop: 1;
+  --zoom-tablet: 1;
+  --zoom-mobile: 1;
+  --frame-zoom: var(--zoom-desktop);
+}
+
+.achievement-cinema-photo {
+  object-fit: cover;
   object-position: var(--focus-desktop-x) var(--focus-desktop-y);
 }
 
-/*
- * Tablet: mild upper bias. Keep desktop X; clamp Y so faces/logos
- * stay in the safe band without the phone-level crop.
- */
 @media (min-width: 768px) and (max-width: 1023px) {
-  .achievement-cinema-stage .achievement-cinema-photo {
-    object-position:
-      var(--focus-desktop-x)
-      clamp(20%, var(--focus-desktop-y), 36%);
+  .achievement-cinema-media,
+  .achievement-cinema-tile-media,
+  .achievement-cinema-photo {
+    --frame-zoom: var(--zoom-tablet);
+  }
+
+  .achievement-cinema-photo {
+    object-position: var(--focus-tablet-x) var(--focus-tablet-y);
+  }
+}
+
+@media (max-width: 767px) {
+  .achievement-cinema-media,
+  .achievement-cinema-tile-media,
+  .achievement-cinema-photo {
+    --frame-zoom: var(--zoom-mobile);
+  }
+
+  .achievement-cinema-photo {
+    object-position: var(--focus-mobile-x) var(--focus-mobile-y);
   }
 }
 
@@ -831,15 +855,20 @@ body {
   inset: 0;
 }
 
+/* Ken Burns × per-slide --frame-zoom (supports zoom < 1 on mobile) */
 .achievement-cinema-media img,
 .achievement-cinema-fallback {
-  transform: scale(1.08);
+  transform: scale(calc(var(--frame-zoom, 1) * 1.08));
   transition: transform 8s linear;
 }
 
 .achievement-cinema-slide.is-active .achievement-cinema-media img,
 .achievement-cinema-slide.is-active .achievement-cinema-fallback {
-  transform: scale(1);
+  transform: scale(var(--frame-zoom, 1));
+}
+
+.achievement-cinema-tile .achievement-cinema-photo {
+  transform: scale(var(--frame-zoom, 1));
 }
 
 .achievement-cinema-fallback {
@@ -1164,35 +1193,6 @@ body {
 }
 
 @media (max-width: 767px) {
-  /*
-   * Phones: portrait-focused crop via object-position only.
-   * - Prefer CMS mobile focus when it sits in the face-safe band
-   * - Clamp Y high enough that default center (50%) cannot cut heads/logos
-   * - Soft-clamp X so extreme side focus cannot push the face off-frame
-   * - No extra zoom: Ken Burns scale locked at 1 (desktop scale untouched)
-   */
-  .achievement-cinema-stage .achievement-cinema-photo {
-    object-position:
-      clamp(38%, var(--focus-mobile-x), 62%)
-      clamp(8%, var(--focus-mobile-y), 22%);
-  }
-
-  /* No Ken Burns zoom on phones — prevents heads/logos leaving the frame */
-  .achievement-cinema-stage .achievement-cinema-media img,
-  .achievement-cinema-stage .achievement-cinema-fallback {
-    transform: scale(1);
-  }
-
-  .achievement-cinema-stage
-    .achievement-cinema-slide.is-active
-    .achievement-cinema-media
-    img,
-  .achievement-cinema-stage
-    .achievement-cinema-slide.is-active
-    .achievement-cinema-fallback {
-    transform: scale(1);
-  }
-
   .achievement-cinema-ticker-track {
     gap: 1.5rem;
     padding-block: 0.45rem;
@@ -1256,15 +1256,6 @@ body {
 
   .achievement-cinema-panel {
     display: none !important;
-  }
-}
-
-/* Narrow phones: keep crop even closer to the upper safe area */
-@media (max-width: 479px) {
-  .achievement-cinema-stage .achievement-cinema-photo {
-    object-position:
-      clamp(40%, var(--focus-mobile-x), 60%)
-      clamp(6%, var(--focus-mobile-y), 18%);
   }
 }
 

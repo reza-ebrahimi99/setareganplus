@@ -2730,11 +2730,16 @@ model Achievement {
   showInAchievementGallery   Boolean   @default(false)
   heroPublishFrom            DateTime?
   heroPublishUntil           DateTime?
-  /// Cover focus points (0–100 percent) for responsive object-position
+  /// Per-slide cinematic framing: object-position (0–100%) + zoom scale per breakpoint
   desktopFocusX              Float     @default(50)
   desktopFocusY              Float     @default(50)
+  tabletFocusX               Float     @default(50)
+  tabletFocusY               Float     @default(50)
   mobileFocusX               Float     @default(50)
   mobileFocusY               Float     @default(50)
+  desktopZoom                Float     @default(1)
+  tabletZoom                 Float     @default(1)
+  mobileZoom                 Float     @default(1)
   seoTitle           String?
   seoDescription     String?
   isPublished        Boolean   @default(false)

@@ -45,8 +45,13 @@ export type PublicAchievementCard = {
   coverAlt: string;
   desktopFocusX: number;
   desktopFocusY: number;
+  tabletFocusX: number;
+  tabletFocusY: number;
   mobileFocusX: number;
   mobileFocusY: number;
+  desktopZoom: number;
+  tabletZoom: number;
+  mobileZoom: number;
 };
 
 type MediaSelect = {
@@ -64,6 +69,11 @@ const mediaSelect = {
 function clampFocus(value: number | null | undefined): number {
   if (!Number.isFinite(value)) return 50;
   return Math.min(100, Math.max(0, Number(value)));
+}
+
+function clampZoom(value: number | null | undefined, fallback = 1): number {
+  if (!Number.isFinite(value)) return fallback;
+  return Math.min(1.5, Math.max(0.5, Math.round(Number(value) * 100) / 100));
 }
 
 function mapCover(
@@ -177,8 +187,13 @@ const publicCardSelect = {
   isFeatured: true,
   desktopFocusX: true,
   desktopFocusY: true,
+  tabletFocusX: true,
+  tabletFocusY: true,
   mobileFocusX: true,
   mobileFocusY: true,
+  desktopZoom: true,
+  tabletZoom: true,
+  mobileZoom: true,
   category: { select: { name: true, slug: true, color: true } },
   student: {
     select: {
@@ -200,8 +215,13 @@ type PublicCardRow = {
   isFeatured: boolean;
   desktopFocusX: number;
   desktopFocusY: number;
+  tabletFocusX: number;
+  tabletFocusY: number;
   mobileFocusX: number;
   mobileFocusY: number;
+  desktopZoom: number;
+  tabletZoom: number;
+  mobileZoom: number;
   category: { name: string; slug: string; color: string | null };
   student: { grade: { name: string } };
   coverMedia: {
@@ -231,8 +251,13 @@ function toPublicAchievementCard(
     gradeName: row.student.grade.name,
     desktopFocusX: clampFocus(row.desktopFocusX),
     desktopFocusY: clampFocus(row.desktopFocusY),
+    tabletFocusX: clampFocus(row.tabletFocusX),
+    tabletFocusY: clampFocus(row.tabletFocusY),
     mobileFocusX: clampFocus(row.mobileFocusX),
     mobileFocusY: clampFocus(row.mobileFocusY),
+    desktopZoom: clampZoom(row.desktopZoom, 1),
+    tabletZoom: clampZoom(row.tabletZoom, 1),
+    mobileZoom: clampZoom(row.mobileZoom, 1),
     ...mapCover(row.coverMedia, row.title, coverSize),
   };
 }
@@ -555,8 +580,13 @@ export async function loadPublicAchievementBySlug(
       isFeatured: true,
       desktopFocusX: true,
       desktopFocusY: true,
+      tabletFocusX: true,
+      tabletFocusY: true,
       mobileFocusX: true,
       mobileFocusY: true,
+      desktopZoom: true,
+      tabletZoom: true,
+      mobileZoom: true,
       seoTitle: true,
       seoDescription: true,
       category: { select: { name: true, slug: true, color: true } },
@@ -611,8 +641,13 @@ export async function loadPublicAchievementBySlug(
     gradeName: row.student.grade.name,
     desktopFocusX: clampFocus(row.desktopFocusX),
     desktopFocusY: clampFocus(row.desktopFocusY),
+    tabletFocusX: clampFocus(row.tabletFocusX),
+    tabletFocusY: clampFocus(row.tabletFocusY),
     mobileFocusX: clampFocus(row.mobileFocusX),
     mobileFocusY: clampFocus(row.mobileFocusY),
+    desktopZoom: clampZoom(row.desktopZoom, 1),
+    tabletZoom: clampZoom(row.tabletZoom, 1),
+    mobileZoom: clampZoom(row.mobileZoom, 1),
     ...cover,
     coverUrlLarge: publicCoverUrl(row.coverMedia, "w960"),
     certificateUrl: publicCertificateUrl(row.certificateMedia),

@@ -92,8 +92,13 @@ export default async function EditAchievementPage({ params }: PageProps) {
           heroPublishUntil: toDateTimeLocalValue(achievement.heroPublishUntil),
           desktopFocusX: achievement.desktopFocusX,
           desktopFocusY: achievement.desktopFocusY,
+          tabletFocusX: achievement.tabletFocusX,
+          tabletFocusY: achievement.tabletFocusY,
           mobileFocusX: achievement.mobileFocusX,
           mobileFocusY: achievement.mobileFocusY,
+          desktopZoom: achievement.desktopZoom,
+          tabletZoom: achievement.tabletZoom,
+          mobileZoom: achievement.mobileZoom,
           archivedAt: achievement.archivedAt,
           coverUrl: achievementCoverPublicUrl(achievement.coverMedia),
           certificateUrl: achievementCertificatePublicUrl(

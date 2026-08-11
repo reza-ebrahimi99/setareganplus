@@ -50,8 +50,13 @@ type AchievementFormProps = {
     heroPublishUntil?: string;
     desktopFocusX?: number;
     desktopFocusY?: number;
+    tabletFocusX?: number;
+    tabletFocusY?: number;
     mobileFocusX?: number;
     mobileFocusY?: number;
+    desktopZoom?: number;
+    tabletZoom?: number;
+    mobileZoom?: number;
   };
 };
 
@@ -95,26 +100,6 @@ function PlacementPreserveFields({
           value={achievement.heroPublishUntil}
         />
       ) : null}
-      <input
-        type="hidden"
-        name="desktopFocusX"
-        value={String(achievement.desktopFocusX ?? 50)}
-      />
-      <input
-        type="hidden"
-        name="desktopFocusY"
-        value={String(achievement.desktopFocusY ?? 42)}
-      />
-      <input
-        type="hidden"
-        name="mobileFocusX"
-        value={String(achievement.mobileFocusX ?? 50)}
-      />
-      <input
-        type="hidden"
-        name="mobileFocusY"
-        value={String(achievement.mobileFocusY ?? 35)}
-      />
     </>
   );
 }
@@ -181,6 +166,17 @@ export function AchievementForm({
           categoryName={previewCategoryName}
           coverUrl={achievement?.coverUrl ?? null}
           initialFeatured={achievement?.isFeatured ?? false}
+          initialFraming={{
+            desktopFocusX: achievement?.desktopFocusX,
+            desktopFocusY: achievement?.desktopFocusY,
+            tabletFocusX: achievement?.tabletFocusX,
+            tabletFocusY: achievement?.tabletFocusY,
+            mobileFocusX: achievement?.mobileFocusX,
+            mobileFocusY: achievement?.mobileFocusY,
+            desktopZoom: achievement?.desktopZoom,
+            tabletZoom: achievement?.tabletZoom,
+            mobileZoom: achievement?.mobileZoom,
+          }}
         />
 
         <div className="admin-card space-y-5 p-5 sm:p-6">

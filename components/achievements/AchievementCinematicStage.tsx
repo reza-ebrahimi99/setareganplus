@@ -24,8 +24,13 @@ export type CinematicSlide = {
   accent: string | null;
   desktopFocusX: number;
   desktopFocusY: number;
+  tabletFocusX: number;
+  tabletFocusY: number;
   mobileFocusX: number;
   mobileFocusY: number;
+  desktopZoom: number;
+  tabletZoom: number;
+  mobileZoom: number;
 };
 
 export type CinematicMetric = {
@@ -50,8 +55,13 @@ export type CinematicGalleryItem = {
   tall?: boolean;
   desktopFocusX?: number;
   desktopFocusY?: number;
+  tabletFocusX?: number;
+  tabletFocusY?: number;
   mobileFocusX?: number;
   mobileFocusY?: number;
+  desktopZoom?: number;
+  tabletZoom?: number;
+  mobileZoom?: number;
 };
 
 export type AchievementCinematicStageProps = {
@@ -68,17 +78,28 @@ export type AchievementCinematicStageProps = {
   variant?: "home" | "page";
 };
 
-function focusStyle(slide: {
+/** Per-slide framing engine: position + zoom CSS vars for each breakpoint. */
+function frameStyle(slide: {
   desktopFocusX: number;
   desktopFocusY: number;
+  tabletFocusX: number;
+  tabletFocusY: number;
   mobileFocusX: number;
   mobileFocusY: number;
+  desktopZoom: number;
+  tabletZoom: number;
+  mobileZoom: number;
 }): CSSProperties {
   return {
     "--focus-desktop-x": `${slide.desktopFocusX}%`,
     "--focus-desktop-y": `${slide.desktopFocusY}%`,
+    "--focus-tablet-x": `${slide.tabletFocusX}%`,
+    "--focus-tablet-y": `${slide.tabletFocusY}%`,
     "--focus-mobile-x": `${slide.mobileFocusX}%`,
     "--focus-mobile-y": `${slide.mobileFocusY}%`,
+    "--zoom-desktop": String(slide.desktopZoom),
+    "--zoom-tablet": String(slide.tabletZoom),
+    "--zoom-mobile": String(slide.mobileZoom),
   } as CSSProperties;
 }
 
@@ -270,7 +291,11 @@ export function AchievementCinematicStage({
               } achievement-cinema-slide--${direction}`}
               aria-hidden={!isActive}
             >
-              <div className="achievement-cinema-media" aria-hidden="true">
+              <div
+                className="achievement-cinema-media"
+                aria-hidden="true"
+                style={frameStyle(slide)}
+              >
                 {slide.coverUrl ? (
                   <Image
                     src={slide.coverUrl}
@@ -280,7 +305,6 @@ export function AchievementCinematicStage({
                     priority={slideIndex === 0}
                     sizes="100vw"
                     className="achievement-cinema-photo object-cover"
-                    style={focusStyle(slide)}
                   />
                 ) : (
                   <div
@@ -456,11 +480,16 @@ export function AchievementCinematicStage({
                       unoptimized
                       sizes="(max-width: 768px) 50vw, 25vw"
                       className="achievement-cinema-photo object-cover"
-                      style={focusStyle({
+                      style={frameStyle({
                         desktopFocusX: item.desktopFocusX ?? 50,
                         desktopFocusY: item.desktopFocusY ?? 42,
+                        tabletFocusX: item.tabletFocusX ?? 50,
+                        tabletFocusY: item.tabletFocusY ?? 40,
                         mobileFocusX: item.mobileFocusX ?? 50,
                         mobileFocusY: item.mobileFocusY ?? 35,
+                        desktopZoom: item.desktopZoom ?? 1,
+                        tabletZoom: item.tabletZoom ?? 1,
+                        mobileZoom: item.mobileZoom ?? 1,
                       })}
                     />
                   ) : (

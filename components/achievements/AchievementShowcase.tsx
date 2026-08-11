@@ -75,8 +75,13 @@ function slideFromAchievement(
     accent: achievement.categoryColor,
     desktopFocusX: achievement.desktopFocusX,
     desktopFocusY: achievement.desktopFocusY,
+    tabletFocusX: achievement.tabletFocusX,
+    tabletFocusY: achievement.tabletFocusY,
     mobileFocusX: achievement.mobileFocusX,
     mobileFocusY: achievement.mobileFocusY,
+    desktopZoom: achievement.desktopZoom,
+    tabletZoom: achievement.tabletZoom,
+    mobileZoom: achievement.mobileZoom,
   };
 }
 
@@ -119,8 +124,13 @@ export function AchievementShowcase({
             accent: "#D4AF37",
             desktopFocusX: 50,
             desktopFocusY: 42,
+            tabletFocusX: 50,
+            tabletFocusY: 40,
             mobileFocusX: 50,
             mobileFocusY: 35,
+            desktopZoom: 1,
+            tabletZoom: 1,
+            mobileZoom: 1,
           },
         ];
 
@@ -159,8 +169,13 @@ export function AchievementShowcase({
       tall: index % 5 === 0 || index % 5 === 3,
       desktopFocusX: item.desktopFocusX,
       desktopFocusY: item.desktopFocusY,
+      tabletFocusX: item.tabletFocusX,
+      tabletFocusY: item.tabletFocusY,
       mobileFocusX: item.mobileFocusX,
       mobileFocusY: item.mobileFocusY,
+      desktopZoom: item.desktopZoom,
+      tabletZoom: item.tabletZoom,
+      mobileZoom: item.mobileZoom,
     }),
   );
 
