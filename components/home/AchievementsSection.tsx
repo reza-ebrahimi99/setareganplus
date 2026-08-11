@@ -1,32 +1,33 @@
-import { AchievementShowcase } from "@/components/achievements/AchievementShowcase";
-import {
-  achievementItems,
-  achievementsContent,
-} from "@/content/home";
-import { loadHomepageAchievementShowcase } from "@/lib/website/achievements";
+import { Container } from "@/components/ui/Container";
+import { FeatureCard } from "@/components/ui/FeatureCard";
+import { Section } from "@/components/ui/Section";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { achievementItems, achievementsContent } from "@/content/home";
 
 const headingId = "achievements-heading";
 
-/**
- * Homepage achievements showcase —
- * CMS placements: Homepage Hero / Slider / Ticker.
- */
-export async function AchievementsSection() {
-  const { hero, slider, ticker } = await loadHomepageAchievementShowcase();
-
+export function AchievementsSection() {
   return (
-    <AchievementShowcase
-      eyebrow={achievementsContent.showcaseEyebrow}
-      heading={achievementsContent.showcaseHeading}
-      description={achievementsContent.showcaseDescription}
-      headingId={headingId}
-      metrics={achievementItems}
-      heroItems={hero}
-      sliderItems={slider}
-      tickerSource={ticker}
-      gallerySource={[...hero, ...slider]}
-      cta={achievementsContent.showcaseCta}
-      variant="home"
-    />
+    <Section ariaLabelledby={headingId}>
+      <Container>
+        <SectionHeader
+          eyebrow={achievementsContent.eyebrow}
+          heading={achievementsContent.heading}
+          description={achievementsContent.description}
+          headingId={headingId}
+        />
+        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {achievementItems.map((item) => (
+            <li key={item.title}>
+              <FeatureCard
+                metric={item.metric}
+                title={item.title}
+                description={item.description}
+              />
+            </li>
+          ))}
+        </ul>
+      </Container>
+    </Section>
   );
 }

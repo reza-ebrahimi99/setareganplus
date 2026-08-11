@@ -1,15 +1,10 @@
 import { Container } from "@/components/ui/Container";
+import { PageHero } from "@/components/ui/PageHero";
 import { AchievementDirectory } from "@/components/achievements/AchievementDirectory";
-import { AchievementShowcase } from "@/components/achievements/AchievementShowcase";
 import { SiteShell } from "@/components/layout/SiteShell";
-import {
-  achievementItems,
-  achievementsContent,
-} from "@/content/home";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import {
   listPublicAchievementCategories,
-  loadAchievementPageShowcase,
   loadPublicAchievementPage,
 } from "@/lib/website/achievements";
 import { getPublicPageMetadata } from "@/lib/seo/public-pages";
@@ -39,19 +34,17 @@ export default async function AchievementsPage({ searchParams }: PageProps) {
   const requestedPage =
     typeof params.page === "string" ? Number.parseInt(params.page, 10) : 1;
 
-  const page =
-    Number.isSafeInteger(requestedPage) && requestedPage > 0
-      ? requestedPage
-      : 1;
-
   const organization = await getCurrentOrganization();
-  const [data, categories, grades, showcase] = await Promise.all([
+  const [data, categories, grades] = await Promise.all([
     loadPublicAchievementPage({
       q,
       categorySlug: category || undefined,
       gradeSlug: grade || undefined,
       schoolYear: schoolYear || undefined,
-      page,
+      page:
+        Number.isSafeInteger(requestedPage) && requestedPage > 0
+          ? requestedPage
+          : 1,
     }),
     organization
       ? listPublicAchievementCategories(organization.id)
@@ -59,25 +52,17 @@ export default async function AchievementsPage({ searchParams }: PageProps) {
     organization
       ? listPublicStudentGrades(organization.id)
       : Promise.resolve([]),
-    loadAchievementPageShowcase(),
   ]);
 
   return (
     <SiteShell activePath="/achievements">
-      <AchievementShowcase
-        eyebrow="ویترین افتخارات"
-        heading="افتخارات مؤسسه علمی ستارگان"
-        description="المپیادها، پذیرش مدارس استعداد، مسابقات، افتخارات قلم‌چی و گواهی‌های مؤسسه — بدون انتشار هویت فردی."
-        headingId="page-heading"
-        metrics={achievementItems}
-        heroItems={showcase.hero}
-        sliderItems={showcase.hero}
-        tickerSource={showcase.hero}
-        gallerySource={showcase.gallery}
-        timelineHeading={achievementsContent.timelineHeading}
-        timelineDescription={achievementsContent.timelineDescription}
-        cta={achievementsContent.showcaseCta}
-        variant="page"
+      <PageHero
+        title="افتخارات مؤسسه علمی ستارگان"
+        subtitle="المپیادها، پذیرش مدارس استعداد، مسابقات، افتخارات قلم‌چی و گواهی‌های مؤسسه — بدون انتشار هویت فردی."
+        breadcrumbs={[
+          { label: "صفحه اصلی", href: "/" },
+          { label: "افتخارات" },
+        ]}
       />
       <Container className="py-10 sm:py-14">
         {data ? (

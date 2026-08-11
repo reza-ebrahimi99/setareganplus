@@ -1,4 +1,3 @@
-import { utcToJalaliInTehran } from "@/lib/datetime/jalali";
 import {
   publicCertificateUrl,
   publicCoverUrl,
@@ -6,18 +5,12 @@ import {
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { prisma } from "@/lib/prisma";
 import { listPublicAchievementCategories } from "@/lib/website/achievement-categories";
-import { toPersianDigits } from "@/lib/persian";
 import type { TeamPortraitVariantSize } from "@/lib/media/team-portrait";
 
 export { listPublicAchievementCategories };
 
 export const HOMEPAGE_FEATURED_ACHIEVEMENT_LIMIT = 6;
-export const HOMEPAGE_ACHIEVEMENT_TIMELINE_LIMIT = 10;
 export const HOMEPAGE_HERO_SLIDER_LIMIT = 8;
-export const HOMEPAGE_HERO_TICKER_LIMIT = 16;
-export const ACHIEVEMENT_PAGE_HERO_LIMIT = 8;
-export const ACHIEVEMENT_PAGE_GALLERY_LIMIT = 18;
-export const PUBLIC_ACHIEVEMENT_TIMELINE_LIMIT = 36;
 export const PUBLIC_ACHIEVEMENT_PAGE_SIZE = 24;
 
 export type AchievementHeroPlacement =
@@ -43,15 +36,6 @@ export type PublicAchievementCard = {
   gradeName: string;
   coverUrl: string | null;
   coverAlt: string;
-  desktopFocusX: number;
-  desktopFocusY: number;
-  tabletFocusX: number;
-  tabletFocusY: number;
-  mobileFocusX: number;
-  mobileFocusY: number;
-  desktopZoom: number;
-  tabletZoom: number;
-  mobileZoom: number;
 };
 
 type MediaSelect = {
@@ -65,16 +49,6 @@ const mediaSelect = {
   altText: true,
   metadata: true,
 } satisfies MediaSelect;
-
-function clampFocus(value: number | null | undefined): number {
-  if (!Number.isFinite(value)) return 50;
-  return Math.min(100, Math.max(0, Number(value)));
-}
-
-function clampZoom(value: number | null | undefined, fallback = 1): number {
-  if (!Number.isFinite(value)) return fallback;
-  return Math.min(1.5, Math.max(0.5, Math.round(Number(value) * 100) / 100));
-}
 
 function mapCover(
   media: {
@@ -185,15 +159,6 @@ const publicCardSelect = {
   level: true,
   achievementDate: true,
   isFeatured: true,
-  desktopFocusX: true,
-  desktopFocusY: true,
-  tabletFocusX: true,
-  tabletFocusY: true,
-  mobileFocusX: true,
-  mobileFocusY: true,
-  desktopZoom: true,
-  tabletZoom: true,
-  mobileZoom: true,
   category: { select: { name: true, slug: true, color: true } },
   student: {
     select: {
@@ -213,15 +178,6 @@ type PublicCardRow = {
   level: string | null;
   achievementDate: Date | null;
   isFeatured: boolean;
-  desktopFocusX: number;
-  desktopFocusY: number;
-  tabletFocusX: number;
-  tabletFocusY: number;
-  mobileFocusX: number;
-  mobileFocusY: number;
-  desktopZoom: number;
-  tabletZoom: number;
-  mobileZoom: number;
   category: { name: string; slug: string; color: string | null };
   student: { grade: { name: string } };
   coverMedia: {
@@ -249,79 +205,8 @@ function toPublicAchievementCard(
     categorySlug: row.category.slug,
     categoryColor: row.category.color,
     gradeName: row.student.grade.name,
-    desktopFocusX: clampFocus(row.desktopFocusX),
-    desktopFocusY: clampFocus(row.desktopFocusY),
-    tabletFocusX: clampFocus(row.tabletFocusX),
-    tabletFocusY: clampFocus(row.tabletFocusY),
-    mobileFocusX: clampFocus(row.mobileFocusX),
-    mobileFocusY: clampFocus(row.mobileFocusY),
-    desktopZoom: clampZoom(row.desktopZoom, 1),
-    tabletZoom: clampZoom(row.tabletZoom, 1),
-    mobileZoom: clampZoom(row.mobileZoom, 1),
     ...mapCover(row.coverMedia, row.title, coverSize),
   };
-}
-
-export type AchievementTimelineGroup = {
-  key: string;
-  label: string;
-  achievements: PublicAchievementCard[];
-};
-
-function timelineBucket(achievement: PublicAchievementCard): {
-  key: string;
-  label: string;
-  sortKey: string;
-} {
-  const schoolYear = achievement.schoolYear?.trim();
-  if (schoolYear) {
-    return {
-      key: `sy:${schoolYear}`,
-      label: toPersianDigits(schoolYear),
-      sortKey: `2:${schoolYear}`,
-    };
-  }
-  if (achievement.achievementDate) {
-    const year = utcToJalaliInTehran(achievement.achievementDate).jy;
-    return {
-      key: `jy:${year}`,
-      label: toPersianDigits(year),
-      sortKey: `1:${year}`,
-    };
-  }
-  return { key: "other", label: "سایر", sortKey: "0:other" };
-}
-
-export function groupAchievementsByTimeline(
-  achievements: PublicAchievementCard[],
-): AchievementTimelineGroup[] {
-  const groups = new Map<
-    string,
-    AchievementTimelineGroup & { sortKey: string }
-  >();
-
-  for (const achievement of achievements) {
-    const bucket = timelineBucket(achievement);
-    const existing = groups.get(bucket.key);
-    if (existing) {
-      existing.achievements.push(achievement);
-    } else {
-      groups.set(bucket.key, {
-        key: bucket.key,
-        label: bucket.label,
-        sortKey: bucket.sortKey,
-        achievements: [achievement],
-      });
-    }
-  }
-
-  return [...groups.values()]
-    .sort((a, b) => b.sortKey.localeCompare(a.sortKey, "en"))
-    .map(({ key, label, achievements: items }) => ({
-      key,
-      label,
-      achievements: items,
-    }));
 }
 
 export async function loadAchievementsByPlacement(
@@ -390,80 +275,6 @@ export async function loadFeaturedAchievements(): Promise<
   } catch {
     return [];
   }
-}
-
-export async function loadPublicAchievementTimeline(options?: {
-  limit?: number;
-}): Promise<AchievementTimelineGroup[]> {
-  try {
-    const organization = await getCurrentOrganization();
-    if (!organization) return [];
-
-    const limit = options?.limit ?? PUBLIC_ACHIEVEMENT_TIMELINE_LIMIT;
-    const rows = await prisma.achievement.findMany({
-      where: publicAchievementWhere(organization.id),
-      orderBy: [
-        { isFeatured: "desc" },
-        { achievementDate: "desc" },
-        { featuredPriority: "asc" },
-        { displayOrder: "asc" },
-      ],
-      take: limit,
-      select: publicCardSelect,
-    });
-
-    return groupAchievementsByTimeline(
-      rows.map((row) => toPublicAchievementCard(row, "w480")),
-    );
-  } catch {
-    return [];
-  }
-}
-
-export async function loadHomepageAchievementShowcase(): Promise<{
-  hero: PublicAchievementCard[];
-  slider: PublicAchievementCard[];
-  ticker: PublicAchievementCard[];
-  /** @deprecated use slider */
-  featured: PublicAchievementCard[];
-  timeline: AchievementTimelineGroup[];
-}> {
-  const [hero, slider, ticker, timeline] = await Promise.all([
-    loadAchievementsByPlacement("homepageHero", {
-      limit: HOMEPAGE_HERO_SLIDER_LIMIT,
-      coverSize: "w960",
-    }),
-    loadAchievementsByPlacement("homepageSlider", {
-      limit: HOMEPAGE_HERO_SLIDER_LIMIT,
-      coverSize: "w960",
-    }),
-    loadAchievementsByPlacement("homepageTicker", {
-      limit: HOMEPAGE_HERO_TICKER_LIMIT,
-      coverSize: "w480",
-    }),
-    loadPublicAchievementTimeline({
-      limit: HOMEPAGE_ACHIEVEMENT_TIMELINE_LIMIT,
-    }),
-  ]);
-
-  return { hero, slider, ticker, featured: slider, timeline };
-}
-
-export async function loadAchievementPageShowcase(): Promise<{
-  hero: PublicAchievementCard[];
-  gallery: PublicAchievementCard[];
-}> {
-  const [hero, gallery] = await Promise.all([
-    loadAchievementsByPlacement("achievementHero", {
-      limit: ACHIEVEMENT_PAGE_HERO_LIMIT,
-      coverSize: "w960",
-    }),
-    loadAchievementsByPlacement("achievementGallery", {
-      limit: ACHIEVEMENT_PAGE_GALLERY_LIMIT,
-      coverSize: "w480",
-    }),
-  ]);
-  return { hero, gallery };
 }
 
 export type PublicAchievementPageData = {
@@ -578,15 +389,6 @@ export async function loadPublicAchievementBySlug(
       issuer: true,
       achievementDate: true,
       isFeatured: true,
-      desktopFocusX: true,
-      desktopFocusY: true,
-      tabletFocusX: true,
-      tabletFocusY: true,
-      mobileFocusX: true,
-      mobileFocusY: true,
-      desktopZoom: true,
-      tabletZoom: true,
-      mobileZoom: true,
       seoTitle: true,
       seoDescription: true,
       category: { select: { name: true, slug: true, color: true } },
@@ -639,15 +441,6 @@ export async function loadPublicAchievementBySlug(
     categorySlug: row.category.slug,
     categoryColor: row.category.color,
     gradeName: row.student.grade.name,
-    desktopFocusX: clampFocus(row.desktopFocusX),
-    desktopFocusY: clampFocus(row.desktopFocusY),
-    tabletFocusX: clampFocus(row.tabletFocusX),
-    tabletFocusY: clampFocus(row.tabletFocusY),
-    mobileFocusX: clampFocus(row.mobileFocusX),
-    mobileFocusY: clampFocus(row.mobileFocusY),
-    desktopZoom: clampZoom(row.desktopZoom, 1),
-    tabletZoom: clampZoom(row.tabletZoom, 1),
-    mobileZoom: clampZoom(row.mobileZoom, 1),
     ...cover,
     coverUrlLarge: publicCoverUrl(row.coverMedia, "w960"),
     certificateUrl: publicCertificateUrl(row.certificateMedia),

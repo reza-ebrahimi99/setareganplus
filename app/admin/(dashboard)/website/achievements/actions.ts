@@ -111,66 +111,25 @@ function parseDateTimeLocal(raw: string): Date | null {
   return date;
 }
 
-function clampFocusPercent(raw: string, fallback = 50): number {
-  const n = Number(raw);
-  if (!Number.isFinite(n)) return fallback;
-  return Math.min(100, Math.max(0, n));
-}
-
-/** Framing zoom: allow below 1 (zoom out) and mild zoom-in. */
-function clampZoom(raw: string, fallback = 1): number {
-  const n = Number(raw);
-  if (!Number.isFinite(n)) return fallback;
-  return Math.min(1.5, Math.max(0.5, Math.round(n * 100) / 100));
-}
-
 function readHeroPlacementFields(formData: FormData) {
-  const showInHomepageHero =
-    readString(formData, "showInHomepageHero") === "true";
-  const showInHomepageSlider =
-    readString(formData, "showInHomepageSlider") === "true";
-  const showInHomepageTicker =
-    readString(formData, "showInHomepageTicker") === "true";
-  const showInAchievementHero =
-    readString(formData, "showInAchievementHero") === "true";
-  const showInAchievementGallery =
-    readString(formData, "showInAchievementGallery") === "true";
-  const placementFeatured =
-    showInHomepageHero ||
-    showInHomepageSlider ||
-    showInHomepageTicker ||
-    showInAchievementHero ||
-    showInAchievementGallery;
-
   return {
-    showInHomepageHero,
-    showInHomepageSlider,
-    showInHomepageTicker,
-    showInAchievementHero,
-    showInAchievementGallery,
+    showInHomepageHero:
+      readString(formData, "showInHomepageHero") === "true",
+    showInHomepageSlider:
+      readString(formData, "showInHomepageSlider") === "true",
+    showInHomepageTicker:
+      readString(formData, "showInHomepageTicker") === "true",
+    showInAchievementHero:
+      readString(formData, "showInAchievementHero") === "true",
+    showInAchievementGallery:
+      readString(formData, "showInAchievementGallery") === "true",
     heroPublishFrom: parseDateTimeLocal(
       readString(formData, "heroPublishFrom"),
     ),
     heroPublishUntil: parseDateTimeLocal(
       readString(formData, "heroPublishUntil"),
     ),
-    desktopFocusX: clampFocusPercent(readString(formData, "desktopFocusX")),
-    desktopFocusY: clampFocusPercent(
-      readString(formData, "desktopFocusY"),
-      42,
-    ),
-    tabletFocusX: clampFocusPercent(readString(formData, "tabletFocusX")),
-    tabletFocusY: clampFocusPercent(
-      readString(formData, "tabletFocusY"),
-      40,
-    ),
-    mobileFocusX: clampFocusPercent(readString(formData, "mobileFocusX")),
-    mobileFocusY: clampFocusPercent(readString(formData, "mobileFocusY"), 35),
-    desktopZoom: clampZoom(readString(formData, "desktopZoom"), 1),
-    tabletZoom: clampZoom(readString(formData, "tabletZoom"), 1),
-    mobileZoom: clampZoom(readString(formData, "mobileZoom"), 1),
-    isFeatured:
-      readString(formData, "isFeatured") === "true" || placementFeatured,
+    isFeatured: readString(formData, "isFeatured") === "true",
   };
 }
 
@@ -299,15 +258,6 @@ export async function createAchievement(
       showInAchievementGallery: heroFields.showInAchievementGallery,
       heroPublishFrom: heroFields.heroPublishFrom,
       heroPublishUntil: heroFields.heroPublishUntil,
-      desktopFocusX: heroFields.desktopFocusX,
-      desktopFocusY: heroFields.desktopFocusY,
-      tabletFocusX: heroFields.tabletFocusX,
-      tabletFocusY: heroFields.tabletFocusY,
-      mobileFocusX: heroFields.mobileFocusX,
-      mobileFocusY: heroFields.mobileFocusY,
-      desktopZoom: heroFields.desktopZoom,
-      tabletZoom: heroFields.tabletZoom,
-      mobileZoom: heroFields.mobileZoom,
     },
   });
 
@@ -412,15 +362,6 @@ export async function updateAchievement(
       showInAchievementGallery: heroFields.showInAchievementGallery,
       heroPublishFrom: heroFields.heroPublishFrom,
       heroPublishUntil: heroFields.heroPublishUntil,
-      desktopFocusX: heroFields.desktopFocusX,
-      desktopFocusY: heroFields.desktopFocusY,
-      tabletFocusX: heroFields.tabletFocusX,
-      tabletFocusY: heroFields.tabletFocusY,
-      mobileFocusX: heroFields.mobileFocusX,
-      mobileFocusY: heroFields.mobileFocusY,
-      desktopZoom: heroFields.desktopZoom,
-      tabletZoom: heroFields.tabletZoom,
-      mobileZoom: heroFields.mobileZoom,
       archivedAt:
         readString(formData, "archived") === "true" ? new Date() : null,
     },

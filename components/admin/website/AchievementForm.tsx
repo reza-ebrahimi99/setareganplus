@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useMemo, useState } from "react";
+import { useActionState } from "react";
 import {
   createAchievement,
   updateAchievement,
@@ -9,7 +9,6 @@ import {
   uploadCover,
   type AchievementActionState,
 } from "@/app/admin/(dashboard)/website/achievements/actions";
-import { AchievementCinematicAdminPanel } from "@/components/admin/website/AchievementCinematicAdminPanel";
 
 type Option = { id: string; name: string };
 
@@ -48,15 +47,6 @@ type AchievementFormProps = {
     showInAchievementGallery?: boolean;
     heroPublishFrom?: string;
     heroPublishUntil?: string;
-    desktopFocusX?: number;
-    desktopFocusY?: number;
-    tabletFocusX?: number;
-    tabletFocusY?: number;
-    mobileFocusX?: number;
-    mobileFocusY?: number;
-    desktopZoom?: number;
-    tabletZoom?: number;
-    mobileZoom?: number;
   };
 };
 
@@ -121,20 +111,6 @@ export function AchievementForm({
     initial,
   );
 
-  const [previewTitle, setPreviewTitle] = useState(achievement?.title ?? "");
-  const [previewShortDescription, setPreviewShortDescription] = useState(
-    achievement?.shortDescription ?? "",
-  );
-  const [previewCategoryId, setPreviewCategoryId] = useState(
-    achievement?.categoryId ?? "",
-  );
-
-  const previewCategoryName = useMemo(
-    () =>
-      categories.find((category) => category.id === previewCategoryId)?.name,
-    [categories, previewCategoryId],
-  );
-
   return (
     <div className="space-y-5">
       {state.formError || coverState.formError || certState.formError ? (
@@ -160,25 +136,6 @@ export function AchievementForm({
           </>
         ) : null}
 
-        <AchievementCinematicAdminPanel
-          title={previewTitle}
-          shortDescription={previewShortDescription}
-          categoryName={previewCategoryName}
-          coverUrl={achievement?.coverUrl ?? null}
-          initialFeatured={achievement?.isFeatured ?? false}
-          initialFraming={{
-            desktopFocusX: achievement?.desktopFocusX,
-            desktopFocusY: achievement?.desktopFocusY,
-            tabletFocusX: achievement?.tabletFocusX,
-            tabletFocusY: achievement?.tabletFocusY,
-            mobileFocusX: achievement?.mobileFocusX,
-            mobileFocusY: achievement?.mobileFocusY,
-            desktopZoom: achievement?.desktopZoom,
-            tabletZoom: achievement?.tabletZoom,
-            mobileZoom: achievement?.mobileZoom,
-          }}
-        />
-
         <div className="admin-card space-y-5 p-5 sm:p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="text-sm sm:col-span-2">
@@ -188,7 +145,6 @@ export function AchievementForm({
                 required
                 defaultValue={achievement?.title ?? ""}
                 className={inputClass}
-                onChange={(event) => setPreviewTitle(event.target.value)}
               />
             </label>
             <label className="text-sm sm:col-span-2">
@@ -214,7 +170,6 @@ export function AchievementForm({
                 required
                 defaultValue={achievement?.categoryId ?? ""}
                 className={inputClass}
-                onChange={(event) => setPreviewCategoryId(event.target.value)}
               >
                 <option value="">انتخاب دسته</option>
                 {categories.map((category) => (
@@ -281,9 +236,6 @@ export function AchievementForm({
                 name="shortDescription"
                 defaultValue={achievement?.shortDescription ?? ""}
                 className={inputClass}
-                onChange={(event) =>
-                  setPreviewShortDescription(event.target.value)
-                }
               />
             </label>
             <label className="text-sm sm:col-span-2">
@@ -354,6 +306,15 @@ export function AchievementForm({
               />
               منتشر شده
             </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="isFeatured"
+                value="true"
+                defaultChecked={achievement?.isFeatured ?? false}
+              />
+              ویژه
+            </label>
             {mode === "edit" ? (
               <label className="flex items-center gap-2">
                 <input
@@ -366,12 +327,6 @@ export function AchievementForm({
               </label>
             ) : null}
           </div>
-
-          <p className="text-xs text-muted">
-            وضعیت «نمایش در ویترین سینمایی» از پنل بالا کنترل می‌شود و همان فیلد
-            ویژه (Featured) را ذخیره می‌کند. فوکوس، ترتیب اسلاید و تیکر در این فاز
-            فقط پیش‌نمایش محلی هستند.
-          </p>
 
           <div className="flex flex-wrap gap-3">
             <button
