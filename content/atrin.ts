@@ -19,87 +19,78 @@ export {
 
 export const ATRIN_BRAND = {
   name: "آترین",
-  product: "آترین AI",
-  subtitle: "همراه هوشمند آموزش و موفقیت",
-  institutionLine: "دستیار هوشمند مؤسسه علمی ستارگان",
+  product: "آترین",
+  subtitle: "همراه آموزشی مؤسسه علمی ستارگان",
+  institutionLine: "همراه آموزشی مؤسسه علمی ستارگان",
   statusOnline: "آنلاین",
   closeLabel: "بستن آترین",
   backdropLabel: "بستن پس‌زمینه آترین",
   composerLabel: "پیام به آترین",
   clearLabel: "پاک کردن گفتگو",
-  fabAria: "باز کردن آترین، دستیار هوشمند مؤسسه علمی ستارگان",
+  fabAria: "آترین — همراه آموزشی",
+  fabHeadline: "آترین",
+  fabCaption: "هرجا سوال داری...",
 } as const;
 
 export const ATRIN_LAUNCHER_ROTATIONS = [
-  "از آترین چیزی بپرس…",
-  "برنامه مطالعاتی می‌خواهی؟",
-  "تیزهوشان؟",
-  "شهریه؟",
-  "پیش ثبت نام؟",
+  "هرجا سوال داری...",
+  "از کجا شروع کنیم؟ 😊",
+  "کمکت کنم؟",
+  "یه سوال بپرس...",
+  "امروز چی میخوای یاد بگیری؟",
 ] as const;
 
 export const ATRIN_HERO = {
   greeting: "سلام 👋",
-  headline: "من آترین هستم",
-  role: "مشاور هوشمند مؤسسه علمی ستارگان",
-  descriptionLead: "هر سوالی درباره",
-  topics: [
-    "مدرسه",
-    "ثبت نام",
-    "پیش ثبت نام",
-    "قلم چی",
-    "تیزهوشان",
-    "برنامه ریزی",
-    "انتخاب رشته",
-    "سوالات درسی",
-    "مشاوره تحصیلی",
-  ] as const,
-  descriptionTail: "از من بپرسید.",
-  ctaPrimary: "شروع گفتگو",
-  ctaSecondary: "خدمات مؤسسه",
+  headline: "آترین",
+  role: "همراه آموزشی مؤسسه علمی ستارگان",
+  descriptionLead: "",
+  topics: [] as const,
+  descriptionTail: "",
+  ctaPrimary: "",
+  ctaSecondary: "",
   secondaryHref: "/about",
+  quickStartTitle: "از کجا شروع کنیم؟",
 } as const;
 
+export type AtrinQuickChipId =
+  | "lesson"
+  | "counsel"
+  | "school"
+  | "prereg"
+  | "gifted"
+  | "free";
+
 export const ATRIN_QUICK_QUESTIONS = [
-  { id: "lesson", emoji: "📚", label: "سوال درسی", prompt: "یک سوال درسی دارم" },
   {
-    id: "counsel",
-    emoji: "🧠",
-    label: "مشاوره تحصیلی",
-    prompt: "مشاوره تحصیلی می‌خواهم",
+    id: "lesson" as const,
+    emoji: "📚",
+    label: "سوال درسی",
   },
   {
-    id: "institute",
+    id: "counsel" as const,
+    emoji: "🎯",
+    label: "مشاوره",
+  },
+  {
+    id: "school" as const,
     emoji: "🏫",
     label: "معرفی مؤسسه",
-    prompt: "درباره مؤسسه علمی ستارگان بگو",
   },
   {
-    id: "prereg",
+    id: "prereg" as const,
     emoji: "📝",
     label: "پیش ثبت نام",
-    prompt: "پیش ثبت نام",
   },
   {
-    id: "gifted",
+    id: "gifted" as const,
     emoji: "🏆",
-    label: "تیزهوشان",
-    prompt: "آمادگی تیزهوشان",
+    label: "تیزهوشان و نمونه دولتی",
   },
-  { id: "ghalamchi", emoji: "📖", label: "قلم چی", prompt: "قلم چی" },
   {
-    id: "plan",
-    emoji: "🎯",
-    label: "برنامه مطالعاتی",
-    prompt: "برنامه مطالعاتی می‌خواهم",
-  },
-  { id: "tuition", emoji: "💰", label: "شهریه", prompt: "شهریه" },
-  { id: "contact", emoji: "📍", label: "تماس", prompt: "تماس" },
-  {
-    id: "major",
-    emoji: "🎓",
-    label: "انتخاب رشته",
-    prompt: "انتخاب رشته",
+    id: "free" as const,
+    emoji: "💬",
+    label: "هرچی دوست داری...",
   },
 ] as const;
 
@@ -113,9 +104,28 @@ export const ATRIN_STUDY_SECTIONS = [
 ] as const;
 
 export const ATRIN_STUDY_ACTIONS = [
-  { id: "pdf", label: "دانلود PDF", href: "/courses", hint: "مسیر دوره‌ها" },
-  { id: "video", label: "ویدیو", href: "/gallery", hint: "گالری و محتوا" },
-  { id: "practice", label: "تمرین", href: "/exams", hint: "آزمون و تمرین" },
+  {
+    id: "photo",
+    label: "ارسال عکس سوال",
+    hint: "صورت سؤال را مرور کنیم",
+    type: "chat" as const,
+    prompt:
+      "یک عکس از سؤال دارم. لطفاً راهنمایی کن تا صورت سؤال را دقیق بنویسم و قدم‌به‌قدم حل کنیم.",
+  },
+  {
+    id: "type",
+    label: "تایپ سوال",
+    hint: "سؤال را همین‌جا بنویس",
+    type: "chat" as const,
+    prompt: "سوال ریاضی دارم",
+  },
+  {
+    id: "plan",
+    label: "برنامه مطالعاتی",
+    hint: "برنامه شخصی‌سازی‌شده",
+    type: "chat" as const,
+    prompt: "برایم برنامه مطالعاتی بنویس",
+  },
 ] as const;
 
 export const ATRIN_COUNSELOR_GOALS = [
@@ -123,18 +133,21 @@ export const ATRIN_COUNSELOR_GOALS = [
     id: "plan",
     title: "برنامه مطالعاتی",
     subtitle: "ساختار هفتگی و اولویت‌ها",
-    href: "/consultation",
+    type: "chat" as const,
+    prompt: "برایم برنامه مطالعاتی بنویس",
   },
   {
     id: "gifted",
     title: "تیزهوشان",
     subtitle: "آمادگی هدفمند",
+    type: "navigate" as const,
     href: "/courses",
   },
   {
     id: "konkur",
     title: "کنکور",
     subtitle: "مسیر بلندمدت",
+    type: "navigate" as const,
     href: "/consultation",
   },
 ] as const;
@@ -144,36 +157,40 @@ export const ATRIN_PARENT_CARDS = [
     id: "admissions",
     title: "پذیرش",
     subtitle: "پیش‌ثبت‌نام و مدارک",
+    type: "open-form" as const,
     href: "/pre-registration",
   },
   {
     id: "tuition",
     title: "شهریه",
     subtitle: "استعلام و راهنما",
+    type: "navigate" as const,
     href: "/contact",
   },
   {
     id: "consultation",
     title: "مشاوره",
     subtitle: "جلسه با مشاور",
+    type: "navigate" as const,
     href: "/consultation",
   },
   {
     id: "achievements",
     title: "افتخارات",
     subtitle: "نتایج و قبولی‌ها",
+    type: "navigate" as const,
     href: "/achievements",
   },
 ] as const;
 
 export const ATRIN_LANDING = {
-  metaTitle: "آترین AI | دستیار هوشمند مؤسسه علمی ستارگان",
+  metaTitle: "آترین | همراه آموزشی مؤسسه علمی ستارگان",
   metaDescription:
-    "آترین، همراه هوشمند آموزش و موفقیت — مشاوره، ثبت‌نام، قلم‌چی، تیزهوشان و سؤالات درسی.",
-  heroEyebrow: "آترین AI",
+    "آترین، همراه آموزشی مؤسسه علمی ستارگان — مشاوره، ثبت‌نام، قلم‌چی، تیزهوشان و سؤالات درسی.",
+  heroEyebrow: "آترین",
   heroTitle: "آینده گفتگو با آموزش",
   heroBody:
-    "آترین چهره عمومی هوش مصنوعی StarOS است؛ گرم، حرفه‌ای و همیشه در کنار مسیر موفقیت.",
+    "آترین همراه گرم آموزشی مؤسسه علمی ستارگان است؛ حرفه‌ای و همیشه در کنار مسیر موفقیت.",
   capabilities: [
     {
       title: "راهنمای مؤسسه",

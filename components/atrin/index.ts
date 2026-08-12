@@ -5,3 +5,6 @@ export { AtrinEmbeddedChat } from "@/components/atrin/AtrinEmbeddedChat";
 export { AtrinMark } from "@/components/atrin/AtrinMark";
 export * from "@/components/atrin/ui";
 export * from "@/components/atrin/os";
+export * from "@/components/atrin/education";
+export * from "@/components/atrin/curriculum";
+export * from "@/components/atrin/evaluation";

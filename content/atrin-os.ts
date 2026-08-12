@@ -40,7 +40,7 @@ export type AtrinModeConfig = {
 export const ATRIN_MODES: Record<AtrinModeId, AtrinModeConfig> = {
   general: {
     id: "general",
-    label: "آترین AI",
+    label: "آترین",
     tip: "هر سؤالی درباره آموزش و موفقیت بپرسید.",
     accent: "#7c3aed",
     gradient: "from-[#7c3aed] to-[#06b6d4]",
@@ -243,10 +243,34 @@ export const ATRIN_PROMPT_GROUPS = [
 ] as const;
 
 export const ATRIN_TASK_TEMPLATES = [
-  { id: "today", title: "تمرین امروز", kind: "homework" as const, hint: "۳۰ دقیقه مرور مفهوم" },
-  { id: "week", title: "هدف این هفته", kind: "planning" as const, hint: "۳ جلسه مطالعه متمرکز" },
-  { id: "upcoming", title: "یادآوری نزدیک", kind: "reminder" as const, hint: "هماهنگی با مشاور" },
-  { id: "reading", title: "مطالعه پیشنهادی", kind: "reading" as const, hint: "مرور خلاصه درس" },
+  {
+    id: "today",
+    title: "تمرین امروز",
+    kind: "homework" as const,
+    hint: "۳۰ دقیقه مرور مفهوم",
+    prompt: "برای امروز یک تمرین کوتاه مطالعاتی پیشنهاد بده.",
+  },
+  {
+    id: "week",
+    title: "هدف این هفته",
+    kind: "planning" as const,
+    hint: "۳ جلسه مطالعه متمرکز",
+    prompt: "برایم برنامه مطالعاتی بنویس",
+  },
+  {
+    id: "upcoming",
+    title: "یادآوری نزدیک",
+    kind: "reminder" as const,
+    hint: "هماهنگی با مشاور",
+    prompt: "شرایط ثبت نام چیست؟",
+  },
+  {
+    id: "reading",
+    title: "مطالعه پیشنهادی",
+    kind: "reading" as const,
+    hint: "مرور خلاصه درس",
+    prompt: "سوال ریاضی دارم",
+  },
 ] as const;
 
 /** Trust metrics — reused from About content layer (no duplicated literals). */

@@ -4,6 +4,7 @@ export {
   detectWebsiteGuideIntent,
   mapExternalIntent,
 } from "@/lib/ai/actions/detect-intent";
+export { executeActionCard } from "@/lib/ai/actions/execute";
 export {
   ALLOWED_INTERNAL_ROUTES,
   isAllowedInternalRoute,

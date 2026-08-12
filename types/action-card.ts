@@ -1,9 +1,10 @@
 /**
- * Premium website-guidance action cards for Star assistant (UX layer).
+ * Premium website-guidance action cards for Star / Atrin (interactive UX layer).
  */
 
 export type ActionCardType =
   | "navigate"
+  | "chat"
   | "external"
   | "call"
   | "copy"
@@ -18,7 +19,10 @@ export type ActionCardIcon =
   | "gallery"
   | "book"
   | "calendar"
-  | "robot";
+  | "robot"
+  | "chat"
+  | "camera"
+  | "spark";
 
 export type ActionCard = {
   id: string;
@@ -26,9 +30,15 @@ export type ActionCard = {
   title: string;
   subtitle: string;
   icon: ActionCardIcon;
+  /**
+   * Target for navigate / external / call / open-form / copy fallback.
+   * Chat actions may use "#chat" — execution uses `prompt`.
+   */
   href: string;
   /** Lower number = higher priority (shown first). */
   priority: number;
+  /** Required for type "chat" — sent or inserted into the conversation. */
+  prompt?: string;
   /** Optional payload for copy actions */
   copyText?: string;
 };
@@ -46,6 +56,10 @@ export type AiActionResolverInput = {
 };
 
 export type WebsiteGuideIntent =
+  | "greeting"
+  | "admissions"
+  | "school"
+  | "study"
   | "tuition"
   | "pre_registration"
   | "ghalamchi"

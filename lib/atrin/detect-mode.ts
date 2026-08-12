@@ -34,7 +34,7 @@ export function detectAtrinMode(texts: readonly string[]): AtrinModeId {
     {
       mode: "study",
       weight: 9,
-      re: /(سوال درسی|درس|تمرین|مثال|ریاضی|فیزیک|شیمی|عربی|انگلیسی|توضیح بده|حل کن|مفهوم)/,
+      re: /(سوال درسی|درس|تمرین|مثال|ریاضی|فیزیک|شیمی|عربی|انگلیسی|علوم|توضیح بده|حل کن|مفهوم)/,
     },
     {
       mode: "gifted",

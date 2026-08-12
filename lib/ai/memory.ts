@@ -3,7 +3,7 @@
  * Keeps full local history intact; only outbound API context is compacted.
  */
 
-export const AI_MEMORY_MAX_MESSAGES = 20;
+export const AI_MEMORY_MAX_MESSAGES = 8;
 export const AI_MEMORY_SUMMARY_KEY = "staros-ai-memory-summary-v1" as const;
 
 export type MemoryMessage = {

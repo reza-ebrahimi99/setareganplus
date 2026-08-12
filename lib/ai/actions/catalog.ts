@@ -1,7 +1,7 @@
 import { contactContent } from "@/content/home";
+import { isSafeActionHref } from "@/lib/ai/actions/routes";
 import type { ActionCard } from "@/types/action-card";
 import type { WebsiteGuideIntent } from "@/types/action-card";
-import { isSafeActionHref } from "@/lib/ai/actions/routes";
 
 const PRIMARY_PHONE = contactContent.phones[0]?.href ?? "tel:02156766772";
 const MOBILE_PHONE =
@@ -23,15 +23,147 @@ const WA_HREF = whatsappHrefFromTel(MOBILE_PHONE);
 function card(
   partial: Omit<ActionCard, "priority"> & { priority: number },
 ): ActionCard | null {
+  if (partial.type === "chat") {
+    if (!partial.prompt?.trim()) return null;
+    return {
+      ...partial,
+      href: partial.href || "#chat",
+      prompt: partial.prompt.trim(),
+    };
+  }
   if (!isSafeActionHref(partial.href)) return null;
   return partial;
 }
 
 /**
  * Intent → action card catalog (existing site routes / published contacts only).
+ * Every card has a real action — no decorative-only entries.
  */
 export function catalogForIntent(intent: WebsiteGuideIntent): ActionCard[] {
   const lists: Record<WebsiteGuideIntent, Array<ActionCard | null>> = {
+    greeting: [
+      card({
+        id: "greet-start",
+        type: "chat",
+        title: "شروع گفتگو",
+        subtitle: "با یک معرفی کوتاه شروع کنیم",
+        icon: "spark",
+        href: "#chat",
+        prompt: "سلام، لطفاً خودت را معرفی کن و بگو چطور می‌توانی کمکم کنی.",
+        priority: 10,
+      }),
+      card({
+        id: "greet-study",
+        type: "chat",
+        title: "سوال درسی",
+        subtitle: "سؤال ریاضی یا درسی بپرس",
+        icon: "book",
+        href: "#chat",
+        prompt: "سوال ریاضی دارم",
+        priority: 20,
+      }),
+      card({
+        id: "greet-intro",
+        type: "chat",
+        title: "معرفی آترین",
+        subtitle: "قابلیت‌ها و حالت‌های آترین",
+        icon: "robot",
+        href: "#chat",
+        prompt: "درباره آترین توضیح بده و بگو چه کمکی می‌توانی بکنی.",
+        priority: 30,
+      }),
+    ],
+    admissions: [
+      card({
+        id: "adm-prereg",
+        type: "open-form",
+        title: "پیش ثبت نام",
+        subtitle: "شروع پذیرش آنلاین",
+        icon: "register",
+        href: "/pre-registration",
+        priority: 10,
+      }),
+      card({
+        id: "adm-docs",
+        type: "navigate",
+        title: "مدارک",
+        subtitle: "مدارک و سوالات پرتکرار",
+        icon: "book",
+        href: "/faq",
+        priority: 20,
+      }),
+      card({
+        id: "adm-call",
+        type: "call",
+        title: "تماس با مشاور",
+        subtitle: "ارتباط تلفنی با پذیرش",
+        icon: "phone",
+        href: PRIMARY_PHONE,
+        priority: 30,
+      }),
+    ],
+    school: [
+      card({
+        id: "school-gallery",
+        type: "navigate",
+        title: "گالری",
+        subtitle: "فضای آموزشی و رویدادها",
+        icon: "gallery",
+        href: "/gallery",
+        priority: 10,
+      }),
+      card({
+        id: "school-trophy",
+        type: "navigate",
+        title: "افتخارات",
+        subtitle: "دستاوردهای تأییدشده",
+        icon: "trophy",
+        href: "/achievements",
+        priority: 20,
+      }),
+      card({
+        id: "school-about",
+        type: "navigate",
+        title: "امکانات",
+        subtitle: "فضا، خدمات و معرفی مجموعه",
+        icon: "graduation",
+        href: "/about",
+        priority: 30,
+      }),
+    ],
+    study: [
+      card({
+        id: "study-photo",
+        type: "chat",
+        title: "ارسال عکس سوال",
+        subtitle: "صورت سؤال را با هم مرور کنیم",
+        icon: "camera",
+        href: "#chat",
+        prompt:
+          "یک عکس از سؤال دارم. لطفاً راهنمایی کن تا صورت سؤال را دقیق بنویسم و قدم‌به‌قدم حل کنیم.",
+        priority: 10,
+      }),
+      card({
+        id: "study-type",
+        type: "chat",
+        title: "تایپ سوال",
+        subtitle: "سؤال را همین‌جا بنویس",
+        icon: "chat",
+        href: "#chat",
+        prompt: "سوال ریاضی دارم",
+        priority: 20,
+      }),
+      card({
+        id: "study-plan",
+        type: "chat",
+        title: "برنامه مطالعاتی",
+        subtitle: "برنامه شخصی‌سازی‌شده",
+        icon: "calendar",
+        href: "#chat",
+        prompt: "برایم برنامه مطالعاتی بنویس",
+        priority: 30,
+      }),
+    ],
     tuition: [
       card({
         id: "tuition-view",
@@ -65,7 +197,7 @@ export function catalogForIntent(intent: WebsiteGuideIntent): ActionCard[] {
       card({
         id: "prereg-start",
         type: "open-form",
-        title: "شروع پیش ثبت نام",
+        title: "پیش ثبت نام",
         subtitle: "ثبت درخواست پذیرش",
         icon: "register",
         href: "/pre-registration",
@@ -74,7 +206,7 @@ export function catalogForIntent(intent: WebsiteGuideIntent): ActionCard[] {
       card({
         id: "prereg-docs",
         type: "navigate",
-        title: "مدارک لازم",
+        title: "مدارک",
         subtitle: "راهنما و سوالات متداول",
         icon: "book",
         href: "/faq",
@@ -82,11 +214,11 @@ export function catalogForIntent(intent: WebsiteGuideIntent): ActionCard[] {
       }),
       card({
         id: "prereg-advisor",
-        type: "navigate",
+        type: "call",
         title: "تماس با مشاور",
         subtitle: "گفتگو با تیم پذیرش",
         icon: "phone",
-        href: "/contact",
+        href: PRIMARY_PHONE,
         priority: 30,
       }),
     ],
@@ -185,6 +317,16 @@ export function catalogForIntent(intent: WebsiteGuideIntent): ActionCard[] {
         href: PRIMARY_PHONE,
         priority: 40,
       }),
+      card({
+        id: "contact-copy-phone",
+        type: "copy",
+        title: "کپی شماره",
+        subtitle: "شماره موبایل رسمی",
+        icon: "phone",
+        href: MOBILE_PHONE,
+        copyText: MOBILE_PHONE.replace(/^tel:/, ""),
+        priority: 50,
+      }),
     ],
     consultation: [
       card({
@@ -197,12 +339,12 @@ export function catalogForIntent(intent: WebsiteGuideIntent): ActionCard[] {
         priority: 10,
       }),
       card({
-        id: "consult-contact",
-        type: "navigate",
+        id: "consult-call",
+        type: "call",
         title: "تماس با مشاور",
         subtitle: "ارتباط مستقیم",
         icon: "phone",
-        href: "/contact",
+        href: PRIMARY_PHONE,
         priority: 20,
       }),
       card({
@@ -314,34 +456,26 @@ export function catalogForIntent(intent: WebsiteGuideIntent): ActionCard[] {
         href: "/contact",
         priority: 20,
       }),
+      card({
+        id: "staros-chat",
+        type: "chat",
+        title: "معرفی آترین",
+        subtitle: "قابلیت‌های دستیار هوشمند",
+        icon: "spark",
+        href: "#chat",
+        prompt: "درباره مدرسه توضیح بده",
+        priority: 30,
+      }),
     ],
     general: [
       card({
-        id: "general-reg",
-        type: "open-form",
-        title: "پیش‌ثبت‌نام",
-        subtitle: "شروع مسیر پذیرش",
-        icon: "register",
-        href: "/pre-registration",
-        priority: 10,
-      }),
-      card({
         id: "general-contact",
-        type: "navigate",
+        type: "call",
         title: "تماس با مشاور",
         subtitle: "راهنمایی اختصاصی",
         icon: "phone",
-        href: "/contact",
-        priority: 20,
-      }),
-      card({
-        id: "general-about",
-        type: "navigate",
-        title: "درباره ما",
-        subtitle: "معرفی مجموعه",
-        icon: "graduation",
-        href: "/about",
-        priority: 30,
+        href: PRIMARY_PHONE,
+        priority: 10,
       }),
     ],
     none: [],

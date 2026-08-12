@@ -154,6 +154,54 @@ function RobotIcon({ className }: IconProps) {
   );
 }
 
+function ChatIcon({ className }: IconProps) {
+  return (
+    <svg
+      aria-hidden
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+    >
+      <path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 1 1 18 0Z" />
+      <path d="M8 12h.01M12 12h.01M16 12h.01" />
+    </svg>
+  );
+}
+
+function CameraIcon({ className }: IconProps) {
+  return (
+    <svg
+      aria-hidden
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+    >
+      <path d="M4 8h3l2-2h6l2 2h3v11H4V8Z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </svg>
+  );
+}
+
+function SparkIcon({ className }: IconProps) {
+  return (
+    <svg
+      aria-hidden
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+    >
+      <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
+      <circle cx="12" cy="12" r="2.5" />
+    </svg>
+  );
+}
+
 const ICON_MAP: Record<ActionCardIcon, (props: IconProps) => ReactNode> = {
   register: RegisterIcon,
   phone: PhoneIcon,
@@ -164,6 +212,9 @@ const ICON_MAP: Record<ActionCardIcon, (props: IconProps) => ReactNode> = {
   book: BookIcon,
   calendar: CalendarIcon,
   robot: RobotIcon,
+  chat: ChatIcon,
+  camera: CameraIcon,
+  spark: SparkIcon,
 };
 
 export function ActionCardIconView({

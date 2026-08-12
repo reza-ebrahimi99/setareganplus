@@ -2,13 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import { AiError } from "@/components/ai/AiError";
-import { AiTyping } from "@/components/ai/AiTyping";
 import { AtrinHero } from "@/components/atrin/AtrinHero";
 import { AtrinMessage } from "@/components/atrin/AtrinMessage";
 import { AtrinQuickChips } from "@/components/atrin/AtrinQuickChips";
-import { AtrinMemoryPanel } from "@/components/atrin/os";
-import { AtrinTip } from "@/components/atrin/ui";
-import { ATRIN_MODES, type AtrinModeId } from "@/content/atrin";
+import { AtrinTyping } from "@/components/atrin/AtrinTyping";
+import type { AtrinModeId, AtrinQuickChipId } from "@/content/atrin";
 import type { AtrinMemoryFact } from "@/lib/atrin/memory";
 import type { AiChatError, AiMessage as AiMessageType } from "@/types/ai";
 
@@ -17,13 +15,13 @@ type AtrinConversationProps = {
   modeId: AtrinModeId;
   isLoading: boolean;
   error: AiChatError | null;
-  showHero: boolean;
+  showWelcome: boolean;
   memoryFacts: AtrinMemoryFact[];
   onRemoveMemory: (id: string) => void;
   onClearMemory: () => void;
   onSend: (text: string) => void;
   onRetry: () => void;
-  onStartChat: () => void;
+  onChip: (chipId: AtrinQuickChipId) => void;
 };
 
 export function AtrinConversation({
@@ -31,20 +29,16 @@ export function AtrinConversation({
   modeId,
   isLoading,
   error,
-  showHero,
-  memoryFacts,
-  onRemoveMemory,
-  onClearMemory,
+  showWelcome,
   onSend,
   onRetry,
-  onStartChat,
+  onChip,
 }: AtrinConversationProps) {
   const bottomRef = useRef<HTMLDivElement | null>(null);
-  const mode = ATRIN_MODES[modeId];
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, isLoading, error, showHero]);
+  }, [messages, isLoading, error, showWelcome]);
 
   const lastAssistantIndex = [...messages]
     .map((item, index) => ({ item, index }))
@@ -54,26 +48,25 @@ export function AtrinConversation({
         entry.item.role === "assistant" && entry.item.id !== "welcome",
     )?.index;
 
-  const visibleMessages = showHero
+  const visibleMessages = showWelcome
     ? []
     : messages.filter((item) => item.id !== "welcome");
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-4">
+    <div
+      className="flex-1 overflow-y-auto px-4 py-4"
+      style={{
+        paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+      }}
+    >
       <div className="space-y-4">
-        {showHero ? (
+        {showWelcome ? (
           <>
-            <AtrinHero visible onStart={onStartChat} />
-            <AtrinQuickChips onSelect={onSend} disabled={isLoading} />
+            <AtrinHero visible />
+            <AtrinQuickChips onSelect={onChip} disabled={isLoading} />
           </>
         ) : (
           <>
-            <AtrinTip accent={mode.accent}>{mode.tip}</AtrinTip>
-            <AtrinMemoryPanel
-              facts={memoryFacts}
-              onRemove={onRemoveMemory}
-              onClear={onClearMemory}
-            />
             {visibleMessages.map((message, index) => {
               const previous = index > 0 ? visibleMessages[index - 1] : null;
               const userQuery =
@@ -95,19 +88,17 @@ export function AtrinConversation({
                     Boolean(error) && absoluteIndex === lastAssistantIndex
                   }
                   onRetry={onRetry}
+                  onChat={onSend}
+                  disabled={isLoading}
                 />
               );
             })}
-
-            {!isLoading && visibleMessages.length === 0 ? (
-              <AtrinQuickChips onSelect={onSend} disabled={isLoading} />
-            ) : null}
           </>
         )}
 
         {isLoading ? (
-          <div className="text-slate-300">
-            <AiTyping label="آترین در حال فکر کردن…" />
+          <div className="flex justify-end">
+            <AtrinTyping />
           </div>
         ) : null}
 

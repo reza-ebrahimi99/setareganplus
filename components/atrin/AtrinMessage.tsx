@@ -1,18 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { AiCitations } from "@/components/ai/AiCitations";
-import {
-  AtrinCounselorExperience,
-  AtrinParentExperience,
-  AtrinSmartResponse,
-  AtrinStudyExperience,
-  AtrinTaskBoard,
-  shouldShowCounselor,
-  shouldShowParent,
-  shouldShowStudy,
-  shouldShowTasks,
-} from "@/components/atrin/os";
+import { AtrinSmartResponse } from "@/components/atrin/os";
 import { CopyButton } from "@/components/ui/CopyButton";
 import type { AtrinModeId } from "@/content/atrin";
 import { toPersianDigits } from "@/lib/persian";
@@ -25,6 +14,9 @@ type AtrinMessageProps = {
   showRetry?: boolean;
   onRetry?: () => void;
   isLatestAssistant?: boolean;
+  onEducationAction?: (prompt: string) => void;
+  onChat?: (prompt: string) => void;
+  disabled?: boolean;
 };
 
 function formatTime(timestamp: number): string {
@@ -46,23 +38,26 @@ export function AtrinMessage({
   userQuery = null,
   showRetry,
   onRetry,
-  isLatestAssistant,
+  onEducationAction,
+  onChat,
+  disabled = false,
 }: AtrinMessageProps) {
   const reduce = useReducedMotion();
   const isUser = message.role === "user";
+  const chatHandler = onChat ?? onEducationAction;
 
   return (
     <motion.div
-      initial={reduce ? false : { opacity: 0, y: 10 }}
+      initial={reduce ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28 }}
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       className={`flex ${isUser ? "justify-start" : "justify-end"}`}
     >
       <div
         className={`max-w-[96%] space-y-2 ${isUser ? "items-start" : "items-end"}`}
       >
         {isUser ? (
-          <div className="rounded-2xl rounded-se-md bg-gradient-to-br from-[#7c3aed] to-[#5b21b6] px-3.5 py-2.5 text-sm leading-7 text-white shadow-[0_8px_28px_rgb(124_58_237_/_0.35)]">
+          <div className="rounded-2xl rounded-se-md bg-gradient-to-br from-[#2563EB] via-[#4F46E5] to-[#0E7490] px-3 py-2 text-[0.925rem] leading-7 text-white shadow-[0_8px_24px_rgb(37_99_235_/_0.22)]">
             <p className="whitespace-pre-wrap">
               {toPersianDigits(message.content)}
             </p>
@@ -72,6 +67,8 @@ export function AtrinMessage({
             content={message.content}
             modeId={modeId}
             userQuery={userQuery}
+            onChat={chatHandler}
+            disabled={disabled}
           />
         )}
 
@@ -100,22 +97,6 @@ export function AtrinMessage({
             </button>
           ) : null}
         </div>
-
-        {!isUser ? (
-          <div className="w-full space-y-3">
-            <AiCitations citations={message.citations} />
-            {isLatestAssistant ? (
-              <>
-                <AtrinStudyExperience visible={shouldShowStudy(modeId)} />
-                <AtrinCounselorExperience
-                  visible={shouldShowCounselor(modeId)}
-                />
-                <AtrinParentExperience visible={shouldShowParent(modeId)} />
-                <AtrinTaskBoard visible={shouldShowTasks(modeId)} />
-              </>
-            ) : null}
-          </div>
-        ) : null}
       </div>
     </motion.div>
   );

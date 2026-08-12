@@ -2,70 +2,84 @@
 
 import { AiMarkdown } from "@/components/ai/AiMarkdown";
 import { AiActionCards } from "@/components/ai/actions";
-import { AtrinBadge, AtrinCard } from "@/components/atrin/ui";
-import { ATRIN_MODES, type AtrinModeId } from "@/content/atrin";
+import type { AtrinModeId } from "@/content/atrin";
 
 type AtrinSmartResponseProps = {
   content: string;
   modeId: AtrinModeId;
   userQuery?: string | null;
   highlights?: readonly string[];
+  citations?: readonly unknown[];
+  onChat?: (prompt: string) => void;
+  disabled?: boolean;
 };
 
-function buildHighlights(content: string): string[] {
-  const lines = content
+/**
+ * Extract up to 2 highlight bullets only when the reply already uses list-like structure.
+ */
+function buildHighlights(
+  content: string,
+  provided?: readonly string[],
+): string[] {
+  if (provided && provided.length > 0) {
+    return [...provided].slice(0, 2);
+  }
+
+  const bullets = content
     .split("\n")
-    .map((line) => line.replace(/^[-*•\d.\s]+/, "").trim())
-    .filter((line) => line.length > 12 && line.length < 90);
-  return lines.slice(0, 3);
+    .map((line) => line.trim())
+    .filter((line) => /^([-•*]|\d+[.)])\s+/.test(line))
+    .map((line) => line.replace(/^([-•*]|\d+[.)])\s+/, "").trim())
+    .filter((line) => line.length >= 8 && line.length <= 120);
+
+  return [...new Set(bullets)].slice(0, 2);
 }
 
+/**
+ * Answer layout only:
+ * Answer → (optional) 2 highlights → (optional) 2 actions
+ * Nothing else.
+ */
 export function AtrinSmartResponse({
   content,
-  modeId,
   userQuery,
   highlights,
+  onChat,
+  disabled = false,
 }: AtrinSmartResponseProps) {
-  const mode = ATRIN_MODES[modeId];
-  const bullets = highlights ?? buildHighlights(content);
+  const bullets = buildHighlights(content, highlights);
+  const isLeadPrompt =
+    /اسمت چیه|پایه‌ات چنده|هدفت چیه|هدفت از مسیر|دنبال کدوم مسیر/.test(
+      content,
+    );
 
   return (
-    <div className="w-full space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <AtrinBadge color={mode.accent}>{mode.label}</AtrinBadge>
-        <span className="text-[0.65rem] text-slate-500">چیدمان هوشمند</span>
-      </div>
-
-      <AtrinCard
-        className={`!p-3.5 bg-gradient-to-br ${mode.gradient} !border-0`}
-        hover={false}
-      >
-        <p className="text-xs font-semibold text-white/90">پاسخ آترین</p>
-        <p className="mt-1 text-[0.7rem] text-white/70">{mode.tip}</p>
-      </AtrinCard>
-
-      <div className="atrin-glass rounded-2xl rounded-ss-md px-3.5 py-2.5 text-sm leading-7 text-slate-100">
+    <div className="w-full max-w-[34rem] space-y-3">
+      <div className="atrin-assistant-bubble atrin-glass rounded-2xl rounded-ss-md px-3 py-2.5 text-[0.925rem] leading-7 text-slate-50">
         <AiMarkdown content={content} />
       </div>
 
-      {bullets.length > 0 ? (
-        <AtrinCard hover={false} className="!p-3">
-          <p className="text-[0.7rem] font-semibold text-[#c4b5fd]">نکات برجسته</p>
-          <ul className="mt-2 space-y-1.5">
-            {bullets.map((item) => (
-              <li key={item} className="text-xs leading-6 text-slate-300">
-                • {item}
-              </li>
-            ))}
-          </ul>
-        </AtrinCard>
+      {!isLeadPrompt && bullets.length > 0 ? (
+        <ul className="space-y-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5">
+          {bullets.map((item) => (
+            <li key={item} className="text-xs leading-6 text-slate-300">
+              <span className="me-1.5 text-cyan-300/90" aria-hidden>
+                •
+              </span>
+              {item}
+            </li>
+          ))}
+        </ul>
       ) : null}
 
-      <AiActionCards query={userQuery} response={content} />
-
-      <p className="text-[0.65rem] text-slate-500">
-        منابع: دانش مؤسسه و صفحات سایت (نمایشی)
-      </p>
+      {!isLeadPrompt ? (
+        <AiActionCards
+          query={userQuery}
+          response={content}
+          onChat={onChat}
+          disabled={disabled}
+        />
+      ) : null}
     </div>
   );
 }

@@ -25,16 +25,24 @@ export function mapExternalIntent(
     .replace(/\s+/g, "-");
 
   const map: Record<string, WebsiteGuideIntent> = {
+    greeting: "greeting",
+    greet: "greeting",
+    hello: "greeting",
+    admissions: "admissions",
+    admission: "admissions",
+    school: "school",
+    study: "study",
+    homework: "study",
     tuition: "tuition",
     "ask-tuition": "tuition",
-    "pre-registration": "pre_registration",
-    "school-registration": "pre_registration",
-    "ask-registration": "pre_registration",
+    "pre-registration": "admissions",
+    "school-registration": "admissions",
+    "ask-registration": "admissions",
     ghalamchi: "ghalamchi",
     "ask-qalamchi": "ghalamchi",
-    about: "about_school",
-    "about-school": "about_school",
-    "ask-school": "about_school",
+    about: "school",
+    "about-school": "school",
+    "ask-school": "school",
     contact: "contact",
     "ask-contact": "contact",
     "ask-location": "contact",
@@ -43,8 +51,8 @@ export function mapExternalIntent(
     gifted: "courses",
     courses: "courses",
     "ask-courses": "courses",
-    "summer-club": "pre_registration",
-    "ask-summer": "pre_registration",
+    "summer-club": "admissions",
+    "ask-summer": "admissions",
     exams: "exams",
     "ask-exam": "exams",
     achievements: "achievements",
@@ -63,29 +71,76 @@ export function mapExternalIntent(
  */
 export function detectWebsiteGuideIntent(text: string): WebsiteGuideIntent {
   const q = normalize(text);
-  if (!q) return "none";
+  if (!q) return "greeting";
 
   type Rule = { intent: WebsiteGuideIntent; weight: number; keywords: string[] };
   const rules: Rule[] = [
+    {
+      intent: "greeting",
+      weight: 8,
+      keywords: ["سلام", "درود", "صبح بخیر", "عصر بخیر", "شب بخیر", "hello", "hi"],
+    },
+    {
+      intent: "study",
+      weight: 8,
+      keywords: [
+        "سوال ریاضی",
+        "سؤال ریاضی",
+        "سوال درسی",
+        "سؤال درسی",
+        "برنامه مطالعاتی",
+        "حل کن",
+        "تمرین",
+        "عکس سوال",
+        "عکس سؤال",
+        "تایپ سوال",
+        "تایپ سؤال",
+        "ریاضی",
+        "فیزیک",
+        "شیمی",
+        "homework",
+      ],
+    },
+    {
+      intent: "admissions",
+      weight: 7,
+      keywords: [
+        "پیش ثبت نام",
+        "پیش‌ثبت‌نام",
+        "ثبت نام",
+        "ثبت‌نام",
+        "پذیرش",
+        "مدارک",
+        "شرایط ثبت نام",
+        "شرایط ثبت‌نام",
+      ],
+    },
+    {
+      intent: "school",
+      weight: 6,
+      keywords: [
+        "درباره مدرسه",
+        "درباره ما",
+        "معرفی مدرسه",
+        "معرفی مؤسسه",
+        "معرفی موسسه",
+        "درباره آترین",
+        "معرفی آترین",
+        "دبستان",
+        "مدرسه",
+        "مؤسسه",
+        "موسسه",
+      ],
+    },
     {
       intent: "tuition",
       weight: 6,
       keywords: ["شهریه", "هزینه", "قیمت"],
     },
     {
-      intent: "pre_registration",
-      weight: 7,
-      keywords: ["پیش ثبت نام", "پیش‌ثبت‌نام", "ثبت نام", "پذیرش", "مدارک"],
-    },
-    {
       intent: "ghalamchi",
       weight: 7,
       keywords: ["قلم چی", "قلمچی", "کانون"],
-    },
-    {
-      intent: "about_school",
-      weight: 6,
-      keywords: ["درباره مدرسه", "درباره ما", "دبستان", "مدرسه"],
     },
     {
       intent: "contact",
@@ -115,7 +170,7 @@ export function detectWebsiteGuideIntent(text: string): WebsiteGuideIntent {
     {
       intent: "gallery",
       weight: 5,
-      keywords: ["گالری", "عکس"],
+      keywords: ["گالری", "عکس مدرسه"],
     },
     {
       intent: "staros",

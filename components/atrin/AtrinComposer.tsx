@@ -13,14 +13,16 @@ type AtrinComposerProps = {
   disabled?: boolean;
   placeholder?: string;
   autoFocus?: boolean;
+  focusToken?: number;
   onOpenCommands?: () => void;
 };
 
 export function AtrinComposer({
   onSend,
   disabled,
-  placeholder = "از آترین بپرسید…",
+  placeholder = "هرچی دوست داری بپرس...",
   autoFocus,
+  focusToken = 0,
   onOpenCommands,
 }: AtrinComposerProps) {
   const [value, setValue] = useState("");
@@ -38,6 +40,15 @@ export function AtrinComposer({
     if (autoFocus) ref.current?.focus();
   }, [autoFocus]);
 
+  useEffect(() => {
+    if (!focusToken) return;
+    const node = ref.current;
+    if (!node) return;
+    node.focus();
+    const end = node.value.length;
+    node.setSelectionRange(end, end);
+  }, [focusToken]);
+
   function submitRaw(raw: string) {
     const resolved = resolveAtrinCommand(raw) ?? raw.trim();
     if (!resolved || disabled) return;
@@ -53,7 +64,7 @@ export function AtrinComposer({
 
   return (
     <form
-      className="border-t border-white/10 bg-[#070b1a]/80 p-3 backdrop-blur-xl"
+      className="border-t border-white/10 bg-[#070b1a]/80 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl"
       onSubmit={(event) => {
         event.preventDefault();
         submit();

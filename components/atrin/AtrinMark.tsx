@@ -5,31 +5,42 @@ type AtrinMarkProps = {
   size?: "sm" | "md" | "lg";
 };
 
+/**
+ * Premium star-inspired glass mark — no robot / AI glyph.
+ */
 export function AtrinMark({ className = "", size = "md" }: AtrinMarkProps) {
   const dim =
     size === "sm" ? "size-9" : size === "lg" ? "size-16" : "size-11";
+  const star =
+    size === "lg" ? "size-8" : size === "sm" ? "size-4" : "size-5";
 
   return (
     <span
       aria-hidden
-      className={`relative inline-flex ${dim} items-center justify-center rounded-2xl atrin-glow-ring ${className}`}
-      style={{
-        background:
-          "linear-gradient(145deg, #7c3aed 0%, #4c1d95 55%, #0e7490 100%)",
-      }}
+      className={`atrin-mark-glass relative inline-flex ${dim} items-center justify-center rounded-2xl ${className}`}
     >
       <svg
-        viewBox="0 0 24 24"
-        className={size === "lg" ? "size-8" : "size-5"}
+        viewBox="0 0 32 32"
+        className={star}
         fill="none"
-        stroke="white"
-        strokeWidth="1.6"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        <path d="M12 3.5 4.5 8v8L12 20.5 19.5 16V8L12 3.5Z" />
-        <path d="M12 8.5v7M9 11.5h6" />
-        <circle cx="12" cy="12" r="1.2" fill="white" stroke="none" />
+        <defs>
+          <linearGradient id="atrinStarFill" x1="6" y1="2" x2="26" y2="30">
+            <stop offset="0%" stopColor="#F8FAFC" stopOpacity="0.95" />
+            <stop offset="55%" stopColor="#A5B4FC" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#67E8F9" stopOpacity="0.85" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M16 3.2 18.9 11.1 27.2 12.2 21 18.1 22.8 26.4 16 21.9 9.2 26.4 11 18.1 4.8 12.2 13.1 11.1 16 3.2Z"
+          fill="url(#atrinStarFill)"
+          stroke="rgba(255,255,255,0.55)"
+          strokeWidth="0.7"
+          strokeLinejoin="round"
+        />
+        <circle cx="16" cy="15.2" r="2.1" fill="rgba(255,255,255,0.92)" />
       </svg>
-      <span className="absolute -end-0.5 -top-0.5 size-2.5 rounded-full bg-[#22d3ee] shadow-[0_0_10px_#22d3ee]" />
     </span>
   );
 }

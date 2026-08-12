@@ -14,11 +14,13 @@ type AiActionCardsProps = {
   query?: string | null;
   response?: string | null;
   pathname?: string | null;
+  onChat?: (prompt: string) => void;
+  disabled?: boolean;
 };
 
 /**
  * Premium glass action cards under assistant replies.
- * Renders nothing when there are no actions.
+ * Max 2. Greeting/general → 0. Renders nothing when empty.
  */
 export function AiActionCards({
   cards,
@@ -27,52 +29,45 @@ export function AiActionCards({
   query,
   response,
   pathname: pathnameProp,
+  onChat,
+  disabled = false,
 }: AiActionCardsProps) {
   const pathnameHook = usePathname();
   const pathname = pathnameProp ?? pathnameHook;
   const reduce = useReducedMotion();
 
   const resolved = useMemo(() => {
-    if (cards) return [...cards];
+    if (cards) {
+      return cards
+        .filter((card) => {
+          if (card.type === "chat") return Boolean(card.prompt?.trim());
+          return Boolean(card.href?.trim());
+        })
+        .slice(0, 2);
+    }
     return AiActionResolver({
       intent,
       crmScore,
       pathname,
       query,
       response,
-    });
+    }).slice(0, 2);
   }, [cards, crmScore, intent, pathname, query, response]);
 
   if (resolved.length === 0) return null;
 
-  const primary = resolved.filter((card) => card.priority <= 20);
-  const secondary = resolved.filter((card) => card.priority > 20);
-  const groups = [
-    { id: "primary", label: "اقدام اصلی", items: primary },
-    { id: "more", label: "میانبرهای بیشتر", items: secondary },
-  ].filter((group) => group.items.length > 0);
-
   return (
-    <div className="w-full max-w-[94%] space-y-3" dir="rtl">
-      {groups.map((group) => (
-        <motion.div
-          key={group.id}
-          initial={reduce ? false : { opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-2"
-        >
-          <p className="text-[0.7rem] font-medium tracking-wide text-[#94a3b8]">
-            {group.label}
-          </p>
-          <ul className="grid gap-2">
-            {group.items.map((card) => (
-              <li key={card.id}>
-                <AiActionCard card={card} />
-              </li>
-            ))}
-          </ul>
-        </motion.div>
+    <motion.ul
+      initial={reduce ? false : { opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="grid w-full gap-2"
+      aria-label="اقدام‌ها"
+    >
+      {resolved.map((card) => (
+        <li key={card.id}>
+          <AiActionCard card={card} onChat={onChat} disabled={disabled} />
+        </li>
       ))}
-    </div>
+    </motion.ul>
   );
 }

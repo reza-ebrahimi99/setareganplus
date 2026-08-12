@@ -4,8 +4,8 @@ import type {
   KnowledgeSourceId,
 } from "@/types/knowledge";
 
-export const KNOWLEDGE_MAX_BLOCKS = 5;
-export const KNOWLEDGE_MAX_CHARACTERS = 2500;
+export const KNOWLEDGE_MAX_BLOCKS = 3;
+export const KNOWLEDGE_MAX_CHARACTERS = 900;
 
 /**
  * Format retrieved blocks for system-prompt injection.

@@ -44,6 +44,7 @@
     "test:automation": "tsx scripts/automation-unit-tests.ts",
     "test:dashboard": "tsx scripts/dashboard-unit-tests.ts",
     "test:hardening": "tsx scripts/production-hardening-unit-tests.ts",
+    "test:atrin-education": "tsx scripts/atrin-education-eval.ts",
     "test:staff-smoke": "prisma generate && tsx scripts/staff-rbac-smoke.ts",
     "test:staff": "tsx --env-file=scripts/staff-test.env --env-file=.env scripts/staff-integration-tests.ts"
   },

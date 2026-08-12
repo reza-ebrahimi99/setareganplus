@@ -12,6 +12,13 @@ import { trackAiEvent } from "@/lib/ai/analytics";
 import { AI_TUNABLES, isAiFeatureEnabled } from "@/lib/ai/config";
 import { enrichAiResponse } from "@/lib/ai/enrich";
 import {
+  detectWebsiteGuideIntent,
+} from "@/lib/ai/actions/detect-intent";
+import {
+  buildLightweightReply,
+  isTrivialConversation,
+} from "@/lib/ai/lightweight";
+import {
   extractLastUserQuery,
   preferredCategoriesForPage,
   retrieveKnowledgeContext,
@@ -35,6 +42,8 @@ import { sendAiChatStreamingReady } from "@/lib/ai/streaming/client";
 import {
   PROMPT_VERSION,
   buildSystemPrompt,
+  estimatePromptTokens,
+  isLightweightIntent,
   resolveAiPageContext,
 } from "@/lib/ai/system-prompt";
 import type {
@@ -43,6 +52,8 @@ import type {
   AiChatResult,
   AiStreamHandlers,
 } from "@/types/ai";
+import type { KnowledgeCategory } from "@/types/knowledge";
+import type { WebsiteGuideIntent } from "@/types/action-card";
 
 function resolveRequestPathname(pathname?: string | null): string {
   if (typeof pathname === "string" && pathname.trim()) {
@@ -52,6 +63,33 @@ function resolveRequestPathname(pathname?: string | null): string {
     return window.location.pathname;
   }
   return "/";
+}
+
+function preferredCategoriesForIntent(
+  intent: WebsiteGuideIntent,
+): readonly KnowledgeCategory[] {
+  switch (intent) {
+    case "admissions":
+    case "pre_registration":
+    case "tuition":
+      return ["faq", "services", "school", "contact"];
+    case "school":
+    case "about_school":
+    case "achievements":
+    case "gallery":
+      return ["institution", "history", "school", "statistics"];
+    case "ghalamchi":
+      return ["ghalamchi", "services", "faq"];
+    case "study":
+    case "courses":
+    case "exams":
+      return ["services", "school"];
+    case "contact":
+    case "consultation":
+      return ["contact", "faq"];
+    default:
+      return [];
+  }
 }
 
 async function buildOutboundMessages(request: AiChatRequest) {
@@ -81,27 +119,55 @@ async function buildOutboundMessages(request: AiChatRequest) {
   persistSummary(memory.summary);
 
   const query = extractLastUserQuery(conversation);
-  const knowledge = retrieveKnowledgeContext({
-    query,
-    preferredCategories: preferredCategoriesForPage(page),
-  });
+  const guideIntent = detectWebsiteGuideIntent(query);
+  const lightweight =
+    isLightweightIntent(guideIntent) || isTrivialConversation(query);
+
+  const preferred = [
+    ...preferredCategoriesForIntent(guideIntent),
+    ...preferredCategoriesForPage(page),
+  ];
+
+  const knowledge = lightweight
+    ? {
+        hits: [],
+        formatted: "",
+        truncated: false,
+        sourceId: "static-files" as const,
+        confidence: 0,
+      }
+    : retrieveKnowledgeContext({
+        query,
+        preferredCategories: preferred,
+        maxBlocks: AI_TUNABLES.knowledgeMaxBlocks,
+        maxCharacters: AI_TUNABLES.knowledgeMaxCharacters,
+      });
 
   const siteHits =
+    !lightweight &&
     isAiFeatureEnabled("siteSearch") &&
     knowledge.confidence < AI_TUNABLES.siteSearchConfidenceThreshold
       ? await searchInternalSite(query)
       : [];
 
-  const plan = planAiRequest(query);
+  const plan = lightweight
+    ? {
+        classification: "question" as const,
+        intent: guideIntent,
+        suggestedPluginIds: [] as string[],
+        handoffRecommended: false,
+        notes: ["lightweight"],
+      }
+    : planAiRequest(query);
 
   const extraSections: string[] = [];
-  if (isAiFeatureEnabled("deepPageContext")) {
+  if (!lightweight && isAiFeatureEnabled("deepPageContext")) {
     extraSections.push(formatDeepPageContextForPrompt(deepPage));
   }
-  if (siteHits.length > 0) {
+  if (!lightweight && siteHits.length > 0) {
     extraSections.push(formatSiteSearchForPrompt(siteHits));
   }
-  if (isAiFeatureEnabled("actionPlanning")) {
+  if (!lightweight && isAiFeatureEnabled("actionPlanning")) {
     extraSections.push(formatActionPlanForPrompt(plan));
   }
 
@@ -109,8 +175,10 @@ async function buildOutboundMessages(request: AiChatRequest) {
     pathname,
     page,
     locale: "fa",
+    intent: guideIntent,
     relevantKnowledge: knowledge.formatted,
     extraSections,
+    lightweight,
   });
 
   return {
@@ -118,11 +186,14 @@ async function buildOutboundMessages(request: AiChatRequest) {
     page,
     deepPage,
     query,
+    guideIntent,
+    lightweight,
     knowledge,
     siteHits,
     plan,
     session,
     systemPrompt,
+    promptTokensEstimate: estimatePromptTokens(systemPrompt),
     knowledgeIds: knowledge.hits.map((hit) => hit.block.id),
     recentUserTexts: conversation
       .filter((item) => item.role === "user")
@@ -130,7 +201,7 @@ async function buildOutboundMessages(request: AiChatRequest) {
       .map((item) => item.content),
     messages: [
       { role: "system" as const, content: systemPrompt },
-      ...memory.messages,
+      ...(lightweight ? memory.messages.slice(-4) : memory.messages),
     ],
   };
 }
@@ -237,10 +308,55 @@ export async function sendAiChat(
   try {
     const outbound = await buildOutboundMessages(request);
 
+    // Local lightweight path — no model call, no institutional knowledge dump.
+    if (outbound.lightweight) {
+      const content = buildLightweightReply(outbound.query);
+      const enriched = enrichAiResponse({
+        rawReply: content,
+        query: outbound.query,
+        pathname: outbound.pathname,
+        page: outbound.page,
+        deepPage: outbound.deepPage,
+        knowledge: outbound.knowledge,
+        siteHits: outbound.siteHits,
+        recentUserTexts: outbound.recentUserTexts,
+      });
+
+      if (isAiFeatureEnabled("analytics")) {
+        trackAiEvent("conversation_finished", {
+          pathname: outbound.pathname,
+          page: outbound.deepPage.kind,
+          category: "greeting",
+          meta: {
+            durationMs: Date.now() - startedAt,
+            messageCount: request.messages.length,
+            lightweight: true,
+            promptTokensEstimate: outbound.promptTokensEstimate,
+          },
+        });
+      }
+
+      return {
+        ok: true,
+        content: enriched.content,
+        actions: [],
+        recommendations: [],
+        citations: [],
+        suggestions: [],
+        intent: "greeting",
+        knowledgeIds: [],
+        crm: undefined,
+      };
+    }
+
     if (isAiFeatureEnabled("analytics")) {
       trackAiEvent("page_context", {
         pathname: outbound.pathname,
         page: outbound.deepPage.kind,
+        meta: {
+          intent: outbound.guideIntent,
+          promptTokensEstimate: outbound.promptTokensEstimate,
+        },
       });
     }
 

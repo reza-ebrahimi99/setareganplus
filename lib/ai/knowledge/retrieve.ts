@@ -2,6 +2,7 @@ import { formatKnowledgeContext } from "@/lib/ai/knowledge/formatter";
 import { loadKnowledgeBlocksSync } from "@/lib/ai/knowledge/loader";
 import { searchKnowledgeBlocks } from "@/lib/ai/knowledge/search";
 import { getActiveKnowledgeSourceId } from "@/lib/ai/knowledge/sources";
+import { AI_TUNABLES } from "@/lib/ai/config";
 import type {
   KnowledgeCategory,
   KnowledgeRetrievalResult,
@@ -10,6 +11,8 @@ import type {
 export type RetrieveKnowledgeInput = {
   query: string;
   preferredCategories?: readonly KnowledgeCategory[];
+  maxBlocks?: number;
+  maxCharacters?: number;
 };
 
 /**
@@ -26,7 +29,12 @@ export function retrieveKnowledgeContext(
     preferredCategories: input.preferredCategories,
   });
 
-  return formatKnowledgeContext(hits, sourceId);
+  return formatKnowledgeContext(
+    hits,
+    sourceId,
+    input.maxBlocks ?? AI_TUNABLES.knowledgeMaxBlocks,
+    input.maxCharacters ?? AI_TUNABLES.knowledgeMaxCharacters,
+  );
 }
 
 export function extractLastUserQuery(

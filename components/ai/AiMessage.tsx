@@ -13,6 +13,9 @@ type AiMessageProps = {
   showRetry?: boolean;
   /** Preceding user query — drives website action cards (UX only). */
   userQuery?: string | null;
+  /** Chat action handler — required for prompt chips / chat cards. */
+  onChat?: (prompt: string) => void;
+  disabled?: boolean;
 };
 
 function formatTime(timestamp: number): string {
@@ -33,6 +36,8 @@ export function AiMessage({
   onRetry,
   showRetry,
   userQuery = null,
+  onChat,
+  disabled = false,
 }: AiMessageProps) {
   const isUser = message.role === "user";
 
@@ -83,8 +88,13 @@ export function AiMessage({
         </div>
         {!isUser ? (
           <>
+            <AiActionCards
+              query={userQuery}
+              response={message.content}
+              onChat={onChat}
+              disabled={disabled}
+            />
             <AiCitations citations={message.citations} />
-            <AiActionCards query={userQuery} response={message.content} />
           </>
         ) : null}
       </div>

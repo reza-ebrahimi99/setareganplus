@@ -16,3 +16,8 @@ export {
   pushRecentPrompt,
 } from "@/components/atrin/os/AtrinSmartSearch";
 export { AtrinCommandPalette } from "@/components/atrin/os/AtrinCommandPalette";
+export { AtrinQuickStart } from "@/components/atrin/os/AtrinQuickStart";
+export {
+  AtrinDelight,
+  useAtrinDelight,
+} from "@/components/atrin/os/AtrinDelight";

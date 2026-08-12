@@ -53,6 +53,8 @@ export function AiConversation({
               userQuery={userQuery}
               showRetry={Boolean(error) && index === lastAssistantIndex}
               onRetry={onRetry}
+              onChat={onSuggestion}
+              disabled={isLoading}
             />
           );
         })}

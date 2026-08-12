@@ -201,6 +201,43 @@ export function useAiChat() {
     return nonWelcome.length === 0 && !isLoading && !error;
   }, [error, isLoading, messages]);
 
+  const appendLocalExchange = useCallback(
+    (userLabel: string, assistantContent: string) => {
+      const userMessage: AiMessage = {
+        id: createId(),
+        role: "user",
+        content: userLabel,
+        createdAt: Date.now(),
+        status: "complete",
+      };
+      const assistantMessage: AiMessage = {
+        id: createId(),
+        role: "assistant",
+        content: assistantContent,
+        createdAt: Date.now() + 1,
+        status: "complete",
+      };
+      lastUserTextRef.current = userLabel;
+      setError(null);
+      setStatus("idle");
+      setMessages((prev) => [...prev, userMessage, assistantMessage]);
+    },
+    [],
+  );
+
+  const appendAssistantMessage = useCallback((content: string) => {
+    const assistantMessage: AiMessage = {
+      id: createId(),
+      role: "assistant",
+      content,
+      createdAt: Date.now(),
+      status: "complete",
+    };
+    setMessages((prev) => [...prev, assistantMessage]);
+    setStatus("idle");
+    setError(null);
+  }, []);
+
   return {
     messages,
     status,
@@ -213,5 +250,7 @@ export function useAiChat() {
     sendMessage,
     retryLast,
     clearConversation,
+    appendLocalExchange,
+    appendAssistantMessage,
   };
 }

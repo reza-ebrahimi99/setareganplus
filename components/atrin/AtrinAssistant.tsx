@@ -34,6 +34,7 @@ export function AtrinAssistant() {
         onSend={chat.sendMessage}
         onRetry={chat.retryLast}
         onClear={chat.clearConversation}
+        appendLocalExchange={chat.appendLocalExchange}
       />
     </>
   );
