@@ -27,21 +27,22 @@ export const ATRIN_BRAND = {
   backdropLabel: "بستن پس‌زمینه آترین",
   composerLabel: "پیام به آترین",
   clearLabel: "پاک کردن گفتگو",
-  fabAria: "آترین — همراه آموزشی",
+  fabAria: "آترین — هر سوالی داری بپرس",
   fabHeadline: "آترین",
-  fabCaption: "هرجا سوال داری...",
+  fabCaption: "هر سوالی داری بپرس 🙂",
 } as const;
 
+/** Primary launcher CTA — warm, human, no AI/robot language. */
+export const ATRIN_LAUNCHER_CTA = "هر سوالی داری بپرس 🙂";
+
+/** @deprecated Prefer ATRIN_LAUNCHER_CTA — kept for any legacy imports. */
 export const ATRIN_LAUNCHER_ROTATIONS = [
-  "هرجا سوال داری...",
-  "از کجا شروع کنیم؟ 😊",
-  "کمکت کنم؟",
-  "یه سوال بپرس...",
-  "امروز چی میخوای یاد بگیری؟",
+  ATRIN_LAUNCHER_CTA,
 ] as const;
 
 export const ATRIN_HERO = {
   greeting: "سلام 👋",
+  invite: "هر سوالی داری بپرس.",
   headline: "آترین",
   role: "همراه آموزشی مؤسسه علمی ستارگان",
   descriptionLead: "",
@@ -50,7 +51,7 @@ export const ATRIN_HERO = {
   ctaPrimary: "",
   ctaSecondary: "",
   secondaryHref: "/about",
-  quickStartTitle: "از کجا شروع کنیم؟",
+  quickStartTitle: "یا یکی از این مسیرها را انتخاب کن.",
 } as const;
 
 export type AtrinQuickChipId =
@@ -80,7 +81,7 @@ export const ATRIN_QUICK_QUESTIONS = [
   {
     id: "prereg" as const,
     emoji: "📝",
-    label: "پیش ثبت نام",
+    label: "پیش‌ثبت‌نام",
   },
   {
     id: "gifted" as const,

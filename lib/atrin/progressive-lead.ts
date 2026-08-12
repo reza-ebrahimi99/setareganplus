@@ -196,12 +196,15 @@ export function advanceLeadFromUserReply(
   return { state, assistantFollowUp: null };
 }
 
-/** Chip starters: establish Need, then ask Name — never phone. */
+/**
+ * Chip starters: Need → short helpful answer → soft Name ask.
+ * Never phone on first turn.
+ */
 export const ATRIN_CHIP_STARTERS = {
   lesson: {
     userLabel: "سوال درسی",
     assistant:
-      "باشه 📚 بیا با هم شروع کنیم.\n\nدوست دارم با اسمت صدات کنم — اسمت چیه؟",
+      "باشه 📚 می‌تونیم قدم‌به‌قدم جلو بریم — صورت سؤال، مفهوم، و راه حل.\n\nسؤالت را همین‌جا بنویس، یا بگو از کدوم درس شروع کنیم.\n\nاگر دوست داری با اسمت صدات کنم، اسمت چیه؟",
     leadStep: "ask-name" as const,
     path: "lesson" as const,
     modeHint: "study" as const,
@@ -209,24 +212,26 @@ export const ATRIN_CHIP_STARTERS = {
   counsel: {
     userLabel: "مشاوره",
     assistant:
-      "حتماً 🎯 خوشحالم که اینجایی.\n\nاول بگو اسمت چیه تا راحت‌تر حرف بزنیم؟",
+      "حتماً 🎯 کنارتم — برای برنامه مطالعاتی، انتخاب مسیر، و آمادگی آزمون کمکت می‌کنم.\n\nالان بیشتر روی چی ذهنته؟ برنامه، تیزهوشان، یا مسیر ثبت‌نام؟\n\nاگر مایلی، اسمت را هم بگو تا راحت‌تر حرف بزنیم.",
     leadStep: "ask-name" as const,
     path: "counsel" as const,
     modeHint: "counselor" as const,
   },
   school: {
     userLabel: "معرفی مؤسسه",
-    assistant: `خوش اومدی 🏫 مؤسسه علمی ستارگان یک اکوسیستم آموزشی است؛ از دبستان تا مسیرهای تقویتی و مشاوره.
+    assistant: `خوش اومدی 🏫 مؤسسه علمی ستارگان یک اکوسیستم آموزشی است؛ از دبستان تا مسیرهای تقویتی، مشاوره و آمادگی آزمون.
 
-اگر دوست داری دقیق‌تر راهنمایی‌ات کنم، اسمت چیه؟`,
+اگر بخوای، می‌تونم بخش‌های مدرسه، دوره‌ها، یا مسیر پذیرش را جداگانه برات توضیح بدم.
+
+اسمت چیه تا راهنمایی‌ات شخصی‌تر بشه؟`,
     leadStep: "ask-name" as const,
     path: "school" as const,
     modeHint: "school" as const,
   },
   prereg: {
-    userLabel: "پیش ثبت نام",
+    userLabel: "پیش‌ثبت‌نام",
     assistant:
-      "خوش اومدی 🌱 برای پیش‌ثبت‌نام کمکت می‌کنم.\n\nاول اسمت چیه؟",
+      "خوش اومدی 🌱 پیش‌ثبت‌نام را بدون پیچیدگی جلو می‌بریم — مسیر مناسب، مدارک لازم، و قدم بعدی.\n\nبگو برای خودت هست یا فرزندت؟\n\nاول اسمت چیه؟",
     leadStep: "ask-name" as const,
     path: "prereg" as const,
     modeHint: "admissions" as const,
@@ -234,7 +239,7 @@ export const ATRIN_CHIP_STARTERS = {
   gifted: {
     userLabel: "تیزهوشان و نمونه دولتی",
     assistant:
-      "عالی 🏆 مسیر تیزهوشان و نمونه دولتی را با هم جلو می‌بریم.\n\nاسمت چیه؟",
+      "عالی 🏆 مسیر تیزهوشان و نمونه دولتی معمولاً با شناخت پایه، برنامه منظم، و تمرین هدفمند جلو می‌ره.\n\nاگر بگی پایه و هدفت چیه، دقیق‌تر مسیرت را می‌چینم.\n\nاسمت چیه؟",
     leadStep: "ask-name" as const,
     path: "gifted" as const,
     modeHint: "gifted" as const,
@@ -242,7 +247,7 @@ export const ATRIN_CHIP_STARTERS = {
   free: {
     userLabel: "هرچی دوست داری...",
     assistant:
-      "باشه 💬 هرچی دوست داری بپرس.\n\nاگر مایل باشی، اول اسمت را بگو تا صمیمی‌تر کمکت کنم.",
+      "باشه 💬 هرچی دوست داری بپرس — درس، مشاوره، مؤسسه، یا ثبت‌نام.\n\nمن اینجام تا کمکت کنم.\n\nاگر مایل باشی، اسمت را بگو تا صمیمی‌تر حرف بزنیم.",
     leadStep: "ask-name" as const,
     path: "free" as const,
     modeHint: "general" as const,

@@ -20,7 +20,7 @@ type AtrinComposerProps = {
 export function AtrinComposer({
   onSend,
   disabled,
-  placeholder = "هرچی دوست داری بپرس...",
+  placeholder = "هر سوالی داری بپرس...",
   autoFocus,
   focusToken = 0,
   onOpenCommands,

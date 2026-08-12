@@ -220,7 +220,7 @@ export function AtrinPanel({
         disabled={isLoading}
         autoFocus={!showWelcome && open}
         focusToken={focusToken}
-        placeholder="هرچی دوست داری بپرس..."
+        placeholder="هر سوالی داری بپرس..."
         onOpenCommands={() => setCommandsOpen(true)}
       />
       <AtrinCommandPalette
