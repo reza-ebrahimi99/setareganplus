@@ -27,6 +27,8 @@ export const AI_FEATURE_FLAGS = {
   voiceOutput: readBool("NEXT_PUBLIC_AI_VOICE_OUTPUT_ENABLED", false),
   plugins: readBool("NEXT_PUBLIC_AI_PLUGINS_ENABLED", false),
   actionPlanning: readBool("NEXT_PUBLIC_AI_PLANNING_ENABLED", true),
+  /** AI CRM admissions layer — payload only, disabled by default. */
+  crm: readBool("AI_CRM_ENABLED", false) || readBool("NEXT_PUBLIC_AI_CRM_ENABLED", false),
 } as const;
 
 export const AI_TUNABLES = {

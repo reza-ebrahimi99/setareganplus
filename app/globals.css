@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../styles/atrin.css";
 
 :root {
   --primary: #0f172a;
@@ -1222,4 +1223,3 @@ body {
     animation: none !important;
   }
 }
-

@@ -1,10 +1,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { AiAssistant } from "@/components/ai/AiAssistant";
+import { AtrinAssistant } from "@/components/atrin";
 import { AiErrorBoundary } from "@/components/ai/AiErrorBoundary";
 
-const HIDDEN_PREFIXES = ["/admin", "/portal", "/staff"] as const;
+const HIDDEN_PREFIXES = ["/admin", "/portal", "/staff", "/atrin"] as const;
 
 function shouldHideAssistant(pathname: string | null): boolean {
   if (!pathname) return true;
@@ -14,8 +14,8 @@ function shouldHideAssistant(pathname: string | null): boolean {
 }
 
 /**
- * Public-only host for StarOS AI Assistant.
- * Hidden on admin, portal, and staff routes.
+ * Public-only host for آترین (StarOS AI public face).
+ * Hidden on admin, portal, staff, and /atrin (landing embeds chat).
  */
 export function AiAssistantHost() {
   const pathname = usePathname();
@@ -26,7 +26,7 @@ export function AiAssistantHost() {
 
   return (
     <AiErrorBoundary>
-      <AiAssistant />
+      <AtrinAssistant />
     </AiErrorBoundary>
   );
 }

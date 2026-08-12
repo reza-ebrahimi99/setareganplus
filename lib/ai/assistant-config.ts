@@ -36,5 +36,5 @@ export function getAiAssistantTimeoutMs(): number {
   return Number.isFinite(raw) && raw > 0 ? Math.min(raw, 60_000) : 20_000;
 }
 
-export const AI_ASSISTANT_STORAGE_KEY = "staros-ai-assistant-v2" as const;
-export const AI_ASSISTANT_FAB_SEEN_KEY = "staros-ai-fab-seen-v2" as const;
+export const AI_ASSISTANT_STORAGE_KEY = "staros-atrin-assistant-v3" as const;
+export const AI_ASSISTANT_FAB_SEEN_KEY = "staros-atrin-fab-seen-v3" as const;

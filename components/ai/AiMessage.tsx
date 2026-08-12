@@ -1,6 +1,6 @@
 "use client";
 
-import { AiActionCards } from "@/components/ai/AiActionCards";
+import { AiActionCards } from "@/components/ai/actions";
 import { AiCitations } from "@/components/ai/AiCitations";
 import { AiMarkdown } from "@/components/ai/AiMarkdown";
 import { CopyButton } from "@/components/ui/CopyButton";
@@ -11,6 +11,8 @@ type AiMessageProps = {
   message: AiMessageType;
   onRetry?: () => void;
   showRetry?: boolean;
+  /** Preceding user query — drives website action cards (UX only). */
+  userQuery?: string | null;
 };
 
 function formatTime(timestamp: number): string {
@@ -26,7 +28,12 @@ function formatTime(timestamp: number): string {
   }
 }
 
-export function AiMessage({ message, onRetry, showRetry }: AiMessageProps) {
+export function AiMessage({
+  message,
+  onRetry,
+  showRetry,
+  userQuery = null,
+}: AiMessageProps) {
   const isUser = message.role === "user";
 
   return (
@@ -77,11 +84,7 @@ export function AiMessage({ message, onRetry, showRetry }: AiMessageProps) {
         {!isUser ? (
           <>
             <AiCitations citations={message.citations} />
-            <AiActionCards
-              actions={message.actions}
-              recommendations={message.recommendations}
-              suggestions={message.suggestions}
-            />
+            <AiActionCards query={userQuery} response={message.content} />
           </>
         ) : null}
       </div>

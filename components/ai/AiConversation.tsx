@@ -39,14 +39,23 @@ export function AiConversation({
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4">
       <div className="space-y-4">
-        {messages.map((message, index) => (
-          <AiMessage
-            key={message.id}
-            message={message}
-            showRetry={Boolean(error) && index === lastAssistantIndex}
-            onRetry={onRetry}
-          />
-        ))}
+        {messages.map((message, index) => {
+          const previous = index > 0 ? messages[index - 1] : null;
+          const userQuery =
+            message.role === "assistant" && previous?.role === "user"
+              ? previous.content
+              : null;
+
+          return (
+            <AiMessage
+              key={message.id}
+              message={message}
+              userQuery={userQuery}
+              showRetry={Boolean(error) && index === lastAssistantIndex}
+              onRetry={onRetry}
+            />
+          );
+        })}
 
         {isLoading ? <AiTyping /> : null}
 

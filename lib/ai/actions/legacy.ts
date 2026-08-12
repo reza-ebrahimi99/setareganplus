@@ -10,6 +10,7 @@ function normalize(text: string): string {
     .trim();
 }
 
+/** Existing enrichment intent detector (unchanged behavior). */
 export function detectAiIntent(query: string): AiIntent {
   const q = normalize(query);
 
@@ -240,7 +241,7 @@ function knowledgeBoostedActions(
 }
 
 /**
- * Resolve smart website-guidance actions for a user question.
+ * Legacy enrichment actions (AiAction[]). Kept for existing pipeline compatibility.
  */
 export function resolveAiActions(input: {
   query: string;

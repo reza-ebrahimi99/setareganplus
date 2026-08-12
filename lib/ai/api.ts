@@ -326,6 +326,7 @@ export async function sendAiChat(
       suggestions: enriched.suggestions,
       intent: enriched.intent,
       knowledgeIds: enriched.knowledgeIds,
+      crm: enriched.crm,
     };
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {

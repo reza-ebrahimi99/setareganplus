@@ -1,5 +1,5 @@
 export const AI_WELCOME_MESSAGE = `سلام 👋
-من «ستاره» هستم.
+من «آترین» هستم.
 دستیار هوشمند مؤسسه علمی ستارگان.
 می‌توانم درباره موارد زیر راهنمایی‌تان کنم:
 🏫 دبستان غیردولتی ستارگان آینده
@@ -23,14 +23,14 @@ export const AI_SUGGESTIONS = [
 ] as const;
 
 export const AI_HEADER = {
-  title: "ستاره",
-  subtitle: "دستیار هوشمند مؤسسه علمی ستارگان",
+  title: "آترین",
+  subtitle: "همراه هوشمند آموزش و موفقیت",
   statusLabel: "آنلاین",
-  fabLabel: "✨ ستاره",
+  fabLabel: "آترین AI",
   fabTooltip: "مشاور هوشمند مؤسسه علمی ستارگان",
-  closeLabel: "بستن ستاره",
-  backdropLabel: "بستن پس‌زمینه ستاره",
-  composerLabel: "پیام به ستاره",
+  closeLabel: "بستن آترین",
+  backdropLabel: "بستن پس‌زمینه آترین",
+  composerLabel: "پیام به آترین",
 } as const;
 
 /** UI-only contextual opener by public pathname. */
@@ -56,6 +56,10 @@ export function getAiContextPrompt(pathname: string | null): string {
 
   if (pathname === "/gallery" || pathname.startsWith("/gallery/")) {
     return "دنبال تصاویر مدرسه یا مؤسسه هستید؟";
+  }
+
+  if (pathname === "/atrin" || pathname.startsWith("/atrin/")) {
+    return "از آترین چه کمکی می‌خواهید؟";
   }
 
   return "چطور می‌توانم کمکتان کنم؟";

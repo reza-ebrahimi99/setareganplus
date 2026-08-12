@@ -1,5 +1,6 @@
 import type { AiAction, AiRecommendation } from "@/types/ai-actions";
 import type { AiCitation } from "@/types/ai-citations";
+import type { AiCrmInsight } from "@/types/ai-crm";
 
 export type AiRole = "user" | "assistant" | "system";
 
@@ -49,6 +50,8 @@ export type AiChatSuccess = {
   suggestions?: AiAction[];
   intent?: string;
   knowledgeIds?: string[];
+  /** CRM insight when AI_CRM_ENABLED — payload only, no writes. */
+  crm?: AiCrmInsight;
 };
 
 export type AiChatFailure = {

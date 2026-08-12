@@ -2,12 +2,14 @@ import { resolveAiActions, detectAiIntent } from "@/lib/ai/actions";
 import { trackAiEvent } from "@/lib/ai/analytics";
 import { buildCitations } from "@/lib/ai/citations";
 import { isAiFeatureEnabled } from "@/lib/ai/config";
+import { buildCrmInsight } from "@/lib/ai/crm";
 import type { DeepPageContext } from "@/lib/ai/page-context";
 import { buildRecommendations } from "@/lib/ai/recommendations";
 import type { SiteSearchHit } from "@/lib/ai/site-search";
 import { buildSmartSuggestions } from "@/lib/ai/smart-suggestions";
 import type { AiAction, AiRecommendation } from "@/types/ai-actions";
 import type { AiCitation } from "@/types/ai-citations";
+import type { AiCrmInsight } from "@/types/ai-crm";
 import type { KnowledgeRetrievalResult } from "@/types/knowledge";
 
 export type EnrichInput = {
@@ -29,11 +31,13 @@ export type EnrichedAiResponse = {
   suggestions: AiAction[];
   intent: string;
   knowledgeIds: string[];
+  /** Present only when AI_CRM_ENABLED is on — payload only, no writes. */
+  crm?: AiCrmInsight;
 };
 
 /**
  * Response enrichment pipeline (additive layers).
- * Raw AI Reply → Knowledge → Actions → Recommendations → Citations → Suggestions
+ * Raw AI Reply → Knowledge → Actions → Recommendations → Citations → Suggestions → CRM
  */
 export function enrichAiResponse(input: EnrichInput): EnrichedAiResponse {
   const intent = detectAiIntent(input.query);
@@ -64,12 +68,25 @@ export function enrichAiResponse(input: EnrichInput): EnrichedAiResponse {
       })
     : [];
 
+  const crm = isAiFeatureEnabled("crm")
+    ? buildCrmInsight({
+        query: input.query,
+        recentUserTexts: input.recentUserTexts,
+      })
+    : undefined;
+
   if (isAiFeatureEnabled("analytics")) {
     trackAiEvent("question_category", {
       pathname: input.pathname ?? undefined,
       page: input.page,
-      category: intent,
+      category: crm?.intent ?? intent,
       label: input.query.slice(0, 80),
+      meta: crm
+        ? {
+            crmScore: crm.score,
+            crmEnabled: true,
+          }
+        : { crmEnabled: false },
     });
   }
 
@@ -79,7 +96,8 @@ export function enrichAiResponse(input: EnrichInput): EnrichedAiResponse {
     recommendations,
     citations,
     suggestions,
-    intent,
+    intent: crm?.intent ?? intent,
     knowledgeIds: input.knowledge.hits.map((hit) => hit.block.id),
+    crm,
   };
 }
