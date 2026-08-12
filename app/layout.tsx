@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google";
+import { AiAssistantHost } from "@/components/ai/AiAssistantHost";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import {
   DEFAULT_DESCRIPTION,
@@ -63,6 +64,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans antialiased">
         <JsonLdScript />
         {children}
+        <AiAssistantHost />
       </body>
     </html>
   );

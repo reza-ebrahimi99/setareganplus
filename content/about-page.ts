@@ -1,10 +1,9 @@
 import type { MediaAsset } from "@/lib/media";
-import { PUBLIC_SITE_ORIGIN } from "@/lib/forms/public-form-url";
+import { getAiAssistantBaseUrl } from "@/lib/ai/assistant-config";
 import { founderContent, galleryImages } from "@/content/home";
 
-/** AI StarOS public entry — derived from site origin (no env currently defines this). */
-const siteHost = new URL(PUBLIC_SITE_ORIGIN).hostname;
-export const AI_STAROS_URL = `https://ai-staros.${siteHost}` as const;
+/** AI StarOS public entry — shared with floating assistant config. */
+export const AI_STAROS_URL = getAiAssistantBaseUrl();
 
 export const aboutPageContent = {
   breadcrumbs: [

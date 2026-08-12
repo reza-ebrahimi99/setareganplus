@@ -1,0 +1,367 @@
+/**
+ * Client wrapper for StarOS AI Assistant HTTP API.
+ * Does not call OpenAI directly — only the configured assistant endpoint.
+ */
+
+import {
+  getAiAssistantBaseUrl,
+  getAiAssistantChatPath,
+  getAiAssistantTimeoutMs,
+} from "@/lib/ai/assistant-config";
+import { trackAiEvent } from "@/lib/ai/analytics";
+import { AI_TUNABLES, isAiFeatureEnabled } from "@/lib/ai/config";
+import { enrichAiResponse } from "@/lib/ai/enrich";
+import {
+  extractLastUserQuery,
+  preferredCategoriesForPage,
+  retrieveKnowledgeContext,
+} from "@/lib/ai/knowledge/retrieve";
+import {
+  persistSummary,
+  prepareConversationMemory,
+} from "@/lib/ai/memory";
+import {
+  formatDeepPageContextForPrompt,
+  resolveDeepPageContext,
+} from "@/lib/ai/page-context";
+import { formatActionPlanForPrompt, planAiRequest } from "@/lib/ai/planning";
+import { ensureDefaultAiPluginsRegistered } from "@/lib/ai/plugins/registry";
+import { getSessionMeta } from "@/lib/ai/session";
+import {
+  formatSiteSearchForPrompt,
+  searchInternalSite,
+} from "@/lib/ai/site-search";
+import { sendAiChatStreamingReady } from "@/lib/ai/streaming/client";
+import {
+  PROMPT_VERSION,
+  buildSystemPrompt,
+  resolveAiPageContext,
+} from "@/lib/ai/system-prompt";
+import type {
+  AiChatError,
+  AiChatRequest,
+  AiChatResult,
+  AiStreamHandlers,
+} from "@/types/ai";
+
+function resolveRequestPathname(pathname?: string | null): string {
+  if (typeof pathname === "string" && pathname.trim()) {
+    return pathname.trim();
+  }
+  if (typeof window !== "undefined" && window.location?.pathname) {
+    return window.location.pathname;
+  }
+  return "/";
+}
+
+async function buildOutboundMessages(request: AiChatRequest) {
+  const pathname = resolveRequestPathname(request.pathname);
+  const page = resolveAiPageContext(pathname);
+  const deepPage = resolveDeepPageContext(pathname);
+  const session = getSessionMeta();
+
+  if (isAiFeatureEnabled("plugins")) {
+    ensureDefaultAiPluginsRegistered();
+  }
+
+  const conversation = request.messages
+    .filter((item) => item.role === "user" || item.role === "assistant")
+    .map((item) => ({
+      role: item.role as "user" | "assistant",
+      content: item.content,
+    }));
+
+  const memory = isAiFeatureEnabled("memory")
+    ? prepareConversationMemory(conversation, AI_TUNABLES.maxHistoryMessages)
+    : {
+        messages: conversation,
+        summary: null,
+        compacted: false,
+      };
+  persistSummary(memory.summary);
+
+  const query = extractLastUserQuery(conversation);
+  const knowledge = retrieveKnowledgeContext({
+    query,
+    preferredCategories: preferredCategoriesForPage(page),
+  });
+
+  const siteHits =
+    isAiFeatureEnabled("siteSearch") &&
+    knowledge.confidence < AI_TUNABLES.siteSearchConfidenceThreshold
+      ? await searchInternalSite(query)
+      : [];
+
+  const plan = planAiRequest(query);
+
+  const extraSections: string[] = [];
+  if (isAiFeatureEnabled("deepPageContext")) {
+    extraSections.push(formatDeepPageContextForPrompt(deepPage));
+  }
+  if (siteHits.length > 0) {
+    extraSections.push(formatSiteSearchForPrompt(siteHits));
+  }
+  if (isAiFeatureEnabled("actionPlanning")) {
+    extraSections.push(formatActionPlanForPrompt(plan));
+  }
+
+  const systemPrompt = buildSystemPrompt({
+    pathname,
+    page,
+    locale: "fa",
+    relevantKnowledge: knowledge.formatted,
+    extraSections,
+  });
+
+  return {
+    pathname,
+    page,
+    deepPage,
+    query,
+    knowledge,
+    siteHits,
+    plan,
+    session,
+    systemPrompt,
+    knowledgeIds: knowledge.hits.map((hit) => hit.block.id),
+    recentUserTexts: conversation
+      .filter((item) => item.role === "user")
+      .slice(-4)
+      .map((item) => item.content),
+    messages: [
+      { role: "system" as const, content: systemPrompt },
+      ...memory.messages,
+    ],
+  };
+}
+
+function persianError(code: AiChatError["code"]): AiChatError {
+  switch (code) {
+    case "offline":
+      return {
+        code,
+        message:
+          "اتصال اینترنت برقرار نیست. لطفاً اتصال خود را بررسی کنید و دوباره تلاش کنید.",
+      };
+    case "timeout":
+      return {
+        code,
+        message:
+          "پاسخ مشاور هوشمند بیش از حد طول کشید. لطفاً دوباره تلاش کنید.",
+      };
+    case "server":
+      return {
+        code,
+        message:
+          "سرویس مشاور هوشمند موقتاً در دسترس نیست. لطفاً چند لحظه بعد دوباره تلاش کنید.",
+      };
+    case "invalid":
+      return {
+        code,
+        message: "پاسخ نامعتبر از سرویس دریافت شد. لطفاً دوباره تلاش کنید.",
+      };
+    default:
+      return {
+        code: "unknown",
+        message: "خطایی رخ داد. لطفاً دوباره تلاش کنید.",
+      };
+  }
+}
+
+function extractReply(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") return null;
+  const data = payload as Record<string, unknown>;
+
+  if (typeof data.reply === "string" && data.reply.trim()) {
+    return data.reply.trim();
+  }
+  if (typeof data.message === "string" && data.message.trim()) {
+    return data.message.trim();
+  }
+  if (typeof data.content === "string" && data.content.trim()) {
+    return data.content.trim();
+  }
+  if (typeof data.text === "string" && data.text.trim()) {
+    return data.text.trim();
+  }
+
+  const choice = Array.isArray(data.choices) ? data.choices[0] : null;
+  if (choice && typeof choice === "object") {
+    const message = (choice as { message?: { content?: unknown } }).message;
+    if (
+      message &&
+      typeof message.content === "string" &&
+      message.content.trim()
+    ) {
+      return message.content.trim();
+    }
+  }
+
+  return null;
+}
+
+export function getAiAssistantEndpoint(): string {
+  return `${getAiAssistantBaseUrl()}${getAiAssistantChatPath()}`;
+}
+
+/**
+ * Non-streaming chat completion against the configured StarOS AI endpoint.
+ */
+export async function sendAiChat(
+  request: AiChatRequest,
+): Promise<AiChatResult> {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    const error = persianError("offline");
+    trackAiEvent("ai_error", { category: error.code });
+    return { ok: false, error };
+  }
+
+  const controller = new AbortController();
+  const timeoutMs = getAiAssistantTimeoutMs();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  if (request.signal) {
+    if (request.signal.aborted) {
+      clearTimeout(timer);
+      const error = persianError("timeout");
+      trackAiEvent("ai_error", { category: error.code });
+      return { ok: false, error };
+    }
+    request.signal.addEventListener("abort", () => controller.abort(), {
+      once: true,
+    });
+  }
+
+  const startedAt = Date.now();
+
+  try {
+    const outbound = await buildOutboundMessages(request);
+
+    if (isAiFeatureEnabled("analytics")) {
+      trackAiEvent("page_context", {
+        pathname: outbound.pathname,
+        page: outbound.deepPage.kind,
+      });
+    }
+
+    const response = await fetch(getAiAssistantEndpoint(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        messages: outbound.messages,
+        system: outbound.systemPrompt,
+        prompt_version: PROMPT_VERSION,
+        stream: false,
+        locale: "fa",
+        context: {
+          pathname: outbound.pathname,
+          page: outbound.page,
+          deep_page: outbound.deepPage.kind,
+          slug: outbound.deepPage.slug,
+          knowledge_ids: outbound.knowledgeIds,
+          session_id: outbound.session.sessionId,
+          conversation_id: outbound.session.conversationId,
+          plan: outbound.plan.classification,
+        },
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const error = persianError(
+        response.status >= 500 ? "server" : "invalid",
+      );
+      trackAiEvent("ai_error", {
+        category: error.code,
+        pathname: outbound.pathname,
+        page: outbound.page,
+      });
+      return { ok: false, error };
+    }
+
+    const payload: unknown = await response.json();
+    const content = extractReply(payload);
+    if (!content) {
+      const error = persianError("invalid");
+      trackAiEvent("ai_error", {
+        category: error.code,
+        pathname: outbound.pathname,
+        page: outbound.page,
+      });
+      return { ok: false, error };
+    }
+
+    const enriched = enrichAiResponse({
+      rawReply: content,
+      query: outbound.query,
+      pathname: outbound.pathname,
+      page: outbound.page,
+      deepPage: outbound.deepPage,
+      knowledge: outbound.knowledge,
+      siteHits: outbound.siteHits,
+      recentUserTexts: outbound.recentUserTexts,
+    });
+
+    if (isAiFeatureEnabled("analytics")) {
+      trackAiEvent("conversation_finished", {
+        pathname: outbound.pathname,
+        page: outbound.deepPage.kind,
+        category: enriched.intent,
+        meta: {
+          durationMs: Date.now() - startedAt,
+          messageCount: request.messages.length,
+        },
+      });
+    }
+
+    return {
+      ok: true,
+      content: enriched.content,
+      actions: enriched.actions,
+      recommendations: enriched.recommendations,
+      citations: enriched.citations,
+      suggestions: enriched.suggestions,
+      intent: enriched.intent,
+      knowledgeIds: enriched.knowledgeIds,
+    };
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      const chatError = persianError("timeout");
+      trackAiEvent("ai_error", { category: chatError.code });
+      return { ok: false, error: chatError };
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      const chatError = persianError("offline");
+      trackAiEvent("ai_error", { category: chatError.code });
+      return { ok: false, error: chatError };
+    }
+    const chatError = persianError("unknown");
+    trackAiEvent("ai_error", { category: chatError.code });
+    return { ok: false, error: chatError };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Streaming-ready helper — delegates to streaming client.
+ * Falls back to non-streaming sendAiChat when flag/SSE unavailable.
+ */
+export async function sendAiChatStreaming(
+  request: AiChatRequest,
+  handlers: AiStreamHandlers = {},
+): Promise<AiChatResult> {
+  return sendAiChatStreamingReady(request, {
+    onToken: handlers.onToken,
+    onDone: handlers.onDone,
+    onError: (message) => {
+      handlers.onError?.({
+        code: "unknown",
+        message,
+      });
+    },
+  });
+}

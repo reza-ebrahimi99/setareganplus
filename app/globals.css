@@ -1175,3 +1175,51 @@ body {
   }
 }
 
+/* ─── StarOS AI Assistant (Phase 1) ───────────────────────────────────────── */
+
+@keyframes ai-fab-pulse {
+  0% {
+    box-shadow:
+      0 12px 40px rgb(15 23 42 / 0.18),
+      0 0 0 0 rgb(212 175 55 / 0.45);
+  }
+  70% {
+    box-shadow:
+      0 12px 40px rgb(15 23 42 / 0.18),
+      0 0 0 14px rgb(212 175 55 / 0);
+  }
+  100% {
+    box-shadow:
+      0 12px 40px rgb(15 23 42 / 0.18),
+      0 0 0 0 rgb(212 175 55 / 0);
+  }
+}
+
+.ai-fab-pulse {
+  animation: ai-fab-pulse 2.2s ease-out infinite;
+}
+
+@keyframes ai-typing-bounce {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+.ai-typing-dot {
+  animation: ai-typing-bounce 1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-fab-pulse,
+  .ai-typing-dot {
+    animation: none !important;
+  }
+}
+
