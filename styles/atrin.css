@@ -71,7 +71,9 @@
 
 /* Premium glass capsule launcher — high contrast on light/cream/dark pages */
 .atrin-launcher-capsule {
-  position: relative;
+  /* Must stay fixed. `relative` overrides Tailwind `fixed` (same specificity,
+     atrin.css loads after Tailwind) and drops the FAB out of the viewport. */
+  position: fixed;
   isolation: isolate;
   background:
     linear-gradient(

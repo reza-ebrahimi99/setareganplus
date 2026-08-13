@@ -84,66 +84,39 @@ export const institutionEntities = {
 // ─── Hero ────────────────────────────────────────────────────────────────────
 
 export const heroContent = {
-  title: branding.primary,
-  subtitle: "سامانه یکپارچه آموزش، مشاوره و برنامه‌ریزی تحصیلی",
+  /** Primary brand label above the logo mark */
+  brand: branding.primary,
+  title: "جایی که آینده ساخته می‌شود.",
+  subtitle:
+    "از نخستین قدم‌های آموزشی تا قبولی در مدارس برتر، کنکور و ساختن آینده‌ای روشن؛ ستارگان پلاس همراه مسیر رشد فرزند شماست.",
   affiliation: "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی)",
   slogan: officialSlogan,
   description:
+<<<<<<< Updated upstream
     "خدمات آموزشی، آزمون و مشاوره با تیمی از ۸۷ دبیر و مشاور آموزشی و سوابق تأییدشده در کنکور و مدارس تیزهوشان.",
   eyebrow: "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی)",
+} as const;
+
+=======
+    "از نخستین قدم‌های آموزشی تا قبولی در مدارس برتر، کنکور و ساختن آینده‌ای روشن؛ ستارگان پلاس همراه مسیر رشد فرزند شماست.",
+  eyebrow: "مؤسسه علمی ستارگان",
   /** Scroll cue — CMS-ready */
-  scrollHint: "کشف بیشتر",
+  scrollHint: "ادامه مسیر",
 } as const;
 
 /**
- * Cinematic hero scenes — rotate in PremiumHeroStage.
- * CMS-ready: headline / support can later load from StarOS content.
+ * @deprecated Carousel scenes removed — single cinematic hero only.
+ * Kept empty for gradual migration of older imports.
  */
-export const heroScenes = [
-  {
-    id: "platform",
-    headline: "سامانه یکپارچه آموزش، مشاوره و برنامه‌ریزی",
-    support: "مسیر یکپارچه از کلاس تا مشاوره و برنامه‌ریزی تحصیلی",
-  },
-  {
-    id: "gifted",
-    headline: "۹ قبولی مدارس تیزهوشان",
-    support: "نتیجه مسیر آموزشی دبستان ستارگان آینده",
-  },
-  {
-    id: "graduates",
-    headline: "۲۵۵ فارغ‌التحصیل",
-    support: "فارغ‌التحصیلان دبستان غیردولتی ستارگان آینده",
-  },
-  {
-    id: "enrollment",
-    headline: "ثبت‌نام سال تحصیلی جدید",
-    support: "پیش‌ثبت‌نام و رزرو مشاوره از همین‌جا آغاز می‌شود",
-  },
-] as const;
+export const heroScenes = [] as const;
 
-/** Live success ticker — CMS-ready items for homepage hero */
-export const heroTickerItems = [
-  {
-    id: "gifted-congrats",
-    emoji: "🏆",
-    text: "تبریک به پذیرفته‌شدگان مدارس تیزهوشان",
-  },
-  {
-    id: "enrollment-open",
-    emoji: "🎉",
-    text: "ثبت نام سال جدید آغاز شد",
-  },
-  {
-    id: "summer-club",
-    emoji: "⭐",
-    text: "باشگاه تابستانی فعال است",
-  },
-] as const;
+/** @deprecated Live ticker removed from homepage hero (no rotating chrome). */
+export const heroTickerItems = [] as const;
 
-/** Scene dwell time (ms) — keep in sync with stage client timer */
-export const heroSceneIntervalMs = 7500;
+/** @deprecated Scene rotation removed. */
+export const heroSceneIntervalMs = 0;
 
+>>>>>>> Stashed changes
 /** StarOS media slots — assign url from media library when available */
 export const heroMedia = {
   logo: {
@@ -158,14 +131,6 @@ export const heroMedia = {
   ghalamchiLogo: {
     url: "/images/brand/ghalamchi.jpg",
     alt: "لوگوی کانون فرهنگی آموزش قلم‌چی — نمایندگی نسیم‌شهر",
-  } satisfies MediaAsset,
-  /**
-   * Optional cinematic hero video (mp4/webm). When null, cover image is used.
-   * Assign from StarOS media / public assets when available — never broken URL.
-   */
-  video: {
-    url: null as string | null,
-    alt: "ویدیوی معرفی فضای آموزشی ستارگان پلاس",
   } satisfies MediaAsset,
   background: {
     url: "/images/hero/hero.jpg",
@@ -200,7 +165,23 @@ export const founderContent = {
 } as const;
 
 export const heroCtas = {
-  primary: { label: "ثبت نام آنلاین", href: "/pre-registration" },
+<<<<<<< Updated upstream
+  primary: { label: "پیش‌ثبت‌نام", href: "/pre-registration" },
+  secondary: { label: "دوره‌ها", href: "/courses" },
+  tertiary: { label: "مشاوره", href: "/consultation" },
+} as const;
+
+/**
+ * Hero presentation stats — دبستان ستارگان آینده (presentation Phase 1).
+ * Distinct from institutionStats used in achievements / trust.
+ */
+export const heroDisplayStats = [
+  { value: "۹", label: "کلاس درس" },
+  { value: "۲۳", label: "دبیر" },
+  { value: "۲۵۵", label: "فارغ‌التحصیل" },
+  { value: "۴۳", label: "قبولی تیزهوشان و نمونه‌دولتی" },
+=======
+  primary: { label: "ثبت‌نام", href: "/pre-registration" },
   secondary: { label: "مشاهده افتخارات", href: "/achievements" },
   tertiary: { label: "رزرو مشاوره", href: "/consultation" },
   shop: { label: "فروشگاه آموزشی", href: "/shop" },
@@ -209,26 +190,35 @@ export const heroCtas = {
 } as const;
 
 /**
- * Hero presentation stats — دبستان ستارگان آینده (presentation Phase 1).
- * Derived from schoolStats; distinct from institutionStats in achievements / trust.
+ * Homepage hero trust stats — CMS-ready placeholders.
+ * Teacher count intentionally omitted. Values are editable later via content/CMS.
  */
 export const heroDisplayStats = [
   {
-    value: String(schoolStats.giftedAdmissions),
-    label: "قبولی تیزهوشان",
-  },
-  {
-    value: String(schoolStats.graduates),
-    label: "فارغ‌التحصیل",
-  },
-  {
-    value: String(schoolStats.teachers),
-    label: "معلم",
-  },
-  {
-    value: schoolStats.foundedYear,
+    id: "founded",
+    value: "۱۳۹۴",
     label: "سال تأسیس",
+    editable: false,
   },
+  {
+    id: "graduates",
+    value: "—",
+    label: "فارغ‌التحصیلان",
+    editable: true,
+  },
+  {
+    id: "top-school-admissions",
+    value: "—",
+    label: "قبولی مدارس برتر",
+    editable: true,
+  },
+  {
+    id: "active-students",
+    value: "—",
+    label: "دانش‌آموزان فعال",
+    editable: true,
+  },
+>>>>>>> Stashed changes
 ] as const;
 
 // ─── Contact (verified — shared by FinalCta and Contact sections) ────────────
@@ -391,13 +381,6 @@ export const achievementsContent = {
   heading: "دستاوردهای مجموعه",
   description:
     "دستاوردهای تأییدشده مرکز آموزشی ستارگان پلاس و نمایندگی قلم‌چی نسیم‌شهر.",
-  showcaseEyebrow: "ویترین افتخارات",
-  showcaseHeading: "موفقیت‌هایی که مسیر را روشن می‌کند",
-  showcaseDescription:
-    "افتخارات برجسته، مسیر زمانی موفقیت‌ها و آمار تأییدشده مجموعه — بدون انتشار هویت فردی.",
-  showcaseCta: { label: "مشاهده همه افتخارات", href: "/achievements" },
-  timelineHeading: "مسیر زمانی افتخارات",
-  timelineDescription: "نگاهی فشرده به موفقیت‌های اخیر بر اساس سال تحصیلی.",
 } as const;
 
 export const achievementItems = [

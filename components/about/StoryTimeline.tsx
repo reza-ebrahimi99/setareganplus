@@ -12,7 +12,11 @@ export function StoryTimeline() {
   const { ref, inView } = useInViewOnce<HTMLDivElement>(0.2);
 
   return (
-    <Section ariaLabelledby="about-story-heading">
+    <Section
+      ariaLabelledby="about-story-heading"
+      id="story"
+      className="scroll-mt-28"
+    >
       <Container>
         <SectionHeader
           eyebrow={story.eyebrow}

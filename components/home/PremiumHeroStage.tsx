@@ -16,33 +16,22 @@ import type { MediaAsset } from "@/lib/media";
 import { hasMediaUrl } from "@/lib/media";
 import { toPersianDigits } from "@/lib/persian";
 
-export type HeroScene = {
-  id: string;
-  headline: string;
-  support: string;
-};
-
-export type HeroTickerItem = {
-  id: string;
-  emoji: string;
-  text: string;
-};
-
 export type PremiumHeroStageProps = {
   eyebrow: string;
+  brand: string;
   title: string;
-  description: string;
-  slogan: string;
+  subtitle: string;
   scrollHint: string;
   logo: MediaAsset;
   ghalamchiLogo: MediaAsset;
   video: MediaAsset;
   background: MediaAsset;
-  scenes: ReadonlyArray<HeroScene>;
-  sceneIntervalMs: number;
-  tickerItems: ReadonlyArray<HeroTickerItem>;
-  stats: ReadonlyArray<{ value: string; label: string }>;
-  ctas: ReadonlyArray<{ label: string; href: string; variant: "secondary" | "outline" }>;
+  stats: ReadonlyArray<{ value: string; label: string; id?: string }>;
+  ctas: ReadonlyArray<{
+    label: string;
+    href: string;
+    variant: "secondary" | "outline";
+  }>;
 };
 
 function HeroLogoFallback({ label }: { label: string }) {
@@ -53,29 +42,33 @@ function HeroLogoFallback({ label }: { label: string }) {
   );
 }
 
-function EqualBrandMark({
+function BrandMark({
   media,
   fallback,
   priority,
   clear = false,
+  dominant = false,
 }: {
   media: MediaAsset;
   fallback: ReactNode;
   priority?: boolean;
   clear?: boolean;
+  dominant?: boolean;
 }) {
   return (
     <div
-      className={`brand-logo-frame brand-logo-frame--hero brand-logo-frame--on-dark brand-logo-float${
-        clear ? " brand-logo-frame--clear" : ""
-      }`}
+      className={`brand-logo-frame brand-logo-frame--on-dark brand-logo-float${
+        dominant
+          ? " brand-logo-frame--hero-dominant"
+          : " brand-logo-frame--hero-secondary"
+      }${clear ? " brand-logo-frame--clear" : ""}`}
     >
       {hasMediaUrl(media) ? (
         <MediaImage
           media={media}
-          width={160}
-          height={160}
-          className="h-full w-full object-contain p-2.5"
+          width={dominant ? 220 : 96}
+          height={dominant ? 220 : 96}
+          className="h-full w-full object-contain p-2"
           priority={priority}
         />
       ) : (
@@ -93,10 +86,7 @@ function parseAsciiInt(value: string): number | null {
 
 function AnimatedStatValue({ value }: { value: string }) {
   const target = parseAsciiInt(value);
-  const [display, setDisplay] = useState(() =>
-    target === null ? toPersianDigits(value) : toPersianDigits(0),
-  );
-  const reduceMotionRef = useRef(false);
+  const [display, setDisplay] = useState(() => toPersianDigits(value));
 
   useEffect(() => {
     if (target === null) {
@@ -105,7 +95,6 @@ function AnimatedStatValue({ value }: { value: string }) {
     }
 
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    reduceMotionRef.current = mediaQuery.matches;
     if (mediaQuery.matches) {
       setDisplay(toPersianDigits(target));
       return;
@@ -130,7 +119,7 @@ function AnimatedStatValue({ value }: { value: string }) {
 }
 
 function HeroParticles() {
-  const dots = Array.from({ length: 18 }, (_, i) => i);
+  const dots = Array.from({ length: 16 }, (_, i) => i);
   return (
     <div aria-hidden="true" className="premium-hero-particles absolute inset-0">
       {dots.map((i) => (
@@ -144,57 +133,25 @@ function HeroParticles() {
   );
 }
 
-function LiveSuccessTicker({ items }: { items: ReadonlyArray<HeroTickerItem> }) {
-  if (items.length === 0) return null;
-  const loop = [...items, ...items];
-
-  return (
-    <div className="premium-hero-ticker" role="region" aria-label="اعلانات موفقیت">
-      <div className="premium-hero-ticker-fade" aria-hidden="true" />
-      <div className="premium-hero-ticker-track">
-        {loop.map((item, index) => (
-          <span
-            key={`${item.id}-${index}`}
-            className="premium-hero-ticker-item"
-            aria-hidden={index >= items.length ? true : undefined}
-          >
-            <span className="premium-hero-ticker-emoji" aria-hidden="true">
-              {item.emoji}
-            </span>
-            <span>{toPersianDigits(item.text)}</span>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function PremiumHeroStage({
   eyebrow,
+  brand,
   title,
-  description,
-  slogan,
+  subtitle,
   scrollHint,
   logo,
   ghalamchiLogo,
   video,
   background,
-  scenes,
-  sceneIntervalMs,
-  tickerItems,
   stats,
   ctas,
 }: PremiumHeroStageProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const reduceMotionRef = useRef(false);
-  const [sceneIndex, setSceneIndex] = useState(0);
-  const [scenePhase, setScenePhase] = useState<"in" | "out">("in");
 
   const hasVideo = hasMediaUrl(video);
   const hasCover = hasMediaUrl(background);
   const posterUrl = hasCover ? background.url : undefined;
-  const activeScene = scenes[sceneIndex] ?? scenes[0];
-  const sceneCount = scenes.length;
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -236,27 +193,6 @@ export function PremiumHeroStage({
       if (frame) window.cancelAnimationFrame(frame);
     };
   }, []);
-
-  useEffect(() => {
-    if (sceneCount < 2) return;
-
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mediaQuery.matches) return;
-
-    let outTimer = 0;
-    const interval = window.setInterval(() => {
-      setScenePhase("out");
-      outTimer = window.setTimeout(() => {
-        setSceneIndex((current) => (current + 1) % sceneCount);
-        setScenePhase("in");
-      }, 420);
-    }, sceneIntervalMs);
-
-    return () => {
-      window.clearInterval(interval);
-      window.clearTimeout(outTimer);
-    };
-  }, [sceneCount, sceneIntervalMs]);
 
   const onPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
     if (reduceMotionRef.current) return;
@@ -318,99 +254,63 @@ export function PremiumHeroStage({
         <HeroParticles />
       </div>
 
-      <LiveSuccessTicker items={tickerItems} />
-
       <Container className="premium-hero-shell relative z-10">
-        <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-10">
+        <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-12">
           <div className="premium-hero-copy max-w-2xl lg:col-span-7">
             <Eyebrow className="border-white/15 bg-white/5 text-secondary shadow-none backdrop-blur-md">
               {eyebrow}
             </Eyebrow>
 
-            <div className="mt-6 flex flex-wrap items-center gap-4 sm:gap-5">
-              <EqualBrandMark
-                media={logo}
-                priority
-                clear
-                fallback={<HeroLogoFallback label="ستارگان" />}
-              />
+            {/* Brand-first: Setaregan logo dominates; Ghalamchi is secondary */}
+            <div className="mt-7 flex flex-wrap items-end gap-4 sm:gap-5">
+              <div className="flex flex-col items-start gap-2">
+                <BrandMark
+                  media={logo}
+                  priority
+                  clear
+                  dominant
+                  fallback={<HeroLogoFallback label="ستارگان" />}
+                />
+                <p className="text-sm font-semibold tracking-wide text-white/90 sm:text-base">
+                  {toPersianDigits(brand)}
+                </p>
+              </div>
               <div
                 aria-hidden="true"
-                className="hidden h-14 w-px bg-white/20 sm:block"
+                className="mb-8 hidden h-12 w-px bg-white/15 sm:block"
               />
-              <EqualBrandMark
-                media={ghalamchiLogo}
-                fallback={<HeroLogoFallback label="قلم‌چی" />}
-              />
+              <div className="mb-1 flex flex-col items-start gap-1.5 opacity-80">
+                <BrandMark
+                  media={ghalamchiLogo}
+                  fallback={<HeroLogoFallback label="قلم‌چی" />}
+                />
+                <p className="max-w-[7rem] text-[0.65rem] font-medium leading-4 text-white/55">
+                  نمایندگی رسمی قلم‌چی
+                </p>
+              </div>
             </div>
 
             <h1
               id="hero-heading"
-              className="premium-hero-title mt-8 text-[2.15rem] font-bold tracking-tight text-white sm:text-5xl lg:text-[3.35rem] lg:leading-[1.1]"
+              className="premium-hero-title mt-8 text-[2.1rem] font-bold tracking-tight text-white sm:text-5xl lg:text-[3.25rem] lg:leading-[1.12]"
             >
               {toPersianDigits(title)}
             </h1>
 
-            <div
-              className={`premium-hero-scene premium-hero-scene--${scenePhase}`}
-              aria-live="polite"
-              aria-atomic="true"
-            >
-              <p className="premium-hero-subtitle mt-4 max-w-xl text-base font-medium leading-8 text-white/90 sm:text-xl sm:leading-9">
-                {activeScene
-                  ? toPersianDigits(activeScene.headline)
-                  : null}
-              </p>
-              {activeScene?.support ? (
-                <p className="mt-2 max-w-lg text-sm leading-7 text-white/55 sm:text-[0.95rem]">
-                  {toPersianDigits(activeScene.support)}
-                </p>
-              ) : null}
-            </div>
-
-            {sceneCount > 1 ? (
-              <div
-                className="premium-hero-scene-dots mt-4"
-                role="tablist"
-                aria-label="صحنه‌های معرفی"
-              >
-                {scenes.map((scene, index) => (
-                  <button
-                    key={scene.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={index === sceneIndex}
-                    aria-label={`صحنه ${toPersianDigits(index + 1)}: ${scene.headline}`}
-                    className={`premium-hero-scene-dot${
-                      index === sceneIndex ? " is-active" : ""
-                    }`}
-                    onClick={() => {
-                      setScenePhase("in");
-                      setSceneIndex(index);
-                    }}
-                  />
-                ))}
-              </div>
-            ) : null}
-
-            <p className="mt-4 max-w-lg text-sm leading-8 text-white/65 sm:text-base">
-              {toPersianDigits(description)}
-            </p>
-
-            <p className="mt-3 text-sm font-semibold tracking-wide text-secondary/95">
-              {toPersianDigits(slogan)}
+            <p className="mt-5 max-w-xl text-base font-medium leading-8 text-white/88 sm:text-xl sm:leading-9">
+              {toPersianDigits(subtitle)}
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               {ctas.map((cta, index) => (
                 <Button
-                  key={cta.href}
+                  key={`${cta.href}-${cta.label}`}
                   href={cta.href}
                   variant={cta.variant}
                   className={
                     index === 0
-                      ? "hero-cta hero-cta--primary"
-                      : "hero-cta hero-cta--ghost"
+                      ? "hero-cta hero-cta--primary min-h-12 rounded-2xl px-6"
+                      : "hero-cta hero-cta--ghost min-h-12 rounded-2xl px-5 backdrop-blur-md"
                   }
                 >
                   {cta.label}
@@ -420,20 +320,20 @@ export function PremiumHeroStage({
           </div>
 
           <aside
-            aria-label="آمار کلیدی دبستان ستارگان آینده"
-            className="premium-hero-cards relative min-h-[16rem] lg:col-span-5 lg:min-h-[26rem]"
+            aria-label="آمار کلیدی مجموعه"
+            className="premium-hero-cards relative min-h-[14rem] lg:col-span-5 lg:min-h-[24rem]"
           >
             <ul className="premium-hero-card-grid relative grid grid-cols-2 gap-3 sm:gap-4 lg:absolute lg:inset-0 lg:grid-cols-2 lg:content-center lg:gap-5">
               {stats.map((stat, index) => (
                 <li
-                  key={stat.label}
+                  key={stat.id ?? stat.label}
                   className={`premium-hero-float-card${
                     index % 2 === 1 ? " premium-hero-float-card--offset" : ""
                   }`}
                   style={
                     {
                       "--card-index": index,
-                      "--card-tilt": `${index % 2 === 0 ? -1.25 : 1.25}deg`,
+                      "--card-tilt": `${index % 2 === 0 ? -1.1 : 1.1}deg`,
                     } as CSSProperties
                   }
                 >

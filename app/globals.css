@@ -632,10 +632,21 @@ body {
   border-radius: 0.85rem;
 }
 
+.brand-logo-frame--header-sm {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.65rem;
+}
+
 @media (min-width: 640px) {
   .brand-logo-frame--header {
     width: 3.15rem;
     height: 3.15rem;
+  }
+
+  .brand-logo-frame--header-sm {
+    width: 2.25rem;
+    height: 2.25rem;
   }
 }
 
@@ -644,10 +655,40 @@ body {
   height: 6.5rem;
 }
 
+.brand-logo-frame--hero-dominant {
+  width: 7.5rem;
+  height: 7.5rem;
+  border-radius: 1.35rem;
+}
+
+.brand-logo-frame--hero-secondary {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 0.9rem;
+  opacity: 0.9;
+}
+
 @media (min-width: 640px) {
   .brand-logo-frame--hero {
     width: 7.25rem;
     height: 7.25rem;
+  }
+
+  .brand-logo-frame--hero-dominant {
+    width: 9.5rem;
+    height: 9.5rem;
+  }
+
+  .brand-logo-frame--hero-secondary {
+    width: 3.75rem;
+    height: 3.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .brand-logo-frame--hero-dominant {
+    width: 10.5rem;
+    height: 10.5rem;
   }
 }
 
