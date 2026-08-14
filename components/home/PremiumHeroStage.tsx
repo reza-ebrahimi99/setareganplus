@@ -5,12 +5,10 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { Eyebrow } from "@/components/ui/Eyebrow";
 import { MediaImage } from "@/components/ui/MediaImage";
 import type { MediaAsset } from "@/lib/media";
 import { hasMediaUrl } from "@/lib/media";
@@ -57,7 +55,7 @@ function BrandMark({
 }) {
   return (
     <div
-      className={`brand-logo-frame brand-logo-frame--on-dark brand-logo-float${
+      className={`brand-logo-frame brand-logo-frame--on-dark${
         dominant
           ? " brand-logo-frame--hero-dominant"
           : " brand-logo-frame--hero-secondary"
@@ -66,8 +64,8 @@ function BrandMark({
       {hasMediaUrl(media) ? (
         <MediaImage
           media={media}
-          width={dominant ? 220 : 96}
-          height={dominant ? 220 : 96}
+          width={dominant ? 240 : 88}
+          height={dominant ? 240 : 88}
           className="h-full w-full object-contain p-2"
           priority={priority}
         />
@@ -101,7 +99,7 @@ function AnimatedStatValue({ value }: { value: string }) {
     }
 
     let frame = 0;
-    const duration = 1200;
+    const duration = 1100;
     const start = performance.now();
 
     const tick = (now: number) => {
@@ -116,21 +114,6 @@ function AnimatedStatValue({ value }: { value: string }) {
   }, [target, value]);
 
   return <span>{display}</span>;
-}
-
-function HeroParticles() {
-  const dots = Array.from({ length: 16 }, (_, i) => i);
-  return (
-    <div aria-hidden="true" className="premium-hero-particles absolute inset-0">
-      {dots.map((i) => (
-        <span
-          key={i}
-          className="premium-hero-particle"
-          style={{ "--p": i } as CSSProperties}
-        />
-      ))}
-    </div>
-  );
 }
 
 export function PremiumHeroStage({
@@ -148,7 +131,6 @@ export function PremiumHeroStage({
 }: PremiumHeroStageProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const reduceMotionRef = useRef(false);
-
   const hasVideo = hasMediaUrl(video);
   const hasCover = hasMediaUrl(background);
   const posterUrl = hasCover ? background.url : undefined;
@@ -162,8 +144,6 @@ export function PremiumHeroStage({
       reduceMotionRef.current = mediaQuery.matches;
       if (mediaQuery.matches) {
         section.style.setProperty("--hero-scroll", "0");
-        section.style.setProperty("--hero-mx", "0");
-        section.style.setProperty("--hero-my", "0");
       }
     };
     syncReducedMotion();
@@ -194,34 +174,14 @@ export function PremiumHeroStage({
     };
   }, []);
 
-  const onPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
-    if (reduceMotionRef.current) return;
-    const section = sectionRef.current;
-    if (!section) return;
-    const rect = section.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    const y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
-    section.style.setProperty("--hero-mx", x.toFixed(3));
-    section.style.setProperty("--hero-my", y.toFixed(3));
-  };
-
-  const onPointerLeave = () => {
-    const section = sectionRef.current;
-    if (!section) return;
-    section.style.setProperty("--hero-mx", "0");
-    section.style.setProperty("--hero-my", "0");
-  };
-
   return (
     <section
       ref={sectionRef}
       aria-labelledby="hero-heading"
-      className="premium-hero relative isolate overflow-hidden"
-      onPointerMove={onPointerMove}
-      onPointerLeave={onPointerLeave}
+      className="flagship-hero premium-hero relative isolate overflow-hidden"
     >
       <div aria-hidden="true" className="premium-hero-media absolute inset-0">
-        <div className="premium-hero-gradient absolute inset-0" />
+        <div className="flagship-hero-gradient absolute inset-0" />
 
         {hasCover ? (
           <MediaImage
@@ -244,25 +204,31 @@ export function PremiumHeroStage({
             poster={posterUrl}
             aria-hidden="true"
           >
-            <source src={video.url} />
+            <source src={video.url!} />
           </video>
         ) : null}
 
-        <div className="premium-hero-veil absolute inset-0" />
-        <div className="premium-hero-lights absolute inset-0" />
-        <div className="premium-hero-beams absolute inset-0" />
-        <HeroParticles />
+        <div className="flagship-hero-veil absolute inset-0" />
+        <div className="flagship-hero-glow absolute inset-0" />
+        <div className="flagship-hero-particles absolute inset-0">
+          {Array.from({ length: 12 }, (_, i) => (
+            <span
+              key={i}
+              className="flagship-hero-particle"
+              style={{ "--p": i } as CSSProperties}
+            />
+          ))}
+        </div>
       </div>
 
-      <Container className="premium-hero-shell relative z-10">
-        <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-12">
-          <div className="premium-hero-copy max-w-2xl lg:col-span-7">
-            <Eyebrow className="border-white/15 bg-white/5 text-secondary shadow-none backdrop-blur-md">
-              {eyebrow}
-            </Eyebrow>
+      <Container className="flagship-hero-shell relative z-10">
+        <div className="grid items-end gap-12 lg:grid-cols-12 lg:gap-10">
+          <div className="flagship-hero-copy max-w-3xl lg:col-span-7">
+            <p className="text-xs font-medium tracking-[0.18em] text-secondary">
+              {toPersianDigits(eyebrow)}
+            </p>
 
-            {/* Brand-first: Setaregan logo dominates; Ghalamchi is secondary */}
-            <div className="mt-7 flex flex-wrap items-end gap-4 sm:gap-5">
+            <div className="mt-8 flex flex-wrap items-end gap-5 sm:gap-6">
               <div className="flex flex-col items-start gap-2">
                 <BrandMark
                   media={logo}
@@ -271,20 +237,20 @@ export function PremiumHeroStage({
                   dominant
                   fallback={<HeroLogoFallback label="ستارگان" />}
                 />
-                <p className="text-sm font-semibold tracking-wide text-white/90 sm:text-base">
+                <p className="text-base font-semibold tracking-wide text-white sm:text-lg">
                   {toPersianDigits(brand)}
                 </p>
               </div>
               <div
                 aria-hidden="true"
-                className="mb-8 hidden h-12 w-px bg-white/15 sm:block"
+                className="mb-10 hidden h-14 w-px bg-white/15 sm:block"
               />
-              <div className="mb-1 flex flex-col items-start gap-1.5 opacity-80">
+              <div className="mb-2 flex flex-col items-start gap-1.5 opacity-80">
                 <BrandMark
                   media={ghalamchiLogo}
                   fallback={<HeroLogoFallback label="قلم‌چی" />}
                 />
-                <p className="max-w-[7rem] text-[0.65rem] font-medium leading-4 text-white/55">
+                <p className="max-w-[8rem] text-[0.65rem] font-medium leading-4 text-white/55">
                   نمایندگی رسمی قلم‌چی
                 </p>
               </div>
@@ -292,16 +258,16 @@ export function PremiumHeroStage({
 
             <h1
               id="hero-heading"
-              className="premium-hero-title mt-8 text-[2.1rem] font-bold tracking-tight text-white sm:text-5xl lg:text-[3.25rem] lg:leading-[1.12]"
+              className="flagship-hero-title mt-10 text-[2.35rem] font-bold tracking-tight text-white sm:text-5xl lg:text-[3.5rem] lg:leading-[1.1]"
             >
               {toPersianDigits(title)}
             </h1>
 
-            <p className="mt-5 max-w-xl text-base font-medium leading-8 text-white/88 sm:text-xl sm:leading-9">
+            <p className="mt-6 max-w-xl text-base font-medium leading-9 text-white/88 sm:text-xl sm:leading-10">
               {toPersianDigits(subtitle)}
             </p>
 
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               {ctas.map((cta, index) => (
                 <Button
                   key={`${cta.href}-${cta.label}`}
@@ -309,7 +275,7 @@ export function PremiumHeroStage({
                   variant={cta.variant}
                   className={
                     index === 0
-                      ? "hero-cta hero-cta--primary min-h-12 rounded-2xl px-6"
+                      ? "hero-cta hero-cta--primary min-h-12 rounded-2xl px-7"
                       : "hero-cta hero-cta--ghost min-h-12 rounded-2xl px-5 backdrop-blur-md"
                   }
                 >
@@ -320,33 +286,24 @@ export function PremiumHeroStage({
           </div>
 
           <aside
-            aria-label="آمار کلیدی مجموعه"
-            className="premium-hero-cards relative min-h-[14rem] lg:col-span-5 lg:min-h-[24rem]"
+            aria-label="شاخص‌های کلیدی"
+            className="flagship-hero-stats lg:col-span-5"
           >
-            <ul className="premium-hero-card-grid relative grid grid-cols-2 gap-3 sm:gap-4 lg:absolute lg:inset-0 lg:grid-cols-2 lg:content-center lg:gap-5">
+            <ul className="grid grid-cols-2 gap-3 sm:gap-4">
               {stats.map((stat, index) => (
                 <li
                   key={stat.id ?? stat.label}
-                  className={`premium-hero-float-card${
-                    index % 2 === 1 ? " premium-hero-float-card--offset" : ""
-                  }`}
-                  style={
-                    {
-                      "--card-index": index,
-                      "--card-tilt": `${index % 2 === 0 ? -1.1 : 1.1}deg`,
-                    } as CSSProperties
-                  }
+                  className="flagship-stat-card"
+                  style={{ "--card-index": index } as CSSProperties}
                 >
-                  <div className="glass-stat-card premium-hero-float-inner">
-                    <dl>
-                      <dt className="order-2 mt-2 text-[0.7rem] font-medium leading-5 text-white/65 sm:text-xs">
-                        {stat.label}
-                      </dt>
-                      <dd className="order-1 text-2xl font-bold tracking-tight text-secondary sm:text-3xl">
-                        <AnimatedStatValue value={stat.value} />
-                      </dd>
-                    </dl>
-                  </div>
+                  <dl>
+                    <dt className="order-2 mt-2 text-[0.7rem] font-medium leading-5 text-white/60 sm:text-xs">
+                      {stat.label}
+                    </dt>
+                    <dd className="order-1 text-2xl font-bold tracking-tight text-secondary sm:text-3xl">
+                      <AnimatedStatValue value={stat.value} />
+                    </dd>
+                  </dl>
                 </li>
               ))}
             </ul>

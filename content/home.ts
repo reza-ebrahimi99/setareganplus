@@ -88,11 +88,11 @@ export const heroContent = {
   brand: branding.primary,
   title: "جایی که آینده ساخته می‌شود.",
   subtitle:
-    "از نخستین گام دبستان تا موفقیت در تیزهوشان، نمونه دولتی، کنکور و انتخاب رشته، کنار دانش‌آموزان هستیم.",
+    "از نخستین گام دبستان تا موفقیت در مدارس برتر، تیزهوشان، نمونه دولتی، کنکور و انتخاب رشته، کنار دانش‌آموزان هستیم.",
   affiliation: "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی)",
   slogan: officialSlogan,
   description:
-    "از نخستین گام دبستان تا موفقیت در تیزهوشان، نمونه دولتی، کنکور و انتخاب رشته، کنار دانش‌آموزان هستیم.",
+    "از نخستین گام دبستان تا موفقیت در مدارس برتر، تیزهوشان، نمونه دولتی، کنکور و انتخاب رشته، کنار دانش‌آموزان هستیم.",
   eyebrow: "مؤسسه علمی ستارگان",
   /** Scroll cue — CMS-ready */
   scrollHint: "ادامه مسیر",
@@ -309,122 +309,195 @@ export const aboutContent = {
   cta: { label: "بیشتر بدانید", href: "/about" },
 } as const;
 
-// ─── Why choose us (consumed by TrustSection until renamed) ─────────────────
+// ─── Why Setaregan (storytelling — not metric cards) ─────────────────────────
 
-export const trustSectionContent = {
+export const whySetareganContent = {
   eyebrow: "چرا ستارگان",
-  heading: "چرا ستارگان پلاس",
+  heading: "جایی که اعتماد ساخته می‌شود",
   description:
-    "مسیر روشن از دبستان تا کنکور؛ نمایندگی رسمی قلم‌چی نسیم‌شهر با همراهی آموزشی و مشاوره‌ای خانواده‌ها.",
+    "ستارگان پلاس فقط کلاس نیست؛ یک اکوسیستم آموزشی است که تجربه، منتورینگ، برنامه‌ریزی، نتیجه و فناوری را در یک مسیر منسجم کنار هم می‌گذارد.",
 } as const;
 
-export const trustItems = [
+export const whySetareganPillars = [
   {
-    title: "نمایندگی رسمی قلم‌چی نسیم‌شهر",
+    id: "experience",
+    title: "تجربه",
     description:
-      "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر با برنامه آموزشی و آزمون‌های استاندارد کانون.",
+      "سال‌ها حضور در میدان آموزش نسیم‌شهر و نمایندگی رسمی قلم‌چی؛ درک واقعی از دغدغه خانواده و مسیر دانش‌آموز.",
   },
   {
-    title: "۸۷ دبیر و مشاور آموزشی",
+    id: "mentoring",
+    title: "منتورینگ",
     description:
-      "تیم آموزشی مرکز متشکل از ۸۷ دبیر و مشاور است که برنامه درسی، آزمون‌ها و مشاوره تحصیلی را پوشش می‌دهند.",
+      "همراهی انسانی مشاور و دبیر؛ نه نسخه‌ی کلی، بلکه راهنمایی متناسب با پایه، هدف و شخصیت هر دانش‌آموز.",
   },
   {
-    title: "بیش از ۱۵۶۰ فارغ‌التحصیل",
+    id: "planning",
+    title: "برنامه‌ریزی",
     description:
-      "بیش از ۱۵۶۰ دانش‌آموز از مجموعه آموزشی ستارگان فارغ‌التحصیل شده‌اند.",
+      "مسیر شفاف از دبستان تا کنکور و انتخاب رشته؛ با گام‌های قابل اندازه‌گیری و پیگیری منظم.",
   },
   {
-    title: "۷۳ رتبه زیر ۱۰۰۰",
+    id: "results",
+    title: "نتایج",
     description:
-      "۷۳ رتبه زیر ۱۰۰۰ کنکور سراسری در سه رشته تحصیلی توسط دانش‌آموزان مجموعه کسب شده است.",
+      "تمرکز روی خروجی واقعی: پیشرفت درسی، آمادگی آزمون و تصمیم آگاهانه برای آینده تحصیلی.",
   },
   {
-    title: "۵۹ قبولی مدارس برتر",
+    id: "technology",
+    title: "فناوری",
     description:
-      "۵۹ قبولی در مدارس تیزهوشان و نمونه دولتی توسط دانش‌آموزان مجموعه آموزشی ستارگان.",
+      "سکوی دیجیتال ستارگان پلاس و آترین؛ دسترسی سریع‌تر به راهنمایی، ثبت‌نام و خدمات مکمل.",
   },
 ] as const;
 
-export const whyChooseContent = trustSectionContent;
-export const whyChooseItems = trustItems;
-
-// ─── Educational services (consumed by PremiumServices) ──────────────────────
-
-export const servicesSectionContent = {
-  eyebrow: "مسیر رشد",
-  heading: "مسیرهای آموزشی",
-  description:
-    "از دبستان تا کنکور و انتخاب رشته؛ مسیر مناسب هر مرحله را شفاف و هدفمند دنبال کنید.",
+/** @deprecated Prefer whySetareganContent — kept for gradual migration */
+export const trustSectionContent = {
+  eyebrow: whySetareganContent.eyebrow,
+  heading: whySetareganContent.heading,
+  description: whySetareganContent.description,
 } as const;
 
-/** Educational paths shown on the homepage (maps to public routes). */
-export const educationalPaths = [
+/** @deprecated Prefer whySetareganPillars */
+export const trustItems = whySetareganPillars.map((pillar) => ({
+  title: pillar.title,
+  description: pillar.description,
+}));
+
+export const whyChooseContent = whySetareganContent;
+export const whyChooseItems = trustItems;
+
+// ─── Educational journey ─────────────────────────────────────────────────────
+
+export const educationalJourneyContent = {
+  eyebrow: "مسیر رشد",
+  heading: "سفر آموزشی ستارگان",
+  description:
+    "از نخستین کلاس تا انتخاب رشته؛ هر مرحله یک ایستگاه روشن با هدف مشخص.",
+} as const;
+
+export const educationalJourney = [
   {
+    id: "elementary",
     title: "دبستان",
-    description: "آغاز مسیر تحصیلی با پایه‌ای محکم و فضای آموزشی استاندارد.",
+    description: "پایه‌ای محکم برای عشق به یادگیری و عادت‌های درست مطالعه.",
     href: "/about",
+    mark: "۱",
   },
   {
+    id: "middle",
     title: "متوسطه اول",
     description: "تقویت بنیان درسی و آمادگی برای مسیرهای برتر تحصیلی.",
     href: "/courses",
+    mark: "۲",
   },
   {
+    id: "high",
     title: "متوسطه دوم",
-    description: "برنامه منسجم برای پایه‌های دهم تا دوازدهم و امتحانات نهایی.",
+    description: "برنامه منسجم پایه‌های دهم تا دوازدهم و امتحانات نهایی.",
     href: "/courses",
+    mark: "۳",
   },
   {
+    id: "konkur",
     title: "کنکور",
-    description: "آمادگی هدفمند کنکور با برنامه، آزمون و همراهی مشاور.",
+    description: "آمادگی هدفمند با برنامه، آزمون و همراهی مشاور.",
     href: "/courses",
+    mark: "۴",
   },
   {
-    title: "نمونه دولتی و تیزهوشان",
-    description: "مسیر تخصصی برای قبولی در مدارس برتر.",
-    href: "/achievements",
+    id: "major",
+    title: "انتخاب رشته",
+    description: "تصمیم آگاهانه برای آینده؛ هم‌راستا با استعداد و هدف.",
+    href: "/consultation",
+    mark: "۵",
   },
 ] as const;
+
+/** @deprecated Prefer educationalJourney */
+export const servicesSectionContent = educationalJourneyContent;
+export const educationalPaths = educationalJourney.map((step) => ({
+  title: step.title,
+  description: step.description,
+  href: step.href,
+}));
 
 // ─── Achievements (institution only) ─────────────────────────────────────────
 
 export const achievementsContent = {
   eyebrow: "افتخارات",
-  heading: "دستاوردهای مجموعه",
+  heading: "اثبات مسیر",
   description:
-    "دستاوردهای تأییدشده مرکز آموزشی ستارگان پلاس و نمایندگی قلم‌چی نسیم‌شهر.",
+    "ویترین افتخارات، نشان‌ها و مسیر زمانی موفقیت‌ها — بدون آمار ساختگی.",
   showcaseEyebrow: "ویترین افتخارات",
-  showcaseHeading: "موفقیت‌هایی که مسیر را روشن می‌کند",
+  showcaseHeading: "موفقیت‌هایی که اعتماد می‌سازد",
   showcaseDescription:
-    "افتخارات برجسته، مسیر زمانی موفقیت‌ها و آمار تأییدشده مجموعه — بدون انتشار هویت فردی.",
+    "افتخارات برجسته از سامانه محتوا؛ وقتی محتوا آماده باشد اینجا نمایش داده می‌شود.",
   showcaseCta: { label: "مشاهده همه افتخارات", href: "/achievements" },
-  timelineHeading: "مسیر زمانی افتخارات",
-  timelineDescription: "نگاهی فشرده به موفقیت‌های اخیر بر اساس سال تحصیلی.",
+  timelineHeading: "نشان‌ها و مسیر",
+  timelineDescription: "شاخص‌های قابل ویرایش از محتوا/CMS — بدون شمارش دبیر.",
 } as const;
 
-export const achievementItems = [
+/**
+ * Homepage achievement metrics — CMS-ready placeholders.
+ * Teacher count intentionally omitted.
+ */
+export const achievementPlaceholders = [
   {
-    metric: "۸۷",
-    title: "دبیر و مشاور آموزشی",
-    description: "تیم آموزشی و مشاوره‌ای مرکز متشکل از ۸۷ نفر",
+    id: "founded",
+    value: "۱۳۹۴",
+    label: "سال تأسیس",
+    editable: false,
   },
   {
-    metric: "۱۵۶۰+",
-    title: "فارغ‌التحصیل",
-    description: "بیش از ۱۵۶۰ دانش‌آموز از مجموعه آموزشی ستارگان فارغ‌التحصیل شده‌اند",
+    id: "graduates",
+    value: "—",
+    label: "فارغ‌التحصیلان",
+    editable: true,
   },
   {
-    metric: "۷۳",
-    title: "رتبه زیر ۱۰۰۰ کنکور",
-    description: "۷۳ رتبه زیر ۱۰۰۰ در سه رشته تحصیلی",
+    id: "top-school-admissions",
+    value: "—",
+    label: "قبولی مدارس برتر",
+    editable: true,
   },
   {
-    metric: "۵۹",
-    title: "قبولی مدارس برتر",
-    description: "۵۹ قبولی در مدارس تیزهوشان و نمونه دولتی",
+    id: "ranks",
+    value: "—",
+    label: "رتبه‌های برجسته",
+    editable: true,
   },
 ] as const;
+
+export const achievementTimeline = [
+  {
+    id: "foundation",
+    year: "۱۳۹۴",
+    title: "آغاز مسیر",
+    description: "شکل‌گیری هویت آموزشی ستارگان در نسیم‌شهر.",
+  },
+  {
+    id: "ghalamchi",
+    year: "—",
+    title: "نمایندگی قلم‌چی",
+    description: "گسترش خدمات آزمون و برنامه استاندارد کانون.",
+  },
+  {
+    id: "ecosystem",
+    year: "امروز",
+    title: "اکوسیستم دیجیتال",
+    description: "ستارگان پلاس و آترین برای همراهی خانواده‌ها.",
+  },
+] as const;
+
+/** @deprecated Prefer achievementPlaceholders for homepage */
+export const achievementItems = achievementPlaceholders.map((item) => ({
+  metric: item.value,
+  title: item.label,
+  description: item.editable
+    ? "مقدار از محتوا/CMS قابل ویرایش است."
+    : "واقعیت تأییدشده مؤسسه.",
+}));
 
 /** School-only achievements — for About section, not homepage hero */
 export const schoolAchievementItems = [
@@ -510,34 +583,60 @@ export type SuccessStory = {
   quote: string;
   author: string;
   detail?: string;
+  role?: "parent" | "student";
 };
 
 export const successStoriesContent = {
-  eyebrow: "صدای خانواده‌ها",
-  heading: "نظرات والدین",
+  eyebrow: "اعتماد خانواده‌ها",
+  heading: "صدای والدین و دانش‌آموزان",
   description:
-    "تجربه والدینی که مسیر رشد فرزندشان را با ستارگان پلاس ادامه داده‌اند. نقل‌قول‌های تأییدشده به‌تدریج منتشر می‌شود.",
+    "نقل‌قول‌های تأییدشده پس از رضایت خانواده‌ها در کارت‌های شیشه‌ای اینجا نمایش داده می‌شود.",
+  emptyHeading: "در حال جمع‌آوری نظرات تأییدشده",
+  emptyBody:
+    "به احترام حریم خصوصی خانواده‌ها، هیچ نقل‌قول ساختگی منتشر نمی‌کنیم. به‌زودی تجربه واقعی والدین و دانش‌آموزان اینجا می‌آید.",
   isPlaceholder: true,
+} as const;
+
+export const featuredTeachersContent = {
+  eyebrow: "اساتید برجسته",
+  heading: "چهره‌هایی که مسیر را هدایت می‌کنند",
+  description:
+    "آشنایی با بخشی از دبیران و مشاوران منتخب مجموعه — حرفه‌ای، دقیق و الهام‌بخش.",
+  cta: { label: "مشاهده همه اعضای تیم", href: "/team" },
 } as const;
 
 /** Homepage consultation conversion block */
 export const consultationCtaContent = {
   eyebrow: "مشاوره تخصصی",
-  heading: "برای انتخاب مسیر درست، همین حالا رزرو کنید",
+  heading: "آینده را با یک گفتگوی درست شروع کنید",
   description:
-    "مشاوران ستارگان پلاس کنار شما هستند تا مسیر تحصیلی فرزندتان را شفاف، واقع‌بینانه و هدفمند طراحی کنید.",
+    "رزرو مشاوره برای انتخاب مسیر، برنامه‌ریزی تحصیلی و تصمیم‌های مهم خانواده — شفاف، آرام و حرفه‌ای.",
   primary: { label: "رزرو مشاوره", href: "/consultation" },
-  secondary: { label: "پیش‌ثبت‌نام", href: "/pre-registration" },
+  secondary: { label: "ثبت‌نام", href: "/pre-registration" },
 } as const;
 
-/** Homepage Atrin assistant promo — launcher remains global via AiAssistantHost */
+/** Homepage Atrin product — launcher remains global via AiAssistantHost */
 export const atrinHomeContent = {
   eyebrow: "آترین",
-  heading: "دستیار هوشمند ستارگان",
+  heading: "مشاور آموزشی دیجیتال ستارگان",
   description:
-    "سوال درباره ثبت‌نام، مشاوره، قلم‌چی یا مسیر تحصیلی دارید؟ آترین همین‌جاست تا سریع و شفاف راهنمایی‌تان کند.",
-  primary: { label: "گفت‌وگو با آترین", href: "/atrin" },
-  secondary: { label: "مشاهده خدمات", href: "/courses" },
+    "آترین چت‌بات نیست؛ همراه آموزشی مؤسسه علمی ستارگان است برای راهنمایی ثبت‌نام، مشاوره، قلم‌چی و مسیر تحصیلی.",
+  primary: { label: "آشنایی با آترین", href: "/atrin" },
+  secondary: { label: "شروع گفتگو", href: "/atrin" },
+  capabilities: [
+    {
+      title: "راهنمای مؤسسه",
+      body: "دوره‌ها، قلم‌چی و مسیر ثبت‌نام را شفاف توضیح می‌دهد.",
+    },
+    {
+      title: "مشاوره تحصیلی",
+      body: "برنامه، تیزهوشان، کنکور و انتخاب رشته.",
+    },
+    {
+      title: "همراه والدین",
+      body: "پذیرش، تماس و قدم بعدی با لحن گرم و حرفه‌ای.",
+    },
+  ],
 } as const;
 
 export const successStories: readonly SuccessStory[] = [];

@@ -19,13 +19,15 @@ export function TeamMemberCard({
   return (
     <Link
       href={`/team/${member.slug}`}
-      className={`group block overflow-hidden rounded-2xl border border-border/80 bg-surface shadow-[0_10px_30px_-18px_rgba(15,23,42,0.45)] transition-[transform,opacity,box-shadow,border-color] duration-300 motion-safe:hover:-translate-y-1 hover:border-secondary/40 hover:shadow-[0_18px_40px_-20px_rgba(15,23,42,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
-        featured ? "p-4" : "p-4 sm:p-5"
+      className={`teacher-card group block overflow-hidden rounded-[1.4rem] border border-border/70 bg-surface/90 transition duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
+        featured
+          ? "p-3 shadow-[0_20px_50px_-34px_rgba(15,23,42,0.55)] hover:-translate-y-1 hover:border-secondary/35 hover:shadow-[0_28px_60px_-34px_rgba(15,23,42,0.55)]"
+          : "p-4 sm:p-5 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.45)] hover:-translate-y-1 hover:border-secondary/40"
       }`}
     >
       <div
-        className={`relative mx-auto overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-surface to-secondary/15 ${
-          featured ? "aspect-[4/5] w-full max-w-[11rem]" : "aspect-[4/5] w-full"
+        className={`relative overflow-hidden rounded-[1.1rem] bg-gradient-to-br from-primary/10 via-surface to-secondary/15 ${
+          featured ? "aspect-[4/5] w-full" : "aspect-[4/5] w-full"
         }`}
       >
         {member.portraitUrl ? (
@@ -36,27 +38,36 @@ export function TeamMemberCard({
             unoptimized
             sizes={
               featured
-                ? "176px"
+                ? "(max-width: 1024px) 45vw, 240px"
                 : "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 240px"
             }
             priority={priority}
-            className="object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.04]"
+            className="object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.03]"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-2xl font-bold text-primary/50">
             {member.fullName.slice(0, 1)}
           </div>
         )}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-primary/35 to-transparent"
+        />
       </div>
-      <div className="mt-4 text-center">
+      <div className={`mt-4 ${featured ? "px-1 pb-1 text-start" : "text-center"}`}>
         <h3
           className={`font-bold text-primary ${
-            featured ? "text-base" : "text-lg"
+            featured ? "text-base sm:text-lg" : "text-lg"
           }`}
         >
           {member.fullName}
         </h3>
-        <p className="mt-1 text-sm leading-7 text-muted">{member.roleTitle}</p>
+        <p className="mt-1.5 text-sm leading-7 text-muted">{member.roleTitle}</p>
+        {member.specialty ? (
+          <p className="mt-1 text-xs font-medium text-secondary">
+            {member.specialty}
+          </p>
+        ) : null}
       </div>
     </Link>
   );

@@ -1,6 +1,5 @@
+import Link from "next/link";
 import { Container } from "@/components/ui/Container";
-import { CtaPanel } from "@/components/ui/CtaPanel";
-import { Section } from "@/components/ui/Section";
 import { consultationCtaContent } from "@/content/home";
 import { toPersianDigits } from "@/lib/persian";
 
@@ -8,31 +7,44 @@ const headingId = "consultation-cta-heading";
 
 export function ConsultationCtaSection() {
   return (
-    <Section
-      className="border-y border-border/70 bg-gradient-to-b from-background via-primary/[0.03] to-background"
-      ariaLabelledby={headingId}
+    <section
+      aria-labelledby={headingId}
+      className="consultation-cta relative overflow-hidden border-y border-primary/20"
     >
-      <Container>
-        <p className="mb-3 text-xs font-medium tracking-wide text-secondary">
-          {toPersianDigits(consultationCtaContent.eyebrow)}
-        </p>
-        <div id={headingId}>
-          <CtaPanel
-            heading={consultationCtaContent.heading}
-            description={consultationCtaContent.description}
-            primary={{
-              label: consultationCtaContent.primary.label,
-              href: consultationCtaContent.primary.href,
-              variant: "secondary",
-            }}
-            secondary={{
-              label: consultationCtaContent.secondary.label,
-              href: consultationCtaContent.secondary.href,
-              variant: "outline",
-            }}
-          />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(212,175,55,0.22),_transparent_60%)]"
+      />
+      <Container className="relative py-16 sm:py-20">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-xs font-medium tracking-[0.18em] text-secondary">
+            {toPersianDigits(consultationCtaContent.eyebrow)}
+          </p>
+          <h2
+            id={headingId}
+            className="mt-4 text-3xl font-bold text-white sm:text-4xl"
+          >
+            {toPersianDigits(consultationCtaContent.heading)}
+          </h2>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-9 text-white/80 sm:text-lg">
+            {toPersianDigits(consultationCtaContent.description)}
+          </p>
+          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href={consultationCtaContent.primary.href}
+              className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-secondary px-7 text-sm font-semibold text-primary shadow-[0_12px_40px_-12px_rgba(212,175,55,0.65)] transition hover:bg-secondary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+            >
+              {consultationCtaContent.primary.label}
+            </Link>
+            <Link
+              href={consultationCtaContent.secondary.href}
+              className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/25 bg-white/5 px-7 text-sm font-medium text-white backdrop-blur-md transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+            >
+              {consultationCtaContent.secondary.label}
+            </Link>
+          </div>
         </div>
       </Container>
-    </Section>
+    </section>
   );
 }

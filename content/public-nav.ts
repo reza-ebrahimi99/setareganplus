@@ -5,47 +5,98 @@
 export type PublicNavChild = {
   href: string;
   label: string;
+  description?: string;
 };
 
 export type PublicNavItem = {
   href: string;
   label: string;
-  /** Optional emoji accent for top-level groups (decorative). */
-  icon?: string;
+  description?: string;
   children?: readonly PublicNavChild[];
 };
 
 export const publicNavItems: readonly PublicNavItem[] = [
   { href: "/", label: "خانه" },
-  { href: "/about", label: "درباره ما" },
+  {
+    href: "/about",
+    label: "درباره ما",
+    description: "داستان، هویت و مسیر مؤسسه علمی ستارگان",
+  },
   {
     href: "/achievements",
     label: "دستاوردها",
+    description: "افتخارات و نتایج تأییدشده",
     children: [
-      { href: "/achievements", label: "افتخارات" },
-      { href: "/assessments", label: "نتایج آزمون‌ها" },
+      {
+        href: "/achievements",
+        label: "افتخارات",
+        description: "ویترین موفقیت‌های دانش‌آموزان",
+      },
+      {
+        href: "/assessments",
+        label: "نتایج آزمون‌ها",
+        description: "کارنامه و نتایج ارزیابی‌ها",
+      },
     ],
   },
   {
     href: "/courses",
     label: "آموزش",
+    description: "مسیر رشد از دبستان تا کنکور",
     children: [
-      { href: "/about", label: "دبستان" },
-      { href: "/courses", label: "متوسطه اول" },
-      { href: "/courses", label: "متوسطه دوم" },
-      { href: "/courses", label: "کنکور" },
-      { href: "/achievements", label: "نمونه دولتی و تیزهوشان" },
+      {
+        href: "/about",
+        label: "دبستان",
+        description: "پایه محکم برای آغاز مسیر",
+      },
+      {
+        href: "/courses",
+        label: "متوسطه اول",
+        description: "تقویت بنیان درسی",
+      },
+      {
+        href: "/courses",
+        label: "متوسطه دوم",
+        description: "آمادگی نهایی و کنکور",
+      },
+      {
+        href: "/courses",
+        label: "کنکور",
+        description: "برنامه، آزمون و همراهی مشاور",
+      },
+      {
+        href: "/achievements",
+        label: "نمونه دولتی و تیزهوشان",
+        description: "مسیر مدارس برتر",
+      },
     ],
   },
   {
     href: "/classes",
     label: "ابزارها",
+    description: "خدمات مکمل مسیر تحصیلی",
     children: [
-      { href: "/classes", label: "کلاس" },
-      { href: "/consultation", label: "مشاوره" },
-      { href: "/shop", label: "کتاب و جزوه" },
-      { href: "/consultation", label: "انتخاب رشته" },
-      { href: "/contact", label: "پانسیون" },
+      { href: "/classes", label: "کلاس", description: "کلاس‌های تقویتی و تخصصی" },
+      {
+        href: "/consultation",
+        label: "مشاوره",
+        description: "راهنمایی تحصیلی و انتخاب مسیر",
+      },
+      {
+        href: "/shop",
+        label: "کتاب و جزوه",
+        description: "منابع آموزشی و فروشگاه",
+      },
+      {
+        href: "/consultation",
+        label: "انتخاب رشته",
+        description: "تصمیم آگاهانه برای آینده",
+      },
+      {
+        href: "/contact",
+        label: "پانسیون",
+        description: "فضای مطالعه و همراهی",
+      },
     ],
   },
   { href: "/gallery", label: "گالری" },
@@ -59,7 +110,7 @@ export const publicNavLinks = publicNavItems.map((item) => ({
 })) as ReadonlyArray<{ href: string; label: string }>;
 
 export const headerCtas = {
-  primary: { label: "پیش‌ثبت‌نام", href: "/pre-registration" },
+  primary: { label: "ثبت‌نام", href: "/pre-registration" },
   /** Portal entry — placeholder until full portal UX ships. */
   secondary: { label: "ورود به پرتال", href: "/portal/login" },
 } as const;
