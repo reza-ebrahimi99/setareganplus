@@ -3,24 +3,31 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import { AchievementCard } from "@/components/achievements/AchievementCard";
 import { FeaturedAchievementSlider } from "@/components/home/FeaturedAchievementSlider";
+import {
+  HOMEPAGE_HERO_SLIDER_LIMIT,
+} from "@/lib/website/achievement-limits";
 import type { PublicAchievementCard } from "@/lib/website/achievements";
 import { toPersianDigits } from "@/lib/persian";
 
 type AchievementsShowcaseClientProps = {
+  /** Single ordered CMS collection — slider uses first N of this same array. */
   achievements: PublicAchievementCard[];
-  /** Derived from the same homepage loader as `achievements` — never a second query. */
-  sliderAchievements: PublicAchievementCard[];
   emptyMessage: string;
 };
 
 export function AchievementsShowcaseClient({
   achievements,
-  sliderAchievements,
   emptyMessage,
 }: AchievementsShowcaseClientProps) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("all");
   const deferredQuery = useDeferredValue(query.trim());
+
+  /** Exact prefix of the same ordered collection the grid uses — no isFeatured re-filter. */
+  const sliderAchievements = useMemo(
+    () => achievements.slice(0, HOMEPAGE_HERO_SLIDER_LIMIT),
+    [achievements],
+  );
 
   const categories = useMemo(() => {
     const map = new Map<string, string>();

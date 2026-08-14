@@ -12,8 +12,8 @@ import { toPersianDigits } from "@/lib/persian";
 const headingId = "achievements-heading";
 
 export async function AchievementsSection() {
-  /** One CMS query — grid + featured slider stay synchronized. */
-  const { achievements, sliderAchievements } = await loadHomepageAchievements();
+  /** One CMS collection — grid and slider share this exact ordered list. */
+  const { achievements } = await loadHomepageAchievements();
 
   return (
     <section
@@ -77,7 +77,6 @@ export async function AchievementsSection() {
 
           <AchievementsShowcaseClient
             achievements={achievements}
-            sliderAchievements={sliderAchievements}
             emptyMessage="به‌زودی افتخارات منتشرشده از سامانه محتوا اینجا نمایش داده می‌شود."
           />
         </div>
