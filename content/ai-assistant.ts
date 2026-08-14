@@ -1,5 +1,6 @@
 export const AI_WELCOME_MESSAGE = `سلام 👋
-خوش اومدی.
+من آترین‌ام؛ سیستم هوشمند آموزشی ستارگان.
+از درس و برنامه تا ثبت‌نام و معرفی مدرسه، کنارت هستم.
 از کجا شروع کنیم؟`;
 
 export const AI_SUGGESTIONS = [
@@ -15,10 +16,10 @@ export const AI_SUGGESTIONS = [
 
 export const AI_HEADER = {
   title: "آترین",
-  subtitle: "همراه آموزشی مؤسسه علمی ستارگان",
+  subtitle: "سیستم هوشمند آموزشی ستارگان",
   statusLabel: "آنلاین",
   fabLabel: "آترین",
-  fabTooltip: "آترین — همراه آموزشی مؤسسه علمی ستارگان",
+  fabTooltip: "آترین — سیستم هوشمند آموزشی ستارگان",
   closeLabel: "بستن آترین",
   backdropLabel: "بستن پس‌زمینه آترین",
   composerLabel: "پیام به آترین",

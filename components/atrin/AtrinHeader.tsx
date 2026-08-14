@@ -2,7 +2,7 @@
 
 import { AtrinMark } from "@/components/atrin/AtrinMark";
 import { ATRIN_BRAND } from "@/content/atrin";
-import type { AtrinModeId } from "@/content/atrin";
+import { ATRIN_MODES, type AtrinModeId } from "@/content/atrin";
 
 type AtrinHeaderProps = {
   modeId: AtrinModeId;
@@ -13,11 +13,14 @@ type AtrinHeaderProps = {
 };
 
 export function AtrinHeader({
+  modeId,
   onClose,
   onClear,
   hideClose,
   compact = false,
 }: AtrinHeaderProps) {
+  const mode = ATRIN_MODES[modeId] ?? ATRIN_MODES.general;
+
   return (
     <header
       className={`relative z-10 flex items-center gap-3 border-b border-white/10 px-4 ${
@@ -38,12 +41,25 @@ export function AtrinHeader({
             />
             {ATRIN_BRAND.statusOnline}
           </p>
+          {modeId !== "general" ? (
+            <span
+              className="inline-flex max-w-full truncate rounded-full border border-white/12 bg-white/8 px-2.5 py-0.5 text-[0.65rem] font-medium text-cyan-100"
+              style={{ borderColor: `${mode.accent}55` }}
+              title={mode.tip}
+            >
+              {mode.label}
+            </span>
+          ) : null}
         </div>
         {!compact ? (
           <p className="mt-0.5 text-xs leading-6 text-slate-400">
             {ATRIN_BRAND.subtitle}
           </p>
-        ) : null}
+        ) : (
+          <p className="mt-0.5 truncate text-[0.7rem] text-slate-500">
+            {mode.tip}
+          </p>
+        )}
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
         {onClear ? (

@@ -20,14 +20,14 @@ export {
 export const ATRIN_BRAND = {
   name: "آترین",
   product: "آترین",
-  subtitle: "همراه آموزشی مؤسسه علمی ستارگان",
-  institutionLine: "همراه آموزشی مؤسسه علمی ستارگان",
+  subtitle: "سیستم هوشمند آموزشی ستارگان",
+  institutionLine: "دستیار هوشمند آموزشی مؤسسه علمی ستارگان",
   statusOnline: "آنلاین",
   closeLabel: "بستن آترین",
   backdropLabel: "بستن پس‌زمینه آترین",
   composerLabel: "پیام به آترین",
   clearLabel: "پاک کردن گفتگو",
-  fabAria: "آترین — هر سوالی داری بپرس",
+  fabAria: "آترین — سیستم هوشمند آموزشی ستارگان",
   fabHeadline: "آترین",
   fabCaption: "هر سوالی داری بپرس 🙂",
 } as const;
@@ -42,16 +42,16 @@ export const ATRIN_LAUNCHER_ROTATIONS = [
 
 export const ATRIN_HERO = {
   greeting: "سلام 👋",
-  invite: "هر سوالی داری بپرس.",
+  invite: "من آترین‌ام؛ سیستم هوشمند آموزشی ستارگان.",
   headline: "آترین",
-  role: "همراه آموزشی مؤسسه علمی ستارگان",
+  role: "دستیار هوشمند آموزشی مؤسسه علمی ستارگان",
   descriptionLead: "",
   topics: [] as const,
   descriptionTail: "",
   ctaPrimary: "",
   ctaSecondary: "",
   secondaryHref: "/about",
-  quickStartTitle: "یا یکی از این مسیرها را انتخاب کن.",
+  quickStartTitle: "از کجا شروع کنیم؟",
 } as const;
 
 export type AtrinQuickChipId =

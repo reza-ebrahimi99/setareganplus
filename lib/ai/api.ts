@@ -46,6 +46,7 @@ import {
   isLightweightIntent,
   resolveAiPageContext,
 } from "@/lib/ai/system-prompt";
+import { resolveAtrinOutboundContext } from "@/lib/atrin/context-bridge";
 import type {
   AiChatError,
   AiChatRequest,
@@ -119,7 +120,18 @@ async function buildOutboundMessages(request: AiChatRequest) {
   persistSummary(memory.summary);
 
   const query = extractLastUserQuery(conversation);
-  const guideIntent = detectWebsiteGuideIntent(query);
+  const atrinContext = resolveAtrinOutboundContext({
+    query,
+    recentUserTexts: conversation
+      .filter((item) => item.role === "user")
+      .slice(-6)
+      .map((item) => item.content),
+  });
+  const detectedGuideIntent = detectWebsiteGuideIntent(query);
+  const guideIntent =
+    detectedGuideIntent === "general" && atrinContext.guideIntentHint
+      ? atrinContext.guideIntentHint
+      : detectedGuideIntent;
   const lightweight =
     isLightweightIntent(guideIntent) || isTrivialConversation(query);
 
@@ -170,12 +182,15 @@ async function buildOutboundMessages(request: AiChatRequest) {
   if (!lightweight && isAiFeatureEnabled("actionPlanning")) {
     extraSections.push(formatActionPlanForPrompt(plan));
   }
+  if (!lightweight) {
+    extraSections.push(...atrinContext.extraSections);
+  }
 
   const systemPrompt = buildSystemPrompt({
     pathname,
     page,
     locale: "fa",
-    intent: guideIntent,
+    intent: atrinContext.educationActive ? "study" : guideIntent,
     relevantKnowledge: knowledge.formatted,
     extraSections,
     lightweight,
@@ -192,6 +207,8 @@ async function buildOutboundMessages(request: AiChatRequest) {
     siteHits,
     plan,
     session,
+    atrinModeId: atrinContext.modeId,
+    educationActive: atrinContext.educationActive,
     systemPrompt,
     promptTokensEstimate: estimatePromptTokens(systemPrompt),
     knowledgeIds: knowledge.hits.map((hit) => hit.block.id),

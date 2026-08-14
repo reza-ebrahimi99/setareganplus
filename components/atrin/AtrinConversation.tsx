@@ -6,6 +6,7 @@ import { AtrinHero } from "@/components/atrin/AtrinHero";
 import { AtrinMessage } from "@/components/atrin/AtrinMessage";
 import { AtrinQuickChips } from "@/components/atrin/AtrinQuickChips";
 import { AtrinTyping } from "@/components/atrin/AtrinTyping";
+import { AtrinMemoryPanel } from "@/components/atrin/os/AtrinMemoryPanel";
 import type { AtrinModeId, AtrinQuickChipId } from "@/content/atrin";
 import type { AtrinMemoryFact } from "@/lib/atrin/memory";
 import type { AiChatError, AiMessage as AiMessageType } from "@/types/ai";
@@ -30,6 +31,9 @@ export function AtrinConversation({
   isLoading,
   error,
   showWelcome,
+  memoryFacts,
+  onRemoveMemory,
+  onClearMemory,
   onSend,
   onRetry,
   onChip,
@@ -38,7 +42,7 @@ export function AtrinConversation({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, isLoading, error, showWelcome]);
+  }, [messages, isLoading, error, showWelcome, memoryFacts.length]);
 
   const lastAssistantIndex = [...messages]
     .map((item, index) => ({ item, index }))
@@ -67,6 +71,14 @@ export function AtrinConversation({
           </>
         ) : (
           <>
+            {memoryFacts.length > 0 ? (
+              <AtrinMemoryPanel
+                facts={memoryFacts}
+                onRemove={onRemoveMemory}
+                onClear={onClearMemory}
+              />
+            ) : null}
+
             {visibleMessages.map((message, index) => {
               const previous = index > 0 ? visibleMessages[index - 1] : null;
               const userQuery =

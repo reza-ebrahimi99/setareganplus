@@ -4,11 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AI_WELCOME_MESSAGE } from "@/content/ai-assistant";
 import { sendAiChat } from "@/lib/ai/api";
 import { AI_ASSISTANT_STORAGE_KEY } from "@/lib/ai/assistant-config";
+import { isAiFeatureEnabled } from "@/lib/ai/config";
 import {
   clearLocalConversation,
   getOrCreateConversationId,
   getOrCreateSessionId,
 } from "@/lib/ai/session";
+import { sendAiChatStreamingReady } from "@/lib/ai/streaming/client";
 import type { AiChatError, AiChatStatus, AiMessage } from "@/types/ai";
 
 function createId(): string {
@@ -66,6 +68,11 @@ export function useAiChat() {
   const [conversationId, setConversationId] = useState("");
   const abortRef = useRef<AbortController | null>(null);
   const lastUserTextRef = useRef<string | null>(null);
+  const messagesRef = useRef<AiMessage[]>(messages);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   useEffect(() => {
     setSessionId(getOrCreateSessionId());
@@ -108,9 +115,71 @@ export function useAiChat() {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const history = [...messages, userMessage]
+    const history = [...messagesRef.current, userMessage]
       .filter((item) => item.role === "user" || item.role === "assistant")
       .map((item) => ({ role: item.role, content: item.content }));
+
+    if (isAiFeatureEnabled("streaming")) {
+      const assistantId = createId();
+      setStatus("streaming");
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantId,
+          role: "assistant",
+          content: "",
+          createdAt: Date.now(),
+          status: "streaming",
+        },
+      ]);
+
+      const result = await sendAiChatStreamingReady(
+        { messages: history, signal: controller.signal },
+        {
+          onToken: (token) => {
+            setMessages((prev) =>
+              prev.map((item) =>
+                item.id === assistantId
+                  ? {
+                      ...item,
+                      content: `${item.content}${token}`,
+                      status: "streaming",
+                    }
+                  : item,
+              ),
+            );
+          },
+        },
+      );
+
+      abortRef.current = null;
+
+      if (!result.ok) {
+        setMessages((prev) => prev.filter((item) => item.id !== assistantId));
+        setStatus("error");
+        setError(result.error);
+        return;
+      }
+
+      setMessages((prev) =>
+        prev.map((item) =>
+          item.id === assistantId
+            ? {
+                ...item,
+                content: result.content,
+                status: "complete",
+                actions: result.actions,
+                recommendations: result.recommendations,
+                citations: result.citations,
+                suggestions: result.suggestions,
+              }
+            : item,
+        ),
+      );
+      setStatus("idle");
+      setError(null);
+      return;
+    }
 
     const result = await sendAiChat({
       messages: history,
@@ -125,66 +194,30 @@ export function useAiChat() {
       return;
     }
 
-    const assistantMessage: AiMessage = {
-      id: createId(),
-      role: "assistant",
-      content: result.content,
-      createdAt: Date.now(),
-      status: "complete",
-      actions: result.actions,
-      recommendations: result.recommendations,
-      citations: result.citations,
-      suggestions: result.suggestions,
-    };
-
-    setMessages((prev) => [...prev, assistantMessage]);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: createId(),
+        role: "assistant",
+        content: result.content,
+        createdAt: Date.now(),
+        status: "complete",
+        actions: result.actions,
+        recommendations: result.recommendations,
+        citations: result.citations,
+        suggestions: result.suggestions,
+      },
+    ]);
     setStatus("idle");
     setError(null);
-  }, [messages]);
+  }, []);
 
   const retryLast = useCallback(async () => {
     const text = lastUserTextRef.current;
     if (!text || isLoading) return;
-
     setError(null);
-    const last = messages[messages.length - 1];
-    if (last?.role === "user" && last.content === text) {
-      setStatus("loading");
-      const controller = new AbortController();
-      abortRef.current = controller;
-      const history = messages
-        .filter((item) => item.role === "user" || item.role === "assistant")
-        .map((item) => ({ role: item.role, content: item.content }));
-      const result = await sendAiChat({
-        messages: history,
-        signal: controller.signal,
-      });
-      abortRef.current = null;
-      if (!result.ok) {
-        setStatus("error");
-        setError(result.error);
-        return;
-      }
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: createId(),
-          role: "assistant",
-          content: result.content,
-          createdAt: Date.now(),
-          status: "complete",
-          actions: result.actions,
-          recommendations: result.recommendations,
-          citations: result.citations,
-          suggestions: result.suggestions,
-        },
-      ]);
-      setStatus("idle");
-      return;
-    }
-
     await sendMessage(text);
-  }, [isLoading, messages, sendMessage]);
+  }, [isLoading, sendMessage]);
 
   const clearConversation = useCallback(() => {
     abortRef.current?.abort();

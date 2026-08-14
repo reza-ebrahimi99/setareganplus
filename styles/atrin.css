@@ -645,3 +645,25 @@
   background: rgb(127 29 29 / 0.35) !important;
   color: #fecaca !important;
 }
+
+.atrin-followup-chip:active {
+  transform: translateY(1px);
+}
+
+.atrin-assistant-bubble {
+  transition: box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.atrin-assistant-bubble:hover {
+  box-shadow:
+    0 12px 40px rgb(0 0 0 / 0.35),
+    inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atrin-followup-chip,
+  .atrin-assistant-bubble {
+    transition: none !important;
+    transform: none !important;
+  }
+}

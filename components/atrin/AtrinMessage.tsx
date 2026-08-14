@@ -38,6 +38,7 @@ export function AtrinMessage({
   userQuery = null,
   showRetry,
   onRetry,
+  isLatestAssistant = false,
   onEducationAction,
   onChat,
   disabled = false,
@@ -67,6 +68,11 @@ export function AtrinMessage({
             content={message.content}
             modeId={modeId}
             userQuery={userQuery}
+            citations={message.citations}
+            actions={message.actions}
+            recommendations={message.recommendations}
+            suggestions={message.suggestions}
+            showEducation={Boolean(isLatestAssistant && userQuery)}
             onChat={chatHandler}
             disabled={disabled}
           />

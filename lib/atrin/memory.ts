@@ -17,8 +17,19 @@ function normalize(text: string): string {
 
 /** Extract lightweight client-only memory hints from user text. */
 export function extractMemoryFacts(texts: readonly string[]): AtrinMemoryFact[] {
-  const corpus = normalize(texts.slice(-8).join("\n"));
+  const corpus = normalize(texts.slice(-10).join("\n"));
   const facts: AtrinMemoryFact[] = [];
+
+  const name =
+    corpus.match(
+      /(?:اسمم|من)\s+([آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیءٔ‌]{2,16})(?:\s|$)/,
+    ) ??
+    corpus.match(
+      /(?:من)\s+([آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیءٔ‌]{2,16})\s+هستم/,
+    );
+  if (name?.[1] && !/پایه|کلاس|ریاضی|دانش/.test(name[1])) {
+    facts.push({ id: "name", label: "نام", value: name[1] });
+  }
 
   const grade = corpus.match(
     /(?:کلاس|پایه)\s*(اول|دوم|سوم|چهارم|پنجم|ششم|هفتم|هشتم|نهم|دهم|یازدهم|دوازدهم|\d{1,2})/,
@@ -27,12 +38,28 @@ export function extractMemoryFacts(texts: readonly string[]): AtrinMemoryFact[] 
     facts.push({ id: "grade", label: "پایه", value: `پایه ${grade[1]}` });
   }
 
+  const major = corpus.match(
+    /(?:رشته)\s*(ریاضی|تجربی|انسانی|فنی|هنر)/,
+  );
+  if (major?.[1]) {
+    facts.push({ id: "major", label: "رشته", value: major[1] });
+  }
+
   if (/تیزهوشان|نمونه دولتی/.test(corpus)) {
     facts.push({
       id: "gifted",
       label: "علاقه",
       value: "علاقه‌مند به تیزهوشان / نمونه دولتی",
     });
+  }
+  if (/ضعیفم|ضعف|مشکل دارم/.test(corpus) && /ریاضی/.test(corpus)) {
+    facts.push({ id: "weak-math", label: "ضعف", value: "ریاضی" });
+  }
+  if (/ضعیفم|ضعف|مشکل دارم/.test(corpus) && /فیزیک/.test(corpus)) {
+    facts.push({ id: "weak-physics", label: "ضعف", value: "فیزیک" });
+  }
+  if (/علاقه|دوست دارم|علاقه‌مند/.test(corpus) && /ریاضی/.test(corpus)) {
+    facts.push({ id: "fav-math", label: "علاقه درسی", value: "ریاضی" });
   }
   if (/ریاضی|محاسبه/.test(corpus)) {
     facts.push({ id: "math", label: "نیاز", value: "کمک در ریاضی" });
@@ -46,8 +73,25 @@ export function extractMemoryFacts(texts: readonly string[]): AtrinMemoryFact[] 
   if (/برنامه مطالعاتی|برنامه ریزی/.test(corpus)) {
     facts.push({ id: "plan", label: "هدف", value: "برنامه مطالعاتی" });
   }
+  if (/کنکور/.test(corpus)) {
+    facts.push({ id: "konkur", label: "هدف", value: "آمادگی کنکور" });
+  }
+  if (/توضیح ساده|ساده بگو|مثل مبتدی/.test(corpus)) {
+    facts.push({
+      id: "style-simple",
+      label: "سبک توضیح",
+      value: "توضیح ساده",
+    });
+  }
+  if (/گام به گام|قدم به قدم|مرحله/.test(corpus)) {
+    facts.push({
+      id: "style-steps",
+      label: "سبک توضیح",
+      value: "گام‌به‌گام",
+    });
+  }
 
-  return facts.slice(0, 6);
+  return facts.slice(0, 8);
 }
 
 export function loadMemoryOverrides(): AtrinMemoryFact[] {
