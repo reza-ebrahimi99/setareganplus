@@ -175,35 +175,40 @@ export const heroCtas = {
 } as const;
 
 /**
- * Homepage hero trust stats — CMS-ready placeholders.
- * Teacher count intentionally omitted. Values are editable later via content/CMS.
+ * Official public institution statistics — single editable source for homepage.
+ * Values are ASCII digits for animation/CMS; UI renders via toPersianDigits.
  */
-export const heroDisplayStats = [
-  {
-    id: "founded",
-    value: "۱۳۹۴",
-    label: "سال تأسیس",
-    editable: false,
-  },
+export const officialInstitutionStats = [
   {
     id: "graduates",
-    value: "—",
-    label: "فارغ‌التحصیلان",
+    value: "378",
+    label: "فارغ‌التحصیل",
     editable: true,
   },
   {
-    id: "top-school-admissions",
-    value: "—",
-    label: "قبولی مدارس برتر",
+    id: "gifted-and-nemune",
+    value: "58",
+    label: "قبولی تیزهوشان و نمونه دولتی",
     editable: true,
   },
   {
-    id: "active-students",
-    value: "—",
-    label: "دانش‌آموزان فعال",
+    id: "nemune",
+    value: "13",
+    label: "قبولی نمونه دولتی",
+    editable: true,
+  },
+  {
+    id: "staff",
+    value: "58",
+    label: "استاد، معلم و همکار آموزشی",
     editable: true,
   },
 ] as const;
+
+/**
+ * Homepage hero trust stats — sourced from officialInstitutionStats.
+ */
+export const heroDisplayStats = officialInstitutionStats;
 
 // ─── Contact (verified — shared by FinalCta and Contact sections) ────────────
 
@@ -322,30 +327,35 @@ export const whySetareganPillars = [
   {
     id: "experience",
     title: "تجربه",
+    icon: "experience" as const,
     description:
       "سال‌ها حضور در میدان آموزش نسیم‌شهر و نمایندگی رسمی قلم‌چی؛ درک واقعی از دغدغه خانواده و مسیر دانش‌آموز.",
   },
   {
     id: "mentoring",
     title: "منتورینگ",
+    icon: "mentoring" as const,
     description:
       "همراهی انسانی مشاور و دبیر؛ نه نسخه‌ی کلی، بلکه راهنمایی متناسب با پایه، هدف و شخصیت هر دانش‌آموز.",
   },
   {
     id: "planning",
     title: "برنامه‌ریزی",
+    icon: "planning" as const,
     description:
       "مسیر شفاف از دبستان تا کنکور و انتخاب رشته؛ با گام‌های قابل اندازه‌گیری و پیگیری منظم.",
   },
   {
     id: "results",
     title: "نتایج",
+    icon: "results" as const,
     description:
       "تمرکز روی خروجی واقعی: پیشرفت درسی، آمادگی آزمون و تصمیم آگاهانه برای آینده تحصیلی.",
   },
   {
     id: "technology",
     title: "فناوری",
+    icon: "technology" as const,
     description:
       "سکوی دیجیتال ستارگان پلاس و آترین؛ دسترسی سریع‌تر به راهنمایی، ثبت‌نام و خدمات مکمل.",
   },
@@ -383,6 +393,8 @@ export const educationalJourney = [
     description: "پایه‌ای محکم برای عشق به یادگیری و عادت‌های درست مطالعه.",
     href: "/about",
     mark: "۱",
+    accent: "elementary",
+    icon: "book",
   },
   {
     id: "middle",
@@ -390,6 +402,8 @@ export const educationalJourney = [
     description: "تقویت بنیان درسی و آمادگی برای مسیرهای برتر تحصیلی.",
     href: "/courses",
     mark: "۲",
+    accent: "middle",
+    icon: "layers",
   },
   {
     id: "high",
@@ -397,6 +411,8 @@ export const educationalJourney = [
     description: "برنامه منسجم پایه‌های دهم تا دوازدهم و امتحانات نهایی.",
     href: "/courses",
     mark: "۳",
+    accent: "high",
+    icon: "route",
   },
   {
     id: "konkur",
@@ -404,6 +420,8 @@ export const educationalJourney = [
     description: "آمادگی هدفمند با برنامه، آزمون و همراهی مشاور.",
     href: "/courses",
     mark: "۴",
+    accent: "konkur",
+    icon: "chart",
   },
   {
     id: "major",
@@ -411,6 +429,8 @@ export const educationalJourney = [
     description: "تصمیم آگاهانه برای آینده؛ هم‌راستا با استعداد و هدف.",
     href: "/consultation",
     mark: "۵",
+    accent: "major",
+    icon: "spark",
   },
 ] as const;
 
@@ -432,42 +452,16 @@ export const achievementsContent = {
   showcaseEyebrow: "ویترین افتخارات",
   showcaseHeading: "موفقیت‌هایی که اعتماد می‌سازد",
   showcaseDescription:
-    "افتخارات برجسته از سامانه محتوا؛ وقتی محتوا آماده باشد اینجا نمایش داده می‌شود.",
+    "جدیدترین افتخارات منتشرشده از سامانه محتوا — همگام با صفحه افتخارات.",
   showcaseCta: { label: "مشاهده همه افتخارات", href: "/achievements" },
   timelineHeading: "نشان‌ها و مسیر",
   timelineDescription: "شاخص‌های قابل ویرایش از محتوا/CMS — بدون شمارش دبیر.",
 } as const;
 
 /**
- * Homepage achievement metrics — CMS-ready placeholders.
- * Teacher count intentionally omitted.
+ * Homepage achievement metrics — same official stats as hero (single source).
  */
-export const achievementPlaceholders = [
-  {
-    id: "founded",
-    value: "۱۳۹۴",
-    label: "سال تأسیس",
-    editable: false,
-  },
-  {
-    id: "graduates",
-    value: "—",
-    label: "فارغ‌التحصیلان",
-    editable: true,
-  },
-  {
-    id: "top-school-admissions",
-    value: "—",
-    label: "قبولی مدارس برتر",
-    editable: true,
-  },
-  {
-    id: "ranks",
-    value: "—",
-    label: "رتبه‌های برجسته",
-    editable: true,
-  },
-] as const;
+export const achievementPlaceholders = officialInstitutionStats;
 
 export const achievementTimeline = [
   {
@@ -590,10 +584,10 @@ export const successStoriesContent = {
   eyebrow: "اعتماد خانواده‌ها",
   heading: "صدای والدین و دانش‌آموزان",
   description:
-    "نقل‌قول‌های تأییدشده پس از رضایت خانواده‌ها در کارت‌های شیشه‌ای اینجا نمایش داده می‌شود.",
-  emptyHeading: "در حال جمع‌آوری نظرات تأییدشده",
+    "اینجا فقط تجربهٔ واقعی خانواده‌ها جای دارد — صادقانه، محترمانه و بدون اغراق.",
+  emptyHeading: "هنوز نقل‌قولی منتشر نشده",
   emptyBody:
-    "به احترام حریم خصوصی خانواده‌ها، هیچ نقل‌قول ساختگی منتشر نمی‌کنیم. تجربه واقعی والدین و دانش‌آموزان به‌زودی در همین بخش می‌آید.",
+    "ما فقط نظرات واقعی و تأییدشده را نشان می‌دهیم. به‌محض آماده‌شدن، صدای والدین و دانش‌آموزان همین‌جا شنیده می‌شود.",
   isPlaceholder: true,
 } as const;
 
@@ -602,7 +596,7 @@ export const featuredTeachersContent = {
   heading: "چهره‌هایی که مسیر را هدایت می‌کنند",
   description:
     "آشنایی با بخشی از دبیران و مشاوران منتخب مجموعه — حرفه‌ای، دقیق و الهام‌بخش.",
-  cta: { label: "مشاهده همه اعضای تیم", href: "/team" },
+  cta: { label: "مشاهده همه اعضای تیم", href: "/about/team" },
 } as const;
 
 /** Homepage consultation conversion block */
@@ -617,10 +611,10 @@ export const consultationCtaContent = {
 
 /** Homepage Atrin product — launcher remains global via AiAssistantHost */
 export const atrinHomeContent = {
-  eyebrow: "آترین",
-  heading: "مشاور آموزشی دیجیتال ستارگان",
+  eyebrow: "دستیار هوشمند ستارگان",
+  heading: "آترین؛ مشاور آموزشی هوشمند مجموعه",
   description:
-    "آترین چت‌بات نیست؛ همراه آموزشی مؤسسه علمی ستارگان است برای راهنمایی ثبت‌نام، مشاوره، قلم‌چی و مسیر تحصیلی.",
+    "آترین دستیار هوشمند آموزشی ستارگان است — برای راهنمایی مسیر تحصیل، ثبت‌نام، قلم‌چی و انتخاب قدم بعدی؛ نه یک چت‌بات عمومی.",
   primary: { label: "آشنایی با آترین", href: "/atrin" },
   secondary: { label: "شروع گفتگو", href: "/atrin" },
   capabilities: [

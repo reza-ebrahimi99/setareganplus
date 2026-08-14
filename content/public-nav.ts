@@ -21,6 +21,33 @@ export const publicNavItems: readonly PublicNavItem[] = [
     href: "/about",
     label: "درباره ما",
     description: "داستان، هویت و مسیر مؤسسه علمی ستارگان",
+    children: [
+      {
+        href: "/about",
+        label: "معرفی مجموعه",
+        description: "شناخت هویت و مسیر ستارگان",
+      },
+      {
+        href: "/about/founder",
+        label: "معرفی بنیانگذار",
+        description: "چشم‌انداز، مأموریت و فلسفه شکل‌گیری",
+      },
+      {
+        href: "/about/team",
+        label: "تیم ما",
+        description: "مدیران، دبیران و مشاوران مجموعه",
+      },
+      {
+        href: "/about/story",
+        label: "داستان ستارگان",
+        description: "مسیر شکل‌گیری از ۱۳۹۴ تا امروز",
+      },
+      {
+        href: "/about/vision",
+        label: "ارزش‌ها و چشم‌انداز",
+        description: "اصول، مأموریت و افق آینده",
+      },
+    ],
   },
   {
     href: "/achievements",

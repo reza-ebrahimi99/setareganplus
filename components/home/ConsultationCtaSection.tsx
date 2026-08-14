@@ -19,7 +19,7 @@ export function ConsultationCtaSection() {
         aria-hidden="true"
         className="absolute inset-x-0 top-0 h-px bg-gradient-to-l from-transparent via-secondary/50 to-transparent"
       />
-      <Container className="relative py-20 sm:py-24">
+      <Container className="relative py-14 sm:py-16">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-xs font-medium tracking-[0.2em] text-secondary">
             {toPersianDigits(consultationCtaContent.eyebrow)}

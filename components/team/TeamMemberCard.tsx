@@ -21,7 +21,7 @@ export function TeamMemberCard({
       href={`/team/${member.slug}`}
       className={`teacher-card group block overflow-hidden rounded-[1.4rem] border border-border/70 bg-surface/90 transition duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
         featured
-          ? "p-3 shadow-[0_20px_50px_-34px_rgba(15,23,42,0.55)] hover:-translate-y-1 hover:border-secondary/35 hover:shadow-[0_28px_60px_-34px_rgba(15,23,42,0.55)]"
+          ? "p-3 shadow-[0_20px_50px_-34px_rgba(15,23,42,0.55)] hover:-translate-y-1.5 hover:border-secondary/40 hover:shadow-[0_30px_64px_-32px_rgba(15,23,42,0.58)]"
           : "p-4 sm:p-5 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.45)] hover:-translate-y-1 hover:border-secondary/40"
       }`}
     >

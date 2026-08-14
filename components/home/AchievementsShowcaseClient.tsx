@@ -2,16 +2,19 @@
 
 import { useDeferredValue, useMemo, useState } from "react";
 import { AchievementCard } from "@/components/achievements/AchievementCard";
+import { FeaturedAchievementSlider } from "@/components/home/FeaturedAchievementSlider";
 import type { PublicAchievementCard } from "@/lib/website/achievements";
 import { toPersianDigits } from "@/lib/persian";
 
 type AchievementsShowcaseClientProps = {
   achievements: PublicAchievementCard[];
+  featuredAchievements?: PublicAchievementCard[];
   emptyMessage: string;
 };
 
 export function AchievementsShowcaseClient({
   achievements,
+  featuredAchievements,
   emptyMessage,
 }: AchievementsShowcaseClientProps) {
   const [query, setQuery] = useState("");
@@ -45,20 +48,28 @@ export function AchievementsShowcaseClient({
     });
   }, [achievements, category, deferredQuery]);
 
-  const spotlight = filtered[0] ?? null;
-  const rest = filtered.slice(1);
+  const sliderItems =
+    featuredAchievements && featuredAchievements.length > 0
+      ? featuredAchievements
+      : achievements.filter((item) => item.isFeatured);
 
-  if (achievements.length === 0) {
+  if (achievements.length === 0 && sliderItems.length === 0) {
     return (
-      <div className="achievements-empty mt-10 rounded-[1.5rem] border border-dashed border-border/90 bg-white/40 px-6 py-12 text-center backdrop-blur-sm">
-        <p className="text-sm leading-8 text-muted">{toPersianDigits(emptyMessage)}</p>
+      <div className="achievements-empty mt-10 rounded-[1.5rem] border border-dashed border-white/20 bg-white/5 px-6 py-12 text-center backdrop-blur-sm">
+        <p className="text-sm leading-8 text-white/70">
+          {toPersianDigits(emptyMessage)}
+        </p>
       </div>
     );
   }
 
   return (
     <div className="mt-10">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      {sliderItems.length > 0 ? (
+        <FeaturedAchievementSlider achievements={sliderItems} />
+      ) : null}
+
+      <div className="mt-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div
           className="flex flex-wrap gap-2"
           role="group"
@@ -99,26 +110,9 @@ export function AchievementsShowcaseClient({
         </label>
       </div>
 
-      {spotlight ? (
-        <div className="mt-8">
-          <AchievementCard
-            achievement={spotlight}
-            size="spotlight"
-            featured
-            priority
-          />
-        </div>
-      ) : (
-        <div className="achievements-empty mt-8 rounded-[1.5rem] border border-dashed border-border/90 bg-white/40 px-6 py-10 text-center">
-          <p className="text-sm text-muted">
-            {toPersianDigits("نتیجه‌ای با این فیلتر یافت نشد.")}
-          </p>
-        </div>
-      )}
-
-      {rest.length > 0 ? (
+      {filtered.length > 0 ? (
         <ul className="achievements-masonry mt-6">
-          {rest.map((achievement, index) => (
+          {filtered.map((achievement, index) => (
             <li key={achievement.id} className="achievements-masonry-item">
               <AchievementCard
                 achievement={achievement}
@@ -128,11 +122,17 @@ export function AchievementsShowcaseClient({
             </li>
           ))}
         </ul>
-      ) : null}
+      ) : (
+        <div className="achievements-empty mt-8 rounded-[1.5rem] border border-dashed border-white/20 bg-white/5 px-6 py-10 text-center">
+          <p className="text-sm text-white/70">
+            {toPersianDigits("نتیجه‌ای با این فیلتر یافت نشد.")}
+          </p>
+        </div>
+      )}
 
-      <p className="mt-5 text-center text-xs text-muted">
+      <p className="mt-5 text-center text-xs text-white/55">
         {toPersianDigits(
-          `${filtered.length} مورد از ${achievements.length} افتخار نمایش‌داده‌شده`,
+          `${filtered.length} مورد از ${achievements.length} افتخار — همگام با صفحه افتخارات`,
         )}
       </p>
     </div>

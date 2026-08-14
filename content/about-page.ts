@@ -1,6 +1,10 @@
 import type { MediaAsset } from "@/lib/media";
 import { getAiAssistantBaseUrl } from "@/lib/ai/assistant-config";
-import { founderContent, galleryImages } from "@/content/home";
+import {
+  founderContent,
+  galleryImages,
+  officialInstitutionStats,
+} from "@/content/home";
 
 /** AI StarOS public entry — shared with floating assistant config. */
 export const AI_STAROS_URL = getAiAssistantBaseUrl();
@@ -58,12 +62,10 @@ export const aboutPageContent = {
     title: "اعدادی که مسیر ما را روایت می‌کنند",
     description:
       "هر عدد، حاصل سال‌ها همراهی با دانش‌آموزان، معلمان و خانواده‌هاست.",
-    items: [
-      { value: 378, label: "فارغ‌التحصیل" },
-      { value: 58, label: "استاد، معلم و همکار آموزشی" },
-      { value: 53, label: "قبولی تیزهوشان و نمونه دولتی" },
-      { value: 13, label: "قبولی نمونه دولتی" },
-    ],
+    items: officialInstitutionStats.map((item) => ({
+      value: item.value,
+      label: item.label,
+    })),
   },
   mission: {
     eyebrow: "مأموریت",
@@ -228,13 +230,10 @@ export const aboutPageContent = {
           "گسترش دسترسی به راهنمایی آموزشی از طریق هوش مصنوعی اختصاصی مجموعه.",
       },
     ],
-    impactStats: [
-      { value: "۱۰+", label: "بیش از یک دهه فعالیت آموزشی" },
-      { value: 378, label: "فارغ‌التحصیل" },
-      { value: 58, label: "استاد، معلم و همکار آموزشی" },
-      { value: 53, label: "قبولی تیزهوشان و نمونه دولتی" },
-      { value: 13, label: "قبولی نمونه دولتی" },
-    ],
+    impactStats: officialInstitutionStats.map((item) => ({
+      value: item.value,
+      label: item.label,
+    })),
     quote:
       "موفقیت دانش‌آموزان، بزرگ‌ترین سرمایه و افتخار مؤسسه علمی ستارگان است.",
   },
@@ -244,5 +243,65 @@ export const aboutPageContent = {
       "برای شروع مسیر پیش‌ثبت‌نام یا دریافت راهنمایی مستقیم، همین حالا با ما همراه شوید.",
     primary: { label: "پیش‌ثبت‌نام", href: "/pre-registration" },
     secondary: { label: "تماس با ما", href: "/contact" },
+  },
+} as const;
+
+/**
+ * Dedicated founder introduction page — vision & philosophy (real content only).
+ */
+export const founderPageContent = {
+  breadcrumbs: [
+    { label: "صفحه اصلی", href: "/" },
+    { label: "درباره ما", href: "/about" },
+    { label: "معرفی بنیانگذار" },
+  ],
+  hero: {
+    eyebrow: "معرفی بنیانگذار",
+    title: "چشم‌اندازی برای رشد نسل آینده",
+    subtitle:
+      "رضا ابراهیمی بنیان‌گذار مؤسسه علمی ستارگان؛ مسیر شکل‌گیری یک اکوسیستم آموزشی از تجربه تدریس تا همراهی خانواده‌ها.",
+  },
+  portrait: founderContent.portrait,
+  name: founderContent.name,
+  roles: founderContent.roles,
+  bio: founderContent.bio,
+  vision: {
+    eyebrow: "چشم‌انداز آموزشی",
+    title: "آموزش باید مسیر بسازد، نه فقط نمره",
+    body: "ستارگان از این باور شکل گرفت که دانش‌آموز به برنامه، منتورینگ و فضای قابل اعتماد نیاز دارد — نه وعدهٔ کلی و مسیر پراکنده.",
+  },
+  mission: {
+    eyebrow: "مأموریت",
+    title: aboutPageContent.mission.title,
+    body: aboutPageContent.mission.body,
+  },
+  philosophy: {
+    eyebrow: "فلسفه",
+    title: "همراهی انسانی + مسیر شفاف + فناوری هوشمند",
+    body: "تجربه تدریس و مشاوره، پایهٔ انسانی مجموعه است؛ برنامه و نتیجه، ستون اعتماد خانواده؛ و StarOS و آترین، دسترسی هوشمند به همین مسیر.",
+  },
+  whyCreated: {
+    eyebrow: "چرا ستارگان؟",
+    title: "از کلاس تا اکوسیستم",
+    body: "نیاز خانواده به یک مجموعه منسجم — از دبستان تا کنکور، از آزمون استاندارد تا مشاوره — انگیزهٔ شکل‌گیری ستارگان بود؛ تا مسیر رشد یک‌جا و قابل پیگیری باشد.",
+  },
+  journey: {
+    eyebrow: "مسیر شکل‌گیری",
+    title: "از تجربه فردی تا زیرساخت آموزشی",
+    description:
+      "نقاط عطف واقعی مسیر بنیان‌گذار و مجموعه — بدون اغراق و بدون زمان‌بندی ساختگی.",
+    milestones: aboutPageContent.founderAchievements.milestones,
+  },
+  future: {
+    eyebrow: "افق آینده",
+    title: aboutPageContent.vision.title,
+    body: aboutPageContent.vision.body,
+  },
+  quote: aboutPageContent.founderAchievements.quote,
+  cta: {
+    heading: "آشنایی بیشتر با مجموعه",
+    description: "داستان مؤسسه، تیم آموزشی و مسیر ثبت‌نام را ادامه دهید.",
+    primary: { label: "درباره مجموعه", href: "/about" },
+    secondary: { label: "تیم ما", href: "/about/team" },
   },
 } as const;

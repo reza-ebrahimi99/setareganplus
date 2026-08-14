@@ -6,13 +6,21 @@ import {
   achievementsContent,
   achievementTimeline,
 } from "@/content/home";
-import { loadFeaturedAchievements } from "@/lib/website/achievements";
+import {
+  loadFeaturedAchievements,
+  loadPublicAchievementPage,
+} from "@/lib/website/achievements";
 import { toPersianDigits } from "@/lib/persian";
 
 const headingId = "achievements-heading";
 
 export async function AchievementsSection() {
-  const featured = await loadFeaturedAchievements();
+  /** Same CMS source as /achievements — newest published items appear automatically. */
+  const [page, featuredAchievements] = await Promise.all([
+    loadPublicAchievementPage({ page: 1 }),
+    loadFeaturedAchievements(),
+  ]);
+  const achievements = page?.achievements ?? [];
 
   return (
     <section
@@ -23,8 +31,8 @@ export async function AchievementsSection() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(212,175,55,0.14),_transparent_50%)]"
       />
-      <Container className="relative py-16 sm:py-20">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+      <Container className="relative py-12 sm:py-16">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <p className="text-xs font-medium tracking-[0.18em] text-secondary">
               {toPersianDigits(achievementsContent.eyebrow)}
@@ -41,15 +49,18 @@ export async function AchievementsSection() {
           </div>
           <Link
             href={achievementsContent.showcaseCta.href}
-            className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-2xl bg-secondary px-6 text-sm font-semibold text-primary shadow-[0_14px_40px_-16px_rgba(212,175,55,0.7)] transition hover:bg-secondary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+            className="achievements-cta-premium inline-flex min-h-12 shrink-0 items-center justify-center rounded-2xl bg-secondary px-7 text-sm font-semibold text-primary transition hover:bg-secondary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
           >
             {achievementsContent.showcaseCta.label}
           </Link>
         </div>
 
-        <ul className="mt-12 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        <ul className="mt-9 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
           {achievementPlaceholders.map((stat) => (
-            <li key={stat.id} className="flagship-metric-card flagship-metric-card--on-dark">
+            <li
+              key={stat.id}
+              className="flagship-metric-card flagship-metric-card--on-dark"
+            >
               <p className="text-2xl font-bold text-secondary sm:text-3xl">
                 {toPersianDigits(stat.value)}
               </p>
@@ -60,7 +71,7 @@ export async function AchievementsSection() {
           ))}
         </ul>
 
-        <div className="mt-14">
+        <div className="mt-12">
           <p className="text-xs font-medium tracking-wide text-secondary">
             {toPersianDigits(achievementsContent.showcaseEyebrow)}
           </p>
@@ -72,19 +83,29 @@ export async function AchievementsSection() {
           </p>
 
           <AchievementsShowcaseClient
-            achievements={featured}
-            emptyMessage="به‌زودی افتخارات برجسته از سامانه محتوا اینجا نمایش داده می‌شود."
+            achievements={achievements}
+            featuredAchievements={featuredAchievements}
+            emptyMessage="به‌زودی افتخارات منتشرشده از سامانه محتوا اینجا نمایش داده می‌شود."
           />
         </div>
 
-        <div className="mt-16">
+        <div className="mt-12 flex justify-center">
+          <Link
+            href={achievementsContent.showcaseCta.href}
+            className="achievements-cta-premium achievements-cta-premium--xl inline-flex min-h-12 items-center justify-center rounded-2xl bg-secondary px-8 text-sm font-semibold text-primary transition hover:bg-secondary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+          >
+            {achievementsContent.showcaseCta.label}
+          </Link>
+        </div>
+
+        <div className="mt-14">
           <p className="text-xs font-medium tracking-wide text-secondary">
             {toPersianDigits(achievementsContent.timelineHeading)}
           </p>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-white/70">
             {toPersianDigits(achievementsContent.timelineDescription)}
           </p>
-          <ol className="achievement-timeline-alive mt-10">
+          <ol className="achievement-timeline-alive mt-8">
             {achievementTimeline.map((item, index) => (
               <li key={item.id} className="achievement-timeline-alive-item">
                 <span aria-hidden="true" className="achievement-timeline-alive-dot" />

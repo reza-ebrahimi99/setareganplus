@@ -10,6 +10,10 @@ import type { Metadata } from "next";
 type PublicPageKey =
   | "home"
   | "about"
+  | "aboutFounder"
+  | "aboutTeam"
+  | "aboutStory"
+  | "aboutVision"
   | "gallery"
   | "shop"
   | "contact"
@@ -48,6 +52,34 @@ const PUBLIC_PAGE_SEO: Record<PublicPageKey, CreatePageMetadataInput> = {
       "دبستان غیردولتی نسیم شهر",
       "مجموعه ستارگان",
     ],
+  },
+  aboutFounder: {
+    path: "/about/founder",
+    title: "معرفی بنیانگذار | ستارگان پلاس",
+    description:
+      "آشنایی با چشم‌انداز، مأموریت و فلسفه شکل‌گیری مؤسسه علمی ستارگان از نگاه بنیان‌گذار.",
+    keywords: ["بنیانگذار ستارگان", "رضا ابراهیمی", "مؤسسه علمی ستارگان"],
+  },
+  aboutTeam: {
+    path: "/about/team",
+    title: "تیم ما | ستارگان پلاس",
+    description:
+      "معرفی مدیران، دبیران، مشاوران و همکاران مؤسسه علمی ستارگان در نسیم‌شهر.",
+    keywords: ["تیم ستارگان پلاس", "دبیران نسیم شهر", "مشاوران تحصیلی"],
+  },
+  aboutStory: {
+    path: "/about/story",
+    title: "داستان ستارگان | ستارگان پلاس",
+    description:
+      "مسیر شکل‌گیری مجموعه ستارگان از آغاز فعالیت تا اکوسیستم آموزشی امروز در نسیم‌شهر.",
+    keywords: ["داستان ستارگان", "تاریخچه مؤسسه ستارگان", "نسیم شهر"],
+  },
+  aboutVision: {
+    path: "/about/vision",
+    title: "ارزش‌ها و چشم‌انداز | ستارگان پلاس",
+    description:
+      "مأموریت، چشم‌انداز و ارزش‌های بنیادین مؤسسه علمی ستارگان برای رشد دانش‌آموزان و خانواده‌ها.",
+    keywords: ["چشم انداز ستارگان", "ارزش های آموزشی", "مأموریت ستارگان"],
   },
   gallery: {
     path: "/gallery",

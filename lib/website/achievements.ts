@@ -293,55 +293,59 @@ export async function loadPublicAchievementPage(filters?: {
   q?: string;
   page?: number;
 }): Promise<PublicAchievementPageData | null> {
-  const organization = await getCurrentOrganization();
-  if (!organization) return null;
+  try {
+    const organization = await getCurrentOrganization();
+    if (!organization) return null;
 
-  const pageSize = PUBLIC_ACHIEVEMENT_PAGE_SIZE;
-  const where = publicAchievementWhere(organization.id, filters);
+    const pageSize = PUBLIC_ACHIEVEMENT_PAGE_SIZE;
+    const where = publicAchievementWhere(organization.id, filters);
 
-  const [total, schoolYearRows] = await Promise.all([
-    prisma.achievement.count({ where }),
-    prisma.achievement.findMany({
-      where: {
-        organizationId: organization.id,
-        deletedAt: null,
-        archivedAt: null,
-        isPublished: true,
-        schoolYear: { not: null },
-      },
-      distinct: ["schoolYear"],
-      select: { schoolYear: true },
-      orderBy: { schoolYear: "desc" },
-    }),
-  ]);
+    const [total, schoolYearRows] = await Promise.all([
+      prisma.achievement.count({ where }),
+      prisma.achievement.findMany({
+        where: {
+          organizationId: organization.id,
+          deletedAt: null,
+          archivedAt: null,
+          isPublished: true,
+          schoolYear: { not: null },
+        },
+        distinct: ["schoolYear"],
+        select: { schoolYear: true },
+        orderBy: { schoolYear: "desc" },
+      }),
+    ]);
 
-  const pageCount = Math.max(1, Math.ceil(total / pageSize));
-  const requested = filters?.page && filters.page > 0 ? filters.page : 1;
-  const page = Math.min(requested, pageCount);
+    const pageCount = Math.max(1, Math.ceil(total / pageSize));
+    const requested = filters?.page && filters.page > 0 ? filters.page : 1;
+    const page = Math.min(requested, pageCount);
 
-  const rows = await prisma.achievement.findMany({
-    where,
-    orderBy: [
-      { isFeatured: "desc" },
-      { featuredPriority: "asc" },
-      { achievementDate: "desc" },
-      { displayOrder: "asc" },
-    ],
-    skip: (page - 1) * pageSize,
-    take: pageSize,
-    select: publicCardSelect,
-  });
+    const rows = await prisma.achievement.findMany({
+      where,
+      orderBy: [
+        { isFeatured: "desc" },
+        { featuredPriority: "asc" },
+        { achievementDate: "desc" },
+        { displayOrder: "asc" },
+      ],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      select: publicCardSelect,
+    });
 
-  return {
-    achievements: rows.map((row) => toPublicAchievementCard(row, "w480")),
-    total,
-    page,
-    pageSize,
-    pageCount,
-    schoolYears: schoolYearRows
-      .map((row) => row.schoolYear)
-      .filter((value): value is string => Boolean(value)),
-  };
+    return {
+      achievements: rows.map((row) => toPublicAchievementCard(row, "w480")),
+      total,
+      page,
+      pageSize,
+      pageCount,
+      schoolYears: schoolYearRows
+        .map((row) => row.schoolYear)
+        .filter((value): value is string => Boolean(value)),
+    };
+  } catch {
+    return null;
+  }
 }
 
 export type PublicAchievementDetail = PublicAchievementCard & {

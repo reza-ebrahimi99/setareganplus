@@ -839,11 +839,12 @@ body {
 }
 
 .achievement-card:hover {
-  border-color: rgb(212 175 55 / 0.42);
+  border-color: rgb(212 175 55 / 0.55);
   box-shadow:
-    0 18px 42px -16px rgb(15 23 42 / 0.4),
-    0 0 0 1px rgb(212 175 55 / 0.08);
-  transform: translateY(-0.2rem);
+    0 22px 48px -14px rgb(15 23 42 / 0.45),
+    0 0 0 1px rgb(212 175 55 / 0.18),
+    0 0 28px rgb(212 175 55 / 0.12);
+  transform: translateY(-0.28rem);
 }
 
 .achievement-card:focus-visible {
@@ -1330,8 +1331,9 @@ body {
 
 .flagship-hero-glow {
   background:
-    radial-gradient(circle at 72% 28%, rgb(212 175 55 / 0.16), transparent 26%),
-    radial-gradient(circle at 22% 68%, rgb(255 255 255 / 0.04), transparent 30%);
+    radial-gradient(circle at 72% 28%, rgb(212 175 55 / 0.22), transparent 28%),
+    radial-gradient(circle at 18% 22%, rgb(212 175 55 / 0.08), transparent 24%),
+    radial-gradient(circle at 22% 68%, rgb(255 255 255 / 0.05), transparent 32%);
   pointer-events: none;
 }
 
@@ -1748,5 +1750,214 @@ body {
   .journey-card-inner {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* ── Flagship polish: featured slider, journey accents, why rhythm ── */
+
+.featured-achievement-slider {
+  outline: none;
+  touch-action: pan-y;
+}
+
+.featured-achievement-slider:focus-visible {
+  box-shadow: 0 0 0 3px rgb(212 175 55 / 0.35);
+  border-radius: 1.25rem;
+}
+
+.featured-achievement-slide {
+  animation: featured-slide-in 520ms ease both;
+}
+
+@keyframes featured-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.featured-achievement-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  background: rgb(255 255 255 / 0.18);
+  transition: width 180ms ease, background-color 180ms ease, border-color 180ms ease;
+}
+
+.featured-achievement-dot--active {
+  width: 1.35rem;
+  border-color: rgb(212 175 55 / 0.65);
+  background: var(--secondary);
+}
+
+.featured-achievement-nav {
+  display: inline-flex;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.85rem;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  background: rgb(255 255 255 / 0.08);
+  color: #fff;
+  font-size: 1.15rem;
+  line-height: 1;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.featured-achievement-nav:hover {
+  border-color: rgb(212 175 55 / 0.45);
+  background: rgb(212 175 55 / 0.16);
+}
+
+.featured-achievement-nav:focus-visible {
+  outline: 2px solid rgb(212 175 55 / 0.9);
+  outline-offset: 2px;
+}
+
+.achievements-cta-premium {
+  box-shadow:
+    0 0 0 1px rgb(212 175 55 / 0.2),
+    0 16px 36px -12px rgb(212 175 55 / 0.55);
+}
+
+.achievements-cta-premium:hover {
+  box-shadow:
+    0 0 0 1px rgb(212 175 55 / 0.3),
+    0 20px 42px -10px rgb(212 175 55 / 0.65);
+  transform: translateY(-1px);
+}
+
+.achievements-cta-premium--xl {
+  min-width: min(100%, 18rem);
+  letter-spacing: 0.01em;
+}
+
+.why-timeline-item--alive {
+  padding-block: 0.65rem;
+}
+
+@media (min-width: 768px) {
+  .why-timeline-item--alive {
+    padding-block: 0.85rem;
+  }
+}
+
+.why-timeline-node--icon {
+  min-width: 2.85rem;
+  min-height: 2.85rem;
+  padding: 0.55rem;
+  color: var(--secondary);
+}
+
+.why-timeline-card {
+  border: 1px solid rgb(226 232 240 / 0.95);
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(165deg, rgb(255 255 255 / 0.96), rgb(248 250 252 / 0.9));
+  padding: 1.05rem 1.15rem 1.15rem;
+  box-shadow: 0 18px 44px -36px rgb(15 23 42 / 0.5);
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.why-timeline-item:hover .why-timeline-card {
+  transform: translateY(-2px);
+  border-color: rgb(212 175 55 / 0.4);
+  box-shadow: 0 24px 50px -34px rgb(15 23 42 / 0.5);
+}
+
+.why-timeline-step {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgb(212 175 55 / 0.9);
+}
+
+.journey-card--elementary .journey-mark {
+  background: linear-gradient(145deg, #0f172a, #1e3a5f);
+  border-color: rgb(96 165 250 / 0.45);
+  color: #93c5fd;
+}
+
+.journey-card--middle .journey-mark {
+  background: linear-gradient(145deg, #0f172a, #134e4a);
+  border-color: rgb(45 212 191 / 0.45);
+  color: #5eead4;
+}
+
+.journey-card--high .journey-mark {
+  background: linear-gradient(145deg, #0f172a, #3b2f15);
+  border-color: rgb(212 175 55 / 0.5);
+  color: var(--secondary);
+}
+
+.journey-card--konkur .journey-mark {
+  background: linear-gradient(145deg, #0f172a, #4c1d1d);
+  border-color: rgb(251 146 60 / 0.5);
+  color: #fdba74;
+}
+
+.journey-card--major .journey-mark {
+  background: linear-gradient(145deg, #0f172a, #312e81);
+  border-color: rgb(167 139 250 / 0.5);
+  color: #c4b5fd;
+}
+
+.journey-card--elementary.journey-card-inner:hover {
+  border-color: rgb(96 165 250 / 0.45);
+}
+
+.journey-card--middle.journey-card-inner:hover {
+  border-color: rgb(45 212 191 / 0.45);
+}
+
+.journey-card--high.journey-card-inner:hover {
+  border-color: rgb(212 175 55 / 0.5);
+}
+
+.journey-card--konkur.journey-card-inner:hover {
+  border-color: rgb(251 146 60 / 0.5);
+}
+
+.journey-card--major.journey-card-inner:hover {
+  border-color: rgb(167 139 250 / 0.5);
+}
+
+.journey-connector {
+  width: 1.1rem;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgb(212 175 55 / 0.55));
+  font-size: 0;
+}
+
+.team-directory-cta {
+  box-shadow: 0 14px 34px -16px rgb(15 23 42 / 0.55);
+}
+
+.team-directory-cta:hover {
+  box-shadow: 0 18px 40px -14px rgb(15 23 42 / 0.6);
+  transform: translateY(-1px);
+}
+
+.teacher-card:active {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .featured-achievement-slide,
+  .why-timeline-card,
+  .achievements-cta-premium,
+  .team-directory-cta {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
   }
 }

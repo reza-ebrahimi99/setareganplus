@@ -15,9 +15,9 @@ export function AtrinHomeSection() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(212,175,55,0.12),_transparent_45%),radial-gradient(ellipse_at_bottom_right,_rgba(15,23,42,0.08),_transparent_50%)]"
       />
-      <Container className="relative py-16 sm:py-20">
+      <Container className="relative py-12 sm:py-16">
         <div className="overflow-hidden rounded-[1.75rem] border border-border/80 bg-surface/80 p-6 shadow-[0_30px_80px_-48px_rgba(15,23,42,0.55)] backdrop-blur-xl sm:p-10 lg:p-12">
-          <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
+          <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-10">
             <div className="lg:col-span-5">
               <p className="text-xs font-medium tracking-[0.18em] text-secondary">
                 {toPersianDigits(atrinHomeContent.eyebrow)}
@@ -28,7 +28,10 @@ export function AtrinHomeSection() {
               >
                 {toPersianDigits(atrinHomeContent.heading)}
               </h2>
-              <p className="mt-5 max-w-md text-base leading-9 text-muted">
+              <p className="mt-3 text-sm font-medium text-secondary/90">
+                {toPersianDigits("دستیار هوشمند آموزشی مؤسسه علمی ستارگان")}
+              </p>
+              <p className="mt-4 max-w-md text-base leading-9 text-muted">
                 {toPersianDigits(atrinHomeContent.description)}
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">

@@ -52,7 +52,7 @@ export function AchievementCard({
                 : "(max-width: 768px) 100vw, 360px"
             }
             priority={priority}
-            className="object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.03]"
+            className="object-cover transition-transform duration-700 ease-out motion-safe:group-hover:scale-[1.06]"
           />
         ) : (
           <div className="flex h-full items-center justify-center px-4 text-center text-sm font-medium text-primary/50">
