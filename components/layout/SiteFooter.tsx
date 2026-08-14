@@ -22,19 +22,24 @@ export function SiteFooter() {
   const achievements = footerGroup("دستاوردها");
 
   return (
-    <footer className="site-footer mt-auto border-t border-white/10 bg-primary text-white">
+    <footer className="site-footer mt-auto border-t border-white/10 bg-[linear-gradient(180deg,#0f172a_0%,#0b1220_100%)] text-white">
       <Container className="py-16 sm:py-20">
-        <div className="grid gap-12 lg:grid-cols-12 lg:gap-10">
-          <div className="lg:col-span-4">
-            <p className="text-2xl font-bold tracking-tight">{siteConfig.name}</p>
-            <p className="mt-4 max-w-sm text-sm leading-8 text-slate-300">
-              {footerContent.description}
-            </p>
-            <p className="mt-3 text-sm leading-7 text-slate-400">
-              {footerContent.note}
-            </p>
+        <div className="mb-12 max-w-2xl">
+          <p className="text-xs font-medium tracking-[0.18em] text-secondary">
+            اکوسیستم آموزشی
+          </p>
+          <p className="mt-3 text-3xl font-bold tracking-tight">{siteConfig.name}</p>
+          <p className="mt-4 text-sm leading-8 text-slate-300">
+            {footerContent.description}
+          </p>
+          <p className="mt-3 text-sm leading-7 text-slate-400">
+            {footerContent.note}
+          </p>
+        </div>
 
-            <div className="mt-8 space-y-2">
+        <div className="grid gap-12 lg:grid-cols-12 lg:gap-10">
+          <div className="lg:col-span-3">
+            <div className="space-y-2">
               <p className="text-xs font-medium tracking-wide text-secondary">
                 تماس
               </p>

@@ -1,6 +1,4 @@
 import { Container } from "@/components/ui/Container";
-import { Section } from "@/components/ui/Section";
-import { SectionHeader } from "@/components/ui/SectionHeader";
 import {
   whySetareganContent,
   whySetareganPillars,
@@ -11,46 +9,49 @@ const headingId = "why-setaregan-heading";
 
 export function WhySetareganSection() {
   return (
-    <Section
-      className="flagship-section overflow-hidden"
-      ariaLabelledby={headingId}
+    <section
+      aria-labelledby={headingId}
+      className="section-rhythm-light relative overflow-hidden"
     >
-      <Container>
-        <SectionHeader
-          eyebrow={whySetareganContent.eyebrow}
-          heading={whySetareganContent.heading}
-          description={whySetareganContent.description}
-          headingId={headingId}
-        />
+      <Container className="py-16 sm:py-20">
+        <div className="max-w-2xl">
+          <p className="text-xs font-medium tracking-[0.18em] text-secondary">
+            {toPersianDigits(whySetareganContent.eyebrow)}
+          </p>
+          <h2
+            id={headingId}
+            className="mt-3 text-3xl font-bold tracking-tight text-primary sm:text-4xl"
+          >
+            {toPersianDigits(whySetareganContent.heading)}
+          </h2>
+          <p className="mt-4 text-base leading-9 text-muted sm:text-lg sm:leading-10">
+            {toPersianDigits(whySetareganContent.description)}
+          </p>
+        </div>
 
-        <ol className="why-story mt-14 space-y-0">
-          {whySetareganPillars.map((pillar, index) => {
-            const reverse = index % 2 === 1;
-            return (
-              <li
-                key={pillar.id}
-                className={`why-story-row grid gap-6 border-t border-border/80 py-10 md:grid-cols-12 md:gap-10 md:py-12 ${
-                  reverse ? "md:[&>*:first-child]:order-2" : ""
-                }`}
-              >
-                <div className="md:col-span-4">
-                  <p className="text-xs font-medium tracking-[0.2em] text-secondary">
-                    {toPersianDigits(String(index + 1).padStart(2, "0"))}
-                  </p>
-                  <h3 className="mt-3 text-2xl font-bold text-primary sm:text-3xl">
-                    {toPersianDigits(pillar.title)}
-                  </h3>
-                </div>
-                <div className="md:col-span-7 md:col-start-6">
-                  <p className="max-w-xl text-base leading-9 text-muted sm:text-lg sm:leading-10">
-                    {toPersianDigits(pillar.description)}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
+        <ol className="why-timeline mt-14">
+          {whySetareganPillars.map((pillar, index) => (
+            <li key={pillar.id} className="why-timeline-item">
+              <div className="why-timeline-rail" aria-hidden="true">
+                <span className="why-timeline-node">
+                  {toPersianDigits(String(index + 1).padStart(2, "0"))}
+                </span>
+                {index < whySetareganPillars.length - 1 ? (
+                  <span className="why-timeline-line" />
+                ) : null}
+              </div>
+              <div className="why-timeline-copy">
+                <h3 className="text-2xl font-bold text-primary sm:text-3xl">
+                  {toPersianDigits(pillar.title)}
+                </h3>
+                <p className="mt-3 max-w-xl text-base leading-9 text-muted sm:text-lg sm:leading-10">
+                  {toPersianDigits(pillar.description)}
+                </p>
+              </div>
+            </li>
+          ))}
         </ol>
       </Container>
-    </Section>
+    </section>
   );
 }

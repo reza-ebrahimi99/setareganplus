@@ -1290,6 +1290,19 @@ body {
   padding: 0.9rem;
   box-shadow: 0 28px 70px -36px rgb(15 23 42 / 0.55);
   backdrop-filter: blur(18px);
+  animation: site-mega-in 180ms ease-out both;
+  transform-origin: top center;
+}
+
+@keyframes site-mega-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.35rem) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .flagship-hero-shell {
@@ -1473,3 +1486,267 @@ body {
   }
 }
 
+.site-header-cta-primary {
+  box-shadow: 0 10px 28px -12px rgb(212 175 55 / 0.55);
+}
+
+.hero-logo-aura {
+  position: absolute;
+  inset: -1.4rem -1.6rem auto auto;
+  width: 9rem;
+  height: 9rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgb(212 175 55 / 0.35), transparent 68%);
+  filter: blur(2px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-cta--dominant {
+  box-shadow:
+    0 0 0 1px rgb(212 175 55 / 0.2),
+    0 16px 40px rgb(212 175 55 / 0.38),
+    0 0 36px rgb(212 175 55 / 0.2);
+}
+
+.hero-cta--dominant:hover {
+  box-shadow:
+    0 0 0 1px rgb(212 175 55 / 0.3),
+    0 20px 48px rgb(212 175 55 / 0.5),
+    0 0 44px rgb(212 175 55 / 0.28);
+}
+
+.section-rhythm-light {
+  background:
+    radial-gradient(ellipse at top, rgb(255 255 255) 0%, rgb(248 250 252) 100%);
+}
+
+.section-rhythm-gradient {
+  background:
+    radial-gradient(ellipse at top, rgb(212 175 55 / 0.08), transparent 55%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+}
+
+.achievements-showcase {
+  background:
+    radial-gradient(ellipse at top, rgb(30 41 59) 0%, rgb(15 23 42) 48%, rgb(7 11 20) 100%);
+}
+
+.flagship-metric-card--on-dark {
+  border-color: rgb(255 255 255 / 0.12);
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.04));
+  box-shadow: 0 18px 50px -34px rgb(0 0 0 / 0.65);
+  backdrop-filter: blur(12px);
+}
+
+.achievement-filter-chip {
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  background: rgb(255 255 255 / 0.06);
+  padding: 0.4rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgb(255 255 255 / 0.78);
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.achievement-filter-chip:hover {
+  border-color: rgb(212 175 55 / 0.4);
+  color: #fff;
+}
+
+.achievement-filter-chip--active {
+  border-color: rgb(212 175 55 / 0.55);
+  background: rgb(212 175 55 / 0.18);
+  color: var(--secondary);
+}
+
+.achievement-search-input {
+  width: 100%;
+  min-height: 2.65rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  background: rgb(255 255 255 / 0.08);
+  padding: 0.55rem 0.9rem;
+  color: #fff;
+  outline: none;
+}
+
+.achievement-search-input::placeholder {
+  color: rgb(255 255 255 / 0.45);
+}
+
+.achievement-search-input:focus {
+  border-color: rgb(212 175 55 / 0.45);
+  box-shadow: 0 0 0 3px rgb(212 175 55 / 0.15);
+}
+
+.achievements-masonry {
+  display: grid;
+  gap: 1.15rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .achievements-masonry {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .achievements-masonry {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.achievement-timeline-alive {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .achievement-timeline-alive {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+.achievement-timeline-alive-item {
+  position: relative;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 1.25rem;
+  background: rgb(255 255 255 / 0.05);
+  padding: 1.25rem 1.25rem 1.25rem 1.65rem;
+  backdrop-filter: blur(10px);
+}
+
+.achievement-timeline-alive-dot {
+  position: absolute;
+  top: 1.45rem;
+  right: 0.85rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: var(--secondary);
+  box-shadow: 0 0 0 4px rgb(212 175 55 / 0.18);
+}
+
+.achievement-timeline-alive-line {
+  position: absolute;
+  top: 2.1rem;
+  right: 1.05rem;
+  width: 2px;
+  height: calc(100% - 1.2rem);
+  background: linear-gradient(180deg, rgb(212 175 55 / 0.45), transparent);
+}
+
+@media (min-width: 768px) {
+  .achievement-timeline-alive-line {
+    display: none;
+  }
+}
+
+.why-timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.why-timeline-item {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 1.1rem;
+  padding-block: 1.35rem;
+}
+
+@media (min-width: 768px) {
+  .why-timeline-item {
+    grid-template-columns: 5rem 1fr;
+    gap: 1.75rem;
+    padding-block: 1.75rem;
+  }
+}
+
+.why-timeline-rail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.why-timeline-node {
+  display: inline-flex;
+  min-width: 2.6rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgb(212 175 55 / 0.35);
+  background: rgb(15 23 42 / 0.96);
+  padding: 0.4rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--secondary);
+  z-index: 1;
+}
+
+.why-timeline-line {
+  flex: 1 1 auto;
+  width: 2px;
+  min-height: 2.5rem;
+  margin-top: 0.45rem;
+  background: linear-gradient(180deg, rgb(212 175 55 / 0.45), rgb(226 232 240 / 0.7));
+}
+
+.journey-card-inner {
+  height: 100%;
+  border: 1px solid rgb(226 232 240 / 0.95);
+  border-radius: 1.4rem;
+  background: rgb(255 255 255 / 0.88);
+  padding: 1.25rem;
+  box-shadow: 0 22px 55px -40px rgb(15 23 42 / 0.55);
+  backdrop-filter: blur(10px);
+  transition: transform 240ms ease, border-color 240ms ease, box-shadow 240ms ease;
+}
+
+.journey-card-inner:hover {
+  transform: translateY(-4px);
+  border-color: rgb(212 175 55 / 0.4);
+  box-shadow: 0 28px 60px -36px rgb(15 23 42 / 0.55);
+}
+
+.journey-mark {
+  display: inline-flex;
+  width: 3rem;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  border: 1px solid rgb(212 175 55 / 0.35);
+  background: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+.journey-connector {
+  position: absolute;
+  top: 1.65rem;
+  left: -0.7rem;
+  z-index: 2;
+  font-size: 0.75rem;
+  color: rgb(212 175 55 / 0.7);
+}
+
+.premium-hero-cover,
+.premium-hero-video {
+  opacity: 0.46;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-mega-panel,
+  .hero-cta--dominant,
+  .journey-card-inner {
+    animation: none !important;
+    transition: none !important;
+  }
+}

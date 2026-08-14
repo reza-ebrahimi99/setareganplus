@@ -229,15 +229,18 @@ export function PremiumHeroStage({
             </p>
 
             <div className="mt-8 flex flex-wrap items-end gap-5 sm:gap-6">
-              <div className="flex flex-col items-start gap-2">
-                <BrandMark
-                  media={logo}
-                  priority
-                  clear
-                  dominant
-                  fallback={<HeroLogoFallback label="ستارگان" />}
-                />
-                <p className="text-base font-semibold tracking-wide text-white sm:text-lg">
+              <div className="relative flex flex-col items-start gap-2">
+                <div className="hero-logo-aura" aria-hidden="true" />
+                <div className="relative z-[1]">
+                  <BrandMark
+                    media={logo}
+                    priority
+                    clear
+                    dominant
+                    fallback={<HeroLogoFallback label="ستارگان" />}
+                  />
+                </div>
+                <p className="relative text-base font-semibold tracking-wide text-white sm:text-lg">
                   {toPersianDigits(brand)}
                 </p>
               </div>
@@ -245,7 +248,7 @@ export function PremiumHeroStage({
                 aria-hidden="true"
                 className="mb-10 hidden h-14 w-px bg-white/15 sm:block"
               />
-              <div className="mb-2 flex flex-col items-start gap-1.5 opacity-80">
+              <div className="mb-2 flex flex-col items-start gap-1.5 opacity-75">
                 <BrandMark
                   media={ghalamchiLogo}
                   fallback={<HeroLogoFallback label="قلم‌چی" />}
@@ -258,12 +261,12 @@ export function PremiumHeroStage({
 
             <h1
               id="hero-heading"
-              className="flagship-hero-title mt-10 text-[2.35rem] font-bold tracking-tight text-white sm:text-5xl lg:text-[3.5rem] lg:leading-[1.1]"
+              className="flagship-hero-title mt-12 text-[2.45rem] font-bold tracking-tight text-white sm:text-5xl lg:text-[3.65rem] lg:leading-[1.08]"
             >
               {toPersianDigits(title)}
             </h1>
 
-            <p className="mt-6 max-w-xl text-base font-medium leading-9 text-white/88 sm:text-xl sm:leading-10">
+            <p className="mt-7 max-w-xl text-base font-medium leading-9 text-white/90 sm:text-xl sm:leading-10">
               {toPersianDigits(subtitle)}
             </p>
 
@@ -275,8 +278,8 @@ export function PremiumHeroStage({
                   variant={cta.variant}
                   className={
                     index === 0
-                      ? "hero-cta hero-cta--primary min-h-12 rounded-2xl px-7"
-                      : "hero-cta hero-cta--ghost min-h-12 rounded-2xl px-5 backdrop-blur-md"
+                      ? "hero-cta hero-cta--primary hero-cta--dominant min-h-[3.25rem] rounded-2xl px-8 text-base"
+                      : "hero-cta hero-cta--ghost min-h-11 rounded-2xl px-5 text-sm backdrop-blur-md opacity-95"
                   }
                 >
                   {cta.label}

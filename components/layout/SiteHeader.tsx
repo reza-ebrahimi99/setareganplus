@@ -76,10 +76,10 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
 
   return (
     <header
-      className={`site-header fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 ${
+      className={`site-header fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,box-shadow,backdrop-filter,padding] duration-500 ease-out ${
         overHero
           ? "site-header--over-hero border-b border-transparent bg-transparent"
-          : "site-header--solid border-b border-border/70 bg-surface/80 shadow-[0_10px_40px_-28px_rgba(15,23,42,0.45)] backdrop-blur-xl"
+          : "site-header--solid border-b border-border/60 bg-surface/75 shadow-[0_12px_48px_-28px_rgba(15,23,42,0.5)] backdrop-blur-2xl"
       }${compact ? " site-header--compact" : ""}`}
     >
       <Container
@@ -171,7 +171,9 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
           <Button
             href={headerCtas.primary.href}
             variant="secondary"
-            className="hidden min-h-10 sm:inline-flex"
+            className={`hidden min-h-10 sm:inline-flex ${
+              overHero ? "" : "site-header-cta-primary"
+            }`}
           >
             {headerCtas.primary.label}
           </Button>

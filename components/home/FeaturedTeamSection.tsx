@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
-import { SectionHeader } from "@/components/ui/SectionHeader";
 import { TeamMemberCard } from "@/components/team/TeamMemberCard";
 import { featuredTeachersContent } from "@/content/home";
 import { loadFeaturedTeamMembers } from "@/lib/website/load-team";
+import { toPersianDigits } from "@/lib/persian";
 
 export async function FeaturedTeamSection() {
   const members = await loadFeaturedTeamMembers();
@@ -12,17 +12,25 @@ export async function FeaturedTeamSection() {
   return (
     <section
       aria-labelledby="featured-team-heading"
-      className="border-y border-border/60 bg-gradient-to-b from-background via-surface to-background py-16 sm:py-20"
+      className="section-rhythm-light border-y border-border/50"
     >
-      <Container>
-        <SectionHeader
-          eyebrow={featuredTeachersContent.eyebrow}
-          heading={featuredTeachersContent.heading}
-          description={featuredTeachersContent.description}
-          headingId="featured-team-heading"
-        />
+      <Container className="py-16 sm:py-20">
+        <div className="max-w-2xl">
+          <p className="text-xs font-medium tracking-[0.18em] text-secondary">
+            {toPersianDigits(featuredTeachersContent.eyebrow)}
+          </p>
+          <h2
+            id="featured-team-heading"
+            className="mt-3 text-3xl font-bold tracking-tight text-primary sm:text-4xl"
+          >
+            {toPersianDigits(featuredTeachersContent.heading)}
+          </h2>
+          <p className="mt-4 text-base leading-9 text-muted sm:text-lg">
+            {toPersianDigits(featuredTeachersContent.description)}
+          </p>
+        </div>
 
-        <div className="mt-12 grid grid-cols-2 gap-5 sm:gap-6 lg:grid-cols-4 lg:gap-7">
+        <div className="mt-12 grid grid-cols-2 gap-5 sm:gap-7 lg:grid-cols-4 lg:gap-8">
           {members.map((member, index) => (
             <TeamMemberCard
               key={member.id}
