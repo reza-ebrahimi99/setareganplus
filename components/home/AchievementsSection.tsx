@@ -6,21 +6,14 @@ import {
   achievementsContent,
   achievementTimeline,
 } from "@/content/home";
-import {
-  loadFeaturedAchievements,
-  loadPublicAchievementPage,
-} from "@/lib/website/achievements";
+import { loadHomepageAchievements } from "@/lib/website/achievements";
 import { toPersianDigits } from "@/lib/persian";
 
 const headingId = "achievements-heading";
 
 export async function AchievementsSection() {
-  /** Same CMS source as /achievements — newest published items appear automatically. */
-  const [page, featuredAchievements] = await Promise.all([
-    loadPublicAchievementPage({ page: 1 }),
-    loadFeaturedAchievements(),
-  ]);
-  const achievements = page?.achievements ?? [];
+  /** One CMS query — grid + featured slider stay synchronized. */
+  const { achievements, sliderAchievements } = await loadHomepageAchievements();
 
   return (
     <section
@@ -84,7 +77,7 @@ export async function AchievementsSection() {
 
           <AchievementsShowcaseClient
             achievements={achievements}
-            featuredAchievements={featuredAchievements}
+            sliderAchievements={sliderAchievements}
             emptyMessage="به‌زودی افتخارات منتشرشده از سامانه محتوا اینجا نمایش داده می‌شود."
           />
         </div>

@@ -12,6 +12,8 @@ export { listPublicAchievementCategories };
 export const HOMEPAGE_FEATURED_ACHIEVEMENT_LIMIT = 12;
 export const HOMEPAGE_HERO_SLIDER_LIMIT = 8;
 export const PUBLIC_ACHIEVEMENT_PAGE_SIZE = 24;
+/** Homepage grid page size — mirrors public achievements listing. */
+export const HOMEPAGE_ACHIEVEMENT_GRID_LIMIT = PUBLIC_ACHIEVEMENT_PAGE_SIZE;
 
 export type AchievementHeroPlacement =
   | "homepageHero"
@@ -274,6 +276,90 @@ export async function loadFeaturedAchievements(): Promise<
     return rows.map((row) => toPublicAchievementCard(row, "w960"));
   } catch {
     return [];
+  }
+}
+
+export type HomepageAchievementsData = {
+  /** Grid + filters — same published CMS set as /achievements page 1. */
+  achievements: PublicAchievementCard[];
+  /**
+   * Featured slider slides derived from `achievements` (no second query):
+   * featured first by newest date, else newest published overall.
+   */
+  sliderAchievements: PublicAchievementCard[];
+};
+
+type HomepageAchievementRow = PublicCardRow & { createdAt: Date };
+
+function newestAchievementTime(row: {
+  achievementDate: Date | null;
+  createdAt: Date;
+}): number {
+  return row.achievementDate?.getTime() ?? row.createdAt.getTime();
+}
+
+function compareAchievementsByNewest(
+  a: { achievementDate: Date | null; createdAt: Date },
+  b: { achievementDate: Date | null; createdAt: Date },
+): number {
+  return newestAchievementTime(b) - newestAchievementTime(a);
+}
+
+/**
+ * Derive slider slides from an already-loaded homepage list.
+ * Featured first (newest date), else newest published overall.
+ */
+export function selectHomepageSliderAchievements(
+  rows: HomepageAchievementRow[],
+  limit = HOMEPAGE_HERO_SLIDER_LIMIT,
+): HomepageAchievementRow[] {
+  const featured = rows
+    .filter((row) => row.isFeatured)
+    .sort(compareAchievementsByNewest);
+  const source =
+    featured.length > 0
+      ? featured
+      : [...rows].sort(compareAchievementsByNewest);
+  return source.slice(0, limit);
+}
+
+/**
+ * Single CMS loader for the homepage achievements showcase.
+ * Grid and featured slider share one query — never placement pins / hardcoded IDs.
+ */
+export async function loadHomepageAchievements(): Promise<HomepageAchievementsData> {
+  try {
+    const organization = await getCurrentOrganization();
+    if (!organization) {
+      return { achievements: [], sliderAchievements: [] };
+    }
+
+    const rows = (await prisma.achievement.findMany({
+      where: publicAchievementWhere(organization.id),
+      orderBy: [
+        { isFeatured: "desc" },
+        { featuredPriority: "asc" },
+        { achievementDate: "desc" },
+        { createdAt: "desc" },
+        { displayOrder: "asc" },
+      ],
+      take: HOMEPAGE_ACHIEVEMENT_GRID_LIMIT,
+      select: {
+        ...publicCardSelect,
+        createdAt: true,
+      },
+    })) as HomepageAchievementRow[];
+
+    const achievements = rows.map((row) =>
+      toPublicAchievementCard(row, "w480"),
+    );
+    const sliderAchievements = selectHomepageSliderAchievements(rows).map(
+      (row) => toPublicAchievementCard(row, "w960"),
+    );
+
+    return { achievements, sliderAchievements };
+  } catch {
+    return { achievements: [], sliderAchievements: [] };
   }
 }
 

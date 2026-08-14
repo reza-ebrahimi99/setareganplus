@@ -8,13 +8,14 @@ import { toPersianDigits } from "@/lib/persian";
 
 type AchievementsShowcaseClientProps = {
   achievements: PublicAchievementCard[];
-  featuredAchievements?: PublicAchievementCard[];
+  /** Derived from the same homepage loader as `achievements` — never a second query. */
+  sliderAchievements: PublicAchievementCard[];
   emptyMessage: string;
 };
 
 export function AchievementsShowcaseClient({
   achievements,
-  featuredAchievements,
+  sliderAchievements,
   emptyMessage,
 }: AchievementsShowcaseClientProps) {
   const [query, setQuery] = useState("");
@@ -48,12 +49,7 @@ export function AchievementsShowcaseClient({
     });
   }, [achievements, category, deferredQuery]);
 
-  const sliderItems =
-    featuredAchievements && featuredAchievements.length > 0
-      ? featuredAchievements
-      : achievements.filter((item) => item.isFeatured);
-
-  if (achievements.length === 0 && sliderItems.length === 0) {
+  if (achievements.length === 0) {
     return (
       <div className="achievements-empty mt-10 rounded-[1.5rem] border border-dashed border-white/20 bg-white/5 px-6 py-12 text-center backdrop-blur-sm">
         <p className="text-sm leading-8 text-white/70">
@@ -65,8 +61,8 @@ export function AchievementsShowcaseClient({
 
   return (
     <div className="mt-10">
-      {sliderItems.length > 0 ? (
-        <FeaturedAchievementSlider achievements={sliderItems} />
+      {sliderAchievements.length > 0 ? (
+        <FeaturedAchievementSlider achievements={sliderAchievements} />
       ) : null}
 
       <div className="mt-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
