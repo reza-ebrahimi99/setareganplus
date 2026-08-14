@@ -17,19 +17,10 @@ export type PublicNavItem = {
 
 export const publicNavItems: readonly PublicNavItem[] = [
   { href: "/", label: "خانه" },
-  {
-    href: "/about",
-    label: "درباره ما",
-    children: [
-      { href: "/about", label: "معرفی مجموعه" },
-      { href: "/about#story", label: "داستان ستارگان" },
-      { href: "/team", label: "تیم آموزشی" },
-    ],
-  },
+  { href: "/about", label: "درباره ما" },
   {
     href: "/achievements",
     label: "دستاوردها",
-    icon: "🏆",
     children: [
       { href: "/achievements", label: "افتخارات" },
       { href: "/assessments", label: "نتایج آزمون‌ها" },
@@ -38,7 +29,6 @@ export const publicNavItems: readonly PublicNavItem[] = [
   {
     href: "/courses",
     label: "آموزش",
-    icon: "🎓",
     children: [
       { href: "/about", label: "دبستان" },
       { href: "/courses", label: "متوسطه اول" },
@@ -50,7 +40,6 @@ export const publicNavItems: readonly PublicNavItem[] = [
   {
     href: "/classes",
     label: "ابزارها",
-    icon: "⚡",
     children: [
       { href: "/classes", label: "کلاس" },
       { href: "/consultation", label: "مشاوره" },
@@ -60,7 +49,7 @@ export const publicNavItems: readonly PublicNavItem[] = [
     ],
   },
   { href: "/gallery", label: "گالری" },
-  { href: "/contact", label: "تماس با ما" },
+  { href: "/contact", label: "تماس" },
 ] as const;
 
 /** Flat links for footer / simple consumers. */

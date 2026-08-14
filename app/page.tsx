@@ -1,48 +1,31 @@
-import { AboutSection } from "@/components/home/AboutSection";
 import { AchievementsSection } from "@/components/home/AchievementsSection";
-import { FaqPreview } from "@/components/home/FaqPreview";
-import { FeaturedShopSection } from "@/components/home/FeaturedShopSection";
-import { FinalCta } from "@/components/home/FinalCta";
-import { GallerySection } from "@/components/home/GallerySection";
-import { NewsSection } from "@/components/home/NewsSection";
-import { PartnershipSection } from "@/components/home/PartnershipSection";
+import { AtrinHomeSection } from "@/components/home/AtrinHomeSection";
+import { ConsultationCtaSection } from "@/components/home/ConsultationCtaSection";
 import { FeaturedTeamSection } from "@/components/home/FeaturedTeamSection";
 import { PremiumHero } from "@/components/home/PremiumHero";
 import { PremiumServices } from "@/components/home/PremiumServices";
-import { QalamchiBranchesSection } from "@/components/home/QalamchiBranchesSection";
 import { SuccessStoriesSection } from "@/components/home/SuccessStoriesSection";
 import { TrustSection } from "@/components/home/TrustSection";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { getPublicPageMetadata } from "@/lib/seo/public-pages";
-import { loadHomepageQalamchiCards } from "@/lib/website/marketing-cards-public";
 
-/** Featured team / marketing cards are ISR-cached; admin mutations revalidate "/". */
+/** Featured team is ISR-cached; admin mutations revalidate "/". */
 export const revalidate = 120;
 
 export const metadata = getPublicPageMetadata("home");
 
 export default async function Home() {
-  const qalamchiCards = await loadHomepageQalamchiCards();
-
   return (
     <SiteShell activePath="/">
       <PremiumHero />
       <div id="discover" tabIndex={-1} className="h-0 w-0 overflow-hidden" />
-      <FeaturedTeamSection />
-      {/* 1) Qalamchi first — never place school content above this */}
-      <QalamchiBranchesSection cards={qalamchiCards} />
-      {/* 2) School second — AboutSection must remain school-only */}
-      <AboutSection />
       <TrustSection />
       <PremiumServices />
-      <FeaturedShopSection />
       <AchievementsSection />
-      <PartnershipSection />
+      <FeaturedTeamSection />
       <SuccessStoriesSection />
-      <GallerySection />
-      <NewsSection />
-      <FaqPreview />
-      <FinalCta />
+      <ConsultationCtaSection />
+      <AtrinHomeSection />
     </SiteShell>
   );
 }

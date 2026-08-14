@@ -15,9 +15,9 @@ export async function FeaturedTeamSection() {
     >
       <Container>
         <SectionHeader
-          eyebrow="مؤسسه علمی ستارگان"
-          heading="تیم مدیریت"
-          description="آشنایی با بخشی از همکاران و مدیران مؤسسه که در هدایت آموزشی و اجرایی مجموعه نقش دارند."
+          eyebrow="اساتید برجسته"
+          heading="اساتید منتخب"
+          description="آشنایی با بخشی از دبیران و مشاورانی که مسیر رشد دانش‌آموزان را هدایت می‌کنند."
           headingId="featured-team-heading"
         />
 
