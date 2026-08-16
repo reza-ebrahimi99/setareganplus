@@ -3,6 +3,7 @@ import {
   getAiAssistantChatPath,
 } from "@/lib/ai/assistant-config";
 import { isAiFeatureEnabled } from "@/lib/ai/config";
+import { enrichAiResponse } from "@/lib/ai/enrich";
 import { appendStreamToken, parseSseChunk } from "@/lib/ai/streaming/parser";
 import type { AiStreamHandlers } from "@/lib/ai/streaming/types";
 import type { AiChatRequest, AiChatResult } from "@/types/ai";
@@ -28,6 +29,7 @@ async function fallbackNonStreaming(
 
 /**
  * Streaming-ready client.
+ * Always builds the same reasoned outbound payload as sendAiChat.
  * Flag off / non-SSE → falls back to existing sendAiChat (no break).
  */
 export async function sendAiChatStreamingReady(
@@ -39,6 +41,13 @@ export async function sendAiChatStreamingReady(
   }
 
   try {
+    const { buildOutboundMessages } = await import("@/lib/ai/api");
+    const outbound = await buildOutboundMessages(request);
+
+    if (outbound.lightweight) {
+      return fallbackNonStreaming(request, handlers);
+    }
+
     const response = await fetch(endpoint(), {
       method: "POST",
       headers: {
@@ -46,9 +55,16 @@ export async function sendAiChatStreamingReady(
         Accept: "text/event-stream, application/json",
       },
       body: JSON.stringify({
-        messages: request.messages,
+        messages: outbound.messages,
+        system: outbound.systemPrompt,
         stream: true,
         locale: "fa",
+        context: {
+          pathname: outbound.pathname,
+          page: outbound.page,
+          atrin_intent: outbound.turn.primaryIntent,
+          shape: outbound.turn.reasoning.responseShape,
+        },
       }),
       signal: request.signal,
     });
@@ -81,14 +97,56 @@ export async function sendAiChatStreamingReady(
           handlers.onError?.(event.error ?? "stream_error");
         }
         if (event.type === "done") {
-          handlers.onDone?.(full);
-          return { ok: true, content: full };
+          const enriched = enrichAiResponse({
+            rawReply: full,
+            query: outbound.query,
+            pathname: outbound.pathname,
+            page: outbound.page,
+            deepPage: outbound.deepPage,
+            knowledge: outbound.knowledge,
+            siteHits: outbound.siteHits,
+            recentUserTexts: outbound.recentUserTexts,
+            turn: outbound.turn,
+          });
+          handlers.onDone?.(enriched.content);
+          return {
+            ok: true,
+            content: enriched.content,
+            actions: enriched.actions,
+            recommendations: enriched.recommendations,
+            citations: enriched.citations,
+            suggestions: enriched.suggestions,
+            intent: enriched.intent,
+            knowledgeIds: enriched.knowledgeIds,
+            crm: enriched.crm,
+          };
         }
       }
     }
 
-    handlers.onDone?.(full);
-    return { ok: true, content: full };
+    const enriched = enrichAiResponse({
+      rawReply: full,
+      query: outbound.query,
+      pathname: outbound.pathname,
+      page: outbound.page,
+      deepPage: outbound.deepPage,
+      knowledge: outbound.knowledge,
+      siteHits: outbound.siteHits,
+      recentUserTexts: outbound.recentUserTexts,
+      turn: outbound.turn,
+    });
+    handlers.onDone?.(enriched.content);
+    return {
+      ok: true,
+      content: enriched.content,
+      actions: enriched.actions,
+      recommendations: enriched.recommendations,
+      citations: enriched.citations,
+      suggestions: enriched.suggestions,
+      intent: enriched.intent,
+      knowledgeIds: enriched.knowledgeIds,
+      crm: enriched.crm,
+    };
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
       handlers.onError?.("aborted");

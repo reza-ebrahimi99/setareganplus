@@ -93,7 +93,8 @@ function preferredCategoriesForIntent(
   }
 }
 
-async function buildOutboundMessages(request: AiChatRequest) {
+/** Build reasoned outbound messages — shared by streaming and non-streaming. */
+export async function buildOutboundMessages(request: AiChatRequest) {
   const pathname = resolveRequestPathname(request.pathname);
   const page = resolveAiPageContext(pathname);
   const deepPage = resolveDeepPageContext(pathname);
@@ -120,27 +121,16 @@ async function buildOutboundMessages(request: AiChatRequest) {
   persistSummary(memory.summary);
 
   const query = extractLastUserQuery(conversation);
-  const atrinContext = resolveAtrinOutboundContext({
-    query,
-    recentUserTexts: conversation
-      .filter((item) => item.role === "user")
-      .slice(-6)
-      .map((item) => item.content),
-  });
   const detectedGuideIntent = detectWebsiteGuideIntent(query);
-  const guideIntent =
-    detectedGuideIntent === "general" && atrinContext.guideIntentHint
-      ? atrinContext.guideIntentHint
-      : detectedGuideIntent;
-  const lightweight =
-    isLightweightIntent(guideIntent) || isTrivialConversation(query);
+  const lightweightProbe =
+    isLightweightIntent(detectedGuideIntent) || isTrivialConversation(query);
 
-  const preferred = [
-    ...preferredCategoriesForIntent(guideIntent),
+  const preferredEarly = [
+    ...preferredCategoriesForIntent(detectedGuideIntent),
     ...preferredCategoriesForPage(page),
   ];
 
-  const knowledge = lightweight
+  const knowledge = lightweightProbe
     ? {
         hits: [],
         formatted: "",
@@ -150,15 +140,46 @@ async function buildOutboundMessages(request: AiChatRequest) {
       }
     : retrieveKnowledgeContext({
         query,
-        preferredCategories: preferred,
+        preferredCategories: preferredEarly,
         maxBlocks: AI_TUNABLES.knowledgeMaxBlocks,
         maxCharacters: AI_TUNABLES.knowledgeMaxCharacters,
       });
 
+  const atrinContext = resolveAtrinOutboundContext({
+    query,
+    recentUserTexts: conversation
+      .filter((item) => item.role === "user")
+      .slice(-6)
+      .map((item) => item.content),
+    knowledgeConfidence: knowledge.confidence,
+  });
+
+  const guideIntent = atrinContext.turn.guideIntent;
+  const lightweight =
+    isLightweightIntent(guideIntent) || isTrivialConversation(query);
+
+  const preferred = [
+    ...preferredCategoriesForIntent(guideIntent),
+    ...preferredCategoriesForPage(page),
+  ];
+
+  // Re-retrieve if intent shifted to a different knowledge family.
+  const knowledgeFinal =
+    !lightweight &&
+    preferred.join("|") !== preferredEarly.join("|")
+      ? retrieveKnowledgeContext({
+          query,
+          preferredCategories: preferred,
+          maxBlocks: AI_TUNABLES.knowledgeMaxBlocks,
+          maxCharacters: AI_TUNABLES.knowledgeMaxCharacters,
+        })
+      : knowledge;
+
   const siteHits =
     !lightweight &&
     isAiFeatureEnabled("siteSearch") &&
-    knowledge.confidence < AI_TUNABLES.siteSearchConfidenceThreshold
+    (atrinContext.turn.reasoning.shouldSearchCms ||
+      knowledgeFinal.confidence < AI_TUNABLES.siteSearchConfidenceThreshold)
       ? await searchInternalSite(query)
       : [];
 
@@ -170,7 +191,18 @@ async function buildOutboundMessages(request: AiChatRequest) {
         handoffRecommended: false,
         notes: ["lightweight"],
       }
-    : planAiRequest(query);
+    : (() => {
+        const base = planAiRequest(query);
+        return {
+          ...base,
+          notes: [
+            ...base.notes,
+            ...atrinContext.turn.reasoning.notes,
+            `atrin_intent=${atrinContext.turn.primaryIntent}`,
+            `shape=${atrinContext.turn.reasoning.responseShape}`,
+          ],
+        };
+      })();
 
   const extraSections: string[] = [];
   if (!lightweight && isAiFeatureEnabled("deepPageContext")) {
@@ -191,7 +223,7 @@ async function buildOutboundMessages(request: AiChatRequest) {
     page,
     locale: "fa",
     intent: atrinContext.educationActive ? "study" : guideIntent,
-    relevantKnowledge: knowledge.formatted,
+    relevantKnowledge: knowledgeFinal.formatted,
     extraSections,
     lightweight,
   });
@@ -203,15 +235,16 @@ async function buildOutboundMessages(request: AiChatRequest) {
     query,
     guideIntent,
     lightweight,
-    knowledge,
+    knowledge: knowledgeFinal,
     siteHits,
     plan,
     session,
     atrinModeId: atrinContext.modeId,
     educationActive: atrinContext.educationActive,
+    turn: atrinContext.turn,
     systemPrompt,
     promptTokensEstimate: estimatePromptTokens(systemPrompt),
-    knowledgeIds: knowledge.hits.map((hit) => hit.block.id),
+    knowledgeIds: knowledgeFinal.hits.map((hit) => hit.block.id),
     recentUserTexts: conversation
       .filter((item) => item.role === "user")
       .slice(-4)
@@ -337,6 +370,7 @@ export async function sendAiChat(
         knowledge: outbound.knowledge,
         siteHits: outbound.siteHits,
         recentUserTexts: outbound.recentUserTexts,
+        turn: outbound.turn,
       });
 
       if (isAiFeatureEnabled("analytics")) {
@@ -356,13 +390,13 @@ export async function sendAiChat(
       return {
         ok: true,
         content: enriched.content,
-        actions: [],
-        recommendations: [],
-        citations: [],
-        suggestions: [],
-        intent: "greeting",
-        knowledgeIds: [],
-        crm: undefined,
+        actions: enriched.actions,
+        recommendations: enriched.recommendations,
+        citations: enriched.citations,
+        suggestions: enriched.suggestions,
+        intent: enriched.intent,
+        knowledgeIds: enriched.knowledgeIds,
+        crm: enriched.crm,
       };
     }
 
@@ -436,6 +470,7 @@ export async function sendAiChat(
       knowledge: outbound.knowledge,
       siteHits: outbound.siteHits,
       recentUserTexts: outbound.recentUserTexts,
+      turn: outbound.turn,
     });
 
     if (isAiFeatureEnabled("analytics")) {

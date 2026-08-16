@@ -116,7 +116,7 @@ export function AtrinSmartResponse({
               type="button"
               disabled={disabled}
               onClick={() => {
-                if (item.href) {
+                if (item.href && item.href !== "#") {
                   if (typeof window !== "undefined") {
                     window.location.assign(item.href);
                   }
