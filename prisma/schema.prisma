@@ -4004,6 +4004,11 @@ model CommerceOrder {
   preferredPickupAt DateTime?
   specialNotes   String?
   handoverStaffUserId String?
+  qrToken        String                    @unique @default(cuid())
+  inProductionAt DateTime?
+  opsVip         Boolean                   @default(false)
+  pickupSignedBy String?
+  pickupSignedAt DateTime?
   leadId         String?
   subtotalRials  Int                        @default(0)
   discountRials  Int                        @default(0)
@@ -4045,6 +4050,8 @@ model CommerceOrder {
   @@index([organizationId, leadId])
   @@index([organizationId, buyerMobile])
   @@index([organizationId, studentGrade])
+  @@index([organizationId, inProductionAt])
+  @@index([organizationId, readyForPickupAt])
   @@index([deliveredByUserId])
   @@index([readyForPickupByUserId])
   @@index([handoverStaffUserId])

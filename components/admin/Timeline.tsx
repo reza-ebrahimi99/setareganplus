@@ -5,6 +5,8 @@ export type TimelineNodeView = {
   timestampLabel?: string | null;
   operator?: string | null;
   note?: string | null;
+  stage?: string;
+  dotClass?: string;
 };
 
 type TimelineProps = {
@@ -14,11 +16,12 @@ type TimelineProps = {
   className?: string;
 };
 
-function nodeTone(status: TimelineNodeView["status"]): string {
-  if (status === "completed") {
+function nodeTone(node: TimelineNodeView): string {
+  if (node.dotClass) return node.dotClass;
+  if (node.status === "completed") {
     return "border-success bg-success text-white";
   }
-  if (status === "current") {
+  if (node.status === "current") {
     return "border-secondary bg-secondary text-primary shadow-[0_0_0_4px_rgb(212_175_55_/_0.22)]";
   }
   return "border-border bg-background text-muted";
@@ -57,7 +60,7 @@ export function Timeline({
                 title={hover || node.label}
                 className={`flex shrink-0 items-center justify-center rounded-full border text-[9px] leading-none ${
                   compact ? "size-4" : "size-5"
-                } ${nodeTone(node.status)}`}
+                } ${nodeTone(node)} ${node.status === "current" ? "ops-dot-current" : ""}`}
               >
                 {mark}
               </span>
@@ -88,7 +91,9 @@ export function Timeline({
           <li key={node.id} className="relative flex gap-3 pb-5 last:pb-0">
             <div className="relative flex w-4 shrink-0 flex-col items-center">
               <span
-                className={`z-[1] mt-0.5 block rounded-full border ${compact ? "size-3" : "size-3.5"} ${nodeTone(node.status)}`}
+                className={`z-[1] mt-0.5 block rounded-full border ${compact ? "size-3" : "size-3.5"} ${nodeTone(node)} ${
+                  node.status === "current" ? "ops-dot-current" : ""
+                }`}
               />
               {last ? null : (
                 <span

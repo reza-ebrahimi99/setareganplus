@@ -22,6 +22,7 @@ import {
 } from "@/generated/prisma/enums";
 
 import { enqueueCommerceOrderPaidSms } from "@/lib/commerce/commerce-sms";
+import { notifyCommerceOpsStaff } from "@/lib/commerce/orders/notify";
 import { decrementCommerceItemStock } from "@/lib/commerce/inventory";
 import { recordCommerceOrderEvent, stageChangedEventInput } from "@/lib/commerce/orders/timeline";
 
@@ -879,6 +880,13 @@ export async function verifyPaymentCallback(params: {
           orderId: intent.payableId,
           error: error instanceof Error ? error.message : error,
         });
+      });
+      void notifyCommerceOpsStaff({
+        organizationId: params.organizationId,
+        orderId: intent.payableId,
+        kind: "PAYMENT_RECEIVED",
+      }).catch((error) => {
+        console.error("[payment] commerce ops notify failed", error);
       });
     }
 

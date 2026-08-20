@@ -24,6 +24,15 @@ import {
 import { tehranPresetBounds } from "@/lib/commerce/orders/date-range";
 import { commerceAllowedBranchScope } from "@/lib/commerce/orders/filters";
 import {
+  buildCommerceOpsIntelligence,
+  COMMERCE_OPS_PRIORITY_RANK,
+  PRODUCTION_DELAY_MS,
+  READY_DELAY_MS,
+  type CommerceOpsHealthLevel,
+  type CommerceOpsPriority,
+} from "@/lib/commerce/orders/intelligence";
+import { notifyCommerceOpsStaff } from "@/lib/commerce/orders/notify";
+import {
   COMMERCE_OPS_ACTIVITY_TITLES,
   isCommerceOpsStage,
   type CommerceOpsStageValue,
@@ -278,6 +287,13 @@ export async function createSingleItemCommerceOrder(
       return order;
     });
 
+    void notifyCommerceOpsStaff({
+      organizationId: input.organizationId,
+      orderId: created.id,
+      kind: "NEW_ORDER",
+      body: profile.buyerName,
+    }).catch((error) => console.error("[commerce-ops] notify failed", error));
+
     return {
       ok: true,
       orderId: created.id,
@@ -332,6 +348,17 @@ export type AdminCommerceOrderRow = {
   handoverStaffUserId: string | null;
   handoverStaffName: string | null;
   urgentDelivery: boolean;
+  opsVip: boolean;
+  qrToken: string;
+  inProductionAt: Date | null;
+  readyForPickupAt: Date | null;
+  preferredPickupAt: Date | null;
+  rollbackCount: number;
+  priority: CommerceOpsPriority;
+  delayed: boolean;
+  delayKind: "production" | "ready" | null;
+  healthScore: number;
+  healthLevel: CommerceOpsHealthLevel;
   notes: string | null;
 };
 
@@ -360,8 +387,14 @@ export type AdminCommerceOrderListFilters = {
   todayOnly?: boolean;
   deliveredOnly?: boolean;
   deliveredToday?: boolean;
+  delayedOnly?: boolean;
+  mine?: boolean;
+  mineUserId?: string;
+  opsVipOnly?: boolean;
+  sort?: "priority" | "createdAt";
   dateFrom?: string;
   dateTo?: string;
+  orderIds?: readonly string[];
   take?: number;
 };
 
@@ -494,6 +527,37 @@ export function buildAdminCommerceOrderWhere(
   if (handoverStaffUserId) {
     and.push({ handoverStaffUserId });
   }
+  if (params.mineUserId) {
+    and.push({
+      OR: [
+        { handoverStaffUserId: params.mineUserId },
+        { readyForPickupByUserId: params.mineUserId },
+        { deliveredByUserId: params.mineUserId },
+      ],
+    });
+  }
+  if (params.opsVipOnly) {
+    and.push({ opsVip: true });
+  }
+  if (params.orderIds && params.orderIds.length > 0) {
+    and.push({ id: { in: [...params.orderIds].slice(0, 200) } });
+  }
+  if (params.delayedOnly) {
+    const productionCutoff = new Date(Date.now() - PRODUCTION_DELAY_MS);
+    const readyCutoff = new Date(Date.now() - READY_DELAY_MS);
+    and.push({
+      OR: [
+        {
+          opsStage: CommerceOpsStage.IN_PRODUCTION,
+          inProductionAt: { lte: productionCutoff },
+        },
+        {
+          opsStage: CommerceOpsStage.READY_FOR_PICKUP,
+          readyForPickupAt: { lte: readyCutoff },
+        },
+      ],
+    });
+  }
 
   if (itemId || productQuery) {
     and.push({
@@ -523,6 +587,7 @@ export function buildAdminCommerceOrderWhere(
         { parentName: { contains: q, mode: "insensitive" } },
         { buyerMobile: { contains: q } },
         { buyerNationalCode: { contains: q } },
+        { qrToken: { contains: q, mode: "insensitive" } },
         { branch: { name: { contains: q, mode: "insensitive" } } },
         { pickupBranch: { name: { contains: q, mode: "insensitive" } } },
         {
@@ -572,6 +637,11 @@ export async function listAdminCommerceOrders(
         take: 1,
         select: { title: true, occurredAt: true, stage: true, eventType: true },
       },
+      _count: {
+        select: {
+          events: { where: { eventType: CommerceOrderEventType.ROLLBACK } },
+        },
+      },
     },
   });
 
@@ -600,13 +670,23 @@ export async function listAdminCommerceOrders(
     }
   }
 
-  return orders.map((order) => {
+  const rows = orders.map((order) => {
     const first = order.items[0];
     const productTitle =
       order.items.length > 1
         ? order.items.map((i) => i.titleSnapshot).join("، ")
         : (first?.titleSnapshot ?? "—");
     const quantity = order.items.reduce((sum, i) => sum + i.quantity, 0);
+    const intel = buildCommerceOpsIntelligence({
+      opsStage: order.opsStage as CommerceOpsStageValue,
+      paymentPaid: order.paymentStatus === CommerceOrderPaymentStatus.PAID,
+      urgentDelivery: order.urgentDelivery,
+      opsVip: order.opsVip,
+      preferredPickupAt: order.preferredPickupAt,
+      inProductionAt: order.inProductionAt,
+      readyForPickupAt: order.readyForPickupAt,
+      rollbackCount: order._count.events,
+    });
     return {
       id: order.id,
       orderNumber: order.orderNumber,
@@ -649,9 +729,30 @@ export async function listAdminCommerceOrders(
         ? `${order.handoverStaff.firstName} ${order.handoverStaff.lastName}`.trim()
         : null,
       urgentDelivery: order.urgentDelivery,
+      opsVip: order.opsVip,
+      qrToken: order.qrToken,
+      inProductionAt: order.inProductionAt,
+      readyForPickupAt: order.readyForPickupAt,
+      preferredPickupAt: order.preferredPickupAt,
+      rollbackCount: order._count.events,
+      priority: intel.priority,
+      delayed: intel.delayed,
+      delayKind: intel.delayKind,
+      healthScore: intel.healthScore,
+      healthLevel: intel.healthLevel,
       notes: order.notes,
     };
   });
+
+  if (params.sort === "priority") {
+    rows.sort(
+      (a, b) =>
+        COMMERCE_OPS_PRIORITY_RANK[a.priority] - COMMERCE_OPS_PRIORITY_RANK[b.priority] ||
+        Number(b.delayed) - Number(a.delayed) ||
+        b.createdAt.getTime() - a.createdAt.getTime(),
+    );
+  }
+  return rows;
 }
 
 /** Flat item rows for Excel (one row per order line). */
@@ -672,6 +773,7 @@ export type AdminCommerceOrderExportRow = {
   studentMajorLabel: string | null;
   handoverStaffName: string | null;
   deliveredAt: Date | null;
+  qrToken: string | null;
 };
 
 export async function listAdminCommerceOrdersForExport(
@@ -721,6 +823,7 @@ export async function listAdminCommerceOrdersForExport(
       studentMajorLabel,
       handoverStaffName,
       deliveredAt: order.deliveredAt,
+      qrToken: order.qrToken,
     };
     if (order.items.length === 0) {
       rows.push({
@@ -904,6 +1007,19 @@ export async function getAdminCommerceOrderDetail(params: {
     order.items.length > 1
       ? order.items.map((item) => item.titleSnapshot).join("، ")
       : (order.items[0]?.titleSnapshot ?? "—");
+  const rollbackCount = order.events.filter(
+    (event) => event.eventType === CommerceOrderEventType.ROLLBACK,
+  ).length;
+  const intel = buildCommerceOpsIntelligence({
+    opsStage: order.opsStage as CommerceOpsStageValue,
+    paymentPaid: order.paymentStatus === CommerceOrderPaymentStatus.PAID,
+    urgentDelivery: order.urgentDelivery,
+    opsVip: order.opsVip,
+    preferredPickupAt: order.preferredPickupAt,
+    inProductionAt: order.inProductionAt,
+    readyForPickupAt: order.readyForPickupAt,
+    rollbackCount,
+  });
 
   return {
     id: order.id,
@@ -944,6 +1060,15 @@ export async function getAdminCommerceOrderDetail(params: {
     handoverStaffUserId: order.handoverStaffUserId,
     handoverStaffName: actorName(order.handoverStaff),
     urgentDelivery: order.urgentDelivery,
+    opsVip: order.opsVip,
+    qrToken: order.qrToken,
+    inProductionAt: order.inProductionAt,
+    rollbackCount,
+    priority: intel.priority,
+    delayed: intel.delayed,
+    delayKind: intel.delayKind,
+    healthScore: intel.healthScore,
+    healthLevel: intel.healthLevel,
     notes: order.notes,
     deliveryNote: order.deliveryNote,
     specialNotes: order.specialNotes,

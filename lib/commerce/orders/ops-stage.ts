@@ -93,6 +93,29 @@ export const COMMERCE_OPS_ACTIVITY_TITLES: Record<CommerceOpsStageValue, string>
     DELIVERED_TO_STUDENT: "تحویل شد",
   };
 
+export const COMMERCE_OPS_STAGE_TONES: Record<
+  CommerceOpsStageValue | "ROLLBACK",
+  string
+> = {
+  REGISTERED: "border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200",
+  PAID: "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100",
+  IN_PRODUCTION:
+    "border-orange-300 bg-orange-50 text-orange-900 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-100",
+  READY_FOR_PICKUP:
+    "border-sky-300 bg-sky-50 text-sky-900 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-100",
+  DELIVERED_TO_STUDENT:
+    "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100",
+  ROLLBACK: "border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-100",
+};
+
+export const COMMERCE_OPS_STAGE_DOT: Record<CommerceOpsStageValue, string> = {
+  REGISTERED: "bg-slate-400 border-slate-400",
+  PAID: "bg-amber-400 border-amber-400",
+  IN_PRODUCTION: "bg-orange-500 border-orange-500",
+  READY_FOR_PICKUP: "bg-sky-500 border-sky-500",
+  DELIVERED_TO_STUDENT: "bg-emerald-500 border-emerald-500",
+};
+
 export function commerceLastActivityTone(
   title: string,
   stage: CommerceOpsStageValue,

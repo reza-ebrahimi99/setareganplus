@@ -1971,11 +1971,72 @@ body {
   transform: translateY(0);
 }
 
+.ops-kpi-card {
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.ops-kpi-card:hover {
+  transform: translateY(-2px);
+}
+.ops-row:hover {
+  background: rgb(248 250 252 / 0.9);
+}
+.ops-dot-current {
+  animation: ops-dot-pulse 1.6s ease-in-out infinite;
+}
+@keyframes ops-dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(14 165 233 / 0.35); }
+  50% { box-shadow: 0 0 0 6px rgb(14 165 233 / 0); }
+}
+.ops-skeleton {
+  background: linear-gradient(90deg, rgb(241 245 249) 0%, rgb(226 232 240) 50%, rgb(241 245 249) 100%);
+  background-size: 200% 100%;
+  animation: ops-skeleton-shift 1.1s ease infinite;
+}
+@keyframes ops-skeleton-shift {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+.ops-confetti {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+}
+.ops-confetti i {
+  position: absolute;
+  top: -10px;
+  width: 6px;
+  height: 10px;
+  border-radius: 1px;
+  background: #0ea5e9;
+  opacity: 0.85;
+  animation: ops-confetti-fall 1.05s ease-in forwards;
+}
+.ops-confetti i:nth-child(2n) { background: #22c55e; }
+.ops-confetti i:nth-child(3n) { background: #f59e0b; }
+.ops-confetti i:nth-child(4n) { background: #ef4444; }
+@keyframes ops-confetti-fall {
+  to {
+    transform: translateY(70vh) rotate(200deg);
+    opacity: 0;
+  }
+}
+@media print {
+  .ops-label {
+    box-shadow: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .featured-achievement-slide,
   .why-timeline-card,
   .achievements-cta-premium,
-  .team-directory-cta {
+  .team-directory-cta,
+  .ops-kpi-card,
+  .ops-dot-current,
+  .ops-skeleton,
+  .ops-confetti i {
     animation: none !important;
     transition: none !important;
     transform: none !important;

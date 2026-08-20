@@ -4,6 +4,7 @@
 
 import type { TimelineNodeView } from "@/components/admin/Timeline";
 import {
+  COMMERCE_OPS_STAGE_DOT,
   COMMERCE_OPS_STAGE_LABELS,
   COMMERCE_OPS_STAGES,
   commerceOpsStageIndex,
@@ -45,6 +46,8 @@ export function buildOpsTimelineNodes(params: {
       timestampLabel: showEvent ? (event?.occurredAtLabel ?? null) : null,
       operator: showEvent ? (event?.operatorName ?? null) : null,
       note: showEvent ? (event?.note ?? null) : null,
+      stage,
+      dotClass: COMMERCE_OPS_STAGE_DOT[stage],
     };
   });
 }

@@ -15,6 +15,7 @@ import {
   commerceOrderExportQuery,
   parseAdminCommerceOrderFilters,
 } from "@/lib/commerce/orders/filters";
+import { listCommerceOpsNotifications } from "@/lib/commerce/orders/notify";
 import {
   getAdminCommerceOrderDetail,
   listAdminCommerceOrders,
@@ -76,11 +77,29 @@ function toListItem(
     handoverStaffUserId: order.handoverStaffUserId,
     handoverStaffName: order.handoverStaffName,
     urgentDelivery: order.urgentDelivery,
+    opsVip: order.opsVip,
+    qrToken: order.qrToken,
+    notes: order.notes,
+    priority: order.priority,
+    delayed: order.delayed,
+    delayKind: order.delayKind,
+    healthScore: order.healthScore,
+    healthLevel: order.healthLevel,
     progressPercent: Math.round(
       ((commerceOpsStageIndex(order.opsStage) + 1) / 5) * 100,
     ),
   };
 }
+
+const KPI_HREF: Record<string, string> = {
+  today: "/admin/commerce/orders?today=1",
+  waitingPayment: "/admin/commerce/orders?opsStage=REGISTERED",
+  production: "/admin/commerce/orders?opsStage=IN_PRODUCTION",
+  ready: "/admin/commerce/orders?ready=1",
+  deliveredToday: "/admin/commerce/orders?deliveredToday=1",
+  delayed: "/admin/commerce/orders?delayed=1",
+  todayRevenue: "/admin/commerce/orders?today=1&paidOnly=1",
+};
 
 export default async function AdminCommerceOrdersPage({
   searchParams,
@@ -97,28 +116,34 @@ export default async function AdminCommerceOrdersPage({
     ...parsed,
     organizationId: session.organization.id,
     allowedBranchIds,
+    mineUserId: parsed.mine ? session.user.id : undefined,
   };
 
-  const [orders, branches, staff, items, detail, kpiCounts] = await Promise.all([
-    listAdminCommerceOrders(listFilters),
-    listCommerceBranchesForOps({
-      organizationId: session.organization.id,
-      allowedBranchIds,
-    }),
-    listCommerceHandoverStaff(session.organization.id),
-    listCommerceItemOptionsForOps(session.organization.id),
-    selectedOrderId
-      ? getAdminCommerceOrderDetail({
-          organizationId: session.organization.id,
-          orderId: selectedOrderId,
-          allowedBranchIds,
-        })
-      : Promise.resolve(null),
-    loadOrderOpsKpiCounts({
-      organizationId: session.organization.id,
-      allowedBranchIds,
-    }),
-  ]);
+  const [orders, branches, staff, items, detail, kpiCounts, notifications] =
+    await Promise.all([
+      listAdminCommerceOrders(listFilters),
+      listCommerceBranchesForOps({
+        organizationId: session.organization.id,
+        allowedBranchIds,
+      }),
+      listCommerceHandoverStaff(session.organization.id),
+      listCommerceItemOptionsForOps(session.organization.id),
+      selectedOrderId
+        ? getAdminCommerceOrderDetail({
+            organizationId: session.organization.id,
+            orderId: selectedOrderId,
+            allowedBranchIds,
+          })
+        : Promise.resolve(null),
+      loadOrderOpsKpiCounts({
+        organizationId: session.organization.id,
+        allowedBranchIds,
+      }),
+      listCommerceOpsNotifications({
+        organizationId: session.organization.id,
+        userId: session.user.id,
+      }),
+    ]);
 
   const canManage = hasPermission(session, "commerce.orders.manage");
   const canRollback = hasPermission(session, "commerce.orders.rollback");
@@ -166,11 +191,15 @@ export default async function AdminCommerceOrdersPage({
       }
     : null;
 
+  const girls = branches.find((branch) => branch.bookletOpsKey === "GIRLS");
+  const boys = branches.find((branch) => branch.bookletOpsKey === "BOYS");
+  const elementary = branches.find((branch) => branch.bookletOpsKey === "ELEMENTARY");
+
   return (
     <>
       <AdminPageHeader
         title="مرکز عملیات جزوه"
-        description="تولید، آماده‌سازی و تحویل حضوری جزوه — شعبه محصول و محل دریافت جداگانه"
+        description="تولید، آماده‌سازی و تحویل حضوری جزوه — یک نگاه، مرحله بعد مشخص است"
         breadcrumbs={adminBreadcrumbs.commerceOrders}
         compact
       />
@@ -180,11 +209,24 @@ export default async function AdminCommerceOrdersPage({
           key: kpi.key,
           label: kpi.label,
           valueLabel:
-            kpi.tone === "revenue"
-              ? formatRials(kpi.value)
-              : toPersianDigits(kpi.value),
+            kpi.key === "avgProcessing" || kpi.key === "avgDelivery"
+              ? kpi.value
+                ? `${toPersianDigits(kpi.value)} دقیقه`
+                : "—"
+              : kpi.tone === "revenue"
+                ? formatRials(kpi.value)
+                : toPersianDigits(kpi.value),
           hint: kpi.hint,
           tone: kpi.tone,
+          href:
+            KPI_HREF[kpi.key] ??
+            (kpi.key === "girls" && girls
+              ? `/admin/commerce/orders?branchId=${girls.id}`
+              : kpi.key === "boys" && boys
+                ? `/admin/commerce/orders?branchId=${boys.id}`
+                : kpi.key === "elementary" && elementary
+                  ? `/admin/commerce/orders?branchId=${elementary.id}`
+                  : undefined),
         }))}
         branches={branches}
         staff={staff}
@@ -207,6 +249,10 @@ export default async function AdminCommerceOrdersPage({
           deliveredOnly: Boolean(parsed.deliveredOnly),
           deliveredToday: Boolean(parsed.deliveredToday),
           undeliveredOnly: Boolean(parsed.undeliveredOnly),
+          delayedOnly: Boolean(parsed.delayedOnly),
+          mine: Boolean(parsed.mine),
+          opsVipOnly: Boolean(parsed.opsVipOnly),
+          sort: parsed.sort === "priority" ? "priority" : "createdAt",
           yesterday: parsed.datePreset === "yesterday",
           thisWeek: parsed.datePreset === "thisWeek",
           thisMonth: parsed.datePreset === "thisMonth",
@@ -215,8 +261,18 @@ export default async function AdminCommerceOrdersPage({
         selectedOrderId={selectedOrderId}
         detail={detailView}
         filteredTotal={orders.length}
+        delayedCount={kpiCounts.delayed}
         canManage={canManage}
         canRollback={canRollback}
+        unreadCount={notifications.unreadCount}
+        notifications={notifications.latest.map((item) => ({
+          id: item.id,
+          title: item.title,
+          body: item.body,
+          entityId: item.entityId,
+          read: Boolean(item.readAt),
+          createdAtLabel: formatJalaliDateTimeShort(item.createdAt),
+        }))}
       />
     </>
   );

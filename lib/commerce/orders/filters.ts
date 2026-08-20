@@ -96,8 +96,17 @@ export function parseAdminCommerceOrderFilters(
     todayOnly: datePreset === "today",
     deliveredOnly: get("delivered") === "1",
     deliveredToday: get("deliveredToday") === "1",
+    delayedOnly: get("delayed") === "1",
+    mine: get("mine") === "1",
+    opsVipOnly: get("vip") === "1",
+    sort: get("sort") === "priority" ? "priority" : "createdAt",
     dateFrom: get("dateFrom"),
     dateTo: get("dateTo"),
+    orderIds: get("ids")
+      .split(/[,\s]+/)
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .slice(0, 200),
   };
 }
 
@@ -130,8 +139,25 @@ export function commerceOrderExportQuery(
   if (filters.datePreset === "thisMonth") exportParams.set("thisMonth", "1");
   if (filters.deliveredOnly) exportParams.set("delivered", "1");
   if (filters.deliveredToday) exportParams.set("deliveredToday", "1");
+  if (filters.delayedOnly) exportParams.set("delayed", "1");
+  if (filters.mine) exportParams.set("mine", "1");
+  if (filters.opsVipOnly) exportParams.set("vip", "1");
+  if (filters.sort === "priority") exportParams.set("sort", "priority");
   if (filters.dateFrom) exportParams.set("dateFrom", filters.dateFrom);
   if (filters.dateTo) exportParams.set("dateTo", filters.dateTo);
+  if (filters.orderIds && filters.orderIds.length > 0) {
+    exportParams.set("ids", filters.orderIds.join(","));
+  }
   const qs = exportParams.toString();
   return qs ? `?${qs}` : "";
+}
+
+export function commerceOrderListHref(
+  filters: ReturnType<typeof parseAdminCommerceOrderFilters>,
+  extras?: { orderId?: string | null },
+): string {
+  const params = new URLSearchParams(commerceOrderExportQuery(filters).replace(/^\?/, ""));
+  if (extras?.orderId) params.set("orderId", extras.orderId);
+  const qs = params.toString();
+  return qs ? `/admin/commerce/orders?${qs}` : "/admin/commerce/orders";
 }

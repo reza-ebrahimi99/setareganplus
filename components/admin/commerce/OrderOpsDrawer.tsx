@@ -11,6 +11,12 @@ import { AdminDrawer } from "@/components/admin/AdminDrawer";
 import { Timeline } from "@/components/admin/Timeline";
 import { OrderBranchBadge } from "@/components/admin/commerce/OrderBranchBadge";
 import { OrderNextAction } from "@/components/admin/commerce/OrderNextAction";
+import { OrderQrThumb } from "@/components/admin/commerce/OrderQrThumb";
+import {
+  OrderDelayBadge,
+  OrderHealthBadge,
+  OrderPriorityBadge,
+} from "@/components/admin/commerce/OrderOpsSignals";
 import { StudentAcademicFields } from "@/components/commerce/StudentAcademicFields";
 import type { CommerceBranchBadge } from "@/lib/commerce/branches";
 import type { CommerceStaffOption } from "@/lib/commerce/orders/staff";
@@ -120,6 +126,11 @@ function DrawerBody({
     <div className="space-y-6">
       <section className="space-y-2">
         <h3 className="text-sm font-semibold text-primary">دانش‌آموز</h3>
+        <div className="flex flex-wrap gap-1.5">
+          <OrderPriorityBadge priority={detail.priority} />
+          <OrderDelayBadge delayed={detail.delayed} delayKind={detail.delayKind} />
+          <OrderHealthBadge score={detail.healthScore} level={detail.healthLevel} />
+        </div>
         {editing && canManage ? (
           <OrderEditForm detail={detail} branches={branches} />
         ) : (
@@ -151,6 +162,11 @@ function DrawerBody({
           </dl>
         </section>
       ) : null}
+
+      <section className="space-y-2">
+        <h3 className="text-sm font-semibold text-primary">QR و اقدام سریع</h3>
+        <OrderQrThumb token={detail.qrToken} size={120} />
+      </section>
 
       <section className="space-y-2">
         <h3 className="text-sm font-semibold text-primary">شعبه و دریافت</h3>
@@ -256,6 +272,13 @@ function DrawerBody({
         <p>مسئول تحویل: {detail.handoverStaffName ?? "—"}</p>
         <p>محصول: {detail.productTitle}</p>
         <p>مبلغ: {detail.amountLabel}</p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`/admin/commerce/orders/qr/${encodeURIComponent(detail.qrToken)}?preview=1`}
+          alt="QR"
+          width={140}
+          height={140}
+        />
       </section>
     </div>
   );
@@ -314,8 +337,19 @@ function DrawerFooter({
           چاپ
         </button>
         {canManage && canRollback ? (
-          <form action={rollbackAction} className="w-full sm:w-auto">
+          <form action={rollbackAction} className="w-full space-y-2 sm:w-auto">
             <input type="hidden" name="orderId" value={detail.id} />
+            <textarea
+              name="note"
+              required={detail.opsStage === "DELIVERED_TO_STUDENT"}
+              rows={2}
+              placeholder={
+                detail.opsStage === "DELIVERED_TO_STUDENT"
+                  ? "دلیل بازگشت الزامی است"
+                  : "دلیل بازگشت (اختیاری)"
+              }
+              className="min-h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
+            />
             <button
               type="submit"
               disabled={rollbackPending}
@@ -413,6 +447,10 @@ function OrderEditForm({
             </option>
           ))}
         </select>
+      </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="opsVip" defaultChecked={detail.opsVip} />
+        VIP
       </label>
       <label className="block text-sm">
         <span className="mb-1 block text-muted">یادداشت</span>

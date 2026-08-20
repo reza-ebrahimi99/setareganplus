@@ -328,6 +328,9 @@ check("order: kpi formatter uses supplied counts", () => {
     girls: 6,
     boys: 7,
     elementary: 8,
+    delayed: 9,
+    avgProcessingMinutes: 40,
+    avgDeliveryMinutes: 17,
   });
   assert.equal(cards.find((c) => c.key === "today")?.value, 4);
   assert.equal(cards.find((c) => c.key === "waitingPayment")?.value, 2);
@@ -335,6 +338,53 @@ check("order: kpi formatter uses supplied counts", () => {
   assert.equal(cards.find((c) => c.key === "boys")?.value, 7);
   assert.equal(cards.find((c) => c.key === "elementary")?.value, 8);
   assert.equal(cards.find((c) => c.key === "todayRevenue")?.value, 1000);
+  assert.equal(cards.find((c) => c.key === "delayed")?.value, 9);
+  assert.equal(cards.find((c) => c.key === "avgProcessing")?.value, 40);
+});
+check("order: ops intelligence priority delay and health", () => {
+  const {
+    buildCommerceOpsIntelligence,
+  } = require("../lib/commerce/orders/intelligence") as typeof import("../lib/commerce/orders/intelligence");
+  const urgent = buildCommerceOpsIntelligence({
+    opsStage: "IN_PRODUCTION",
+    paymentPaid: true,
+    urgentDelivery: true,
+    opsVip: false,
+  });
+  assert.equal(urgent.priority, "URGENT");
+  const overdue = buildCommerceOpsIntelligence({
+    opsStage: "IN_PRODUCTION",
+    paymentPaid: true,
+    urgentDelivery: false,
+    opsVip: false,
+    inProductionAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+  });
+  assert.equal(overdue.priority, "OVERDUE");
+  assert.equal(overdue.delayKind, "production");
+  assert.equal(overdue.healthLevel, "warning");
+  const readyDelay = buildCommerceOpsIntelligence({
+    opsStage: "READY_FOR_PICKUP",
+    paymentPaid: true,
+    urgentDelivery: false,
+    opsVip: true,
+    readyForPickupAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
+  });
+  assert.equal(readyDelay.delayKind, "ready");
+  const healthy = buildCommerceOpsIntelligence({
+    opsStage: "DELIVERED_TO_STUDENT",
+    paymentPaid: true,
+    urgentDelivery: false,
+    opsVip: false,
+  });
+  assert.equal(healthy.healthScore, 100);
+  const unpaid = buildCommerceOpsIntelligence({
+    opsStage: "REGISTERED",
+    paymentPaid: false,
+    urgentDelivery: false,
+    opsVip: false,
+    rollbackCount: 2,
+  });
+  assert.ok(unpaid.healthScore < 80);
 });
 check("order: empty allowed branches match nothing", () => {
   const { buildAdminCommerceOrderWhere } = require("../lib/commerce/orders/service") as typeof import("../lib/commerce/orders/service");
@@ -442,7 +492,7 @@ check("nav: commerce children filter by specific permission", () => {
   const financeChildren = filterAdminNavChildren(commerce.children, financePerms);
   assert.deepEqual(
     financeChildren.map((c) => c.href),
-    ["/admin/commerce", "/admin/commerce/orders", "/admin/commerce/payments"],
+    ["/admin/commerce", "/admin/commerce/orders", "/admin/commerce/production", "/admin/commerce/performance", "/admin/commerce/pickup", "/admin/commerce/payments"],
   );
   assert.equal(
     financeChildren.some((c) => c.href === "/admin/commerce/products"),

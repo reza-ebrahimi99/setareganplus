@@ -11,6 +11,7 @@ import {
 import { COMMERCE_BOOKLET_BRANCH_KPI_LABELS } from "@/lib/commerce/booklet-branches";
 import { tehranCivilDayBounds } from "@/lib/commerce/orders/date-range";
 import { commerceAllowedBranchScope } from "@/lib/commerce/orders/filters";
+import { PRODUCTION_DELAY_MS, READY_DELAY_MS } from "@/lib/commerce/orders/intelligence";
 import { prisma } from "@/lib/prisma";
 
 export type OrderOpsKpiCard = {
@@ -31,6 +32,9 @@ export type OrderOpsKpiCounts = {
   girls: number;
   boys: number;
   elementary: number;
+  delayed: number;
+  avgProcessingMinutes: number | null;
+  avgDeliveryMinutes: number | null;
 };
 
 export function formatOrderOpsKpis(counts: OrderOpsKpiCounts): OrderOpsKpiCard[] {
@@ -77,6 +81,25 @@ export function formatOrderOpsKpis(counts: OrderOpsKpiCounts): OrderOpsKpiCard[]
       tone: "revenue",
     },
     {
+      key: "delayed",
+      label: "سفارش‌های معوق",
+      value: counts.delayed,
+      hint: "تأخیر تولید یا تحویل",
+      tone: "warning",
+    },
+    {
+      key: "avgProcessing",
+      label: "میانگین پردازش",
+      value: counts.avgProcessingMinutes ?? 0,
+      hint: "دقیقه · تحویل‌های امروز",
+    },
+    {
+      key: "avgDelivery",
+      label: "میانگین تحویل",
+      value: counts.avgDeliveryMinutes ?? 0,
+      hint: "دقیقه · از آماده تا تحویل",
+    },
+    {
       key: "girls",
       label: COMMERCE_BOOKLET_BRANCH_KPI_LABELS.GIRLS,
       value: counts.girls,
@@ -115,6 +138,9 @@ export async function loadOrderOpsKpiCounts(params: {
     deliveredToday,
     todayRevenue,
     keyedBranches,
+    delayed,
+    processing,
+    deliveryAvg,
   ] = await Promise.all([
     prisma.commerceOrder.count({
       where: { AND: [scope, { createdAt: { gte: today.from, lte: today.to } }] },
@@ -161,6 +187,42 @@ export async function loadOrderOpsKpiCounts(params: {
       },
       select: { id: true, bookletOpsKey: true },
     }),
+    prisma.commerceOrder.count({
+      where: {
+        AND: [
+          scope,
+          {
+            OR: [
+              {
+                opsStage: CommerceOpsStage.IN_PRODUCTION,
+                inProductionAt: { lte: new Date(Date.now() - PRODUCTION_DELAY_MS) },
+              },
+              {
+                opsStage: CommerceOpsStage.READY_FOR_PICKUP,
+                readyForPickupAt: { lte: new Date(Date.now() - READY_DELAY_MS) },
+              },
+            ],
+          },
+        ],
+      },
+    }),
+    prisma.$queryRaw<Array<{ avg_sec: number | null }>>`
+      SELECT AVG(EXTRACT(EPOCH FROM ("deliveredAt" - "createdAt"))) AS avg_sec
+      FROM "commerce_orders"
+      WHERE "organizationId" = ${params.organizationId}
+        AND "deliveredAt" IS NOT NULL
+        AND "deliveredAt" >= ${today.from}
+        AND "deliveredAt" <= ${today.to}
+    `,
+    prisma.$queryRaw<Array<{ avg_sec: number | null }>>`
+      SELECT AVG(EXTRACT(EPOCH FROM ("deliveredAt" - "readyForPickupAt"))) AS avg_sec
+      FROM "commerce_orders"
+      WHERE "organizationId" = ${params.organizationId}
+        AND "deliveredAt" IS NOT NULL
+        AND "readyForPickupAt" IS NOT NULL
+        AND "deliveredAt" >= ${today.from}
+        AND "deliveredAt" <= ${today.to}
+    `,
   ]);
 
   const idsFor = (key: CommerceBookletBranchKey) =>
@@ -198,6 +260,11 @@ export async function loadOrderOpsKpiCounts(params: {
     girls,
     boys,
     elementary,
+    delayed,
+    avgProcessingMinutes:
+      processing[0]?.avg_sec != null ? Math.round(Number(processing[0].avg_sec) / 60) : null,
+    avgDeliveryMinutes:
+      deliveryAvg[0]?.avg_sec != null ? Math.round(Number(deliveryAvg[0].avg_sec) / 60) : null,
   };
 }
 

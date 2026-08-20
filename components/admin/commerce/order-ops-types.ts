@@ -1,5 +1,9 @@
 import type { TimelineNodeView } from "@/components/admin/Timeline";
 import type { CommerceBranchBadge } from "@/lib/commerce/branches";
+import type {
+  CommerceOpsHealthLevel,
+  CommerceOpsPriority,
+} from "@/lib/commerce/orders/intelligence";
 import type { CommerceOpsStageValue } from "@/lib/commerce/orders/ops-stage";
 
 export type OrderOpsListItem = {
@@ -29,11 +33,18 @@ export type OrderOpsListItem = {
   handoverStaffUserId: string | null;
   handoverStaffName: string | null;
   urgentDelivery: boolean;
+  opsVip: boolean;
+  qrToken: string;
+  notes: string | null;
+  priority: CommerceOpsPriority;
+  delayed: boolean;
+  delayKind: "production" | "ready" | null;
+  healthScore: number;
+  healthLevel: CommerceOpsHealthLevel;
   progressPercent: number;
 };
 
 export type OrderOpsDetailView = OrderOpsListItem & {
-  notes: string | null;
   specialNotes: string | null;
   deliveryNote: string | null;
   buyerEmail: string | null;
@@ -64,6 +75,16 @@ export type OrderOpsKpiView = {
   valueLabel: string;
   hint: string;
   tone?: "default" | "warning" | "info" | "success" | "revenue";
+  href?: string;
+};
+
+export type OrderOpsNotificationView = {
+  id: string;
+  title: string;
+  body: string | null;
+  entityId: string | null;
+  read: boolean;
+  createdAtLabel: string;
 };
 
 export type OrderOpsFilterState = {
@@ -84,6 +105,10 @@ export type OrderOpsFilterState = {
   deliveredOnly: boolean;
   deliveredToday: boolean;
   undeliveredOnly: boolean;
+  delayedOnly: boolean;
+  mine: boolean;
+  opsVipOnly: boolean;
+  sort: "priority" | "createdAt";
   yesterday: boolean;
   thisWeek: boolean;
   thisMonth: boolean;

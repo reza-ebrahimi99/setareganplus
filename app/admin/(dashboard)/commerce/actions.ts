@@ -9,6 +9,11 @@ import {
   rollbackCommerceOrderStage,
   updateCommerceOrderDetails,
 } from "@/lib/commerce/orders/ops";
+import {
+  bulkAdvanceCommerceOrders,
+  bulkAssignCommerceOrders,
+} from "@/lib/commerce/orders/bulk";
+import { markCommerceOpsNotificationsRead } from "@/lib/commerce/orders/notify";
 import { createSingleItemCommerceOrder } from "@/lib/commerce/orders/service";
 import {
   requirePermission,
@@ -27,6 +32,17 @@ export type CommerceOrderActionState = {
 
 function allowedBranchIds(session: AdminSessionContext): readonly string[] | null {
   return session.membership.allBranches ? null : session.membership.branchIds;
+}
+
+function revalidateCommerceOps(formData?: FormData) {
+  revalidatePath("/admin/commerce/orders");
+  revalidatePath("/admin/commerce/production");
+  revalidatePath("/admin/commerce/performance");
+  revalidatePath("/admin/commerce/pickup");
+  const from = String(formData?.get("from") ?? "").trim();
+  if (from.startsWith("/admin/commerce/")) {
+    revalidatePath(from.split("?")[0] ?? from);
+  }
 }
 
 export async function createCommerceProductAction(
@@ -77,10 +93,11 @@ export async function advanceOrderStageAction(
     actorUserId: session.user.id,
     note: note || null,
     handoverStaffUserId: String(formData.get("handoverStaffUserId") ?? "").trim() || null,
+    pickupSignedBy: String(formData.get("pickupSignedBy") ?? "").trim() || null,
     allowedBranchIds: allowedBranchIds(session),
   });
   if (!result.ok) return { formError: result.error };
-  revalidatePath("/admin/commerce/orders");
+  revalidateCommerceOps(formData);
   return { successMessage: "مرحله ثبت شد." };
 }
 
@@ -101,7 +118,7 @@ export async function rollbackOrderStageAction(
     allowedBranchIds: allowedBranchIds(session),
   });
   if (!result.ok) return { formError: result.error };
-  revalidatePath("/admin/commerce/orders");
+  revalidateCommerceOps(formData);
   return { successMessage: "یک مرحله بازگشت داده شد." };
 }
 
@@ -122,7 +139,7 @@ export async function addOrderNoteAction(
     allowedBranchIds: allowedBranchIds(session),
   });
   if (!result.ok) return { formError: result.error };
-  revalidatePath("/admin/commerce/orders");
+  revalidateCommerceOps();
   return { successMessage: "یادداشت ثبت شد." };
 }
 
@@ -142,7 +159,7 @@ export async function updateOrderDetailsAction(
     allowedBranchIds: allowedBranchIds(session),
   });
   if (!result.ok) return { formError: result.error };
-  revalidatePath("/admin/commerce/orders");
+  revalidateCommerceOps();
   return { successMessage: "سفارش به‌روزرسانی شد." };
 }
 
@@ -176,6 +193,69 @@ export async function createAdminCommerceOrderAction(
     bookletPaymentMethod: String(formData.get("bookletPaymentMethod") ?? "").trim() || null,
   });
   if (!result.ok) return { formError: result.error };
-  revalidatePath("/admin/commerce/orders");
+  revalidateCommerceOps();
   redirect(`/admin/commerce/orders?orderId=${result.orderId}`);
+}
+
+export async function bulkCommerceOrdersAction(
+  _prev: CommerceOrderActionState,
+  formData: FormData,
+): Promise<CommerceOrderActionState> {
+  const session = await requirePermission("commerce.orders.manage");
+  const orderIds = formData
+    .getAll("orderIds")
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+  const intent = String(formData.get("intent") ?? "").trim();
+  const handoverStaffUserId =
+    String(formData.get("handoverStaffUserId") ?? "").trim() || null;
+  const pickupBranchId = String(formData.get("pickupBranchId") ?? "").trim() || null;
+
+  if (intent === "assignStaff" || intent === "assignPickup") {
+    const result = await bulkAssignCommerceOrders({
+      organizationId: session.organization.id,
+      actorUserId: session.user.id,
+      orderIds,
+      handoverStaffUserId: intent === "assignStaff" ? handoverStaffUserId : null,
+      pickupBranchId: intent === "assignPickup" ? pickupBranchId : null,
+      allowedBranchIds: allowedBranchIds(session),
+    });
+    if (!result.ok && result.done === 0) {
+      return { formError: result.error ?? "عملیات گروهی انجام نشد." };
+    }
+    revalidateCommerceOps();
+    return {
+      successMessage: `${result.done} سفارش به‌روزرسانی شد${result.failed ? ` · ${result.failed} ناموفق` : ""}.`,
+    };
+  }
+
+  const target =
+    intent === "production" ? "production" : intent === "ready" ? "ready" : intent === "deliver" ? "deliver" : null;
+  if (!target) return { formError: "عملیات گروهی نامعتبر است." };
+
+  const result = await bulkAdvanceCommerceOrders({
+    organizationId: session.organization.id,
+    actorUserId: session.user.id,
+    orderIds,
+    target,
+    handoverStaffUserId,
+    allowedBranchIds: allowedBranchIds(session),
+  });
+  if (!result.ok && result.done === 0) {
+    return { formError: result.error ?? "عملیات گروهی انجام نشد." };
+  }
+  revalidateCommerceOps();
+  return {
+    successMessage: `${result.done} سفارش به‌روزرسانی شد${result.failed ? ` · ${result.failed} ناموفق` : ""}.`,
+  };
+}
+
+export async function markCommerceOpsNotificationsReadAction(): Promise<CommerceOrderActionState> {
+  const session = await requirePermission("commerce.orders.view");
+  await markCommerceOpsNotificationsRead({
+    organizationId: session.organization.id,
+    userId: session.user.id,
+  });
+  revalidateCommerceOps();
+  return { successMessage: "اعلان‌ها خوانده شد." };
 }

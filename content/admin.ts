@@ -143,6 +143,21 @@ export const adminNavGroups: ReadonlyArray<{
             permission: "commerce.orders.view",
           },
           {
+            href: "/admin/commerce/production",
+            label: "صف تولید",
+            permission: "commerce.orders.view",
+          },
+          {
+            href: "/admin/commerce/performance",
+            label: "عملکرد کارکنان",
+            permission: "commerce.orders.view",
+          },
+          {
+            href: "/admin/commerce/pickup",
+            label: "میز دریافت",
+            permission: "commerce.orders.view",
+          },
+          {
             href: "/admin/commerce/payments",
             label: "پرداخت‌ها",
             permission: "commerce.payments.view",
@@ -374,6 +389,30 @@ export const adminBreadcrumbs = {
     { label: "مدیریت", href: "/admin" },
     { label: "فروشگاه", href: "/admin/commerce" },
     { label: "مرکز عملیات جزوه" },
+  ],
+  commerceProduction: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "مرکز عملیات جزوه", href: "/admin/commerce/orders" },
+    { label: "صف تولید" },
+  ],
+  commercePerformance: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "مرکز عملیات جزوه", href: "/admin/commerce/orders" },
+    { label: "عملکرد کارکنان" },
+  ],
+  commercePickup: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "مرکز عملیات جزوه", href: "/admin/commerce/orders" },
+    { label: "میز دریافت" },
+  ],
+  commerceLabels: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "مرکز عملیات جزوه", href: "/admin/commerce/orders" },
+    { label: "برچسب چاپ" },
   ],
   commerceNotifications: [
     { label: "مدیریت", href: "/admin" },

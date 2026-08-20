@@ -10,6 +10,7 @@ export {
   COMMERCE_OPS_STAGES,
   COMMERCE_OPS_STAGE_LABELS,
   COMMERCE_OPS_STAGE_HINTS,
+  COMMERCE_OPS_STAGE_TONES,
   COMMERCE_OPS_NEXT_ACTION_LABELS,
   COMMERCE_OPS_ACTIVITY_TITLES,
   isCommerceOpsStage,
@@ -28,6 +29,11 @@ export {
 } from "@/lib/commerce/branches";
 export type { CommerceBranchBadge } from "@/lib/commerce/branches";
 export { formatOrderOpsKpis, loadOrderOpsKpis } from "@/lib/commerce/orders/kpis";
+export {
+  buildCommerceOpsIntelligence,
+  COMMERCE_OPS_PRIORITY_LABELS,
+  COMMERCE_OPS_HEALTH_LABELS,
+} from "@/lib/commerce/orders/intelligence";
 export {
   COMMERCE_STUDENT_GRADES,
   COMMERCE_STUDENT_GRADE_LABELS,

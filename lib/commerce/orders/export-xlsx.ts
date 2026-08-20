@@ -8,6 +8,7 @@ import {
   COMMERCE_PAYMENT_STATUS_LABELS,
 } from "@/lib/commerce/booklet";
 import { COMMERCE_OPS_STAGE_LABELS } from "@/lib/commerce/orders/ops-stage";
+import { commerceOrderQrUrl } from "@/lib/commerce/orders/qr";
 import {
   listAdminCommerceOrdersForExport,
   type AdminCommerceOrderListFilters,
@@ -52,7 +53,7 @@ export async function exportCommerceOrdersXlsx(
       { header: "مرحله عملیات", key: "opsStage", width: 18 },
       { header: "مسئول تحویل", key: "handover", width: 20 },
       { header: "تاریخ تحویل", key: "deliveredAt", width: 20 },
-      { header: "وضعیت تحویل", key: "fulfillment", width: 16 },
+      { header: "QR", key: "qr", width: 42 },
     ];
 
     sheet.getRow(1).font = { bold: true };
@@ -83,6 +84,9 @@ export async function exportCommerceOrdersXlsx(
           : "—",
         fulfillment: row.fulfillmentStatus
           ? COMMERCE_FULFILLMENT_STATUS_LABELS[row.fulfillmentStatus]
+          : "—",
+        qr: row.qrToken
+          ? `${commerceOrderQrUrl(row.qrToken)}`
           : "—",
       });
     }

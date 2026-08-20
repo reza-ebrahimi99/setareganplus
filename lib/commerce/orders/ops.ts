@@ -27,6 +27,7 @@ import {
   recordCommerceOrderEvent,
   stageChangedEventInput,
 } from "@/lib/commerce/orders/timeline";
+import { notifyCommerceOpsStaff } from "@/lib/commerce/orders/notify";
 import { prisma } from "@/lib/prisma";
 
 export type CommerceOpsResult =
@@ -58,6 +59,7 @@ async function loadOrderForOps(params: {
       buyerLastName: true,
       buyerMobile: true,
       handoverStaffUserId: true,
+      qrToken: true,
     },
   });
 }
@@ -129,6 +131,13 @@ export async function recordCommerceOrderPayment(params: {
       }),
     );
   });
+  void notifyCommerceOpsStaff({
+    organizationId: order.organizationId,
+    orderId: order.id,
+    kind: "PAYMENT_RECEIVED",
+    actorUserId: params.actorUserId,
+    body: order.buyerName,
+  }).catch((error) => console.error("[commerce-ops] notify failed", error));
 
   return { ok: true };
 }
@@ -139,6 +148,7 @@ export async function advanceCommerceOrderStage(params: {
   actorUserId: string;
   note?: string | null;
   handoverStaffUserId?: string | null;
+  pickupSignedBy?: string | null;
   allowedBranchIds?: readonly string[] | null;
 }): Promise<CommerceOpsResult> {
   const order = await loadOrderForOps(params);
@@ -171,17 +181,23 @@ export async function advanceCommerceOrderStage(params: {
 
   const now = new Date();
   const extra =
-    gate.next === "READY_FOR_PICKUP"
+    gate.next === "IN_PRODUCTION"
       ? {
-          readyForPickupAt: now,
-          readyForPickupByUserId: params.actorUserId,
+          inProductionAt: now,
         }
+      : gate.next === "READY_FOR_PICKUP"
+        ? {
+            readyForPickupAt: now,
+            readyForPickupByUserId: params.actorUserId,
+          }
       : gate.next === "DELIVERED_TO_STUDENT"
         ? {
             deliveredAt: now,
             deliveredByUserId: staffId || params.actorUserId,
             handoverStaffUserId: staffId || params.actorUserId,
             deliveryNote: params.note?.trim() || null,
+            pickupSignedBy: params.pickupSignedBy?.trim() || null,
+            pickupSignedAt: params.pickupSignedBy?.trim() ? now : null,
           }
         : {};
 
@@ -207,6 +223,24 @@ export async function advanceCommerceOrderStage(params: {
     );
   });
 
+  const notifyKind =
+    gate.next === "IN_PRODUCTION"
+      ? "ENTERED_PRODUCTION"
+      : gate.next === "READY_FOR_PICKUP"
+        ? "READY"
+        : gate.next === "DELIVERED_TO_STUDENT"
+          ? "DELIVERED"
+          : null;
+  if (notifyKind) {
+    void notifyCommerceOpsStaff({
+      organizationId: order.organizationId,
+      orderId: order.id,
+      kind: notifyKind,
+      actorUserId: params.actorUserId,
+      body: order.buyerName,
+    }).catch((error) => console.error("[commerce-ops] notify failed", error));
+  }
+
   return { ok: true };
 }
 
@@ -219,6 +253,9 @@ export async function rollbackCommerceOrderStage(params: {
 }): Promise<CommerceOpsResult> {
   const order = await loadOrderForOps(params);
   if (!order) return { ok: false, error: "سفارش یافت نشد." };
+  if (order.opsStage === "DELIVERED_TO_STUDENT" && !params.note?.trim()) {
+    return { ok: false, error: "برای بازگشت سفارش تحویل‌شده، دلیل الزامی است." };
+  }
 
   const paymentPaid = order.paymentStatus === CommerceOrderPaymentStatus.PAID;
   const gate = canRollbackCommerceOpsStage({
@@ -235,13 +272,19 @@ export async function rollbackCommerceOrderStage(params: {
           deliveredByUserId: null,
           handoverStaffUserId: null,
           deliveryNote: null,
+          pickupSignedBy: null,
+          pickupSignedAt: null,
         }
       : order.opsStage === "READY_FOR_PICKUP"
         ? {
             readyForPickupAt: null,
             readyForPickupByUserId: null,
           }
-        : {};
+        : order.opsStage === "IN_PRODUCTION"
+          ? {
+              inProductionAt: null,
+            }
+          : {};
 
   await prisma.$transaction(async (tx) => {
     await tx.commerceOrder.update({
@@ -260,6 +303,13 @@ export async function rollbackCommerceOrderStage(params: {
       }),
     );
   });
+  void notifyCommerceOpsStaff({
+    organizationId: order.organizationId,
+    orderId: order.id,
+    kind: "ROLLBACK",
+    actorUserId: params.actorUserId,
+    body: params.note,
+  }).catch((error) => console.error("[commerce-ops] notify failed", error));
 
   return { ok: true };
 }
@@ -372,6 +422,9 @@ export async function updateCommerceOrderDetails(params: {
   });
   if (!parsed.ok) return parsed;
   const profile = parsed.profile;
+  const opsVip = form
+    ? form.get("opsVip") === "on" || form.get("opsVip") === "1"
+    : undefined;
 
   const branchIdRaw =
     params.branchId !== undefined
@@ -421,6 +474,7 @@ export async function updateCommerceOrderDetails(params: {
         notes: profile.notes,
         specialNotes: profile.specialNotes,
         urgentDelivery: profile.urgentDelivery,
+        ...(opsVip !== undefined ? { opsVip } : {}),
         preferredPickupAt: profile.preferredPickupAt,
         acquisitionSource: profile.acquisitionSource
           ? (profile.acquisitionSource as CommerceAcquisitionSource)
