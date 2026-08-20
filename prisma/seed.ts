@@ -1,5 +1,10 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
+import { CommerceBookletBranchKey } from "../generated/prisma/enums";
+import {
+  COMMERCE_BOOKLET_BRANCH_CATALOG,
+  COMMERCE_BOOKLET_BRANCH_KEYS,
+} from "../lib/commerce/booklet-branches";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -27,68 +32,43 @@ async function main() {
     },
   });
 
-  await prisma.branch.upsert({
-    where: {
-      organizationId_slug: {
-        organizationId: organization.id,
-        slug: "nasim-shahr",
+  for (const key of COMMERCE_BOOKLET_BRANCH_KEYS) {
+    const def = COMMERCE_BOOKLET_BRANCH_CATALOG[key];
+    await prisma.branch.upsert({
+      where: {
+        organizationId_slug: {
+          organizationId: organization.id,
+          slug: def.slug,
+        },
       },
-    },
-    update: {
-      name: "مرکز آموزشی نسیم‌شهر",
-      isActive: true,
-      deletedAt: null,
-    },
-    create: {
-      organizationId: organization.id,
-      name: "مرکز آموزشی نسیم‌شهر",
-      slug: "nasim-shahr",
-      isActive: true,
-    },
-  });
+      update: {
+        name: def.name,
+        address: def.address,
+        accentColor: def.accentColor,
+        bookletOpsKey: key as CommerceBookletBranchKey,
+        isActive: true,
+        deletedAt: null,
+      },
+      create: {
+        organizationId: organization.id,
+        name: def.name,
+        slug: def.slug,
+        address: def.address,
+        accentColor: def.accentColor,
+        bookletOpsKey: key as CommerceBookletBranchKey,
+        isActive: true,
+      },
+    });
+  }
 
-  await prisma.branch.upsert({
+  await prisma.branch.updateMany({
     where: {
-      organizationId_slug: {
-        organizationId: organization.id,
-        slug: "dokhtaran",
-      },
-    },
-    update: {
-      name: "شعبه دختران",
-      accentColor: "#7c3aed",
-      isActive: true,
-      deletedAt: null,
-    },
-    create: {
       organizationId: organization.id,
-      name: "شعبه دختران",
-      slug: "dokhtaran",
-      accentColor: "#7c3aed",
-      isActive: true,
-    },
-  });
-
-  await prisma.branch.upsert({
-    where: {
-      organizationId_slug: {
-        organizationId: organization.id,
-        slug: "pesaran",
-      },
-    },
-    update: {
-      name: "شعبه پسران",
-      accentColor: "#2563eb",
-      isActive: true,
       deletedAt: null,
+      bookletOpsKey: null,
+      slug: { notIn: COMMERCE_BOOKLET_BRANCH_KEYS.map((key) => COMMERCE_BOOKLET_BRANCH_CATALOG[key].slug) },
     },
-    create: {
-      organizationId: organization.id,
-      name: "شعبه پسران",
-      slug: "pesaran",
-      accentColor: "#2563eb",
-      isActive: true,
-    },
+    data: { isActive: false },
   });
 }
 

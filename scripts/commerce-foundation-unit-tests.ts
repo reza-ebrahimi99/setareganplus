@@ -318,21 +318,23 @@ check("order: ops stage machine", () => {
 
 check("order: kpi formatter uses supplied counts", () => {
   const { formatOrderOpsKpis } = require("../lib/commerce/orders/kpis") as typeof import("../lib/commerce/orders/kpis");
-  const cards = formatOrderOpsKpis(
-    {
-      total: 10,
-      paid: 7,
-      inProduction: 2,
-      ready: 3,
-      delivered: 4,
-      byBranchId: new Map([["b1", 6]]),
-    },
-    [{ id: "b1", name: "شعبه یک" }, { id: "b2", name: "شعبه دو" }],
-  );
-  assert.equal(cards.find((c) => c.key === "total")?.value, 10);
-  assert.equal(cards.find((c) => c.key === "paid")?.value, 7);
-  assert.equal(cards.find((c) => c.key === "branch-b1")?.value, 6);
-  assert.equal(cards.find((c) => c.key === "branch-b2")?.value, 0);
+  const cards = formatOrderOpsKpis({
+    todayOrders: 4,
+    waitingPayment: 2,
+    inProduction: 3,
+    ready: 1,
+    deliveredToday: 5,
+    todayRevenueRials: 1000,
+    girls: 6,
+    boys: 7,
+    elementary: 8,
+  });
+  assert.equal(cards.find((c) => c.key === "today")?.value, 4);
+  assert.equal(cards.find((c) => c.key === "waitingPayment")?.value, 2);
+  assert.equal(cards.find((c) => c.key === "girls")?.value, 6);
+  assert.equal(cards.find((c) => c.key === "boys")?.value, 7);
+  assert.equal(cards.find((c) => c.key === "elementary")?.value, 8);
+  assert.equal(cards.find((c) => c.key === "todayRevenue")?.value, 1000);
 });
 check("order: empty allowed branches match nothing", () => {
   const { buildAdminCommerceOrderWhere } = require("../lib/commerce/orders/service") as typeof import("../lib/commerce/orders/service");
@@ -341,9 +343,58 @@ check("order: empty allowed branches match nothing", () => {
     organizationId: "org",
     allowedBranchIds: [],
   });
-  assert.deepEqual(where.branchId, { in: [] });
-  assert.deepEqual(commerceAllowedBranchScope([]), { branchId: { in: [] } });
+  assert.ok(Array.isArray(where.AND));
+  const scope = commerceAllowedBranchScope([]);
+  assert.deepEqual(scope, {
+    OR: [{ branchId: { in: [] } }, { pickupBranchId: { in: [] } }],
+  });
   assert.deepEqual(commerceAllowedBranchScope(null), {});
+});
+
+check("order: major hidden for grades 1-9", () => {
+  const { commerceGradeRequiresMajor, resolveCommerceStudentMajor } = require("../lib/commerce/student-fields") as typeof import("../lib/commerce/student-fields");
+  assert.equal(commerceGradeRequiresMajor("GRADE_9"), false);
+  assert.equal(commerceGradeRequiresMajor("GRADE_10"), true);
+  assert.deepEqual(resolveCommerceStudentMajor({ grade: "GRADE_8", major: "MATH" }), {
+    ok: true,
+    major: null,
+  });
+  const missing = resolveCommerceStudentMajor({ grade: "GRADE_11", major: null });
+  assert.equal(missing.ok, false);
+});
+
+check("order: handover required before delivery", () => {
+  const { canAdvanceCommerceOpsStage, canRollbackCommerceOpsStage } = require("../lib/commerce/orders/ops-stage") as typeof import("../lib/commerce/orders/ops-stage");
+  const blocked = canAdvanceCommerceOpsStage({
+    current: "READY_FOR_PICKUP",
+    paymentPaid: true,
+    handoverStaffUserId: null,
+  });
+  assert.equal(blocked.ok, false);
+  const ok = canAdvanceCommerceOpsStage({
+    current: "READY_FOR_PICKUP",
+    paymentPaid: true,
+    handoverStaffUserId: "staff_1",
+  });
+  assert.equal(ok.ok, true);
+  const unpaidDeliver = canAdvanceCommerceOpsStage({
+    current: "READY_FOR_PICKUP",
+    paymentPaid: false,
+    handoverStaffUserId: "staff_1",
+  });
+  assert.equal(unpaidDeliver.ok, false);
+  const deliveredRollback = canRollbackCommerceOpsStage({
+    current: "DELIVERED_TO_STUDENT",
+    paymentPaid: true,
+    allowDeliveredRollback: false,
+  });
+  assert.equal(deliveredRollback.ok, false);
+  const allowedRollback = canRollbackCommerceOpsStage({
+    current: "DELIVERED_TO_STUDENT",
+    paymentPaid: true,
+    allowDeliveredRollback: true,
+  });
+  assert.equal(allowedRollback.ok, true);
 });
 
 check("rbac: commerce permissions registered", () => {

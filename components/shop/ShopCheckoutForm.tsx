@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { StudentAcademicFields } from "@/components/commerce/StudentAcademicFields";
 import {
   startShopCheckoutAction,
   type ShopCheckoutState,
@@ -11,6 +12,7 @@ const empty: ShopCheckoutState = {};
 type BranchOption = {
   id: string;
   name: string;
+  address?: string | null;
 };
 
 type Props = {
@@ -18,7 +20,7 @@ type Props = {
   disabled?: boolean;
   finalPriceLabel: string;
   branches: readonly BranchOption[];
-  defaultBranchId?: string | null;
+  defaultPickupBranchId?: string | null;
 };
 
 export function ShopCheckoutForm({
@@ -26,10 +28,10 @@ export function ShopCheckoutForm({
   disabled = false,
   finalPriceLabel,
   branches,
-  defaultBranchId = null,
+  defaultPickupBranchId = null,
 }: Props) {
   const [state, action, pending] = useActionState(startShopCheckoutAction, empty);
-  const showBranchSelect = branches.length > 0;
+  const lock = disabled || pending;
 
   return (
     <form action={action} className="space-y-3 rounded-2xl border border-border bg-white p-4 shadow-sm">
@@ -47,11 +49,11 @@ export function ShopCheckoutForm({
       ) : null}
 
       <label className="block text-sm">
-        <span className="mb-1.5 block text-muted">نام</span>
+        <span className="mb-1.5 block text-muted">نام دانش‌آموز</span>
         <input
           name="buyerFirstName"
           required
-          disabled={disabled || pending}
+          disabled={lock}
           maxLength={80}
           className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5 disabled:opacity-60"
         />
@@ -61,47 +63,78 @@ export function ShopCheckoutForm({
         <input
           name="buyerLastName"
           required
-          disabled={disabled || pending}
+          disabled={lock}
           maxLength={80}
           className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5 disabled:opacity-60"
         />
       </label>
       <label className="block text-sm">
-        <span className="mb-1.5 block text-muted">شماره موبایل</span>
+        <span className="mb-1.5 block text-muted">موبایل</span>
         <input
           name="buyerMobile"
           required
           inputMode="tel"
           dir="ltr"
-          disabled={disabled || pending}
+          disabled={lock}
           placeholder="09xxxxxxxxx"
           className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5 disabled:opacity-60"
         />
       </label>
+      <label className="block text-sm">
+        <span className="mb-1.5 block text-muted">کد ملی (اختیاری)</span>
+        <input
+          name="buyerNationalCode"
+          inputMode="numeric"
+          dir="ltr"
+          disabled={lock}
+          maxLength={10}
+          className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5 disabled:opacity-60"
+        />
+      </label>
+      <label className="block text-sm">
+        <span className="mb-1.5 block text-muted">نام والد / همراه (اختیاری)</span>
+        <input
+          name="parentName"
+          disabled={lock}
+          maxLength={80}
+          className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5 disabled:opacity-60"
+        />
+      </label>
 
-      {showBranchSelect ? (
-        <label className="block text-sm">
-          <span className="mb-1.5 block text-muted">شعبه تحویل</span>
-          <select
-            name="branchId"
-            required
-            disabled={disabled || pending}
-            defaultValue={defaultBranchId ?? ""}
-            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5 disabled:opacity-60"
-          >
-            <option value="">انتخاب شعبه تحویل</option>
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
+      <StudentAcademicFields disabled={lock} />
+
+      <label className="block text-sm">
+        <span className="mb-1.5 block text-muted">محل دریافت جزوه</span>
+        <select
+          name="pickupBranchId"
+          required
+          disabled={lock || branches.length === 0}
+          defaultValue={defaultPickupBranchId ?? ""}
+          className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5 disabled:opacity-60"
+        >
+          <option value="">انتخاب محل دریافت</option>
+          {branches.map((branch) => (
+            <option key={branch.id} value={branch.id}>
+              {branch.name}
+              {branch.address ? ` — ${branch.address}` : ""}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="block text-sm">
+        <span className="mb-1.5 block text-muted">توضیحات (اختیاری)</span>
+        <textarea
+          name="notes"
+          rows={3}
+          disabled={lock}
+          className="w-full rounded-xl border border-border bg-white px-3 py-2.5 disabled:opacity-60"
+        />
+      </label>
 
       <button
         type="submit"
-        disabled={disabled || pending}
+        disabled={lock}
         className="flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
       >
         {disabled

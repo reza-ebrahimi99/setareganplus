@@ -18,8 +18,8 @@ const links = [
   },
   {
     href: "/admin/commerce/orders",
-    title: "عملیات سفارش",
-    description: "تولید جزوه، آماده‌سازی و تحویل حضوری به دانش‌آموز",
+    title: "مرکز عملیات جزوه",
+    description: "تولید جزوه، محل دریافت و تحویل حضوری به دانش‌آموز",
   },
   {
     href: "/admin/commerce/categories",

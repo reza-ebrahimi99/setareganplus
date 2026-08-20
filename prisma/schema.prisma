@@ -578,8 +578,11 @@ model Branch {
   slug           String
   city           String?
   province       String?
+  address        String?
   /// Optional badge/accent hex (e.g. #7c3aed). Null = UI derives a stable color from slug.
   accentColor    String?
+  /// Canonical booklet ops identity (boys / girls / elementary). Null = not an ops branch.
+  bookletOpsKey  CommerceBookletBranchKey?
   isActive       Boolean   @default(true)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -604,11 +607,13 @@ model Branch {
   commerceCategories   CommerceCategory[]
   commerceItems        CommerceItem[]
   commerceOrders       CommerceOrder[]
+  commercePickupOrders CommerceOrder[]     @relation("CommerceOrderPickupBranch")
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
   @@index([organizationId, isActive])
   @@index([organizationId, deletedAt])
+  @@index([organizationId, bookletOpsKey])
   @@map("branches")
 }
 
@@ -646,6 +651,7 @@ model User {
   registrationActivities      RegistrationActivity[]   @relation("RegistrationActivityActor")
   commerceOrdersDelivered     CommerceOrder[]          @relation("CommerceOrderDeliveredBy")
   commerceOrdersReadyForPickup CommerceOrder[]         @relation("CommerceOrderReadyForPickupBy")
+  commerceOrdersHandover      CommerceOrder[]          @relation("CommerceOrderHandoverStaff")
   commerceOrderEvents         CommerceOrderEvent[]     @relation("CommerceOrderEventActor")
   leadOwnershipHistoryAsOwner LeadOwnershipHistory[]   @relation("LeadOwnershipHistoryOwner")
   leadOwnershipHistoryAsActor LeadOwnershipHistory[]   @relation("LeadOwnershipHistoryActor")
@@ -3750,6 +3756,52 @@ enum CommerceOrderEventType {
   SYSTEM
 }
 
+enum CommerceBookletBranchKey {
+  BOYS
+  GIRLS
+  ELEMENTARY
+}
+
+enum CommerceStudentGrade {
+  GRADE_1
+  GRADE_2
+  GRADE_3
+  GRADE_4
+  GRADE_5
+  GRADE_6
+  GRADE_7
+  GRADE_8
+  GRADE_9
+  GRADE_10
+  GRADE_11
+  GRADE_12
+}
+
+enum CommerceStudentMajor {
+  MATH
+  EMPIRICAL
+  HUMANITIES
+  TECHNICAL
+  KAR_DANESH
+}
+
+enum CommerceAcquisitionSource {
+  INSTAGRAM
+  TELEGRAM
+  FRIEND
+  TEACHER
+  PARENT
+  OTHER
+}
+
+enum CommerceBookletPaymentMethod {
+  ONLINE
+  CASH
+  CARD
+  TRANSFER
+  OTHER
+}
+
 /// Nested, admin-managed store categories (seeded, fully editable).
 model CommerceCategory {
   id              String    @id @default(cuid())
@@ -3926,16 +3978,32 @@ model CommerceNotificationSettings {
 model CommerceOrder {
   id             String                     @id @default(cuid())
   organizationId String
+  /// Catalog / production branch (the booklet belongs here).
   branchId       String?
+  /// Student-chosen pickup location (محل دریافت جزوه).
+  pickupBranchId String?
   orderNumber    String
   status         CommerceOrderStatus        @default(DRAFT)
   paymentStatus  CommerceOrderPaymentStatus @default(UNPAID)
   /// Operational pipeline stage (staff workflow). Kept in sync with status/fulfillment.
   opsStage       CommerceOpsStage           @default(REGISTERED)
   buyerName      String?
+  buyerFirstName String?
+  buyerLastName  String?
+  parentName     String?
   buyerMobile    String?
   buyerEmail     String?
   buyerNationalCode String?
+  studentGrade   CommerceStudentGrade?
+  studentMajor   CommerceStudentMajor?
+  acquisitionSource CommerceAcquisitionSource?
+  referredBy     String?
+  discountCode   String?
+  bookletPaymentMethod CommerceBookletPaymentMethod?
+  urgentDelivery Boolean                   @default(false)
+  preferredPickupAt DateTime?
+  specialNotes   String?
+  handoverStaffUserId String?
   leadId         String?
   subtotalRials  Int                        @default(0)
   discountRials  Int                        @default(0)
@@ -3958,9 +4026,11 @@ model CommerceOrder {
 
   organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   branch       Branch?             @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  pickupBranch Branch?             @relation("CommerceOrderPickupBranch", fields: [organizationId, pickupBranchId], references: [organizationId, id], onDelete: Restrict)
   lead         Lead?               @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
   deliveredBy  User?               @relation("CommerceOrderDeliveredBy", fields: [deliveredByUserId], references: [id], onDelete: SetNull)
   readyForPickupBy User?           @relation("CommerceOrderReadyForPickupBy", fields: [readyForPickupByUserId], references: [id], onDelete: SetNull)
+  handoverStaff User?              @relation("CommerceOrderHandoverStaff", fields: [handoverStaffUserId], references: [id], onDelete: SetNull)
   items        CommerceOrderItem[]
   events       CommerceOrderEvent[]
 
@@ -3971,10 +4041,13 @@ model CommerceOrder {
   @@index([organizationId, fulfillmentStatus, createdAt])
   @@index([organizationId, opsStage, createdAt])
   @@index([organizationId, branchId])
+  @@index([organizationId, pickupBranchId])
   @@index([organizationId, leadId])
   @@index([organizationId, buyerMobile])
+  @@index([organizationId, studentGrade])
   @@index([deliveredByUserId])
   @@index([readyForPickupByUserId])
+  @@index([handoverStaffUserId])
   @@map("commerce_orders")
 }
 

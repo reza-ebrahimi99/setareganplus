@@ -1,16 +1,16 @@
 /**
- * KPI rollups for the Order Operations Center.
- * Counts run in the database against the same WHERE as the order list.
+ * KPI rollups for the Booklet Operations Center.
+ * Counts run in the database against org + RBAC scope (not the list search filter).
  */
 
 import {
+  CommerceBookletBranchKey,
   CommerceOpsStage,
   CommerceOrderPaymentStatus,
 } from "@/generated/prisma/enums";
-import {
-  buildAdminCommerceOrderWhere,
-  type AdminCommerceOrderListFilters,
-} from "@/lib/commerce/orders/service";
+import { COMMERCE_BOOKLET_BRANCH_KPI_LABELS } from "@/lib/commerce/booklet-branches";
+import { tehranCivilDayBounds } from "@/lib/commerce/orders/date-range";
+import { commerceAllowedBranchScope } from "@/lib/commerce/orders/filters";
 import { prisma } from "@/lib/prisma";
 
 export type OrderOpsKpiCard = {
@@ -18,33 +18,36 @@ export type OrderOpsKpiCard = {
   label: string;
   value: number;
   hint: string;
+  tone?: "default" | "warning" | "info" | "success" | "revenue";
 };
 
 export type OrderOpsKpiCounts = {
-  total: number;
-  paid: number;
+  todayOrders: number;
+  waitingPayment: number;
   inProduction: number;
   ready: number;
-  delivered: number;
-  byBranchId: ReadonlyMap<string, number>;
+  deliveredToday: number;
+  todayRevenueRials: number;
+  girls: number;
+  boys: number;
+  elementary: number;
 };
 
-export function formatOrderOpsKpis(
-  counts: OrderOpsKpiCounts,
-  branches: readonly { id: string; name: string }[],
-): OrderOpsKpiCard[] {
-  const cards: OrderOpsKpiCard[] = [
+export function formatOrderOpsKpis(counts: OrderOpsKpiCounts): OrderOpsKpiCard[] {
+  return [
     {
-      key: "total",
-      label: "کل سفارشات",
-      value: counts.total,
-      hint: "در نتیجه فیلتر فعلی",
+      key: "today",
+      label: "سفارش امروز",
+      value: counts.todayOrders,
+      hint: "ثبت‌شده در تقویم تهران",
+      tone: "info",
     },
     {
-      key: "paid",
-      label: "پرداخت شده",
-      value: counts.paid,
-      hint: "پرداخت تأییدشده",
+      key: "waitingPayment",
+      label: "در انتظار پرداخت",
+      value: counts.waitingPayment,
+      hint: "هنوز وارد تولید نشده",
+      tone: "warning",
     },
     {
       key: "production",
@@ -57,72 +60,151 @@ export function formatOrderOpsKpis(
       label: "آماده تحویل",
       value: counts.ready,
       hint: "منتظر دانش‌آموز",
+      tone: "info",
     },
     {
-      key: "delivered",
-      label: "تحویل شده",
-      value: counts.delivered,
-      hint: "تحویل به دانش‌آموز",
+      key: "deliveredToday",
+      label: "تحویل امروز",
+      value: counts.deliveredToday,
+      hint: "تحویل حضوری امروز",
+      tone: "success",
+    },
+    {
+      key: "todayRevenue",
+      label: "درآمد امروز",
+      value: counts.todayRevenueRials,
+      hint: "ریال · سفارش‌های پرداخت‌شده امروز",
+      tone: "revenue",
+    },
+    {
+      key: "girls",
+      label: COMMERCE_BOOKLET_BRANCH_KPI_LABELS.GIRLS,
+      value: counts.girls,
+      hint: "شعبه کاتالوگ",
+    },
+    {
+      key: "boys",
+      label: COMMERCE_BOOKLET_BRANCH_KPI_LABELS.BOYS,
+      value: counts.boys,
+      hint: "شعبه کاتالوگ",
+    },
+    {
+      key: "elementary",
+      label: COMMERCE_BOOKLET_BRANCH_KPI_LABELS.ELEMENTARY,
+      value: counts.elementary,
+      hint: "شعبه کاتالوگ",
     },
   ];
-
-  for (const branch of branches) {
-    cards.push({
-      key: `branch-${branch.id}`,
-      label: branch.name,
-      value: counts.byBranchId.get(branch.id) ?? 0,
-      hint: "سفارش این شعبه",
-    });
-  }
-
-  return cards;
 }
 
-export async function loadOrderOpsKpiCounts(
-  filters: AdminCommerceOrderListFilters,
-): Promise<OrderOpsKpiCounts> {
-  const where = buildAdminCommerceOrderWhere(filters);
+export async function loadOrderOpsKpiCounts(params: {
+  organizationId: string;
+  allowedBranchIds?: readonly string[] | null;
+}): Promise<OrderOpsKpiCounts> {
+  const scope = {
+    organizationId: params.organizationId,
+    ...commerceAllowedBranchScope(params.allowedBranchIds),
+  };
+  const today = tehranCivilDayBounds();
 
-  const [stageGroups, paid, branchGroups] = await Promise.all([
-    prisma.commerceOrder.groupBy({
-      by: ["opsStage"],
-      where,
-      _count: { _all: true },
+  const [
+    todayOrders,
+    waitingPayment,
+    inProduction,
+    ready,
+    deliveredToday,
+    todayRevenue,
+    keyedBranches,
+  ] = await Promise.all([
+    prisma.commerceOrder.count({
+      where: { AND: [scope, { createdAt: { gte: today.from, lte: today.to } }] },
     }),
     prisma.commerceOrder.count({
       where: {
-        AND: [where, { paymentStatus: CommerceOrderPaymentStatus.PAID }],
+        AND: [
+          scope,
+          { opsStage: CommerceOpsStage.REGISTERED },
+          { paymentStatus: { not: CommerceOrderPaymentStatus.PAID } },
+        ],
       },
     }),
-    prisma.commerceOrder.groupBy({
-      by: ["branchId"],
-      where,
-      _count: { _all: true },
+    prisma.commerceOrder.count({
+      where: { AND: [scope, { opsStage: CommerceOpsStage.IN_PRODUCTION }] },
+    }),
+    prisma.commerceOrder.count({
+      where: { AND: [scope, { opsStage: CommerceOpsStage.READY_FOR_PICKUP }] },
+    }),
+    prisma.commerceOrder.count({
+      where: {
+        AND: [
+          scope,
+          { opsStage: CommerceOpsStage.DELIVERED_TO_STUDENT },
+          { deliveredAt: { gte: today.from, lte: today.to } },
+        ],
+      },
+    }),
+    prisma.commerceOrder.aggregate({
+      where: {
+        AND: [
+          scope,
+          { paymentStatus: CommerceOrderPaymentStatus.PAID },
+          { createdAt: { gte: today.from, lte: today.to } },
+        ],
+      },
+      _sum: { grandTotalRials: true },
+    }),
+    prisma.branch.findMany({
+      where: {
+        organizationId: params.organizationId,
+        deletedAt: null,
+        bookletOpsKey: { not: null },
+      },
+      select: { id: true, bookletOpsKey: true },
     }),
   ]);
 
-  const byStage = new Map(
-    stageGroups.map((row) => [row.opsStage, row._count._all]),
-  );
-  const byBranchId = new Map<string, number>();
-  for (const row of branchGroups) {
-    if (row.branchId) byBranchId.set(row.branchId, row._count._all);
-  }
+  const idsFor = (key: CommerceBookletBranchKey) =>
+    keyedBranches.filter((row) => row.bookletOpsKey === key).map((row) => row.id);
+
+  const boysIds = idsFor(CommerceBookletBranchKey.BOYS);
+  const girlsIds = idsFor(CommerceBookletBranchKey.GIRLS);
+  const elementaryIds = idsFor(CommerceBookletBranchKey.ELEMENTARY);
+
+  const [boys, girls, elementary] = await Promise.all([
+    boysIds.length
+      ? prisma.commerceOrder.count({
+          where: { AND: [scope, { branchId: { in: boysIds } }] },
+        })
+      : Promise.resolve(0),
+    girlsIds.length
+      ? prisma.commerceOrder.count({
+          where: { AND: [scope, { branchId: { in: girlsIds } }] },
+        })
+      : Promise.resolve(0),
+    elementaryIds.length
+      ? prisma.commerceOrder.count({
+          where: { AND: [scope, { branchId: { in: elementaryIds } }] },
+        })
+      : Promise.resolve(0),
+  ]);
 
   return {
-    total: stageGroups.reduce((sum, row) => sum + row._count._all, 0),
-    paid,
-    inProduction: byStage.get(CommerceOpsStage.IN_PRODUCTION) ?? 0,
-    ready: byStage.get(CommerceOpsStage.READY_FOR_PICKUP) ?? 0,
-    delivered: byStage.get(CommerceOpsStage.DELIVERED_TO_STUDENT) ?? 0,
-    byBranchId,
+    todayOrders,
+    waitingPayment,
+    inProduction,
+    ready,
+    deliveredToday,
+    todayRevenueRials: todayRevenue._sum.grandTotalRials ?? 0,
+    girls,
+    boys,
+    elementary,
   };
 }
 
-export async function loadOrderOpsKpis(
-  filters: AdminCommerceOrderListFilters,
-  branches: readonly { id: string; name: string }[],
-): Promise<OrderOpsKpiCard[]> {
-  const counts = await loadOrderOpsKpiCounts(filters);
-  return formatOrderOpsKpis(counts, branches);
+export async function loadOrderOpsKpis(params: {
+  organizationId: string;
+  allowedBranchIds?: readonly string[] | null;
+}): Promise<OrderOpsKpiCard[]> {
+  const counts = await loadOrderOpsKpiCounts(params);
+  return formatOrderOpsKpis(counts);
 }

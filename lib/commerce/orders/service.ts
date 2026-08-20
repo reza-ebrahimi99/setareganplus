@@ -4,6 +4,8 @@
 
 import type { Prisma } from "@/generated/prisma/client";
 import {
+  CommerceAcquisitionSource,
+  CommerceBookletPaymentMethod,
   CommerceDeliveryMethod,
   CommerceFulfillmentStatus,
   CommerceItemStatus,
@@ -11,27 +13,35 @@ import {
   CommerceOrderEventType,
   CommerceOrderPaymentStatus,
   CommerceOrderStatus,
+  CommerceStudentGrade,
+  CommerceStudentMajor,
   CommerceSystemKind,
 } from "@/generated/prisma/enums";
 import {
   toCommerceBranchBadge,
   type CommerceBranchBadge,
 } from "@/lib/commerce/branches";
+import { tehranPresetBounds } from "@/lib/commerce/orders/date-range";
 import { commerceAllowedBranchScope } from "@/lib/commerce/orders/filters";
 import {
   COMMERCE_OPS_ACTIVITY_TITLES,
   isCommerceOpsStage,
   type CommerceOpsStageValue,
 } from "@/lib/commerce/orders/ops-stage";
+import { parseBookletOrderProfile } from "@/lib/commerce/orders/profile";
 import { recordCommerceOrderEvent } from "@/lib/commerce/orders/timeline";
 import { resolveCommercePrice } from "@/lib/commerce/pricing";
 import {
   buildCommerceOrderNumber,
   calculateOrderTotals,
 } from "@/lib/commerce/orders/totals";
-import { tehranLocalToUtc, getTehranParts } from "@/lib/datetime/tehran-zone";
-import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { prisma } from "@/lib/prisma";
+import {
+  COMMERCE_ACQUISITION_SOURCE_LABELS,
+  COMMERCE_BOOKLET_PAYMENT_METHOD_LABELS,
+  COMMERCE_STUDENT_GRADE_LABELS,
+  COMMERCE_STUDENT_MAJOR_LABELS,
+} from "@/lib/commerce/student-fields";
 
 export type CreateSingleItemOrderInput = {
   organizationId: string;
@@ -39,7 +49,22 @@ export type CreateSingleItemOrderInput = {
   buyerFirstName: string;
   buyerLastName: string;
   buyerMobile: string;
+  pickupBranchId?: string | null;
+  /** Legacy alias for pickupBranchId (shop checkout used branchId as delivery). */
   branchId?: string | null;
+  orderBranchId?: string | null;
+  parentName?: string | null;
+  buyerNationalCode?: string | null;
+  studentGrade?: string | null;
+  studentMajor?: string | null;
+  notes?: string | null;
+  specialNotes?: string | null;
+  urgentDelivery?: boolean | string | null;
+  preferredPickupAt?: string | Date | null;
+  acquisitionSource?: string | null;
+  referredBy?: string | null;
+  discountCode?: string | null;
+  bookletPaymentMethod?: string | null;
 };
 
 export type CreateSingleItemOrderResult =
@@ -54,16 +79,9 @@ export type CreateSingleItemOrderResult =
 export async function createSingleItemCommerceOrder(
   input: CreateSingleItemOrderInput,
 ): Promise<CreateSingleItemOrderResult> {
-  const firstName = input.buyerFirstName.trim();
-  const lastName = input.buyerLastName.trim();
-  if (!firstName || !lastName) {
-    return { ok: false, error: "نام و نام خانوادگی الزامی است." };
-  }
-
-  const mobile = normalizeIranianMobile(input.buyerMobile);
-  if (!mobile.ok) {
-    return { ok: false, error: mobile.error };
-  }
+  const parsed = parseBookletOrderProfile(input);
+  if (!parsed.ok) return parsed;
+  const profile = parsed.profile;
 
   const item = await prisma.commerceItem.findFirst({
     where: {
@@ -102,35 +120,32 @@ export async function createSingleItemCommerceOrder(
     return { ok: false, error: "این محصول ناموجود است." };
   }
 
-  const requestedBranchId = (input.branchId ?? "").trim() || item.branchId;
-  let branchId: string | null = null;
-  if (requestedBranchId) {
-    const branch = await prisma.branch.findFirst({
-      where: {
-        id: requestedBranchId,
-        organizationId: input.organizationId,
-        deletedAt: null,
-        isActive: true,
-      },
-      select: { id: true },
-    });
-    if (!branch) {
-      return { ok: false, error: "شعبه انتخاب‌شده معتبر نیست." };
-    }
-    branchId = branch.id;
+  const pickup = await prisma.branch.findFirst({
+    where: {
+      id: profile.pickupBranchId,
+      organizationId: input.organizationId,
+      deletedAt: null,
+      isActive: true,
+    },
+    select: { id: true },
+  });
+  if (!pickup) {
+    return { ok: false, error: "محل دریافت جزوه معتبر نیست." };
   }
 
-  if (!branchId) {
-    const fallbackBranch = await prisma.branch.findFirst({
-      where: {
-        organizationId: input.organizationId,
-        deletedAt: null,
-        isActive: true,
-      },
-      orderBy: { createdAt: "asc" },
-      select: { id: true },
-    });
-    branchId = fallbackBranch?.id ?? null;
+  const requestedOrderBranchId =
+    (input.orderBranchId ?? "").trim() || item.branchId || pickup.id;
+  const orderBranch = await prisma.branch.findFirst({
+    where: {
+      id: requestedOrderBranchId,
+      organizationId: input.organizationId,
+      deletedAt: null,
+      isActive: true,
+    },
+    select: { id: true },
+  });
+  if (!orderBranch) {
+    return { ok: false, error: "شعبه محصول معتبر نیست." };
   }
 
   const pricing = resolveCommercePrice({
@@ -197,13 +212,34 @@ export async function createSingleItemCommerceOrder(
       const order = await tx.commerceOrder.create({
         data: {
           organizationId: input.organizationId,
-          branchId,
+          branchId: orderBranch.id,
+          pickupBranchId: pickup.id,
           orderNumber,
           status: CommerceOrderStatus.AWAITING_PAYMENT,
           paymentStatus: CommerceOrderPaymentStatus.PENDING,
           opsStage: CommerceOpsStage.REGISTERED,
-          buyerName: `${firstName} ${lastName}`.trim(),
-          buyerMobile: mobile.normalized,
+          buyerName: profile.buyerName,
+          buyerFirstName: profile.buyerFirstName,
+          buyerLastName: profile.buyerLastName,
+          parentName: profile.parentName,
+          buyerMobile: profile.buyerMobile,
+          buyerNationalCode: profile.buyerNationalCode,
+          studentGrade: profile.studentGrade as CommerceStudentGrade,
+          studentMajor: profile.studentMajor
+            ? (profile.studentMajor as CommerceStudentMajor)
+            : null,
+          acquisitionSource: profile.acquisitionSource
+            ? (profile.acquisitionSource as CommerceAcquisitionSource)
+            : null,
+          referredBy: profile.referredBy,
+          discountCode: profile.discountCode,
+          bookletPaymentMethod: profile.bookletPaymentMethod
+            ? (profile.bookletPaymentMethod as CommerceBookletPaymentMethod)
+            : null,
+          urgentDelivery: profile.urgentDelivery,
+          preferredPickupAt: profile.preferredPickupAt,
+          notes: profile.notes,
+          specialNotes: profile.specialNotes,
           subtotalRials: totals.subtotalRials,
           discountRials: totals.discountRials,
           taxRials: totals.taxRials,
@@ -268,7 +304,15 @@ export type AdminCommerceOrderRow = {
   id: string;
   orderNumber: string;
   buyerName: string | null;
+  buyerFirstName: string | null;
+  buyerLastName: string | null;
+  parentName: string | null;
   buyerMobile: string | null;
+  buyerNationalCode: string | null;
+  studentGrade: string | null;
+  studentGradeLabel: string | null;
+  studentMajor: string | null;
+  studentMajorLabel: string | null;
   productTitle: string;
   quantity: number;
   lineTotalRials: number;
@@ -278,11 +322,16 @@ export type AdminCommerceOrderRow = {
   opsStage: CommerceOpsStageValue;
   lastActivityTitle: string;
   lastActivityAt: Date;
+  lastActivityIsRollback: boolean;
   branch: CommerceBranchBadge | null;
+  pickupBranch: CommerceBranchBadge | null;
   createdAt: Date;
   trackingCode: string | null;
   deliveredAt: Date | null;
   deliveredByName: string | null;
+  handoverStaffUserId: string | null;
+  handoverStaffName: string | null;
+  urgentDelivery: boolean;
   notes: string | null;
 };
 
@@ -297,22 +346,21 @@ export type AdminCommerceOrderListFilters = {
   fulfillmentStatus?: CommerceFulfillmentStatus | "";
   opsStage?: CommerceOpsStageValue | "";
   branchId?: string;
+  pickupBranchId?: string;
+  studentGrade?: string;
+  studentMajor?: string;
+  handoverStaffUserId?: string;
   /** Restrict to these branch ids (RBAC). `null` = all; empty array matches nothing. */
   allowedBranchIds?: readonly string[] | null;
-  /** Shortcut: only PAID */
   paidOnly?: boolean;
-  /** Shortcut: not DELIVERED (includes AWAITING_PICKUP / null) */
   undeliveredOnly?: boolean;
-  /** Ready for student handover */
   readyForPickup?: boolean;
-  /** Paid, waiting to enter production */
   waitingProduction?: boolean;
-  /** Tehran calendar today */
+  datePreset?: "today" | "yesterday" | "thisWeek" | "thisMonth" | "";
   todayOnly?: boolean;
   deliveredOnly?: boolean;
-  /** YYYY-MM-DD (inclusive start, Tehran calendar day → UTC range) */
+  deliveredToday?: boolean;
   dateFrom?: string;
-  /** YYYY-MM-DD (inclusive end) */
   dateTo?: string;
   take?: number;
 };
@@ -322,19 +370,20 @@ function parseDateBound(raw: string | undefined, endOfDay: boolean): Date | null
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const [y, m, d] = value.split("-").map(Number);
   if (!y || !m || !d) return null;
-  // Interpret as Tehran civil day via midday offset then snap — use UTC date parts for filter simplicity.
-  // Store filter as UTC midnight of the given calendar date (admin date inputs).
-  const date = new Date(Date.UTC(y, m - 1, d, endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0));
+  const date = new Date(
+    Date.UTC(y, m - 1, d, endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0),
+  );
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function tehranTodayBounds(): { from: Date; to: Date } {
-  const parts = getTehranParts(new Date());
-  return {
-    from: tehranLocalToUtc(parts.year, parts.month, parts.day, 0, 0, 0),
-    to: tehranLocalToUtc(parts.year, parts.month, parts.day, 23, 59, 59),
-  };
-}
+const BRANCH_SELECT = {
+  id: true,
+  name: true,
+  slug: true,
+  accentColor: true,
+  address: true,
+  bookletOpsKey: true,
+} as const;
 
 export function buildAdminCommerceOrderWhere(
   params: AdminCommerceOrderListFilters,
@@ -345,104 +394,149 @@ export function buildAdminCommerceOrderWhere(
   const productQuery = (params.productQuery ?? "").trim();
   const itemId = (params.itemId ?? "").trim();
   const branchId = (params.branchId ?? "").trim();
+  const pickupBranchId = (params.pickupBranchId ?? "").trim();
+  const studentGrade = (params.studentGrade ?? "").trim();
+  const studentMajor = (params.studentMajor ?? "").trim();
+  const handoverStaffUserId = (params.handoverStaffUserId ?? "").trim();
+
   let from = parseDateBound(params.dateFrom, false);
   let to = parseDateBound(params.dateTo, true);
-
-  if (params.todayOnly) {
-    const today = tehranTodayBounds();
-    from = today.from;
-    to = today.to;
+  const preset = params.datePreset || (params.todayOnly ? "today" : "");
+  if (preset === "today" || preset === "yesterday" || preset === "thisWeek" || preset === "thisMonth") {
+    const bounds = tehranPresetBounds(preset);
+    from = bounds.from;
+    to = bounds.to;
   }
 
   const paymentStatus = params.paidOnly
     ? CommerceOrderPaymentStatus.PAID
     : params.paymentStatus || undefined;
 
-  const where: Prisma.CommerceOrderWhereInput = {
-    organizationId: params.organizationId,
-  };
+  const and: Prisma.CommerceOrderWhereInput[] = [
+    { organizationId: params.organizationId },
+  ];
 
-  if (paymentStatus) where.paymentStatus = paymentStatus;
+  const scope = commerceAllowedBranchScope(params.allowedBranchIds);
+  if (Object.keys(scope).length > 0) {
+    and.push(scope);
+  }
 
-  if (params.allowedBranchIds != null) {
-    const allowed = [...params.allowedBranchIds];
-    if (branchId) {
-      where.branchId = allowed.includes(branchId) ? branchId : { in: [] };
+  if (paymentStatus) and.push({ paymentStatus });
+
+  if (branchId) {
+    if (params.allowedBranchIds != null && !params.allowedBranchIds.includes(branchId)) {
+      and.push({ id: { in: [] } });
     } else {
-      where.branchId = { in: allowed };
+      and.push({ branchId });
     }
-  } else if (branchId) {
-    where.branchId = branchId;
+  }
+
+  if (pickupBranchId) {
+    if (
+      params.allowedBranchIds != null &&
+      !params.allowedBranchIds.includes(pickupBranchId)
+    ) {
+      and.push({ id: { in: [] } });
+    } else {
+      and.push({ pickupBranchId });
+    }
   }
 
   const opsStage = isCommerceOpsStage(params.opsStage) ? params.opsStage : undefined;
-  if (params.deliveredOnly) {
-    where.opsStage = CommerceOpsStage.DELIVERED_TO_STUDENT;
+  if (params.deliveredToday) {
+    const today = tehranPresetBounds("today");
+    and.push({
+      opsStage: CommerceOpsStage.DELIVERED_TO_STUDENT,
+      deliveredAt: { gte: today.from, lte: today.to },
+    });
+  } else if (params.deliveredOnly) {
+    and.push({ opsStage: CommerceOpsStage.DELIVERED_TO_STUDENT });
   } else if (params.readyForPickup) {
-    where.opsStage = CommerceOpsStage.READY_FOR_PICKUP;
+    and.push({ opsStage: CommerceOpsStage.READY_FOR_PICKUP });
   } else if (params.waitingProduction) {
-    where.opsStage = CommerceOpsStage.PAID;
+    and.push({ opsStage: CommerceOpsStage.PAID });
   } else if (opsStage) {
-    where.opsStage = opsStage;
+    and.push({ opsStage });
   } else if (params.undeliveredOnly) {
-    where.opsStage = {
-      not: CommerceOpsStage.DELIVERED_TO_STUDENT,
-    };
+    and.push({ opsStage: { not: CommerceOpsStage.DELIVERED_TO_STUDENT } });
   } else if (params.fulfillmentStatus) {
-    where.fulfillmentStatus = params.fulfillmentStatus;
+    and.push({ fulfillmentStatus: params.fulfillmentStatus });
   }
 
   if (from || to) {
-    where.createdAt = {
-      ...(from ? { gte: from } : {}),
-      ...(to ? { lte: to } : {}),
-    };
+    and.push({
+      createdAt: {
+        ...(from ? { gte: from } : {}),
+        ...(to ? { lte: to } : {}),
+      },
+    });
   }
 
   if (buyerName) {
-    where.buyerName = { contains: buyerName, mode: "insensitive" };
+    and.push({
+      OR: [
+        { buyerName: { contains: buyerName, mode: "insensitive" } },
+        { buyerFirstName: { contains: buyerName, mode: "insensitive" } },
+        { buyerLastName: { contains: buyerName, mode: "insensitive" } },
+        { parentName: { contains: buyerName, mode: "insensitive" } },
+      ],
+    });
   }
   if (buyerMobile) {
-    where.buyerMobile = { contains: buyerMobile };
+    and.push({ buyerMobile: { contains: buyerMobile } });
+  }
+  if (studentGrade) {
+    and.push({ studentGrade: studentGrade as CommerceStudentGrade });
+  }
+  if (studentMajor) {
+    and.push({ studentMajor: studentMajor as CommerceStudentMajor });
+  }
+  if (handoverStaffUserId) {
+    and.push({ handoverStaffUserId });
   }
 
   if (itemId || productQuery) {
-    where.items = {
-      some: {
-        ...(itemId ? { itemId } : {}),
-        ...(productQuery
-          ? {
-              titleSnapshot: {
-                contains: productQuery,
-                mode: "insensitive",
-              },
-            }
-          : {}),
+    and.push({
+      items: {
+        some: {
+          ...(itemId ? { itemId } : {}),
+          ...(productQuery
+            ? {
+                titleSnapshot: {
+                  contains: productQuery,
+                  mode: "insensitive",
+                },
+              }
+            : {}),
+        },
       },
-    };
+    });
   }
 
   if (q) {
-    where.AND = [
-      ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
-      {
-        OR: [
-          { orderNumber: { contains: q, mode: "insensitive" } },
-          { buyerName: { contains: q, mode: "insensitive" } },
-          { buyerMobile: { contains: q } },
-          {
-            items: {
-              some: {
-                titleSnapshot: { contains: q, mode: "insensitive" },
-              },
+    and.push({
+      OR: [
+        { orderNumber: { contains: q, mode: "insensitive" } },
+        { buyerName: { contains: q, mode: "insensitive" } },
+        { buyerFirstName: { contains: q, mode: "insensitive" } },
+        { buyerLastName: { contains: q, mode: "insensitive" } },
+        { parentName: { contains: q, mode: "insensitive" } },
+        { buyerMobile: { contains: q } },
+        { buyerNationalCode: { contains: q } },
+        { branch: { name: { contains: q, mode: "insensitive" } } },
+        { pickupBranch: { name: { contains: q, mode: "insensitive" } } },
+        {
+          items: {
+            some: {
+              titleSnapshot: { contains: q, mode: "insensitive" },
             },
           },
-        ],
-      },
-    ];
+        },
+      ],
+    });
   }
 
-  return where;
+  return { AND: and };
 }
 
 export async function listAdminCommerceOrders(
@@ -464,13 +558,19 @@ export async function listAdminCommerceOrders(
       deliveredBy: {
         select: { firstName: true, lastName: true },
       },
+      handoverStaff: {
+        select: { firstName: true, lastName: true },
+      },
       branch: {
-        select: { id: true, name: true, slug: true, accentColor: true },
+        select: BRANCH_SELECT,
+      },
+      pickupBranch: {
+        select: BRANCH_SELECT,
       },
       events: {
         orderBy: { occurredAt: "desc" },
         take: 1,
-        select: { title: true, occurredAt: true, stage: true },
+        select: { title: true, occurredAt: true, stage: true, eventType: true },
       },
     },
   });
@@ -511,7 +611,19 @@ export async function listAdminCommerceOrders(
       id: order.id,
       orderNumber: order.orderNumber,
       buyerName: order.buyerName,
+      buyerFirstName: order.buyerFirstName,
+      buyerLastName: order.buyerLastName,
+      parentName: order.parentName,
       buyerMobile: order.buyerMobile,
+      buyerNationalCode: order.buyerNationalCode,
+      studentGrade: order.studentGrade,
+      studentGradeLabel: order.studentGrade
+        ? COMMERCE_STUDENT_GRADE_LABELS[order.studentGrade]
+        : null,
+      studentMajor: order.studentMajor,
+      studentMajorLabel: order.studentMajor
+        ? COMMERCE_STUDENT_MAJOR_LABELS[order.studentMajor]
+        : null,
       productTitle,
       quantity: quantity || 1,
       lineTotalRials: first?.totalRials ?? order.grandTotalRials,
@@ -523,13 +635,20 @@ export async function listAdminCommerceOrders(
         order.events[0]?.title ??
         COMMERCE_OPS_ACTIVITY_TITLES[order.opsStage as CommerceOpsStageValue],
       lastActivityAt: order.events[0]?.occurredAt ?? order.createdAt,
+      lastActivityIsRollback: order.events[0]?.eventType === CommerceOrderEventType.ROLLBACK,
       branch: order.branch ? toCommerceBranchBadge(order.branch) : null,
+      pickupBranch: order.pickupBranch ? toCommerceBranchBadge(order.pickupBranch) : null,
       createdAt: order.createdAt,
       trackingCode: trackingByOrder.get(order.id) ?? null,
       deliveredAt: order.deliveredAt,
       deliveredByName: order.deliveredBy
         ? `${order.deliveredBy.firstName} ${order.deliveredBy.lastName}`.trim()
         : null,
+      handoverStaffUserId: order.handoverStaffUserId,
+      handoverStaffName: order.handoverStaff
+        ? `${order.handoverStaff.firstName} ${order.handoverStaff.lastName}`.trim()
+        : null,
+      urgentDelivery: order.urgentDelivery,
       notes: order.notes,
     };
   });
@@ -548,6 +667,11 @@ export type AdminCommerceOrderExportRow = {
   fulfillmentStatus: CommerceFulfillmentStatus | null;
   opsStage: CommerceOpsStageValue;
   branchName: string | null;
+  pickupBranchName: string | null;
+  studentGradeLabel: string | null;
+  studentMajorLabel: string | null;
+  handoverStaffName: string | null;
+  deliveredAt: Date | null;
 };
 
 export async function listAdminCommerceOrdersForExport(
@@ -567,40 +691,52 @@ export async function listAdminCommerceOrdersForExport(
         },
       },
       branch: { select: { name: true } },
+      pickupBranch: { select: { name: true } },
+      handoverStaff: { select: { firstName: true, lastName: true } },
     },
   });
 
   const rows: AdminCommerceOrderExportRow[] = [];
   for (const order of orders) {
+    const handoverStaffName = order.handoverStaff
+      ? `${order.handoverStaff.firstName} ${order.handoverStaff.lastName}`.trim()
+      : null;
+    const studentGradeLabel = order.studentGrade
+      ? COMMERCE_STUDENT_GRADE_LABELS[order.studentGrade]
+      : null;
+    const studentMajorLabel = order.studentMajor
+      ? COMMERCE_STUDENT_MAJOR_LABELS[order.studentMajor]
+      : null;
+    const base = {
+      orderNumber: order.orderNumber,
+      createdAt: order.createdAt,
+      buyerName: order.buyerName,
+      buyerMobile: order.buyerMobile,
+      paymentStatus: order.paymentStatus,
+      fulfillmentStatus: order.fulfillmentStatus,
+      opsStage: order.opsStage as CommerceOpsStageValue,
+      branchName: order.branch?.name ?? null,
+      pickupBranchName: order.pickupBranch?.name ?? null,
+      studentGradeLabel,
+      studentMajorLabel,
+      handoverStaffName,
+      deliveredAt: order.deliveredAt,
+    };
     if (order.items.length === 0) {
       rows.push({
-        orderNumber: order.orderNumber,
-        createdAt: order.createdAt,
-        buyerName: order.buyerName,
-        buyerMobile: order.buyerMobile,
+        ...base,
         productTitle: "—",
         quantity: 0,
         amountRials: order.grandTotalRials,
-        paymentStatus: order.paymentStatus,
-        fulfillmentStatus: order.fulfillmentStatus,
-        opsStage: order.opsStage as CommerceOpsStageValue,
-        branchName: order.branch?.name ?? null,
       });
       continue;
     }
     for (const item of order.items) {
       rows.push({
-        orderNumber: order.orderNumber,
-        createdAt: order.createdAt,
-        buyerName: order.buyerName,
-        buyerMobile: order.buyerMobile,
+        ...base,
         productTitle: item.titleSnapshot,
         quantity: item.quantity,
         amountRials: item.totalRials,
-        paymentStatus: order.paymentStatus,
-        fulfillmentStatus: order.fulfillmentStatus,
-        opsStage: order.opsStage as CommerceOpsStageValue,
-        branchName: order.branch?.name ?? null,
       });
     }
   }
@@ -616,14 +752,58 @@ export async function listCommerceBranchesForOps(params: {
       organizationId: params.organizationId,
       deletedAt: null,
       isActive: true,
+      bookletOpsKey: { not: null },
+      ...(params.allowedBranchIds != null
+        ? { id: { in: [...params.allowedBranchIds] } }
+        : {}),
+    },
+    orderBy: { bookletOpsKey: "asc" },
+    select: BRANCH_SELECT,
+  });
+  if (branches.length > 0) {
+    const rank: Record<string, number> = { BOYS: 0, GIRLS: 1, ELEMENTARY: 2 };
+    return branches
+      .map(toCommerceBranchBadge)
+      .sort(
+        (a, b) =>
+          (rank[a.bookletOpsKey ?? ""] ?? 9) - (rank[b.bookletOpsKey ?? ""] ?? 9),
+      );
+  }
+  const fallback = await prisma.branch.findMany({
+    where: {
+      organizationId: params.organizationId,
+      deletedAt: null,
+      isActive: true,
       ...(params.allowedBranchIds != null
         ? { id: { in: [...params.allowedBranchIds] } }
         : {}),
     },
     orderBy: { name: "asc" },
-    select: { id: true, name: true, slug: true, accentColor: true },
+    select: BRANCH_SELECT,
   });
-  return branches.map(toCommerceBranchBadge);
+  return fallback.map(toCommerceBranchBadge);
+}
+
+export type CommerceItemOption = {
+  id: string;
+  title: string;
+  branchId: string | null;
+};
+
+export async function listCommerceItemOptionsForOps(
+  organizationId: string,
+): Promise<CommerceItemOption[]> {
+  return prisma.commerceItem.findMany({
+    where: {
+      organizationId,
+      deletedAt: null,
+      isVisible: true,
+      status: CommerceItemStatus.ACTIVE,
+    },
+    orderBy: { title: "asc" },
+    take: 300,
+    select: { id: true, title: true, branchId: true },
+  });
 }
 
 export type AdminCommerceOrderEventRow = {
@@ -639,6 +819,14 @@ export type AdminCommerceOrderEventRow = {
 export type AdminCommerceOrderDetail = AdminCommerceOrderRow & {
   buyerEmail: string | null;
   deliveryNote: string | null;
+  specialNotes: string | null;
+  referredBy: string | null;
+  discountCode: string | null;
+  acquisitionSource: string | null;
+  acquisitionSourceLabel: string | null;
+  bookletPaymentMethod: string | null;
+  bookletPaymentMethodLabel: string | null;
+  preferredPickupAt: Date | null;
   readyForPickupAt: Date | null;
   readyForPickupByName: string | null;
   paymentTrackingCode: string | null;
@@ -682,10 +870,14 @@ export async function getAdminCommerceOrderDetail(params: {
         },
       },
       branch: {
-        select: { id: true, name: true, slug: true, accentColor: true },
+        select: BRANCH_SELECT,
+      },
+      pickupBranch: {
+        select: BRANCH_SELECT,
       },
       deliveredBy: { select: { firstName: true, lastName: true } },
       readyForPickupBy: { select: { firstName: true, lastName: true } },
+      handoverStaff: { select: { firstName: true, lastName: true } },
       events: {
         orderBy: { occurredAt: "asc" },
         include: {
@@ -717,7 +909,19 @@ export async function getAdminCommerceOrderDetail(params: {
     id: order.id,
     orderNumber: order.orderNumber,
     buyerName: order.buyerName,
+    buyerFirstName: order.buyerFirstName,
+    buyerLastName: order.buyerLastName,
+    parentName: order.parentName,
     buyerMobile: order.buyerMobile,
+    buyerNationalCode: order.buyerNationalCode,
+    studentGrade: order.studentGrade,
+    studentGradeLabel: order.studentGrade
+      ? COMMERCE_STUDENT_GRADE_LABELS[order.studentGrade]
+      : null,
+    studentMajor: order.studentMajor,
+    studentMajorLabel: order.studentMajor
+      ? COMMERCE_STUDENT_MAJOR_LABELS[order.studentMajor]
+      : null,
     buyerEmail: order.buyerEmail,
     productTitle,
     quantity: order.items.reduce((sum, item) => sum + item.quantity, 0) || 1,
@@ -730,13 +934,30 @@ export async function getAdminCommerceOrderDetail(params: {
       lastEvent?.title ??
       COMMERCE_OPS_ACTIVITY_TITLES[order.opsStage as CommerceOpsStageValue],
     lastActivityAt: lastEvent?.occurredAt ?? order.createdAt,
+    lastActivityIsRollback: lastEvent?.eventType === CommerceOrderEventType.ROLLBACK,
     branch: order.branch ? toCommerceBranchBadge(order.branch) : null,
+    pickupBranch: order.pickupBranch ? toCommerceBranchBadge(order.pickupBranch) : null,
     createdAt: order.createdAt,
     trackingCode: intent?.trackingCode ?? null,
     deliveredAt: order.deliveredAt,
     deliveredByName: actorName(order.deliveredBy),
+    handoverStaffUserId: order.handoverStaffUserId,
+    handoverStaffName: actorName(order.handoverStaff),
+    urgentDelivery: order.urgentDelivery,
     notes: order.notes,
     deliveryNote: order.deliveryNote,
+    specialNotes: order.specialNotes,
+    referredBy: order.referredBy,
+    discountCode: order.discountCode,
+    acquisitionSource: order.acquisitionSource,
+    acquisitionSourceLabel: order.acquisitionSource
+      ? COMMERCE_ACQUISITION_SOURCE_LABELS[order.acquisitionSource]
+      : null,
+    bookletPaymentMethod: order.bookletPaymentMethod,
+    bookletPaymentMethodLabel: order.bookletPaymentMethod
+      ? COMMERCE_BOOKLET_PAYMENT_METHOD_LABELS[order.bookletPaymentMethod]
+      : null,
+    preferredPickupAt: order.preferredPickupAt,
     readyForPickupAt: order.readyForPickupAt,
     readyForPickupByName: actorName(order.readyForPickupBy),
     paymentTrackingCode: intent?.trackingCode ?? null,

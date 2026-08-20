@@ -31,7 +31,6 @@ export function Timeline({
   className = "",
 }: TimelineProps) {
   const compact = size === "sm";
-  const dot = compact ? "size-2.5" : "size-3.5";
 
   if (orientation === "horizontal") {
     return (
@@ -42,12 +41,26 @@ export function Timeline({
         {nodes.map((node, index) => {
           const filled =
             node.status === "completed" || node.status === "current";
+          const mark =
+            node.status === "completed" ? "✓" : node.status === "current" ? "●" : "○";
+          const hover = [
+            node.label,
+            node.timestampLabel,
+            node.operator,
+            node.note,
+          ]
+            .filter(Boolean)
+            .join(" · ");
           return (
             <li key={node.id} className="flex min-w-0 flex-1 items-center gap-1">
               <span
-                title={node.label}
-                className={`block shrink-0 rounded-full border ${dot} ${nodeTone(node.status)}`}
-              />
+                title={hover || node.label}
+                className={`flex shrink-0 items-center justify-center rounded-full border text-[9px] leading-none ${
+                  compact ? "size-4" : "size-5"
+                } ${nodeTone(node.status)}`}
+              >
+                {mark}
+              </span>
               {index < nodes.length - 1 ? (
                 <span
                   aria-hidden="true"

@@ -29,6 +29,12 @@ export {
 export type { CommerceBranchBadge } from "@/lib/commerce/branches";
 export { formatOrderOpsKpis, loadOrderOpsKpis } from "@/lib/commerce/orders/kpis";
 export {
+  COMMERCE_STUDENT_GRADES,
+  COMMERCE_STUDENT_GRADE_LABELS,
+  commerceGradeRequiresMajor,
+  resolveCommerceStudentMajor,
+} from "@/lib/commerce/student-fields";
+export {
   assertUniqueCategorySlug,
   assertValidCategoryParent,
   planCategorySeedInserts,

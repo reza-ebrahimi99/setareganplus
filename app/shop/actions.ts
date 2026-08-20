@@ -25,7 +25,10 @@ export async function startShopCheckoutAction(
   const buyerFirstName = String(formData.get("buyerFirstName") ?? "").trim();
   const buyerLastName = String(formData.get("buyerLastName") ?? "").trim();
   const buyerMobile = String(formData.get("buyerMobile") ?? "").trim();
-  const branchId = String(formData.get("branchId") ?? "").trim() || null;
+  const pickupBranchId =
+    String(formData.get("pickupBranchId") ?? "").trim() ||
+    String(formData.get("branchId") ?? "").trim() ||
+    null;
 
   if (!itemId) return { formError: "محصول نامعتبر است." };
 
@@ -40,7 +43,12 @@ export async function startShopCheckoutAction(
     buyerFirstName,
     buyerLastName,
     buyerMobile,
-    branchId,
+    pickupBranchId,
+    parentName: String(formData.get("parentName") ?? "").trim() || null,
+    buyerNationalCode: String(formData.get("buyerNationalCode") ?? "").trim() || null,
+    studentGrade: String(formData.get("studentGrade") ?? "").trim() || null,
+    studentMajor: String(formData.get("studentMajor") ?? "").trim() || null,
+    notes: String(formData.get("notes") ?? "").trim() || null,
   });
 
   if (!order.ok) {

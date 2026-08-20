@@ -9,6 +9,7 @@ import {
   rollbackCommerceOrderStage,
   updateCommerceOrderDetails,
 } from "@/lib/commerce/orders/ops";
+import { createSingleItemCommerceOrder } from "@/lib/commerce/orders/service";
 import {
   requirePermission,
   type AdminSessionContext,
@@ -75,6 +76,7 @@ export async function advanceOrderStageAction(
     orderId,
     actorUserId: session.user.id,
     note: note || null,
+    handoverStaffUserId: String(formData.get("handoverStaffUserId") ?? "").trim() || null,
     allowedBranchIds: allowedBranchIds(session),
   });
   if (!result.ok) return { formError: result.error };
@@ -136,13 +138,44 @@ export async function updateOrderDetailsAction(
     organizationId: session.organization.id,
     orderId,
     actorUserId: session.user.id,
-    buyerName: String(formData.get("buyerName") ?? ""),
-    buyerMobile: String(formData.get("buyerMobile") ?? ""),
-    branchId: String(formData.get("branchId") ?? "").trim() || null,
-    notes: String(formData.get("notes") ?? ""),
+    formData,
     allowedBranchIds: allowedBranchIds(session),
   });
   if (!result.ok) return { formError: result.error };
   revalidatePath("/admin/commerce/orders");
   return { successMessage: "سفارش به‌روزرسانی شد." };
+}
+
+export async function createAdminCommerceOrderAction(
+  _prev: CommerceOrderActionState,
+  formData: FormData,
+): Promise<CommerceOrderActionState> {
+  const session = await requirePermission("commerce.orders.manage");
+  const itemId = String(formData.get("itemId") ?? "").trim();
+  if (!itemId) return { formError: "انتخاب محصول الزامی است." };
+
+  const result = await createSingleItemCommerceOrder({
+    organizationId: session.organization.id,
+    itemId,
+    buyerFirstName: String(formData.get("buyerFirstName") ?? ""),
+    buyerLastName: String(formData.get("buyerLastName") ?? ""),
+    buyerMobile: String(formData.get("buyerMobile") ?? ""),
+    pickupBranchId: String(formData.get("pickupBranchId") ?? "").trim() || null,
+    orderBranchId: String(formData.get("branchId") ?? "").trim() || null,
+    parentName: String(formData.get("parentName") ?? "").trim() || null,
+    buyerNationalCode: String(formData.get("buyerNationalCode") ?? "").trim() || null,
+    studentGrade: String(formData.get("studentGrade") ?? "").trim() || null,
+    studentMajor: String(formData.get("studentMajor") ?? "").trim() || null,
+    notes: String(formData.get("notes") ?? "").trim() || null,
+    specialNotes: String(formData.get("specialNotes") ?? "").trim() || null,
+    urgentDelivery: formData.get("urgentDelivery") === "on" || formData.get("urgentDelivery") === "1",
+    preferredPickupAt: String(formData.get("preferredPickupAt") ?? "").trim() || null,
+    acquisitionSource: String(formData.get("acquisitionSource") ?? "").trim() || null,
+    referredBy: String(formData.get("referredBy") ?? "").trim() || null,
+    discountCode: String(formData.get("discountCode") ?? "").trim() || null,
+    bookletPaymentMethod: String(formData.get("bookletPaymentMethod") ?? "").trim() || null,
+  });
+  if (!result.ok) return { formError: result.error };
+  revalidatePath("/admin/commerce/orders");
+  redirect(`/admin/commerce/orders?orderId=${result.orderId}`);
 }

@@ -139,7 +139,7 @@ export const adminNavGroups: ReadonlyArray<{
           },
           {
             href: "/admin/commerce/orders",
-            label: "عملیات سفارش",
+            label: "مرکز عملیات جزوه",
             permission: "commerce.orders.view",
           },
           {
@@ -373,7 +373,7 @@ export const adminBreadcrumbs = {
   commerceOrders: [
     { label: "مدیریت", href: "/admin" },
     { label: "فروشگاه", href: "/admin/commerce" },
-    { label: "عملیات سفارش" },
+    { label: "مرکز عملیات جزوه" },
   ],
   commerceNotifications: [
     { label: "مدیریت", href: "/admin" },

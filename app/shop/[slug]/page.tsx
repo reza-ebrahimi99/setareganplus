@@ -221,9 +221,9 @@ export default async function ShopProductPage({ params }: PageProps) {
           finalPriceLabel={formatRials(pricing.finalPriceRials)}
           branches={branches.map((branch) => ({
             id: branch.id,
-            name: branch.name,
+            name: branch.shortName || branch.name,
+            address: branch.address,
           }))}
-          defaultBranchId={product.branchId}
         />
       </article>
     </PublicFormShell>

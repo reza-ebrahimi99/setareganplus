@@ -5,8 +5,11 @@
 export type CommerceBranchBadge = {
   id: string;
   name: string;
+  shortName: string;
   slug: string;
   accentColor: string;
+  address: string | null;
+  bookletOpsKey: "BOYS" | "GIRLS" | "ELEMENTARY" | null;
 };
 
 const FALLBACK_PALETTE = [
@@ -50,11 +53,22 @@ export function toCommerceBranchBadge(branch: {
   name: string;
   slug: string;
   accentColor?: string | null;
+  address?: string | null;
+  bookletOpsKey?: string | null;
 }): CommerceBranchBadge {
+  const shortName = branch.name
+    .replace(" نسیم شهر", "")
+    .replace("نسیم‌شهر", "")
+    .trim();
+  const key = branch.bookletOpsKey;
   return {
     id: branch.id,
     name: branch.name,
+    shortName: shortName || branch.name,
     slug: branch.slug,
     accentColor: resolveBranchAccentColor(branch),
+    address: branch.address?.trim() || null,
+    bookletOpsKey:
+      key === "BOYS" || key === "GIRLS" || key === "ELEMENTARY" ? key : null,
   };
 }

@@ -89,9 +89,17 @@ export const COMMERCE_OPS_ACTIVITY_TITLES: Record<CommerceOpsStageValue, string>
     REGISTERED: "سفارش ایجاد شد",
     PAID: "پرداخت ثبت شد",
     IN_PRODUCTION: "ورود به تولید",
-    READY_FOR_PICKUP: "تحویل به مسئول کتاب",
-    DELIVERED_TO_STUDENT: "تحویل انجام شد",
+    READY_FOR_PICKUP: "آماده تحویل",
+    DELIVERED_TO_STUDENT: "تحویل شد",
   };
+
+export function commerceLastActivityTone(
+  title: string,
+  stage: CommerceOpsStageValue,
+): CommerceOpsStageValue | "ROLLBACK" {
+  if (title.startsWith("بازگشت")) return "ROLLBACK";
+  return stage;
+}
 
 export type SyncedCommerceLifecycle = {
   status: "DRAFT" | "AWAITING_PAYMENT" | "PAID" | "FULFILLING" | "COMPLETED";
@@ -124,6 +132,7 @@ export function syncedLifecycleForOpsStage(
 export function canAdvanceCommerceOpsStage(params: {
   current: CommerceOpsStageValue;
   paymentPaid: boolean;
+  handoverStaffUserId?: string | null;
 }): { ok: true; next: CommerceOpsStageValue } | { ok: false; error: string } {
   const next = nextCommerceOpsStage(params.current);
   if (!next) {
@@ -135,11 +144,14 @@ export function canAdvanceCommerceOpsStage(params: {
       error: "تا پیش از ثبت پرداخت نمی‌توان مرحله را جلو برد.",
     };
   }
-  if (next !== "PAID" && !params.paymentPaid && params.current !== "PAID") {
+  if (next !== "PAID" && !params.paymentPaid) {
     return {
       ok: false,
-      error: "فقط سفارش‌های پرداخت‌شده قابل پیشروی هستند.",
+      error: "نمی‌توان سفارش پرداخت‌نشده را تحویل داد یا جلو برد.",
     };
+  }
+  if (next === "DELIVERED_TO_STUDENT" && !params.handoverStaffUserId?.trim()) {
+    return { ok: false, error: "قبل از تحویل، مسئول تحویل را انتخاب کنید." };
   }
   return { ok: true, next };
 }
@@ -147,10 +159,17 @@ export function canAdvanceCommerceOpsStage(params: {
 export function canRollbackCommerceOpsStage(params: {
   current: CommerceOpsStageValue;
   paymentPaid: boolean;
+  allowDeliveredRollback?: boolean;
 }): { ok: true; previous: CommerceOpsStageValue } | { ok: false; error: string } {
   const previous = previousCommerceOpsStage(params.current);
   if (!previous) {
     return { ok: false, error: "مرحله‌ای برای بازگشت وجود ندارد." };
+  }
+  if (params.current === "DELIVERED_TO_STUDENT" && !params.allowDeliveredRollback) {
+    return {
+      ok: false,
+      error: "بازگشت سفارش تحویل‌شده نیاز به مجوز دارد.",
+    };
   }
   if (previous === "REGISTERED" && params.paymentPaid) {
     return {

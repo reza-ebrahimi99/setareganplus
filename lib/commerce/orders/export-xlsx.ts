@@ -39,14 +39,19 @@ export async function exportCommerceOrdersXlsx(
     sheet.columns = [
       { header: "شماره سفارش", key: "orderNumber", width: 18 },
       { header: "تاریخ", key: "date", width: 20 },
-      { header: "نام خریدار", key: "buyerName", width: 22 },
+      { header: "نام دانش‌آموز", key: "buyerName", width: 22 },
       { header: "موبایل", key: "buyerMobile", width: 16 },
-      { header: "شعبه", key: "branch", width: 18 },
+      { header: "پایه", key: "grade", width: 12 },
+      { header: "رشته", key: "major", width: 14 },
+      { header: "شعبه محصول", key: "branch", width: 28 },
+      { header: "محل دریافت", key: "pickupBranch", width: 28 },
       { header: "محصول", key: "product", width: 32 },
       { header: "تعداد", key: "qty", width: 10 },
       { header: "مبلغ", key: "amount", width: 18 },
       { header: "وضعیت پرداخت", key: "payment", width: 16 },
       { header: "مرحله عملیات", key: "opsStage", width: 18 },
+      { header: "مسئول تحویل", key: "handover", width: 20 },
+      { header: "تاریخ تحویل", key: "deliveredAt", width: 20 },
       { header: "وضعیت تحویل", key: "fulfillment", width: 16 },
     ];
 
@@ -60,6 +65,8 @@ export async function exportCommerceOrdersXlsx(
         buyerMobile: row.buyerMobile
           ? toPersianDigits(row.buyerMobile)
           : "—",
+        grade: row.studentGradeLabel ?? "—",
+        major: row.studentMajorLabel ?? "—",
         product: row.productTitle,
         qty: toPersianDigits(row.quantity),
         amount: formatRials(row.amountRials),
@@ -69,6 +76,11 @@ export async function exportCommerceOrdersXlsx(
           ] ?? row.paymentStatus,
         opsStage: COMMERCE_OPS_STAGE_LABELS[row.opsStage],
         branch: row.branchName ?? "—",
+        pickupBranch: row.pickupBranchName ?? "—",
+        handover: row.handoverStaffName ?? "—",
+        deliveredAt: row.deliveredAt
+          ? formatJalaliDateTimeShort(row.deliveredAt)
+          : "—",
         fulfillment: row.fulfillmentStatus
           ? COMMERCE_FULFILLMENT_STATUS_LABELS[row.fulfillmentStatus]
           : "—",
