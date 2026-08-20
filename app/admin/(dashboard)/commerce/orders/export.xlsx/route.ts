@@ -1,18 +1,11 @@
 import { NextResponse } from "next/server";
-import {
-  CommerceFulfillmentStatus,
-  CommerceOrderPaymentStatus,
-} from "@/generated/prisma/enums";
 import { hasPermission } from "@/lib/auth/permissions";
 import { requireAdminSessionOrThrow } from "@/lib/auth/require-admin";
+import { parseAdminCommerceOrderFilters } from "@/lib/commerce/orders/filters";
 import { exportCommerceOrdersXlsx } from "@/lib/commerce/orders/export-xlsx";
 import type { AdminCommerceOrderListFilters } from "@/lib/commerce/orders/service";
 
 export const dynamic = "force-dynamic";
-
-function first(value: string | null): string {
-  return (value ?? "").trim();
-}
 
 export async function GET(request: Request) {
   let session;
@@ -30,24 +23,13 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const sp = url.searchParams;
-
-  const paymentStatus = first(sp.get("paymentStatus"));
-  const fulfillmentStatus = first(sp.get("fulfillmentStatus"));
-
+  const parsed = parseAdminCommerceOrderFilters(url.searchParams);
   const filters: AdminCommerceOrderListFilters = {
+    ...parsed,
     organizationId: session.organization.id,
-    q: first(sp.get("q")),
-    buyerName: first(sp.get("buyerName")),
-    buyerMobile: first(sp.get("buyerMobile")),
-    productQuery: first(sp.get("productQuery")),
-    itemId: first(sp.get("itemId")),
-    paymentStatus: paymentStatus as CommerceOrderPaymentStatus | "",
-    fulfillmentStatus: fulfillmentStatus as CommerceFulfillmentStatus | "",
-    paidOnly: sp.get("paidOnly") === "1",
-    undeliveredOnly: sp.get("undeliveredOnly") === "1",
-    dateFrom: first(sp.get("dateFrom")),
-    dateTo: first(sp.get("dateTo")),
+    allowedBranchIds: session.membership.allBranches
+      ? null
+      : session.membership.branchIds,
   };
 
   const result = await exportCommerceOrdersXlsx(filters);

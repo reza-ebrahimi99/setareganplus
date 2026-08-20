@@ -1,22 +1,26 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import {
-  CommerceFulfillmentStatus,
-  CommerceOrderPaymentStatus,
-} from "@/generated/prisma/enums";
-import { markOrderDeliveredAction } from "@/app/admin/(dashboard)/commerce/actions";
-import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
+import { CommerceOrderPaymentStatus } from "@/generated/prisma/enums";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import {
+  OrderOpsWorkspace,
+  type OrderOpsDetailView,
+  type OrderOpsListItem,
+} from "@/components/admin/commerce/OrderOpsWorkspace";
 import { adminBreadcrumbs } from "@/content/admin";
 import { hasPermission } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-admin";
+import { COMMERCE_PAYMENT_STATUS_LABELS } from "@/lib/commerce/booklet";
+import { formatOrderOpsKpis, loadOrderOpsKpiCounts } from "@/lib/commerce/orders/kpis";
 import {
-  COMMERCE_FULFILLMENT_STATUS_LABELS,
-} from "@/lib/commerce/booklet";
+  commerceOrderExportQuery,
+  parseAdminCommerceOrderFilters,
+} from "@/lib/commerce/orders/filters";
 import {
+  getAdminCommerceOrderDetail,
   listAdminCommerceOrders,
-  listCommerceProductFilterOptions,
+  listCommerceBranchesForOps,
 } from "@/lib/commerce/orders/service";
+import { buildOpsTimelineNodes } from "@/lib/commerce/orders/timeline-view";
 import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import { formatRials } from "@/lib/registration/format";
 import { toPersianDigits } from "@/lib/persian";
@@ -24,20 +28,11 @@ import { toPersianDigits } from "@/lib/persian";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "سفارش‌های فروشگاه",
+  title: "مرکز عملیات سفارش",
 };
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
-
-const PAYMENT_LABELS: Record<string, string> = {
-  UNPAID: "پرداخت‌نشده",
-  PENDING: "در انتظار پرداخت",
-  PAID: "پرداخت‌شده",
-  FAILED: "ناموفق",
-  REFUNDED: "بازگشت وجه",
-  PARTIAL: "جزئی",
 };
 
 function first(value: string | string[] | undefined): string {
@@ -50,308 +45,147 @@ export default async function AdminCommerceOrdersPage({
 }: PageProps) {
   const session = await requirePermission("commerce.orders.view");
   const params = await searchParams;
-  const q = first(params.q);
-  const buyerName = first(params.buyerName);
-  const buyerMobile = first(params.buyerMobile);
-  const productQuery = first(params.productQuery);
-  const itemId = first(params.itemId);
-  const paymentStatus = first(params.paymentStatus);
-  const fulfillmentStatus = first(params.fulfillmentStatus);
-  const paidOnly = first(params.paidOnly) === "1";
-  const undeliveredOnly = first(params.undeliveredOnly) === "1";
-  const dateFrom = first(params.dateFrom);
-  const dateTo = first(params.dateTo);
+  const parsed = parseAdminCommerceOrderFilters(params);
+  const allowedBranchIds = session.membership.allBranches
+    ? null
+    : session.membership.branchIds;
+  const selectedOrderId = first(params.orderId) || null;
 
-  const [orders, products] = await Promise.all([
-    listAdminCommerceOrders({
+  const listFilters = {
+    ...parsed,
+    organizationId: session.organization.id,
+    allowedBranchIds,
+  };
+
+  const [orders, branches, detail, kpiCounts] = await Promise.all([
+    listAdminCommerceOrders(listFilters),
+    listCommerceBranchesForOps({
       organizationId: session.organization.id,
-      q,
-      buyerName,
-      buyerMobile,
-      productQuery,
-      itemId,
-      paymentStatus: paymentStatus as CommerceOrderPaymentStatus | "",
-      fulfillmentStatus: fulfillmentStatus as CommerceFulfillmentStatus | "",
-      paidOnly,
-      undeliveredOnly,
-      dateFrom,
-      dateTo,
+      allowedBranchIds,
     }),
-    listCommerceProductFilterOptions(session.organization.id),
+    selectedOrderId
+      ? getAdminCommerceOrderDetail({
+          organizationId: session.organization.id,
+          orderId: selectedOrderId,
+          allowedBranchIds,
+        })
+      : Promise.resolve(null),
+    loadOrderOpsKpiCounts(listFilters),
   ]);
 
   const canManage = hasPermission(session, "commerce.orders.manage");
+  const canRollback = hasPermission(session, "commerce.orders.rollback");
+  const kpis = formatOrderOpsKpis(kpiCounts, branches);
 
-  const exportParams = new URLSearchParams();
-  if (q) exportParams.set("q", q);
-  if (buyerName) exportParams.set("buyerName", buyerName);
-  if (buyerMobile) exportParams.set("buyerMobile", buyerMobile);
-  if (productQuery) exportParams.set("productQuery", productQuery);
-  if (itemId) exportParams.set("itemId", itemId);
-  if (paymentStatus) exportParams.set("paymentStatus", paymentStatus);
-  if (fulfillmentStatus) exportParams.set("fulfillmentStatus", fulfillmentStatus);
-  if (paidOnly) exportParams.set("paidOnly", "1");
-  if (undeliveredOnly) exportParams.set("undeliveredOnly", "1");
-  if (dateFrom) exportParams.set("dateFrom", dateFrom);
-  if (dateTo) exportParams.set("dateTo", dateTo);
-  const exportHref = `/admin/commerce/orders/export.xlsx${
-    exportParams.toString() ? `?${exportParams.toString()}` : ""
-  }`;
+  const listItems: OrderOpsListItem[] = orders.map((order) => ({
+    id: order.id,
+    orderNumber: order.orderNumber,
+    buyerName: order.buyerName,
+    buyerMobile: order.buyerMobile,
+    productTitle: order.productTitle,
+    amountLabel: formatRials(order.grandTotalRials),
+    paymentLabel:
+      COMMERCE_PAYMENT_STATUS_LABELS[
+        order.paymentStatus as keyof typeof COMMERCE_PAYMENT_STATUS_LABELS
+      ] ?? order.paymentStatus,
+    paymentPaid: order.paymentStatus === CommerceOrderPaymentStatus.PAID,
+    opsStage: order.opsStage,
+    lastActivityTitle: order.lastActivityTitle,
+    lastActivityAtLabel: formatJalaliDateTimeShort(order.lastActivityAt),
+    createdAtLabel: formatJalaliDateTimeShort(order.createdAt),
+    branch: order.branch,
+  }));
+
+  const detailView: OrderOpsDetailView | null = detail
+    ? {
+        id: detail.id,
+        orderNumber: detail.orderNumber,
+        buyerName: detail.buyerName,
+        buyerMobile: detail.buyerMobile,
+        productTitle: detail.productTitle,
+        amountLabel: formatRials(detail.grandTotalRials),
+        paymentLabel:
+          COMMERCE_PAYMENT_STATUS_LABELS[
+            detail.paymentStatus as keyof typeof COMMERCE_PAYMENT_STATUS_LABELS
+          ] ?? detail.paymentStatus,
+        paymentPaid: detail.paymentStatus === CommerceOrderPaymentStatus.PAID,
+        opsStage: detail.opsStage,
+        lastActivityTitle: detail.lastActivityTitle,
+        lastActivityAtLabel: formatJalaliDateTimeShort(detail.lastActivityAt),
+        createdAtLabel: formatJalaliDateTimeShort(detail.createdAt),
+        branch: detail.branch,
+        notes: detail.notes,
+        deliveryNote: detail.deliveryNote,
+        buyerEmail: detail.buyerEmail,
+        paymentTrackingCode: detail.paymentTrackingCode,
+        deliveredAtLabel: detail.deliveredAt
+          ? formatJalaliDateTimeShort(detail.deliveredAt)
+          : null,
+        deliveredByName: detail.deliveredByName,
+        items: detail.items.map((item) => ({
+          id: item.id,
+          title: item.title,
+          quantityLabel: toPersianDigits(item.quantity),
+          unitPriceLabel: formatRials(item.unitPriceRials),
+          totalLabel: formatRials(item.totalRials),
+        })),
+        timeline: buildOpsTimelineNodes({
+          current: detail.opsStage,
+          events: detail.events.map((event) => ({
+            stage: event.stage,
+            title: event.title,
+            note: event.note,
+            occurredAtLabel: formatJalaliDateTimeShort(event.occurredAt),
+            operatorName: event.operatorName,
+          })),
+        }),
+        activity: detail.events.map((event) => ({
+          id: event.id,
+          title: event.title,
+          note: event.note,
+          occurredAtLabel: formatJalaliDateTimeShort(event.occurredAt),
+          operatorName: event.operatorName,
+        })),
+      }
+    : null;
 
   return (
     <>
       <AdminPageHeader
-        title="سفارش‌ها"
-        description="سفارش‌های فروشگاه و تحویل حضوری"
+        title="مرکز عملیات سفارش"
+        description="پیگیری تولید جزوه، آماده‌سازی و تحویل حضوری به دانش‌آموز"
         breadcrumbs={adminBreadcrumbs.commerceOrders}
         compact
       />
-
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted">
-          {toPersianDigits(orders.length)} سفارش در نتیجه فیلتر
-        </p>
-        <Link
-          href={exportHref}
-          className="inline-flex min-h-11 items-center rounded-xl border border-border bg-surface px-4 text-sm font-medium text-primary hover:bg-background"
-        >
-          خروجی اکسل
-        </Link>
-      </div>
-
-      <form className="mb-4 grid gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4">
-        <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-2">
-          <input
-            type="checkbox"
-            name="paidOnly"
-            value="1"
-            defaultChecked={paidOnly}
-            className="size-4 rounded border-border"
-          />
-          <span>فقط پرداخت شده</span>
-        </label>
-        <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-2">
-          <input
-            type="checkbox"
-            name="undeliveredOnly"
-            value="1"
-            defaultChecked={undeliveredOnly}
-            className="size-4 rounded border-border"
-          />
-          <span>فقط تحویل نشده</span>
-        </label>
-
-        <label className="block text-sm">
-          <span className="mb-1.5 block text-muted">از تاریخ</span>
-          <input
-            type="date"
-            name="dateFrom"
-            defaultValue={dateFrom}
-            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1.5 block text-muted">تا تاریخ</span>
-          <input
-            type="date"
-            name="dateTo"
-            defaultValue={dateTo}
-            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
-          />
-        </label>
-
-        <label className="block text-sm">
-          <span className="mb-1.5 block text-muted">محصول</span>
-          <select
-            name="itemId"
-            defaultValue={itemId}
-            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
-          >
-            <option value="">همه محصولات</option>
-            {products.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.title}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1.5 block text-muted">جستجوی محصول</span>
-          <input
-            name="productQuery"
-            defaultValue={productQuery}
-            placeholder="عنوان محصول"
-            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
-          />
-        </label>
-
-        <label className="block text-sm">
-          <span className="mb-1.5 block text-muted">جستجوی نام</span>
-          <input
-            name="buyerName"
-            defaultValue={buyerName}
-            placeholder="نام خریدار"
-            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1.5 block text-muted">جستجوی موبایل</span>
-          <input
-            name="buyerMobile"
-            defaultValue={buyerMobile}
-            placeholder="09…"
-            dir="ltr"
-            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
-          />
-        </label>
-
-        <label className="block text-sm sm:col-span-2">
-          <span className="mb-1.5 block text-muted">جستجوی کلی</span>
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="نام، موبایل، شماره سفارش، محصول"
-            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1.5 block text-muted">وضعیت پرداخت</span>
-          <select
-            name="paymentStatus"
-            defaultValue={paidOnly ? "" : paymentStatus}
-            disabled={paidOnly}
-            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5 disabled:opacity-60"
-          >
-            <option value="">همه</option>
-            {Object.entries(PAYMENT_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1.5 block text-muted">وضعیت تحویل</span>
-          <select
-            name="fulfillmentStatus"
-            defaultValue={undeliveredOnly ? "" : fulfillmentStatus}
-            disabled={undeliveredOnly}
-            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5 disabled:opacity-60"
-          >
-            <option value="">همه</option>
-            {Object.entries(COMMERCE_FULFILLMENT_STATUS_LABELS).map(
-              ([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ),
-            )}
-          </select>
-        </label>
-        <div className="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-4">
-          <button
-            type="submit"
-            className="min-h-11 rounded-xl bg-primary px-4 text-sm font-medium text-white"
-          >
-            اعمال فیلتر
-          </button>
-          <Link
-            href="/admin/commerce/orders"
-            className="inline-flex min-h-11 items-center rounded-xl border border-border px-4 text-sm text-muted"
-          >
-            پاک کردن
-          </Link>
-        </div>
-      </form>
-
-      {orders.length === 0 ? (
-        <AdminEmptyState
-          title="سفارشی یافت نشد"
-          description="پس از خرید موفق، سفارش‌ها اینجا نمایش داده می‌شوند."
-        />
-      ) : (
-        <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
-          <table className="min-w-full text-sm">
-            <thead className="bg-background text-muted">
-              <tr>
-                <th className="px-3 py-3 text-right font-medium">خریدار</th>
-                <th className="px-3 py-3 text-right font-medium">محصول</th>
-                <th className="px-3 py-3 text-right font-medium">مبلغ</th>
-                <th className="px-3 py-3 text-right font-medium">وضعیت پرداخت</th>
-                <th className="px-3 py-3 text-right font-medium">وضعیت تحویل</th>
-                <th className="px-3 py-3 text-right font-medium">تاریخ</th>
-                <th className="px-3 py-3 text-right font-medium">پیگیری</th>
-                <th className="px-3 py-3 text-right font-medium">عملیات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order) => (
-                <tr key={order.id} className="border-t border-border align-top">
-                  <td className="px-3 py-3">
-                    <div className="font-medium">{order.buyerName ?? "—"}</div>
-                    <div className="text-xs text-muted" dir="ltr">
-                      {order.buyerMobile
-                        ? toPersianDigits(order.buyerMobile)
-                        : "—"}
-                    </div>
-                    <div className="mt-1 text-xs text-muted" dir="ltr">
-                      {toPersianDigits(order.orderNumber)}
-                    </div>
-                  </td>
-                  <td className="px-3 py-3">{order.productTitle}</td>
-                  <td className="px-3 py-3 whitespace-nowrap">
-                    {formatRials(order.grandTotalRials)}
-                  </td>
-                  <td className="px-3 py-3">
-                    {PAYMENT_LABELS[order.paymentStatus] ?? order.paymentStatus}
-                  </td>
-                  <td className="px-3 py-3">
-                    {order.fulfillmentStatus
-                      ? COMMERCE_FULFILLMENT_STATUS_LABELS[
-                          order.fulfillmentStatus
-                        ]
-                      : "در انتظار تحویل"}
-                    {order.deliveredAt ? (
-                      <p className="mt-1 text-xs text-muted">
-                        {formatJalaliDateTimeShort(order.deliveredAt)}
-                        {order.deliveredByName
-                          ? ` · ${order.deliveredByName}`
-                          : ""}
-                      </p>
-                    ) : null}
-                  </td>
-                  <td className="px-3 py-3 whitespace-nowrap">
-                    {formatJalaliDateTimeShort(order.createdAt)}
-                  </td>
-                  <td className="px-3 py-3" dir="ltr">
-                    {order.trackingCode
-                      ? toPersianDigits(order.trackingCode)
-                      : "—"}
-                  </td>
-                  <td className="px-3 py-3">
-                    {canManage &&
-                    order.paymentStatus === CommerceOrderPaymentStatus.PAID &&
-                    order.fulfillmentStatus ===
-                      CommerceFulfillmentStatus.AWAITING_PICKUP ? (
-                      <form action={markOrderDeliveredAction}>
-                        <input type="hidden" name="orderId" value={order.id} />
-                        <button
-                          type="submit"
-                          className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-900"
-                        >
-                          ثبت تحویل
-                        </button>
-                      </form>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <OrderOpsWorkspace
+        orders={listItems}
+        kpis={kpis.map((kpi) => ({
+          key: kpi.key,
+          label: kpi.label,
+          valueLabel: toPersianDigits(kpi.value),
+          hint: kpi.hint,
+        }))}
+        branches={branches}
+        filters={{
+          q: parsed.q ?? "",
+          branchId: parsed.branchId ?? "",
+          opsStage: parsed.opsStage ?? "",
+          dateFrom: parsed.dateFrom ?? "",
+          dateTo: parsed.dateTo ?? "",
+          todayOnly: Boolean(parsed.todayOnly),
+          paidOnly: Boolean(parsed.paidOnly),
+          waitingProduction: Boolean(parsed.waitingProduction),
+          readyForPickup: Boolean(parsed.readyForPickup),
+          deliveredOnly: Boolean(parsed.deliveredOnly),
+          undeliveredOnly: Boolean(parsed.undeliveredOnly),
+        }}
+        exportHref={`/admin/commerce/orders/export.xlsx${commerceOrderExportQuery(parsed)}`}
+        selectedOrderId={selectedOrderId}
+        detail={detailView}
+        filteredTotal={kpiCounts.total}
+        canManage={canManage}
+        canRollback={canRollback}
+      />
     </>
   );
 }

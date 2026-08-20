@@ -7,15 +7,29 @@ import {
   CommerceDeliveryMethod,
   CommerceFulfillmentStatus,
   CommerceItemStatus,
+  CommerceOpsStage,
+  CommerceOrderEventType,
   CommerceOrderPaymentStatus,
   CommerceOrderStatus,
   CommerceSystemKind,
 } from "@/generated/prisma/enums";
+import {
+  toCommerceBranchBadge,
+  type CommerceBranchBadge,
+} from "@/lib/commerce/branches";
+import { commerceAllowedBranchScope } from "@/lib/commerce/orders/filters";
+import {
+  COMMERCE_OPS_ACTIVITY_TITLES,
+  isCommerceOpsStage,
+  type CommerceOpsStageValue,
+} from "@/lib/commerce/orders/ops-stage";
+import { recordCommerceOrderEvent } from "@/lib/commerce/orders/timeline";
 import { resolveCommercePrice } from "@/lib/commerce/pricing";
 import {
   buildCommerceOrderNumber,
   calculateOrderTotals,
 } from "@/lib/commerce/orders/totals";
+import { tehranLocalToUtc, getTehranParts } from "@/lib/datetime/tehran-zone";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { prisma } from "@/lib/prisma";
 
@@ -25,6 +39,7 @@ export type CreateSingleItemOrderInput = {
   buyerFirstName: string;
   buyerLastName: string;
   buyerMobile: string;
+  branchId?: string | null;
 };
 
 export type CreateSingleItemOrderResult =
@@ -71,6 +86,7 @@ export async function createSingleItemCommerceOrder(
       unlimitedStock: true,
       stockQuantity: true,
       status: true,
+      branchId: true,
     },
   });
 
@@ -84,6 +100,37 @@ export async function createSingleItemCommerceOrder(
     (item.stockQuantity == null || item.stockQuantity < 1)
   ) {
     return { ok: false, error: "این محصول ناموجود است." };
+  }
+
+  const requestedBranchId = (input.branchId ?? "").trim() || item.branchId;
+  let branchId: string | null = null;
+  if (requestedBranchId) {
+    const branch = await prisma.branch.findFirst({
+      where: {
+        id: requestedBranchId,
+        organizationId: input.organizationId,
+        deletedAt: null,
+        isActive: true,
+      },
+      select: { id: true },
+    });
+    if (!branch) {
+      return { ok: false, error: "شعبه انتخاب‌شده معتبر نیست." };
+    }
+    branchId = branch.id;
+  }
+
+  if (!branchId) {
+    const fallbackBranch = await prisma.branch.findFirst({
+      where: {
+        organizationId: input.organizationId,
+        deletedAt: null,
+        isActive: true,
+      },
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    branchId = fallbackBranch?.id ?? null;
   }
 
   const pricing = resolveCommercePrice({
@@ -150,9 +197,11 @@ export async function createSingleItemCommerceOrder(
       const order = await tx.commerceOrder.create({
         data: {
           organizationId: input.organizationId,
+          branchId,
           orderNumber,
           status: CommerceOrderStatus.AWAITING_PAYMENT,
           paymentStatus: CommerceOrderPaymentStatus.PENDING,
+          opsStage: CommerceOpsStage.REGISTERED,
           buyerName: `${firstName} ${lastName}`.trim(),
           buyerMobile: mobile.normalized,
           subtotalRials: totals.subtotalRials,
@@ -161,7 +210,7 @@ export async function createSingleItemCommerceOrder(
           shippingRials: 0,
           grandTotalRials: totals.grandTotalRials,
           deliveryMethod: CommerceDeliveryMethod.PICKUP_ONSITE,
-          fulfillmentStatus: CommerceFulfillmentStatus.AWAITING_PICKUP,
+          fulfillmentStatus: null,
           currency: "IRR",
         },
         select: { id: true, orderNumber: true, grandTotalRials: true },
@@ -180,6 +229,14 @@ export async function createSingleItemCommerceOrder(
           discountRials: line.discountRials,
           totalRials: line.totalRials,
         })),
+      });
+
+      await recordCommerceOrderEvent(tx, {
+        organizationId: input.organizationId,
+        orderId: order.id,
+        eventType: CommerceOrderEventType.STAGE_CHANGED,
+        stage: "REGISTERED",
+        title: COMMERCE_OPS_ACTIVITY_TITLES.REGISTERED,
       });
 
       return order;
@@ -207,47 +264,6 @@ export async function createSingleItemCommerceOrder(
   }
 }
 
-export async function markCommerceOrderDelivered(params: {
-  organizationId: string;
-  orderId: string;
-  actorUserId: string;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
-  const order = await prisma.commerceOrder.findFirst({
-    where: {
-      id: params.orderId,
-      organizationId: params.organizationId,
-    },
-    select: {
-      id: true,
-      paymentStatus: true,
-      fulfillmentStatus: true,
-    },
-  });
-
-  if (!order) return { ok: false, error: "سفارش یافت نشد." };
-  if (order.paymentStatus !== CommerceOrderPaymentStatus.PAID) {
-    return { ok: false, error: "فقط سفارش‌های پرداخت‌شده قابل تحویل هستند." };
-  }
-  if (order.fulfillmentStatus === CommerceFulfillmentStatus.DELIVERED) {
-    return { ok: true };
-  }
-  if (order.fulfillmentStatus === CommerceFulfillmentStatus.CANCELLED) {
-    return { ok: false, error: "سفارش لغو شده قابل تحویل نیست." };
-  }
-
-  await prisma.commerceOrder.update({
-    where: { id: order.id },
-    data: {
-      fulfillmentStatus: CommerceFulfillmentStatus.DELIVERED,
-      status: CommerceOrderStatus.COMPLETED,
-      deliveredAt: new Date(),
-      deliveredByUserId: params.actorUserId,
-    },
-  });
-
-  return { ok: true };
-}
-
 export type AdminCommerceOrderRow = {
   id: string;
   orderNumber: string;
@@ -259,10 +275,15 @@ export type AdminCommerceOrderRow = {
   grandTotalRials: number;
   paymentStatus: CommerceOrderPaymentStatus;
   fulfillmentStatus: CommerceFulfillmentStatus | null;
+  opsStage: CommerceOpsStageValue;
+  lastActivityTitle: string;
+  lastActivityAt: Date;
+  branch: CommerceBranchBadge | null;
   createdAt: Date;
   trackingCode: string | null;
   deliveredAt: Date | null;
   deliveredByName: string | null;
+  notes: string | null;
 };
 
 export type AdminCommerceOrderListFilters = {
@@ -274,10 +295,21 @@ export type AdminCommerceOrderListFilters = {
   itemId?: string;
   paymentStatus?: CommerceOrderPaymentStatus | "";
   fulfillmentStatus?: CommerceFulfillmentStatus | "";
+  opsStage?: CommerceOpsStageValue | "";
+  branchId?: string;
+  /** Restrict to these branch ids (RBAC). `null` = all; empty array matches nothing. */
+  allowedBranchIds?: readonly string[] | null;
   /** Shortcut: only PAID */
   paidOnly?: boolean;
   /** Shortcut: not DELIVERED (includes AWAITING_PICKUP / null) */
   undeliveredOnly?: boolean;
+  /** Ready for student handover */
+  readyForPickup?: boolean;
+  /** Paid, waiting to enter production */
+  waitingProduction?: boolean;
+  /** Tehran calendar today */
+  todayOnly?: boolean;
+  deliveredOnly?: boolean;
   /** YYYY-MM-DD (inclusive start, Tehran calendar day → UTC range) */
   dateFrom?: string;
   /** YYYY-MM-DD (inclusive end) */
@@ -296,6 +328,14 @@ function parseDateBound(raw: string | undefined, endOfDay: boolean): Date | null
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function tehranTodayBounds(): { from: Date; to: Date } {
+  const parts = getTehranParts(new Date());
+  return {
+    from: tehranLocalToUtc(parts.year, parts.month, parts.day, 0, 0, 0),
+    to: tehranLocalToUtc(parts.year, parts.month, parts.day, 23, 59, 59),
+  };
+}
+
 export function buildAdminCommerceOrderWhere(
   params: AdminCommerceOrderListFilters,
 ): Prisma.CommerceOrderWhereInput {
@@ -304,8 +344,15 @@ export function buildAdminCommerceOrderWhere(
   const buyerMobile = (params.buyerMobile ?? "").trim();
   const productQuery = (params.productQuery ?? "").trim();
   const itemId = (params.itemId ?? "").trim();
-  const from = parseDateBound(params.dateFrom, false);
-  const to = parseDateBound(params.dateTo, true);
+  const branchId = (params.branchId ?? "").trim();
+  let from = parseDateBound(params.dateFrom, false);
+  let to = parseDateBound(params.dateTo, true);
+
+  if (params.todayOnly) {
+    const today = tehranTodayBounds();
+    from = today.from;
+    to = today.to;
+  }
 
   const paymentStatus = params.paidOnly
     ? CommerceOrderPaymentStatus.PAID
@@ -317,11 +364,30 @@ export function buildAdminCommerceOrderWhere(
 
   if (paymentStatus) where.paymentStatus = paymentStatus;
 
-  if (params.undeliveredOnly) {
-    where.OR = [
-      { fulfillmentStatus: CommerceFulfillmentStatus.AWAITING_PICKUP },
-      { fulfillmentStatus: null },
-    ];
+  if (params.allowedBranchIds != null) {
+    const allowed = [...params.allowedBranchIds];
+    if (branchId) {
+      where.branchId = allowed.includes(branchId) ? branchId : { in: [] };
+    } else {
+      where.branchId = { in: allowed };
+    }
+  } else if (branchId) {
+    where.branchId = branchId;
+  }
+
+  const opsStage = isCommerceOpsStage(params.opsStage) ? params.opsStage : undefined;
+  if (params.deliveredOnly) {
+    where.opsStage = CommerceOpsStage.DELIVERED_TO_STUDENT;
+  } else if (params.readyForPickup) {
+    where.opsStage = CommerceOpsStage.READY_FOR_PICKUP;
+  } else if (params.waitingProduction) {
+    where.opsStage = CommerceOpsStage.PAID;
+  } else if (opsStage) {
+    where.opsStage = opsStage;
+  } else if (params.undeliveredOnly) {
+    where.opsStage = {
+      not: CommerceOpsStage.DELIVERED_TO_STUDENT,
+    };
   } else if (params.fulfillmentStatus) {
     where.fulfillmentStatus = params.fulfillmentStatus;
   }
@@ -398,6 +464,14 @@ export async function listAdminCommerceOrders(
       deliveredBy: {
         select: { firstName: true, lastName: true },
       },
+      branch: {
+        select: { id: true, name: true, slug: true, accentColor: true },
+      },
+      events: {
+        orderBy: { occurredAt: "desc" },
+        take: 1,
+        select: { title: true, occurredAt: true, stage: true },
+      },
     },
   });
 
@@ -444,12 +518,19 @@ export async function listAdminCommerceOrders(
       grandTotalRials: order.grandTotalRials,
       paymentStatus: order.paymentStatus,
       fulfillmentStatus: order.fulfillmentStatus,
+      opsStage: order.opsStage as CommerceOpsStageValue,
+      lastActivityTitle:
+        order.events[0]?.title ??
+        COMMERCE_OPS_ACTIVITY_TITLES[order.opsStage as CommerceOpsStageValue],
+      lastActivityAt: order.events[0]?.occurredAt ?? order.createdAt,
+      branch: order.branch ? toCommerceBranchBadge(order.branch) : null,
       createdAt: order.createdAt,
       trackingCode: trackingByOrder.get(order.id) ?? null,
       deliveredAt: order.deliveredAt,
       deliveredByName: order.deliveredBy
         ? `${order.deliveredBy.firstName} ${order.deliveredBy.lastName}`.trim()
         : null,
+      notes: order.notes,
     };
   });
 }
@@ -465,6 +546,8 @@ export type AdminCommerceOrderExportRow = {
   amountRials: number;
   paymentStatus: CommerceOrderPaymentStatus;
   fulfillmentStatus: CommerceFulfillmentStatus | null;
+  opsStage: CommerceOpsStageValue;
+  branchName: string | null;
 };
 
 export async function listAdminCommerceOrdersForExport(
@@ -483,6 +566,7 @@ export async function listAdminCommerceOrdersForExport(
           totalRials: true,
         },
       },
+      branch: { select: { name: true } },
     },
   });
 
@@ -499,6 +583,8 @@ export async function listAdminCommerceOrdersForExport(
         amountRials: order.grandTotalRials,
         paymentStatus: order.paymentStatus,
         fulfillmentStatus: order.fulfillmentStatus,
+        opsStage: order.opsStage as CommerceOpsStageValue,
+        branchName: order.branch?.name ?? null,
       });
       continue;
     }
@@ -513,22 +599,165 @@ export async function listAdminCommerceOrdersForExport(
         amountRials: item.totalRials,
         paymentStatus: order.paymentStatus,
         fulfillmentStatus: order.fulfillmentStatus,
+        opsStage: order.opsStage as CommerceOpsStageValue,
+        branchName: order.branch?.name ?? null,
       });
     }
   }
   return rows;
 }
 
-export async function listCommerceProductFilterOptions(organizationId: string) {
-  return prisma.commerceItem.findMany({
+export async function listCommerceBranchesForOps(params: {
+  organizationId: string;
+  allowedBranchIds?: readonly string[] | null;
+}): Promise<CommerceBranchBadge[]> {
+  const branches = await prisma.branch.findMany({
     where: {
-      organizationId,
+      organizationId: params.organizationId,
       deletedAt: null,
+      isActive: true,
+      ...(params.allowedBranchIds != null
+        ? { id: { in: [...params.allowedBranchIds] } }
+        : {}),
     },
-    orderBy: { title: "asc" },
-    take: 200,
-    select: { id: true, title: true },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, slug: true, accentColor: true },
   });
+  return branches.map(toCommerceBranchBadge);
+}
+
+export type AdminCommerceOrderEventRow = {
+  id: string;
+  eventType: string;
+  stage: CommerceOpsStageValue | null;
+  title: string;
+  note: string | null;
+  occurredAt: Date;
+  operatorName: string | null;
+};
+
+export type AdminCommerceOrderDetail = AdminCommerceOrderRow & {
+  buyerEmail: string | null;
+  deliveryNote: string | null;
+  readyForPickupAt: Date | null;
+  readyForPickupByName: string | null;
+  paymentTrackingCode: string | null;
+  paymentProvider: string | null;
+  items: Array<{
+    id: string;
+    title: string;
+    quantity: number;
+    unitPriceRials: number;
+    totalRials: number;
+  }>;
+  events: AdminCommerceOrderEventRow[];
+};
+
+function actorName(actor: { firstName: string; lastName: string } | null): string | null {
+  if (!actor) return null;
+  const name = `${actor.firstName} ${actor.lastName}`.trim();
+  return name || null;
+}
+
+export async function getAdminCommerceOrderDetail(params: {
+  organizationId: string;
+  orderId: string;
+  allowedBranchIds?: readonly string[] | null;
+}): Promise<AdminCommerceOrderDetail | null> {
+  const order = await prisma.commerceOrder.findFirst({
+    where: {
+      id: params.orderId,
+      organizationId: params.organizationId,
+      ...commerceAllowedBranchScope(params.allowedBranchIds),
+    },
+    include: {
+      items: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          titleSnapshot: true,
+          quantity: true,
+          unitPriceRials: true,
+          totalRials: true,
+        },
+      },
+      branch: {
+        select: { id: true, name: true, slug: true, accentColor: true },
+      },
+      deliveredBy: { select: { firstName: true, lastName: true } },
+      readyForPickupBy: { select: { firstName: true, lastName: true } },
+      events: {
+        orderBy: { occurredAt: "asc" },
+        include: {
+          actor: { select: { firstName: true, lastName: true } },
+        },
+      },
+    },
+  });
+
+  if (!order) return null;
+
+  const intent = await prisma.paymentIntent.findFirst({
+    where: {
+      organizationId: params.organizationId,
+      payableType: "COMMERCE_ORDER",
+      payableId: order.id,
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { trackingCode: true, provider: true },
+  });
+
+  const lastEvent = order.events[order.events.length - 1];
+  const productTitle =
+    order.items.length > 1
+      ? order.items.map((item) => item.titleSnapshot).join("، ")
+      : (order.items[0]?.titleSnapshot ?? "—");
+
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    buyerName: order.buyerName,
+    buyerMobile: order.buyerMobile,
+    buyerEmail: order.buyerEmail,
+    productTitle,
+    quantity: order.items.reduce((sum, item) => sum + item.quantity, 0) || 1,
+    lineTotalRials: order.items[0]?.totalRials ?? order.grandTotalRials,
+    grandTotalRials: order.grandTotalRials,
+    paymentStatus: order.paymentStatus,
+    fulfillmentStatus: order.fulfillmentStatus,
+    opsStage: order.opsStage as CommerceOpsStageValue,
+    lastActivityTitle:
+      lastEvent?.title ??
+      COMMERCE_OPS_ACTIVITY_TITLES[order.opsStage as CommerceOpsStageValue],
+    lastActivityAt: lastEvent?.occurredAt ?? order.createdAt,
+    branch: order.branch ? toCommerceBranchBadge(order.branch) : null,
+    createdAt: order.createdAt,
+    trackingCode: intent?.trackingCode ?? null,
+    deliveredAt: order.deliveredAt,
+    deliveredByName: actorName(order.deliveredBy),
+    notes: order.notes,
+    deliveryNote: order.deliveryNote,
+    readyForPickupAt: order.readyForPickupAt,
+    readyForPickupByName: actorName(order.readyForPickupBy),
+    paymentTrackingCode: intent?.trackingCode ?? null,
+    paymentProvider: intent?.provider ?? null,
+    items: order.items.map((item) => ({
+      id: item.id,
+      title: item.titleSnapshot,
+      quantity: item.quantity,
+      unitPriceRials: item.unitPriceRials,
+      totalRials: item.totalRials,
+    })),
+    events: order.events.map((event) => ({
+      id: event.id,
+      eventType: event.eventType,
+      stage: event.stage as CommerceOpsStageValue | null,
+      title: event.title,
+      note: event.note,
+      occurredAt: event.occurredAt,
+      operatorName: actorName(event.actor),
+    })),
+  };
 }
 
 export async function getCommerceOrderPublicReceipt(params: {

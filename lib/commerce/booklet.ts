@@ -54,9 +54,32 @@ export const COMMERCE_FULFILLMENT_STATUS_LABELS: Record<
   CommerceFulfillmentStatusValue,
   string
 > = {
-  AWAITING_PICKUP: "در انتظار تحویل",
-  DELIVERED: "تحویل شد",
+  AWAITING_PICKUP: "آماده تحویل",
+  DELIVERED: "تحویل به دانش‌آموز",
   CANCELLED: "لغو شده",
+};
+
+export const COMMERCE_ORDER_PAYMENT_STATUSES = [
+  "UNPAID",
+  "PENDING",
+  "PAID",
+  "FAILED",
+  "REFUNDED",
+  "PARTIAL",
+] as const;
+export type CommerceOrderPaymentStatusValue =
+  (typeof COMMERCE_ORDER_PAYMENT_STATUSES)[number];
+
+export const COMMERCE_PAYMENT_STATUS_LABELS: Record<
+  CommerceOrderPaymentStatusValue,
+  string
+> = {
+  UNPAID: "پرداخت‌نشده",
+  PENDING: "در انتظار پرداخت",
+  PAID: "پرداخت‌شده",
+  FAILED: "ناموفق",
+  REFUNDED: "بازگشت وجه",
+  PARTIAL: "جزئی",
 };
 
 export const PICKUP_ONSITE_NOTICE =

@@ -18,8 +18,8 @@ const links = [
   },
   {
     href: "/admin/commerce/orders",
-    title: "سفارش‌ها",
-    description: "پیگیری پرداخت و تحویل حضوری",
+    title: "عملیات سفارش",
+    description: "تولید جزوه، آماده‌سازی و تحویل حضوری به دانش‌آموز",
   },
   {
     href: "/admin/commerce/categories",
@@ -40,7 +40,7 @@ export default async function AdminCommerceHomePage() {
     <>
       <AdminPageHeader
         title="فروشگاه"
-        description="فروش جزوه فیزیکی با تحویل حضوری از مؤسسه آموزشی ستارگان"
+        description="فروش جزوه فیزیکی با تحویل حضوری در شعبه"
         breadcrumbs={adminBreadcrumbs.commerce}
         compact
       />

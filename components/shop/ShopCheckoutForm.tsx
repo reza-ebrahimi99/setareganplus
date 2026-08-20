@@ -8,18 +8,28 @@ import {
 
 const empty: ShopCheckoutState = {};
 
+type BranchOption = {
+  id: string;
+  name: string;
+};
+
 type Props = {
   itemId: string;
   disabled?: boolean;
   finalPriceLabel: string;
+  branches: readonly BranchOption[];
+  defaultBranchId?: string | null;
 };
 
 export function ShopCheckoutForm({
   itemId,
   disabled = false,
   finalPriceLabel,
+  branches,
+  defaultBranchId = null,
 }: Props) {
   const [state, action, pending] = useActionState(startShopCheckoutAction, empty);
+  const showBranchSelect = branches.length > 0;
 
   return (
     <form action={action} className="space-y-3 rounded-2xl border border-border bg-white p-4 shadow-sm">
@@ -68,6 +78,26 @@ export function ShopCheckoutForm({
           className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5 disabled:opacity-60"
         />
       </label>
+
+      {showBranchSelect ? (
+        <label className="block text-sm">
+          <span className="mb-1.5 block text-muted">شعبه تحویل</span>
+          <select
+            name="branchId"
+            required
+            disabled={disabled || pending}
+            defaultValue={defaultBranchId ?? ""}
+            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5 disabled:opacity-60"
+          >
+            <option value="">انتخاب شعبه تحویل</option>
+            {branches.map((branch) => (
+              <option key={branch.id} value={branch.id}>
+                {branch.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       <button
         type="submit"

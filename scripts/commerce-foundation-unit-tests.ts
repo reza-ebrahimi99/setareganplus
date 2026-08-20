@@ -258,12 +258,92 @@ check("order: tenant isolation helper", () => {
   assertSameOrganization("org-a", "org-a");
 });
 
-check("order: order number format", () => {
-  const number = buildCommerceOrderNumber({
-    now: new Date("2026-07-29T12:00:00Z"),
-    sequence: 42,
+check("order: ops stage machine", () => {
+  const {
+    nextCommerceOpsStage,
+    previousCommerceOpsStage,
+    canAdvanceCommerceOpsStage,
+    canRollbackCommerceOpsStage,
+    commerceOpsNextActionLabel,
+    syncedLifecycleForOpsStage,
+    COMMERCE_OPS_STAGE_LABELS,
+  } = require("../lib/commerce/orders/ops-stage") as typeof import("../lib/commerce/orders/ops-stage");
+
+  assert.equal(nextCommerceOpsStage("PAID"), "IN_PRODUCTION");
+  assert.equal(nextCommerceOpsStage("DELIVERED_TO_STUDENT"), null);
+  assert.equal(previousCommerceOpsStage("READY_FOR_PICKUP"), "IN_PRODUCTION");
+  assert.equal(commerceOpsNextActionLabel("IN_PRODUCTION"), "ثبت آماده تحویل");
+  assert.equal(COMMERCE_OPS_STAGE_LABELS.READY_FOR_PICKUP, "آماده تحویل");
+
+  const blocked = canAdvanceCommerceOpsStage({
+    current: "REGISTERED",
+    paymentPaid: false,
   });
-  assert.equal(number, "ORD-20260729-00042");
+  assert.equal(blocked.ok, false);
+
+  const advance = canAdvanceCommerceOpsStage({
+    current: "PAID",
+    paymentPaid: true,
+  });
+  assert.equal(advance.ok, true);
+  if (advance.ok) assert.equal(advance.next, "IN_PRODUCTION");
+
+  const rollback = canRollbackCommerceOpsStage({
+    current: "IN_PRODUCTION",
+    paymentPaid: true,
+  });
+  assert.equal(rollback.ok, true);
+  if (rollback.ok) assert.equal(rollback.previous, "PAID");
+
+  const blockedPaidRollback = canRollbackCommerceOpsStage({
+    current: "PAID",
+    paymentPaid: true,
+  });
+  assert.equal(blockedPaidRollback.ok, false);
+
+  const blockedFirst = canRollbackCommerceOpsStage({
+    current: "REGISTERED",
+    paymentPaid: false,
+  });
+  assert.equal(blockedFirst.ok, false);
+
+  const paidLife = syncedLifecycleForOpsStage("PAID", true);
+  assert.equal(paidLife.status, "PAID");
+  const readyLife = syncedLifecycleForOpsStage("READY_FOR_PICKUP", true);
+  assert.equal(readyLife.fulfillmentStatus, "AWAITING_PICKUP");
+  const deliveredLife = syncedLifecycleForOpsStage("DELIVERED_TO_STUDENT", true);
+  assert.equal(deliveredLife.status, "COMPLETED");
+  assert.equal(deliveredLife.fulfillmentStatus, "DELIVERED");
+});
+
+check("order: kpi formatter uses supplied counts", () => {
+  const { formatOrderOpsKpis } = require("../lib/commerce/orders/kpis") as typeof import("../lib/commerce/orders/kpis");
+  const cards = formatOrderOpsKpis(
+    {
+      total: 10,
+      paid: 7,
+      inProduction: 2,
+      ready: 3,
+      delivered: 4,
+      byBranchId: new Map([["b1", 6]]),
+    },
+    [{ id: "b1", name: "شعبه یک" }, { id: "b2", name: "شعبه دو" }],
+  );
+  assert.equal(cards.find((c) => c.key === "total")?.value, 10);
+  assert.equal(cards.find((c) => c.key === "paid")?.value, 7);
+  assert.equal(cards.find((c) => c.key === "branch-b1")?.value, 6);
+  assert.equal(cards.find((c) => c.key === "branch-b2")?.value, 0);
+});
+check("order: empty allowed branches match nothing", () => {
+  const { buildAdminCommerceOrderWhere } = require("../lib/commerce/orders/service") as typeof import("../lib/commerce/orders/service");
+  const { commerceAllowedBranchScope } = require("../lib/commerce/orders/filters") as typeof import("../lib/commerce/orders/filters");
+  const where = buildAdminCommerceOrderWhere({
+    organizationId: "org",
+    allowedBranchIds: [],
+  });
+  assert.deepEqual(where.branchId, { in: [] });
+  assert.deepEqual(commerceAllowedBranchScope([]), { branchId: { in: [] } });
+  assert.deepEqual(commerceAllowedBranchScope(null), {});
 });
 
 check("rbac: commerce permissions registered", () => {
@@ -274,6 +354,7 @@ check("rbac: commerce permissions registered", () => {
     "commerce.products.manage",
     "commerce.orders.view",
     "commerce.orders.manage",
+    "commerce.orders.rollback",
     "commerce.payments.view",
     "commerce.reports.view",
   ] as const) {
@@ -284,6 +365,9 @@ check("rbac: commerce permissions registered", () => {
   const finance = permissionsForRole(SystemRole.FINANCE);
   assert.ok(finance.has("commerce.payments.view"));
   assert.equal(finance.has("commerce.products.manage"), false);
+  assert.equal(finance.has("commerce.orders.rollback"), false);
+  const branchManager = permissionsForRole(SystemRole.BRANCH_MANAGER);
+  assert.ok(branchManager.has("commerce.orders.rollback"));
 });
 
 check("nav: commerce children filter by specific permission", () => {

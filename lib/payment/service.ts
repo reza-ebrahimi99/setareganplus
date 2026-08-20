@@ -7,6 +7,7 @@ import { randomBytes } from "node:crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import {
   CommerceFulfillmentStatus,
+  CommerceOpsStage,
   CommerceOrderPaymentStatus,
   CommerceOrderStatus,
   CrmActivityType,
@@ -22,6 +23,7 @@ import {
 
 import { enqueueCommerceOrderPaidSms } from "@/lib/commerce/commerce-sms";
 import { decrementCommerceItemStock } from "@/lib/commerce/inventory";
+import { recordCommerceOrderEvent, stageChangedEventInput } from "@/lib/commerce/orders/timeline";
 
 import { enqueueDomainEvent } from "@/lib/automation/enqueue";
 
@@ -635,11 +637,6 @@ export async function verifyPaymentCallback(params: {
         attributedAt: intent.paidAt ?? undefined,
       });
     }
-    const redirectPath =
-      intent.status === PaymentStatus.PAID
-        ? `/payments/success?intent=${encodeURIComponent(intent.id)}`
-        : `/payments/failed?intent=${encodeURIComponent(intent.id)}`;
-
     return {
       ok: true,
       alreadyFinalized: true,
@@ -770,12 +767,22 @@ export async function verifyPaymentCallback(params: {
           data: {
             status: CommerceOrderStatus.PAID,
             paymentStatus: CommerceOrderPaymentStatus.PAID,
+            opsStage: CommerceOpsStage.PAID,
             fulfillmentStatus: CommerceFulfillmentStatus.AWAITING_PICKUP,
           },
         });
 
         // Inventory decrements exactly once — gated by first PAID transition.
         if (paidOnce.count === 1) {
+          await recordCommerceOrderEvent(
+            tx,
+            stageChangedEventInput({
+              organizationId: params.organizationId,
+              orderId: intent.payableId,
+              stage: "PAID",
+            }),
+          );
+
           const lines = await tx.commerceOrderItem.findMany({
             where: {
               organizationId: params.organizationId,

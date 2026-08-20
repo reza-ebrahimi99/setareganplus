@@ -10,6 +10,7 @@ export const COMMERCE_PERMISSIONS = {
   productsManage: "commerce.products.manage",
   ordersView: "commerce.orders.view",
   ordersManage: "commerce.orders.manage",
+  ordersRollback: "commerce.orders.rollback",
   paymentsView: "commerce.payments.view",
   reportsView: "commerce.reports.view",
 } as const;

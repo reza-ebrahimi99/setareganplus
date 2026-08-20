@@ -34,6 +34,7 @@ export const PERMISSIONS = [
   "commerce.products.manage",
   "commerce.orders.view",
   "commerce.orders.manage",
+  "commerce.orders.rollback",
   "commerce.payments.view",
   "commerce.reports.view",
   "portal.student.access",
@@ -64,6 +65,14 @@ const CRM_MANAGER = new Set<Permission>([
   "registrations.manage",
   "registration_flows.view",
   "registration_flows.manage",
+]);
+
+const BRANCH_COMMERCE_OPS = new Set<Permission>([
+  ...CRM_MANAGER,
+  "commerce.view",
+  "commerce.orders.view",
+  "commerce.orders.manage",
+  "commerce.orders.rollback",
 ]);
 const CRM_AGENT = new Set<Permission>([
   "crm.view_assigned",
@@ -118,7 +127,7 @@ const ROLE_PERMISSIONS: Readonly<Partial<Record<SystemRoleValue, ReadonlySet<Per
   PLATFORM_ADMIN: ALL,
   ORGANIZATION_OWNER: ALL,
   ORGANIZATION_ADMIN: ALL,
-  BRANCH_MANAGER: CRM_MANAGER,
+  BRANCH_MANAGER: BRANCH_COMMERCE_OPS,
   ADMISSIONS_MANAGER: CRM_MANAGER,
   ADMISSIONS_AGENT: CRM_AGENT,
   ADVISOR: new Set([

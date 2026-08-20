@@ -1265,6 +1265,26 @@ body {
   animation: ai-typing-bounce 1s ease-in-out infinite;
 }
 
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .order-print-sheet,
+  .order-print-sheet * {
+    visibility: visible !important;
+  }
+
+  .order-print-sheet {
+    position: absolute;
+    inset: 0;
+    display: block !important;
+    padding: 1.5rem;
+    background: white;
+    color: #111827;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ai-fab-pulse,
   .ai-typing-dot {

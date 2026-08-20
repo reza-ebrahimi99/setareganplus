@@ -46,6 +46,50 @@ async function main() {
       isActive: true,
     },
   });
+
+  await prisma.branch.upsert({
+    where: {
+      organizationId_slug: {
+        organizationId: organization.id,
+        slug: "dokhtaran",
+      },
+    },
+    update: {
+      name: "شعبه دختران",
+      accentColor: "#7c3aed",
+      isActive: true,
+      deletedAt: null,
+    },
+    create: {
+      organizationId: organization.id,
+      name: "شعبه دختران",
+      slug: "dokhtaran",
+      accentColor: "#7c3aed",
+      isActive: true,
+    },
+  });
+
+  await prisma.branch.upsert({
+    where: {
+      organizationId_slug: {
+        organizationId: organization.id,
+        slug: "pesaran",
+      },
+    },
+    update: {
+      name: "شعبه پسران",
+      accentColor: "#2563eb",
+      isActive: true,
+      deletedAt: null,
+    },
+    create: {
+      organizationId: organization.id,
+      name: "شعبه پسران",
+      slug: "pesaran",
+      accentColor: "#2563eb",
+      isActive: true,
+    },
+  });
 }
 
 main()

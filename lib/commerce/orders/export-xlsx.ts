@@ -5,7 +5,9 @@
 import ExcelJS from "exceljs";
 import {
   COMMERCE_FULFILLMENT_STATUS_LABELS,
+  COMMERCE_PAYMENT_STATUS_LABELS,
 } from "@/lib/commerce/booklet";
+import { COMMERCE_OPS_STAGE_LABELS } from "@/lib/commerce/orders/ops-stage";
 import {
   listAdminCommerceOrdersForExport,
   type AdminCommerceOrderListFilters,
@@ -13,15 +15,6 @@ import {
 import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import { formatRials } from "@/lib/registration/format";
 import { toPersianDigits } from "@/lib/persian";
-
-const PAYMENT_LABELS: Record<string, string> = {
-  UNPAID: "پرداخت‌نشده",
-  PENDING: "در انتظار پرداخت",
-  PAID: "پرداخت‌شده",
-  FAILED: "ناموفق",
-  REFUNDED: "بازگشت وجه",
-  PARTIAL: "جزئی",
-};
 
 export type ExportCommerceOrdersXlsxResult =
   | { ok: true; filename: string; buffer: Buffer }
@@ -48,10 +41,12 @@ export async function exportCommerceOrdersXlsx(
       { header: "تاریخ", key: "date", width: 20 },
       { header: "نام خریدار", key: "buyerName", width: 22 },
       { header: "موبایل", key: "buyerMobile", width: 16 },
+      { header: "شعبه", key: "branch", width: 18 },
       { header: "محصول", key: "product", width: 32 },
       { header: "تعداد", key: "qty", width: 10 },
       { header: "مبلغ", key: "amount", width: 18 },
       { header: "وضعیت پرداخت", key: "payment", width: 16 },
+      { header: "مرحله عملیات", key: "opsStage", width: 18 },
       { header: "وضعیت تحویل", key: "fulfillment", width: 16 },
     ];
 
@@ -68,7 +63,12 @@ export async function exportCommerceOrdersXlsx(
         product: row.productTitle,
         qty: toPersianDigits(row.quantity),
         amount: formatRials(row.amountRials),
-        payment: PAYMENT_LABELS[row.paymentStatus] ?? row.paymentStatus,
+        payment:
+          COMMERCE_PAYMENT_STATUS_LABELS[
+            row.paymentStatus as keyof typeof COMMERCE_PAYMENT_STATUS_LABELS
+          ] ?? row.paymentStatus,
+        opsStage: COMMERCE_OPS_STAGE_LABELS[row.opsStage],
+        branch: row.branchName ?? "—",
         fulfillment: row.fulfillmentStatus
           ? COMMERCE_FULFILLMENT_STATUS_LABELS[row.fulfillmentStatus]
           : "—",

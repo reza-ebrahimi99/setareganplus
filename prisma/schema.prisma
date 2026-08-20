@@ -554,6 +554,7 @@ model Organization {
   commerceItemCategories               CommerceItemCategory[]
   commerceOrders                       CommerceOrder[]
   commerceOrderItems                   CommerceOrderItem[]
+  commerceOrderEvents                  CommerceOrderEvent[]
   commerceNotificationSettings         CommerceNotificationSettings?
   leadOwnershipHistories               LeadOwnershipHistory[]
   attributionPolicies                  AttributionPolicy[]
@@ -577,6 +578,8 @@ model Branch {
   slug           String
   city           String?
   province       String?
+  /// Optional badge/accent hex (e.g. #7c3aed). Null = UI derives a stable color from slug.
+  accentColor    String?
   isActive       Boolean   @default(true)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -642,6 +645,8 @@ model User {
   registrationNotes           RegistrationNote[]       @relation("RegistrationNoteActor")
   registrationActivities      RegistrationActivity[]   @relation("RegistrationActivityActor")
   commerceOrdersDelivered     CommerceOrder[]          @relation("CommerceOrderDeliveredBy")
+  commerceOrdersReadyForPickup CommerceOrder[]         @relation("CommerceOrderReadyForPickupBy")
+  commerceOrderEvents         CommerceOrderEvent[]     @relation("CommerceOrderEventActor")
   leadOwnershipHistoryAsOwner LeadOwnershipHistory[]   @relation("LeadOwnershipHistoryOwner")
   leadOwnershipHistoryAsActor LeadOwnershipHistory[]   @relation("LeadOwnershipHistoryActor")
   attributedSnapshots         AttributionSnapshot[]    @relation("AttributionSnapshotUser")
@@ -3727,6 +3732,24 @@ enum CommerceFulfillmentStatus {
   CANCELLED
 }
 
+/// Internal booklet operations pipeline (one active stage per order).
+enum CommerceOpsStage {
+  REGISTERED
+  PAID
+  IN_PRODUCTION
+  READY_FOR_PICKUP
+  DELIVERED_TO_STUDENT
+}
+
+enum CommerceOrderEventType {
+  STAGE_CHANGED
+  NOTE_ADDED
+  BRANCH_ASSIGNED
+  ROLLBACK
+  EDITED
+  SYSTEM
+}
+
 /// Nested, admin-managed store categories (seeded, fully editable).
 model CommerceCategory {
   id              String    @id @default(cuid())
@@ -3907,6 +3930,8 @@ model CommerceOrder {
   orderNumber    String
   status         CommerceOrderStatus        @default(DRAFT)
   paymentStatus  CommerceOrderPaymentStatus @default(UNPAID)
+  /// Operational pipeline stage (staff workflow). Kept in sync with status/fulfillment.
+  opsStage       CommerceOpsStage           @default(REGISTERED)
   buyerName      String?
   buyerMobile    String?
   buyerEmail     String?
@@ -3918,11 +3943,14 @@ model CommerceOrder {
   shippingRials  Int                        @default(0)
   grandTotalRials Int                       @default(0)
   currency       String                     @default("IRR")
-  /// MVP: fixed on-site pickup at Setaregan institute (no postal shipping).
+  /// On-site handover at the selected branch (no postal shipping).
   deliveryMethod    CommerceDeliveryMethod     @default(PICKUP_ONSITE)
   fulfillmentStatus CommerceFulfillmentStatus?
+  readyForPickupAt       DateTime?
+  readyForPickupByUserId String?
   deliveredAt       DateTime?
   deliveredByUserId String?
+  deliveryNote      String?
   notes          String?
   metadata       Json?
   createdAt      DateTime                   @default(now())
@@ -3932,18 +3960,46 @@ model CommerceOrder {
   branch       Branch?             @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
   lead         Lead?               @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
   deliveredBy  User?               @relation("CommerceOrderDeliveredBy", fields: [deliveredByUserId], references: [id], onDelete: SetNull)
+  readyForPickupBy User?           @relation("CommerceOrderReadyForPickupBy", fields: [readyForPickupByUserId], references: [id], onDelete: SetNull)
   items        CommerceOrderItem[]
+  events       CommerceOrderEvent[]
 
   @@unique([organizationId, orderNumber])
   @@unique([organizationId, id])
   @@index([organizationId, status, createdAt])
   @@index([organizationId, paymentStatus, createdAt])
   @@index([organizationId, fulfillmentStatus, createdAt])
+  @@index([organizationId, opsStage, createdAt])
   @@index([organizationId, branchId])
   @@index([organizationId, leadId])
   @@index([organizationId, buyerMobile])
   @@index([deliveredByUserId])
+  @@index([readyForPickupByUserId])
   @@map("commerce_orders")
+}
+
+/// Append-only operations timeline (stage changes, notes, edits).
+model CommerceOrderEvent {
+  id             String                  @id @default(cuid())
+  organizationId String
+  orderId        String
+  eventType      CommerceOrderEventType
+  stage          CommerceOpsStage?
+  title          String
+  note           String?
+  actorUserId    String?
+  metadata       Json?
+  occurredAt     DateTime                @default(now())
+  createdAt      DateTime                @default(now())
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  order        CommerceOrder @relation(fields: [organizationId, orderId], references: [organizationId, id], onDelete: Restrict)
+  actor        User?         @relation("CommerceOrderEventActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, orderId, occurredAt])
+  @@index([organizationId, eventType, occurredAt])
+  @@index([actorUserId])
+  @@map("commerce_order_events")
 }
 
 model CommerceOrderItem {

@@ -12,6 +12,7 @@ import {
   type CommercePrintTypeValue,
 } from "@/lib/commerce/booklet";
 import { getPublicCommerceProductBySlug } from "@/lib/commerce/catalog/service";
+import { listCommerceBranchesForOps } from "@/lib/commerce/orders/service";
 import { formatJalaliDateShort } from "@/lib/datetime/jalali";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { formatRials } from "@/lib/registration/format";
@@ -42,10 +43,13 @@ export default async function ShopProductPage({ params }: PageProps) {
     notFound();
   }
 
-  const product = await getPublicCommerceProductBySlug({
-    organizationId: organization.id,
-    slug,
-  });
+  const [product, branches] = await Promise.all([
+    getPublicCommerceProductBySlug({
+      organizationId: organization.id,
+      slug,
+    }),
+    listCommerceBranchesForOps({ organizationId: organization.id }),
+  ]);
   if (!product) notFound();
 
   const { pricing } = product;
@@ -215,6 +219,11 @@ export default async function ShopProductPage({ params }: PageProps) {
           itemId={product.id}
           disabled={!product.inStock}
           finalPriceLabel={formatRials(pricing.finalPriceRials)}
+          branches={branches.map((branch) => ({
+            id: branch.id,
+            name: branch.name,
+          }))}
+          defaultBranchId={product.branchId}
         />
       </article>
     </PublicFormShell>

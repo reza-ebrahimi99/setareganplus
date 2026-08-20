@@ -402,6 +402,7 @@ export type PublicCommerceProduct = {
   imageUrl: string | null;
   imageAlt: string | null;
   categoryTitle: string | null;
+  branchId: string | null;
   pricing: ReturnType<typeof resolveCommercePrice>;
 };
 
@@ -446,6 +447,7 @@ type PublicCommerceProductRow = {
       title: string;
     };
   }>;
+  branchId: string | null;
 };
 
 function publicCommerceProductWhere(
@@ -521,6 +523,7 @@ function mapPublicCommerceProduct(
         : null,
     imageAlt: item.primaryImage?.altText ?? item.title,
     categoryTitle: item.categoryLinks[0]?.category.title ?? null,
+    branchId: item.branchId,
     pricing: resolveCommercePrice({
       basePriceRials: item.basePriceRials,
       salePriceRials: item.salePriceRials,

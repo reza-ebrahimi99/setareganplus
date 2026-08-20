@@ -25,6 +25,7 @@ export async function startShopCheckoutAction(
   const buyerFirstName = String(formData.get("buyerFirstName") ?? "").trim();
   const buyerLastName = String(formData.get("buyerLastName") ?? "").trim();
   const buyerMobile = String(formData.get("buyerMobile") ?? "").trim();
+  const branchId = String(formData.get("branchId") ?? "").trim() || null;
 
   if (!itemId) return { formError: "محصول نامعتبر است." };
 
@@ -39,6 +40,7 @@ export async function startShopCheckoutAction(
     buyerFirstName,
     buyerLastName,
     buyerMobile,
+    branchId,
   });
 
   if (!order.ok) {
