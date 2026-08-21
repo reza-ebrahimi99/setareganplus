@@ -5,6 +5,7 @@ import { PrintQueueButton } from "@/components/admin/commerce/PrintQueueButton";
 import { adminBreadcrumbs } from "@/content/admin";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { generateCommerceOrderQrDataUrl } from "@/lib/commerce/orders/qr";
+import { COMMERCE_OPS_PRIORITY_LABELS } from "@/lib/commerce/orders/intelligence";
 import { listAdminCommerceOrders } from "@/lib/commerce/orders/service";
 import { toPersianDigits } from "@/lib/persian";
 
@@ -86,6 +87,18 @@ export default async function CommerceOrderLabelsPage({ searchParams }: PageProp
                     {order.studentGradeLabel ?? "—"}
                     {order.studentMajorLabel ? ` · ${order.studentMajorLabel}` : ""}
                   </p>
+                  <div className="mt-2 flex flex-wrap justify-end gap-1">
+                    {order.priority !== "NORMAL" ? (
+                      <span className="rounded-full border border-slate-300 px-2 py-0.5 text-[10px]">
+                        {COMMERCE_OPS_PRIORITY_LABELS[order.priority]}
+                      </span>
+                    ) : null}
+                    {order.opsVip ? (
+                      <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold text-white">
+                        VIP
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               </div>
               <p className="mt-3 text-sm font-medium leading-6">{order.productTitle}</p>

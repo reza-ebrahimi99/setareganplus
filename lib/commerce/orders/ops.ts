@@ -30,6 +30,13 @@ import {
 import { notifyCommerceOpsStaff } from "@/lib/commerce/orders/notify";
 import { prisma } from "@/lib/prisma";
 
+function sanitizePickupSignature(raw: string | null | undefined): string | null {
+  const value = raw?.trim() ?? "";
+  if (!value.startsWith("data:image/png;base64,")) return null;
+  if (value.length > 180_000) return null;
+  return value;
+}
+
 export type CommerceOpsResult =
   | { ok: true }
   | { ok: false; error: string };
@@ -60,6 +67,7 @@ async function loadOrderForOps(params: {
       buyerMobile: true,
       handoverStaffUserId: true,
       qrToken: true,
+      metadata: true,
     },
   });
 }
@@ -149,6 +157,7 @@ export async function advanceCommerceOrderStage(params: {
   note?: string | null;
   handoverStaffUserId?: string | null;
   pickupSignedBy?: string | null;
+  pickupSignaturePng?: string | null;
   allowedBranchIds?: readonly string[] | null;
 }): Promise<CommerceOpsResult> {
   const order = await loadOrderForOps(params);
@@ -191,14 +200,26 @@ export async function advanceCommerceOrderStage(params: {
             readyForPickupByUserId: params.actorUserId,
           }
       : gate.next === "DELIVERED_TO_STUDENT"
-        ? {
-            deliveredAt: now,
-            deliveredByUserId: staffId || params.actorUserId,
-            handoverStaffUserId: staffId || params.actorUserId,
-            deliveryNote: params.note?.trim() || null,
-            pickupSignedBy: params.pickupSignedBy?.trim() || null,
-            pickupSignedAt: params.pickupSignedBy?.trim() ? now : null,
-          }
+        ? (() => {
+            const signature = sanitizePickupSignature(params.pickupSignaturePng);
+            const signedName =
+              params.pickupSignedBy?.trim() || (signature ? "امضای دانش‌آموز" : "");
+            const previousMeta =
+              order.metadata && typeof order.metadata === "object" && !Array.isArray(order.metadata)
+                ? (order.metadata as Record<string, unknown>)
+                : {};
+            return {
+              deliveredAt: now,
+              deliveredByUserId: staffId || params.actorUserId,
+              handoverStaffUserId: staffId || params.actorUserId,
+              deliveryNote: params.note?.trim() || null,
+              pickupSignedBy: signedName || null,
+              pickupSignedAt: signedName || signature ? now : null,
+              ...(signature
+                ? { metadata: { ...previousMeta, pickupSignaturePng: signature } }
+                : {}),
+            };
+          })()
         : {};
 
   const note =

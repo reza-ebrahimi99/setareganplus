@@ -1108,6 +1108,17 @@ export async function getPaymentIntentPublicView(
             quantity: true,
             unitPriceRials: true,
             totalRials: true,
+            item: { select: { authors: true } },
+          },
+        },
+        pickupBranch: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            accentColor: true,
+            address: true,
+            bookletOpsKey: true,
           },
         },
       },

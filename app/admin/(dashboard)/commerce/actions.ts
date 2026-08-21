@@ -94,6 +94,7 @@ export async function advanceOrderStageAction(
     note: note || null,
     handoverStaffUserId: String(formData.get("handoverStaffUserId") ?? "").trim() || null,
     pickupSignedBy: String(formData.get("pickupSignedBy") ?? "").trim() || null,
+    pickupSignaturePng: String(formData.get("pickupSignaturePng") ?? "").trim() || null,
     allowedBranchIds: allowedBranchIds(session),
   });
   if (!result.ok) return { formError: result.error };

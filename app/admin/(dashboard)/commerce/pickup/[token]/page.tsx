@@ -1,24 +1,14 @@
 import type { Metadata } from "next";
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import { OrderBranchBadge } from "@/components/admin/commerce/OrderBranchBadge";
-import { OrderNextAction } from "@/components/admin/commerce/OrderNextAction";
-import { OrderQrThumb } from "@/components/admin/commerce/OrderQrThumb";
-import {
-  OrderDelayBadge,
-  OrderHealthBadge,
-  OrderPriorityBadge,
-} from "@/components/admin/commerce/OrderOpsSignals";
-import { PickupLookupForm } from "@/components/admin/commerce/PickupLookupForm";
+import { PickupDeskSearch } from "@/components/admin/commerce/PickupDeskSearch";
+import { PickupOrderPanel } from "@/components/admin/commerce/PickupOrderPanel";
 import { adminBreadcrumbs } from "@/content/admin";
 import { hasPermission } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-admin";
-import { getCommerceOrderByQrToken } from "@/lib/commerce/orders/pickup";
-import { getAdminCommerceOrderDetail } from "@/lib/commerce/orders/service";
+import { resolveCommercePickupScan } from "@/lib/commerce/orders/pickup";
+import { parseCommerceOrderQrInput } from "@/lib/commerce/orders/qr";
 import { listCommerceHandoverStaff } from "@/lib/commerce/orders/staff";
-import { buildCommerceOpsIntelligence } from "@/lib/commerce/orders/intelligence";
-import { COMMERCE_OPS_STAGE_LABELS } from "@/lib/commerce/orders/ops-stage";
-import { formatRials } from "@/lib/registration/format";
 import { toPersianDigits } from "@/lib/persian";
 
 export const dynamic = "force-dynamic";
@@ -33,19 +23,24 @@ type PageProps = {
 
 export default async function CommercePickupTokenPage({ params }: PageProps) {
   const session = await requirePermission("commerce.orders.view");
-  const { token } = await params;
+  const { token: rawToken } = await params;
+  const token = parseCommerceOrderQrInput(decodeURIComponent(rawToken)) ?? decodeURIComponent(rawToken);
   const allowedBranchIds = session.membership.allBranches
     ? null
     : session.membership.branchIds;
-  const pickup = await getCommerceOrderByQrToken({
+  const scanned = await resolveCommercePickupScan({
     organizationId: session.organization.id,
-    token: decodeURIComponent(token),
+    token,
     allowedBranchIds,
   });
   const canManage = hasPermission(session, "commerce.orders.manage");
+  const canChangeStaff = session.membership.allBranches;
   const staff = await listCommerceHandoverStaff(session.organization.id);
+  const staffWithSelf = staff.some((member) => member.id === session.user.id)
+    ? staff
+    : [{ id: session.user.id, name: session.user.displayName || "کارمند" }, ...staff];
 
-  if (!pickup) {
+  if (scanned.status === "not_found") {
     return (
       <>
         <AdminPageHeader
@@ -59,86 +54,57 @@ export default async function CommercePickupTokenPage({ params }: PageProps) {
           description="کد را دوباره اسکن کنید یا شناسه را وارد کنید."
         />
         <div className="mt-6">
-          <PickupLookupForm initialToken={decodeURIComponent(token)} />
+          <PickupDeskSearch initialQuery={token} />
         </div>
       </>
     );
   }
 
-  const detail = await getAdminCommerceOrderDetail({
-    organizationId: session.organization.id,
-    orderId: pickup.id,
-    allowedBranchIds,
-  });
-  const intel = detail
-    ? {
-        priority: detail.priority,
-        delayed: detail.delayed,
-        delayKind: detail.delayKind,
-        healthScore: detail.healthScore,
-        healthLevel: detail.healthLevel,
-      }
-    : buildCommerceOpsIntelligence({
-        opsStage: pickup.opsStage,
-        paymentPaid: pickup.paymentPaid,
-        urgentDelivery: false,
-        opsVip: false,
-      });
+  if (scanned.status === "wrong_branch") {
+    return (
+      <>
+        <AdminPageHeader
+          title="میز دریافت"
+          description="شعبه نامعتبر"
+          breadcrumbs={adminBreadcrumbs.commercePickup}
+          compact
+        />
+        <div className="rounded-3xl border-2 border-red-500 bg-red-50 px-5 py-8 text-center text-red-950">
+          <p className="text-2xl font-bold">این سفارش مربوط به شعبه دیگری است.</p>
+          <p className="mt-3 text-sm" dir="ltr">
+            {toPersianDigits(scanned.orderNumber)}
+          </p>
+          {scanned.destination ? (
+            <div className="mt-4 text-base">
+              <p className="font-semibold">{scanned.destination.name}</p>
+              {scanned.destination.address ? (
+                <p className="mt-1 text-sm">{scanned.destination.address}</p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+        <div className="mt-6">
+          <PickupDeskSearch />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
       <AdminPageHeader
         title="میز دریافت"
-        description={`${pickup.buyerName ?? "سفارش"} · ${toPersianDigits(pickup.orderNumber)}`}
+        description={`${scanned.order.buyerName ?? "سفارش"} · ${toPersianDigits(scanned.order.orderNumber)}`}
         breadcrumbs={adminBreadcrumbs.commercePickup}
         compact
       />
-      <article className="mx-auto max-w-xl space-y-5 rounded-3xl border border-border bg-surface p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xl font-bold">{pickup.buyerName ?? "—"}</p>
-            <p className="mt-1 text-sm text-muted" dir="ltr">
-              {pickup.buyerMobile ? toPersianDigits(pickup.buyerMobile) : "—"}
-            </p>
-            <p className="mt-2 text-sm">
-              {pickup.studentGradeLabel ?? "—"}
-              {pickup.studentMajorLabel ? ` · ${pickup.studentMajorLabel}` : ""}
-            </p>
-          </div>
-          <OrderQrThumb token={pickup.qrToken} size={88} />
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          <OrderPriorityBadge priority={intel.priority} />
-          <OrderDelayBadge delayed={intel.delayed} delayKind={intel.delayKind} />
-          <OrderHealthBadge score={intel.healthScore} level={intel.healthLevel} />
-          <span className="rounded-full border border-border px-2.5 py-0.5 text-[11px]">
-            {COMMERCE_OPS_STAGE_LABELS[pickup.opsStage]}
-          </span>
-        </div>
-        <p className="text-lg font-medium leading-8">{pickup.productTitle}</p>
-        <p className="text-sm text-muted">{formatRials(pickup.grandTotalRials)}</p>
-        <div className="flex flex-col gap-2">
-          <OrderBranchBadge branch={pickup.branch} prefix="محصول:" size="md" />
-          <OrderBranchBadge branch={pickup.pickupBranch} prefix="دریافت:" size="md" />
-        </div>
-        <p className="text-sm">مسئول: {pickup.handoverStaffName ?? "هنوز انتخاب نشده"}</p>
-        {pickup.parentName ? <p className="text-sm text-muted">والد: {pickup.parentName}</p> : null}
-        {canManage ? (
-          <div className="sticky bottom-3 rounded-2xl border border-border bg-background p-3">
-            <OrderNextAction
-              orderId={pickup.id}
-              opsStage={pickup.opsStage}
-              paymentPaid={pickup.paymentPaid}
-              canManage={canManage}
-              staff={staff}
-              defaultHandoverStaffUserId={pickup.handoverStaffUserId}
-              large
-              showSignature
-              from={`/admin/commerce/pickup/${encodeURIComponent(pickup.qrToken)}`}
-            />
-          </div>
-        ) : null}
-      </article>
+      <PickupOrderPanel
+        order={scanned.order}
+        canManage={canManage}
+        canChangeStaff={canChangeStaff}
+        defaultHandoverStaffUserId={session.user.id}
+        staff={staffWithSelf}
+      />
     </>
   );
 }

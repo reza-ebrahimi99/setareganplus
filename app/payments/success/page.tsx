@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PaymentStatus } from "@/generated/prisma/enums";
+import { BookletPaymentReceipt } from "@/components/commerce/BookletPaymentReceipt";
 import { PublicFormShell } from "@/components/forms/PublicFormShell";
-import { PICKUP_ONSITE_NOTICE } from "@/lib/commerce/booklet";
+import { buildBookletReceiptView } from "@/lib/commerce/orders/receipt";
 import { formatRegistrationDate, formatRials } from "@/lib/registration/format";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { getPaymentIntentPublicView } from "@/lib/payment/service";
@@ -43,63 +44,15 @@ export default async function PaymentSuccessPage({ searchParams }: PageProps) {
 
   const commerceOrder = intent.commerceOrder;
   if (commerceOrder) {
-    const productTitle =
-      commerceOrder.items[0]?.titleSnapshot ?? "محصول فروشگاه";
+    const receipt = await buildBookletReceiptView({
+      order: commerceOrder,
+      intent,
+    });
+    const statusHref = `/payments/success?intent=${encodeURIComponent(intentId)}`;
 
     return (
       <PublicFormShell>
-        <article className="mx-auto max-w-lg overflow-hidden rounded-3xl border border-border bg-surface shadow-[0_16px_48px_rgb(15_23_42_/_0.08)]">
-          <div className="bg-gradient-to-br from-emerald-600 via-primary to-secondary px-6 py-10 text-center text-white">
-            <p className="text-sm font-medium text-white/85">پرداخت موفق</p>
-            <h1 className="mt-3 text-2xl font-bold sm:text-3xl">
-              خرید شما ثبت شد
-            </h1>
-            <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-white/90">
-              مبلغ با موفقیت دریافت شد. برای تحویل حضوری به مؤسسه مراجعه کنید.
-            </p>
-          </div>
-
-          <div className="space-y-4 px-6 py-6">
-            <dl className="grid gap-3 text-sm">
-              <Row
-                label="شماره سفارش"
-                value={toPersianDigits(commerceOrder.orderNumber)}
-                ltr
-              />
-              <Row label="محصول" value={productTitle} />
-              <Row
-                label="مبلغ پرداختی"
-                value={formatRials(intent.finalAmountRials)}
-              />
-              <Row
-                label="کد پیگیری پرداخت"
-                value={
-                  intent.trackingCode
-                    ? toPersianDigits(intent.trackingCode)
-                    : "—"
-                }
-                ltr
-              />
-              <Row
-                label="تاریخ"
-                value={formatRegistrationDate(
-                  intent.paidAt ?? intent.updatedAt,
-                )}
-              />
-            </dl>
-
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm leading-7 text-amber-950">
-              {PICKUP_ONSITE_NOTICE}
-            </div>
-
-            <Link
-              href="/"
-              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 text-sm font-semibold text-white hover:bg-primary/92"
-            >
-              بازگشت به صفحه اصلی
-            </Link>
-          </div>
-        </article>
+        <BookletPaymentReceipt receipt={receipt} statusHref={statusHref} />
       </PublicFormShell>
     );
   }

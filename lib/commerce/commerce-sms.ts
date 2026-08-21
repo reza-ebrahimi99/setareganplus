@@ -12,6 +12,7 @@ import { sendTemplateMessage } from "@/lib/communication/send";
 import { truncateSmsParam } from "@/lib/communication/sms-params";
 import { readSmsProviderName } from "@/lib/communication/sms-provider";
 import { listEnabledCommerceAdminSmsRecipients } from "@/lib/commerce/notification-settings";
+import { commerceOrderQrUrl } from "@/lib/commerce/orders/qr";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { formatRials } from "@/lib/registration/format";
 import { prisma } from "@/lib/prisma";
@@ -20,11 +21,15 @@ function buildBuyerAuditBody(params: {
   fullName: string;
   product: string;
   amount: string;
+  orderNumber: string;
+  qrUrl: string;
 }): string {
   return [
-    `${params.fullName} عزیز`,
+    "سفارش شما ثبت شد.",
+    "شماره سفارش:",
+    params.orderNumber,
     "",
-    "خرید شما با موفقیت انجام شد.",
+    `${params.fullName} عزیز، خرید شما با موفقیت انجام شد.`,
     "",
     "📚 محصول:",
     params.product,
@@ -32,7 +37,8 @@ function buildBuyerAuditBody(params: {
     "💰 مبلغ:",
     params.amount,
     "",
-    "به‌زودی جهت هماهنگی تحویل با شما تماس خواهیم گرفت.",
+    "برای دریافت جزوه این لینک را نگه دارید.",
+    params.qrUrl,
     "",
     "ستارگان پلاس",
     "setareganplus.ir",
@@ -298,6 +304,7 @@ export async function enqueueCommerceOrderPaidSms(params: {
         buyerMobile: true,
         buyerName: true,
         grandTotalRials: true,
+        qrToken: true,
         items: {
           orderBy: { createdAt: "asc" },
           select: {
@@ -325,6 +332,8 @@ export async function enqueueCommerceOrderPaidSms(params: {
             fullName: customerName,
             product: products,
             amount,
+            orderNumber,
+            qrUrl: commerceOrderQrUrl(order.qrToken),
           }),
           idempotencyKey: `commerce_order_paid:${order.id}:user`,
           relatedId: order.id,
@@ -335,6 +344,7 @@ export async function enqueueCommerceOrderPaidSms(params: {
             orderNumber,
             amount,
             products,
+            qrUrl: commerceOrderQrUrl(order.qrToken),
             recipientRole: "buyer",
           },
         }),

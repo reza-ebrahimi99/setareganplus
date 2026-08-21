@@ -513,6 +513,53 @@ check("nav: commerce children filter by specific permission", () => {
   assert.equal(none.visible, false);
 });
 
+check("order: parse qr input extracts token only", () => {
+  const { parseCommerceOrderQrInput } = require("../lib/commerce/orders/qr") as typeof import("../lib/commerce/orders/qr");
+  assert.equal(
+    parseCommerceOrderQrInput("https://setareganplus.ir/admin/commerce/pickup/abc123token"),
+    "abc123token",
+  );
+  assert.equal(parseCommerceOrderQrInput("/admin/commerce/pickup/tok_99"), "tok_99");
+  assert.equal(parseCommerceOrderQrInput("cuidtoken12"), "cuidtoken12");
+  assert.equal(parseCommerceOrderQrInput(""), null);
+});
+
+check("order: booklet ready eta copy", () => {
+  const { bookletReadyEtaCopy } = require("../lib/commerce/orders/receipt") as typeof import("../lib/commerce/orders/receipt");
+  assert.equal(bookletReadyEtaCopy("PAID").ready, false);
+  assert.equal(bookletReadyEtaCopy("PAID").text, "۱ تا ۲ روز کاری");
+  assert.equal(bookletReadyEtaCopy("READY_FOR_PICKUP").ready, true);
+  assert.equal(bookletReadyEtaCopy("DELIVERED_TO_STUDENT").text, "جزوه شما آماده تحویل است.");
+});
+
+check("order: pickup branch scope helper", () => {
+  const { isCommercePickupBranchAllowed } = require("../lib/commerce/orders/pickup-scope") as typeof import("../lib/commerce/orders/pickup-scope");
+  assert.equal(
+    isCommercePickupBranchAllowed({
+      pickupBranchId: "a",
+      catalogBranchId: "b",
+      allowedBranchIds: null,
+    }),
+    true,
+  );
+  assert.equal(
+    isCommercePickupBranchAllowed({
+      pickupBranchId: "a",
+      catalogBranchId: "b",
+      allowedBranchIds: ["a"],
+    }),
+    true,
+  );
+  assert.equal(
+    isCommercePickupBranchAllowed({
+      pickupBranchId: "a",
+      catalogBranchId: "b",
+      allowedBranchIds: ["z"],
+    }),
+    false,
+  );
+});
+
 if (failures > 0) {
   console.error(`\n${failures} test(s) failed`);
   process.exit(1);

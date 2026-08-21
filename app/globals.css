@@ -2028,6 +2028,21 @@ body {
   }
 }
 
+@media print {
+  .booklet-receipt-actions {
+    display: none !important;
+  }
+  .booklet-receipt {
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+    max-width: none !important;
+  }
+  .booklet-receipt-qr img {
+    width: 220px;
+    height: 220px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .featured-achievement-slide,
   .why-timeline-card,
@@ -2036,9 +2051,11 @@ body {
   .ops-kpi-card,
   .ops-dot-current,
   .ops-skeleton,
-  .ops-confetti i {
+  .ops-confetti i,
+  .pickup-deliver-btn {
     animation: none !important;
     transition: none !important;
     transform: none !important;
   }
 }
+
