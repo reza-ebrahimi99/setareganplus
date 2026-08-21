@@ -31,12 +31,14 @@ import {
   type CommerceOpsHealthLevel,
   type CommerceOpsPriority,
 } from "@/lib/commerce/orders/intelligence";
+import { enqueueCommerceOrderStageSms } from "@/lib/commerce/commerce-sms";
 import { notifyCommerceOpsStaff } from "@/lib/commerce/orders/notify";
 import {
   COMMERCE_OPS_ACTIVITY_TITLES,
   isCommerceOpsStage,
   type CommerceOpsStageValue,
 } from "@/lib/commerce/orders/ops-stage";
+import { parseCommerceOrderQrInput } from "@/lib/commerce/orders/qr";
 import { parseBookletOrderProfile } from "@/lib/commerce/orders/profile";
 import { recordCommerceOrderEvent } from "@/lib/commerce/orders/timeline";
 import { resolveCommercePrice } from "@/lib/commerce/pricing";
@@ -293,6 +295,11 @@ export async function createSingleItemCommerceOrder(
       kind: "NEW_ORDER",
       body: profile.buyerName,
     }).catch((error) => console.error("[commerce-ops] notify failed", error));
+    void enqueueCommerceOrderStageSms({
+      organizationId: input.organizationId,
+      orderId: created.id,
+      stage: "REGISTERED",
+    }).catch((error) => console.error("[commerce-ops] registered sms failed", error));
 
     return {
       ok: true,
@@ -578,6 +585,7 @@ export function buildAdminCommerceOrderWhere(
   }
 
   if (q) {
+    const tokenFromLink = parseCommerceOrderQrInput(q);
     and.push({
       OR: [
         { orderNumber: { contains: q, mode: "insensitive" } },
@@ -588,6 +596,7 @@ export function buildAdminCommerceOrderWhere(
         { buyerMobile: { contains: q } },
         { buyerNationalCode: { contains: q } },
         { qrToken: { contains: q, mode: "insensitive" } },
+        ...(tokenFromLink ? [{ qrToken: tokenFromLink }] : []),
         { branch: { name: { contains: q, mode: "insensitive" } } },
         { pickupBranch: { name: { contains: q, mode: "insensitive" } } },
         {

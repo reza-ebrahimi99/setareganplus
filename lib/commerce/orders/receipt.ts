@@ -9,7 +9,12 @@ import {
   isCommerceOpsStage,
   type CommerceOpsStageValue,
 } from "@/lib/commerce/orders/ops-stage";
-import { generateCommerceOrderQrDataUrl, COMMERCE_QR_RECEIPT_SIZE } from "@/lib/commerce/orders/qr";
+import { BOOKLET_PICKUP_HOURS, BOOKLET_PICKUP_INSTRUCTIONS } from "@/lib/commerce/booklet-hours";
+import {
+  COMMERCE_QR_RECEIPT_SIZE,
+  commerceOrderPublicQrImagePath,
+  generateCommerceOrderQrDataUrl,
+} from "@/lib/commerce/orders/qr";
 import {
   COMMERCE_BOOKLET_PAYMENT_METHOD_LABELS,
   COMMERCE_STUDENT_GRADE_LABELS,
@@ -76,6 +81,10 @@ export type BookletReceiptView = {
   opsStage: CommerceOpsStageValue;
   eta: ReturnType<typeof bookletReadyEtaCopy>;
   qrDataUrl: string;
+  qrToken: string;
+  qrImagePath: string;
+  hours: string;
+  instructions: string;
   generatedAtLabel: string;
 };
 
@@ -162,6 +171,10 @@ export async function buildBookletReceiptView(params: {
     opsStage: stage,
     eta: bookletReadyEtaCopy(stage),
     qrDataUrl: await generateCommerceOrderQrDataUrl(order.qrToken, COMMERCE_QR_RECEIPT_SIZE),
+    qrToken: order.qrToken,
+    qrImagePath: commerceOrderPublicQrImagePath(order.qrToken),
+    hours: BOOKLET_PICKUP_HOURS,
+    instructions: BOOKLET_PICKUP_INSTRUCTIONS,
     generatedAtLabel: `${formatJalaliDateShort(new Date())} ${toPersianDigits(formatTehranTime24(new Date()))}`,
   };
 }

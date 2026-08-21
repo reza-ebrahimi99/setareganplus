@@ -516,9 +516,14 @@ check("nav: commerce children filter by specific permission", () => {
 check("order: parse qr input extracts token only", () => {
   const { parseCommerceOrderQrInput } = require("../lib/commerce/orders/qr") as typeof import("../lib/commerce/orders/qr");
   assert.equal(
+    parseCommerceOrderQrInput("https://setareganplus.ir/booklet/abc123token"),
+    "abc123token",
+  );
+  assert.equal(
     parseCommerceOrderQrInput("https://setareganplus.ir/admin/commerce/pickup/abc123token"),
     "abc123token",
   );
+  assert.equal(parseCommerceOrderQrInput("/booklet/tok_99"), "tok_99");
   assert.equal(parseCommerceOrderQrInput("/admin/commerce/pickup/tok_99"), "tok_99");
   assert.equal(parseCommerceOrderQrInput("cuidtoken12"), "cuidtoken12");
   assert.equal(parseCommerceOrderQrInput(""), null);
@@ -528,8 +533,9 @@ check("order: qr encodes production pickup url with camera-safe render", () => {
   const qr = require("../lib/commerce/orders/qr") as typeof import("../lib/commerce/orders/qr");
   assert.equal(
     qr.commerceOrderQrUrl("abc123token"),
-    "https://setareganplus.ir/admin/commerce/pickup/abc123token",
+    "https://setareganplus.ir/booklet/abc123token",
   );
+  assert.equal(qr.commerceOrderReceiptUrl("abc123token"), qr.commerceOrderQrUrl("abc123token"));
   assert.equal(qr.COMMERCE_QR_ERROR_CORRECTION, "Q");
   assert.equal(qr.COMMERCE_QR_MARGIN, 4);
   assert.equal(qr.COMMERCE_QR_DARK, "#000000");
@@ -543,6 +549,32 @@ check("order: booklet ready eta copy", () => {
   assert.equal(bookletReadyEtaCopy("PAID").text, "۱ تا ۲ روز کاری");
   assert.equal(bookletReadyEtaCopy("READY_FOR_PICKUP").ready, true);
   assert.equal(bookletReadyEtaCopy("DELIVERED_TO_STUDENT").text, "جزوه شما آماده تحویل است.");
+});
+
+check("order: booklet paid sms is a receipt not a registration template", () => {
+  const {
+    buildBookletPaidSmsBody,
+    buildBookletStageSmsBody,
+  } = require("../lib/commerce/commerce-sms") as typeof import("../lib/commerce/commerce-sms");
+  const ctx = {
+    fullName: "علی رضایی",
+    booklet: "جزوه ریاضی",
+    amount: "۱۲۰٬۰۰۰ ریال",
+    orderNumber: "ORD-1",
+    pickupBranch: "شعبه پسران",
+    statusLabel: "پرداخت",
+    receiptUrl: "https://setareganplus.ir/booklet/tok",
+    pickupUrl: "https://setareganplus.ir/booklet/tok",
+    hours: "هر روز ۱۲:۰۰ تا ۲۰:۳۰",
+  };
+  const paid = buildBookletPaidSmsBody(ctx);
+  assert.equal(paid.includes("جزوه ریاضی"), true);
+  assert.equal(paid.includes("ORD-1"), true);
+  assert.equal(paid.includes("شعبه پسران"), true);
+  assert.equal(paid.includes("/booklet/tok"), true);
+  const ready = buildBookletStageSmsBody("READY_FOR_PICKUP", ctx);
+  assert.equal(ready.includes("جزوه شما آماده تحویل است."), true);
+  assert.equal(ready.includes("هر روز ۱۲:۰۰ تا ۲۰:۳۰"), true);
 });
 
 check("order: pickup branch scope helper", () => {

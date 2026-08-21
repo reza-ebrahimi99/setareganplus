@@ -141,6 +141,7 @@ export function BookletPaymentReceipt({
                 {receipt.pickupBranch.address ? (
                   <p className="mt-1 text-sm leading-7 text-muted">{receipt.pickupBranch.address}</p>
                 ) : null}
+                <p className="mt-2 text-sm text-muted">ساعات کاری: {receipt.hours}</p>
               </div>
             </div>
           ) : (
@@ -174,14 +175,18 @@ export function BookletPaymentReceipt({
             className="mx-auto mt-4"
           />
           <p className="mx-auto mt-4 max-w-sm text-sm leading-7 text-muted">
-            هنگام مراجعه این QR را به مسئول تحویل نشان دهید.
+            {receipt.instructions}
           </p>
           <p className="mt-2 font-mono text-base font-bold text-primary" dir="ltr">
             {toPersianDigits(receipt.orderNumber)}
           </p>
         </section>
 
-        <BookletReceiptActions orderNumber={receipt.orderNumber} statusHref={`${statusHref}#pipeline`} />
+        <BookletReceiptActions
+          orderNumber={receipt.orderNumber}
+          statusHref={`${statusHref}#pipeline`}
+          qrHref={receipt.qrImagePath}
+        />
 
         <footer className="border-t border-border/70 pt-4 text-center text-xs leading-6 text-muted">
           <p>ستارگان پلاس</p>

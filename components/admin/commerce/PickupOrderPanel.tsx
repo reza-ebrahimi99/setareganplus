@@ -129,6 +129,13 @@ export function PickupOrderPanel({
           <span className="text-muted">مبلغ:</span> {formatRials(order.grandTotalRials)}
         </p>
         <p>
+          <span className="text-muted">مرحله فعلی:</span> {COMMERCE_OPS_STAGE_LABELS[order.opsStage]}
+        </p>
+        <p>
+          <span className="text-muted">وضعیت تحویل:</span>{" "}
+          {order.opsStage === "DELIVERED_TO_STUDENT" ? "تحویل شده" : "تحویل نشده"}
+        </p>
+        <p>
           <span className="text-muted">مسئول:</span> {order.handoverStaffName ?? "هنوز انتخاب نشده"}
         </p>
         {order.parentName ? (
@@ -176,8 +183,14 @@ export function PickupOrderPanel({
           چاپ برچسب تحویل
         </Link>
         <Link
+          href={`/booklet/${encodeURIComponent(order.qrToken)}/delivery`}
+          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-background text-sm font-medium"
+        >
+          رسید تحویل
+        </Link>
+        <Link
           href={`/admin/commerce/orders?orderId=${encodeURIComponent(order.id)}`}
-          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-background text-sm font-medium sm:col-span-2"
+          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-background text-sm font-medium"
         >
           مشاهده کامل سفارش
         </Link>

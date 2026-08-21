@@ -14,6 +14,7 @@ import {
   bulkAssignCommerceOrders,
 } from "@/lib/commerce/orders/bulk";
 import { markCommerceOpsNotificationsRead } from "@/lib/commerce/orders/notify";
+import { resendCommerceOrderBuyerSms } from "@/lib/commerce/commerce-sms";
 import { createSingleItemCommerceOrder } from "@/lib/commerce/orders/service";
 import {
   requirePermission,
@@ -249,6 +250,21 @@ export async function bulkCommerceOrdersAction(
   return {
     successMessage: `${result.done} سفارش به‌روزرسانی شد${result.failed ? ` · ${result.failed} ناموفق` : ""}.`,
   };
+}
+
+export async function resendOrderSmsAction(
+  _prev: CommerceOrderActionState,
+  formData: FormData,
+): Promise<CommerceOrderActionState> {
+  const session = await requirePermission("commerce.orders.manage");
+  const orderId = String(formData.get("orderId") ?? "").trim();
+  if (!orderId) return { formError: "سفارش نامعتبر است." };
+  const result = await resendCommerceOrderBuyerSms({
+    organizationId: session.organization.id,
+    orderId,
+  });
+  if (!result.ok) return { formError: result.error };
+  return { successMessage: "پیامک دوباره ارسال شد." };
 }
 
 export async function markCommerceOpsNotificationsReadAction(): Promise<CommerceOrderActionState> {

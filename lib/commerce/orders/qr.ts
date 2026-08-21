@@ -29,15 +29,32 @@ const QR_RENDER = {
 } as const;
 
 export function commerceOrderQrPath(token: string): string {
-  return `/admin/commerce/pickup/${encodeURIComponent(token)}`;
+  return `/booklet/${encodeURIComponent(token)}`;
 }
 
 export function commerceOrderQrUrl(token: string): string {
   return `${PUBLIC_SITE_ORIGIN}${commerceOrderQrPath(token)}`;
 }
 
+/** Stable student receipt URL — same canonical booklet ticket as the QR payload. */
+export function commerceOrderReceiptPath(token: string): string {
+  return commerceOrderQrPath(token);
+}
+
+export function commerceOrderReceiptUrl(token: string): string {
+  return commerceOrderQrUrl(token);
+}
+
+export function commerceOrderPublicQrImagePath(token: string): string {
+  return `/booklet/${encodeURIComponent(token)}/qr`;
+}
+
 export function commerceOrderQrImagePath(token: string): string {
   return `/admin/commerce/orders/qr/${encodeURIComponent(token)}`;
+}
+
+export function commerceOrderAdminPickupPath(token: string): string {
+  return `/admin/commerce/pickup/${encodeURIComponent(token)}`;
 }
 
 /**
@@ -49,10 +66,15 @@ export function parseCommerceOrderQrInput(raw: string | null | undefined): strin
   if (!value) return null;
 
   const fromPath = (path: string): string | null => {
-    const match = /\/admin\/commerce\/pickup\/([^/?#]+)/i.exec(path);
+    const match =
+      /\/booklet\/([^/?#]+)/i.exec(path) ??
+      /\/admin\/commerce\/pickup\/([^/?#]+)/i.exec(path);
     if (!match?.[1]) return null;
+    if (match[1] === "qr") return null;
     try {
-      return decodeURIComponent(match[1]).trim() || null;
+      const token = decodeURIComponent(match[1]).trim();
+      if (!token || token === "qr") return null;
+      return token;
     } catch {
       return match[1].trim() || null;
     }

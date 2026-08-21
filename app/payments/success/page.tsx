@@ -4,6 +4,7 @@ import { PaymentStatus } from "@/generated/prisma/enums";
 import { BookletPaymentReceipt } from "@/components/commerce/BookletPaymentReceipt";
 import { PublicFormShell } from "@/components/forms/PublicFormShell";
 import { buildBookletReceiptView } from "@/lib/commerce/orders/receipt";
+import { commerceOrderQrPath } from "@/lib/commerce/orders/qr";
 import { formatRegistrationDate, formatRials } from "@/lib/registration/format";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { getPaymentIntentPublicView } from "@/lib/payment/service";
@@ -48,7 +49,7 @@ export default async function PaymentSuccessPage({ searchParams }: PageProps) {
       order: commerceOrder,
       intent,
     });
-    const statusHref = `/payments/success?intent=${encodeURIComponent(intentId)}`;
+    const statusHref = commerceOrderQrPath(commerceOrder.qrToken);
 
     return (
       <PublicFormShell>

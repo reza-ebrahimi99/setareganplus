@@ -82,11 +82,11 @@ export default async function CommerceOrderLabelsPage({ searchParams }: PageProp
               <div className="flex items-start justify-between gap-3">
                 <CommerceQrImg src={qr} alt="QR" size={144} />
                 <div className="min-w-0 text-right">
-                  <p className="text-xs text-slate-500" dir="ltr">
+                  <p className="text-sm font-bold" dir="ltr">
                     {toPersianDigits(order.orderNumber)}
                   </p>
-                  <p className="mt-1 text-base font-bold">{order.buyerName ?? "—"}</p>
-                  <p className="mt-1 text-sm">
+                  <p className="mt-1 text-lg font-bold leading-8">{order.buyerName ?? "—"}</p>
+                  <p className="mt-1 text-base">
                     {order.studentGradeLabel ?? "—"}
                     {order.studentMajorLabel ? ` · ${order.studentMajorLabel}` : ""}
                   </p>
@@ -104,8 +104,8 @@ export default async function CommerceOrderLabelsPage({ searchParams }: PageProp
                   </div>
                 </div>
               </div>
-              <p className="mt-3 text-sm font-medium leading-6">{order.productTitle}</p>
-              <p className="mt-2 text-xs text-slate-600">
+              <p className="mt-3 text-base font-semibold leading-7">{order.productTitle}</p>
+              <p className="mt-2 text-sm text-slate-700">
                 دریافت: {order.pickupBranch?.name ?? "—"}
               </p>
             </article>

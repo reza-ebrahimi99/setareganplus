@@ -1,47 +1,167 @@
 /**
- * Commerce order paid SMS.
- *
- * Buyer: dedicated Commerce verify pattern (FULLNAME / PRODUCT / AMOUNT).
- * Manager: unchanged form verify template path.
- *
- * Payment must never fail because of SMS.
+ * Booklet order SMS — buyer receipt + stage updates.
+ * Admin recipients keep the existing form verify template.
+ * Payment / stage mutations must never fail because of SMS.
  */
 
 import { SmsMessageStatus } from "@/generated/prisma/enums";
-import { sendTemplateMessage } from "@/lib/communication/send";
+import { sendTemplateMessage, sendText } from "@/lib/communication/send";
 import { truncateSmsParam } from "@/lib/communication/sms-params";
 import { readSmsProviderName } from "@/lib/communication/sms-provider";
 import { listEnabledCommerceAdminSmsRecipients } from "@/lib/commerce/notification-settings";
-import { commerceOrderQrUrl } from "@/lib/commerce/orders/qr";
+import {
+  BOOKLET_PICKUP_HOURS,
+  BOOKLET_PICKUP_INSTRUCTIONS,
+} from "@/lib/commerce/booklet-hours";
+import {
+  commerceOrderQrUrl,
+  commerceOrderReceiptUrl,
+} from "@/lib/commerce/orders/qr";
+import {
+  COMMERCE_OPS_STAGE_LABELS,
+  isCommerceOpsStage,
+  type CommerceOpsStageValue,
+} from "@/lib/commerce/orders/ops-stage";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { formatRials } from "@/lib/registration/format";
 import { prisma } from "@/lib/prisma";
 
-function buildBuyerAuditBody(params: {
+export type BookletSmsContext = {
   fullName: string;
-  product: string;
+  booklet: string;
   amount: string;
   orderNumber: string;
-  qrUrl: string;
-}): string {
+  pickupBranch: string;
+  statusLabel: string;
+  receiptUrl: string;
+  pickupUrl: string;
+  hours: string;
+};
+
+function joinProductTitles(
+  items: ReadonlyArray<{ titleSnapshot: string }>,
+): string {
+  if (items.length === 0) return "—";
+  return items.map((item) => item.titleSnapshot.trim()).filter(Boolean).join("، ") || "—";
+}
+
+export function buildBookletPaidSmsBody(ctx: BookletSmsContext): string {
   return [
-    "سفارش شما ثبت شد.",
-    "شماره سفارش:",
-    params.orderNumber,
+    `سلام ${ctx.fullName} عزیز 🌹`,
     "",
-    `${params.fullName} عزیز، خرید شما با موفقیت انجام شد.`,
+    "خرید شما با موفقیت ثبت شد.",
     "",
-    "📚 محصول:",
-    params.product,
+    "📚 جزوه:",
+    ctx.booklet,
     "",
     "💰 مبلغ:",
-    params.amount,
+    ctx.amount,
     "",
-    "برای دریافت جزوه این لینک را نگه دارید.",
-    params.qrUrl,
+    "🏢 محل دریافت:",
+    ctx.pickupBranch,
+    "",
+    "🧾 شماره سفارش:",
+    ctx.orderNumber,
+    "",
+    "📄 رسید:",
+    ctx.receiptUrl,
+    "",
+    "🎫 QR دریافت:",
+    ctx.pickupUrl,
+    "",
+    BOOKLET_PICKUP_INSTRUCTIONS,
     "",
     "ستارگان پلاس",
     "setareganplus.ir",
+  ].join("\n");
+}
+
+export function buildBookletStageSmsBody(
+  stage: CommerceOpsStageValue,
+  ctx: BookletSmsContext,
+): string {
+  if (stage === "PAID") return buildBookletPaidSmsBody(ctx);
+  if (stage === "REGISTERED") {
+    return [
+      `سلام ${ctx.fullName} عزیز`,
+      "",
+      "سفارش جزوه شما ثبت شد.",
+      "",
+      "📚 جزوه:",
+      ctx.booklet,
+      "",
+      "🧾 شماره سفارش:",
+      ctx.orderNumber,
+      "",
+      "🏢 محل دریافت:",
+      ctx.pickupBranch,
+      "",
+      "پس از پرداخت، رسید و QR برای شما پیامک می‌شود.",
+      "",
+      "ستارگان پلاس",
+    ].join("\n");
+  }
+  if (stage === "IN_PRODUCTION") {
+    return [
+      `سلام ${ctx.fullName} عزیز`,
+      "",
+      "جزوه شما وارد مرحله تولید شد.",
+      "",
+      "📚 جزوه:",
+      ctx.booklet,
+      "",
+      "🧾 شماره سفارش:",
+      ctx.orderNumber,
+      "",
+      "زمان تقریبی آماده شدن: ۱ تا ۲ روز کاری",
+      "",
+      "📄 رسید:",
+      ctx.receiptUrl,
+      "",
+      "ستارگان پلاس",
+    ].join("\n");
+  }
+  if (stage === "READY_FOR_PICKUP") {
+    return [
+      `سلام ${ctx.fullName} عزیز`,
+      "",
+      "جزوه شما آماده تحویل است.",
+      "",
+      "📚 جزوه:",
+      ctx.booklet,
+      "",
+      "🏢 محل دریافت:",
+      ctx.pickupBranch,
+      "",
+      "🕐 ساعات کاری:",
+      ctx.hours,
+      "",
+      "🎫 QR دریافت:",
+      ctx.pickupUrl,
+      "",
+      BOOKLET_PICKUP_INSTRUCTIONS,
+      "",
+      "ستارگان پلاس",
+      "setareganplus.ir",
+    ].join("\n");
+  }
+  return [
+    `سلام ${ctx.fullName} عزیز`,
+    "",
+    "جزوه شما با موفقیت تحویل داده شد.",
+    "",
+    "📚 جزوه:",
+    ctx.booklet,
+    "",
+    "🏢 محل دریافت:",
+    ctx.pickupBranch,
+    "",
+    "🧾 شماره سفارش:",
+    ctx.orderNumber,
+    "",
+    "از خرید شما سپاسگزاریم.",
+    "",
+    "ستارگان پلاس",
   ].join("\n");
 }
 
@@ -72,16 +192,6 @@ function buildAdminAuditBody(params: {
   ].join("\n");
 }
 
-function joinProductTitles(
-  items: ReadonlyArray<{ titleSnapshot: string }>,
-): string {
-  if (items.length === 0) return "—";
-  return items.map((item) => item.titleSnapshot.trim()).filter(Boolean).join("، ") || "—";
-}
-
-/**
- * Manager SMS — unchanged Registration/form verify path.
- */
 async function sendCommerceFormSms(params: {
   organizationId: string;
   toMobile: string;
@@ -94,22 +204,11 @@ async function sendCommerceFormSms(params: {
   metadata?: Record<string, string | number | boolean | null>;
 }): Promise<void> {
   const mobile = normalizeIranianMobile(params.toMobile);
-  if (!mobile.ok) {
-    console.error("[commerce-sms] invalid mobile", {
-      purpose: params.purpose,
-      error: mobile.error,
-    });
-    return;
-  }
+  if (!mobile.ok) return;
 
   const name = truncateSmsParam(params.name);
   const tracking = truncateSmsParam(params.tracking);
-  if (!name || !tracking) {
-    console.error("[commerce-sms] missing template params", {
-      purpose: params.purpose,
-    });
-    return;
-  }
+  if (!name || !tracking) return;
 
   const existing = await prisma.smsMessage.findFirst({
     where: {
@@ -158,13 +257,12 @@ async function sendCommerceFormSms(params: {
     correlationId: messageId,
   });
 
-  const sentAt = new Date();
   await prisma.smsMessage.update({
     where: { id: messageId },
     data: result.ok
       ? {
           status: SmsMessageStatus.SENT,
-          sentAt,
+          sentAt: new Date(),
           providerMessageId: result.providerMessageId,
           lastError: null,
         }
@@ -173,45 +271,24 @@ async function sendCommerceFormSms(params: {
           lastError: result.safeMessage,
         },
   });
-
-  if (!result.ok) {
-    console.error("[commerce-sms] provider send failed", {
-      messageId,
-      purpose: params.purpose,
-      error: result.safeMessage,
-    });
-  }
 }
 
-/**
- * Buyer SMS — dedicated Commerce verify pattern (FULLNAME / PRODUCT / AMOUNT).
- */
-async function sendCommercePurchaseSms(params: {
+async function sendCommerceBuyerText(params: {
   organizationId: string;
   toMobile: string;
   body: string;
+  purpose: string;
   idempotencyKey: string;
   relatedId: string;
-  fullName: string;
-  product: string;
-  amount: string;
   metadata?: Record<string, string | number | boolean | null>;
+  fallbackTemplate?: {
+    fullName: string;
+    product: string;
+    amount: string;
+  };
 }): Promise<void> {
   const mobile = normalizeIranianMobile(params.toMobile);
-  if (!mobile.ok) {
-    console.error("[commerce-sms] invalid buyer mobile", {
-      error: mobile.error,
-    });
-    return;
-  }
-
-  const fullName = truncateSmsParam(params.fullName);
-  const product = truncateSmsParam(params.product);
-  const amount = truncateSmsParam(params.amount);
-  if (!fullName || !product || !amount) {
-    console.error("[commerce-sms] missing commerce template params");
-    return;
-  }
+  if (!mobile.ok) return;
 
   const existing = await prisma.smsMessage.findFirst({
     where: {
@@ -231,20 +308,13 @@ async function sendCommercePurchaseSms(params: {
         body: params.body,
         status: SmsMessageStatus.PROCESSING,
         provider: readSmsProviderName(),
-        purpose: "commerce_order_paid",
+        purpose: params.purpose,
         relatedType: "CommerceOrder",
         relatedId: params.relatedId,
         attemptCount: 1,
         maxAttempts: 1,
         idempotencyKey: params.idempotencyKey,
-        metadata: {
-          ...(params.metadata ?? {}),
-          templateDelivery: {
-            version: 1,
-            kind: "commerce",
-            variables: { fullName, product, amount },
-          },
-        },
+        metadata: params.metadata ?? {},
       },
       select: { id: true },
     });
@@ -253,20 +323,32 @@ async function sendCommercePurchaseSms(params: {
     return;
   }
 
-  const result = await sendTemplateMessage({
-    kind: "commerce",
+  let result = await sendText({
     toMobile: mobile.normalized,
-    variables: { fullName, product, amount },
+    body: params.body,
     correlationId: messageId,
   });
 
-  const sentAt = new Date();
+  if (!result.ok && params.fallbackTemplate) {
+    const fullName = truncateSmsParam(params.fallbackTemplate.fullName);
+    const product = truncateSmsParam(params.fallbackTemplate.product);
+    const amount = truncateSmsParam(params.fallbackTemplate.amount);
+    if (fullName && product && amount) {
+      result = await sendTemplateMessage({
+        kind: "commerce",
+        toMobile: mobile.normalized,
+        variables: { fullName, product, amount },
+        correlationId: messageId,
+      });
+    }
+  }
+
   await prisma.smsMessage.update({
     where: { id: messageId },
     data: result.ok
       ? {
           status: SmsMessageStatus.SENT,
-          sentAt,
+          sentAt: new Date(),
           providerMessageId: result.providerMessageId,
           lastError: null,
         }
@@ -275,11 +357,99 @@ async function sendCommercePurchaseSms(params: {
           lastError: result.safeMessage,
         },
   });
+}
 
-  if (!result.ok) {
-    console.error("[commerce-sms] buyer send failed", {
-      messageId,
-      error: result.safeMessage,
+async function loadBookletSmsContext(params: {
+  organizationId: string;
+  orderId: string;
+}): Promise<
+  | {
+      orderId: string;
+      buyerMobile: string | null;
+      opsStage: CommerceOpsStageValue;
+      ctx: BookletSmsContext;
+    }
+  | null
+> {
+  const order = await prisma.commerceOrder.findFirst({
+    where: {
+      id: params.orderId,
+      organizationId: params.organizationId,
+    },
+    select: {
+      id: true,
+      orderNumber: true,
+      buyerMobile: true,
+      buyerName: true,
+      grandTotalRials: true,
+      qrToken: true,
+      opsStage: true,
+      pickupBranch: { select: { name: true } },
+      items: {
+        orderBy: { createdAt: "asc" },
+        select: { titleSnapshot: true },
+      },
+    },
+  });
+  if (!order) return null;
+  const stage = isCommerceOpsStage(order.opsStage) ? order.opsStage : "REGISTERED";
+  const pickupUrl = commerceOrderQrUrl(order.qrToken);
+  return {
+    orderId: order.id,
+    buyerMobile: order.buyerMobile,
+    opsStage: stage,
+    ctx: {
+      fullName: (order.buyerName ?? "دانش‌آموز").trim() || "دانش‌آموز",
+      booklet: joinProductTitles(order.items),
+      amount: formatRials(order.grandTotalRials),
+      orderNumber: order.orderNumber,
+      pickupBranch: order.pickupBranch?.name ?? "—",
+      statusLabel: COMMERCE_OPS_STAGE_LABELS[stage],
+      receiptUrl: commerceOrderReceiptUrl(order.qrToken),
+      pickupUrl,
+      hours: BOOKLET_PICKUP_HOURS,
+    },
+  };
+}
+
+export async function enqueueCommerceOrderStageSms(params: {
+  organizationId: string;
+  orderId: string;
+  stage: CommerceOpsStageValue;
+  resend?: boolean;
+}): Promise<void> {
+  try {
+    const loaded = await loadBookletSmsContext(params);
+    if (!loaded?.buyerMobile) return;
+    const suffix = params.resend ? `:resend:${Date.now()}` : "";
+    await sendCommerceBuyerText({
+      organizationId: params.organizationId,
+      toMobile: loaded.buyerMobile,
+      body: buildBookletStageSmsBody(params.stage, loaded.ctx),
+      purpose: `commerce_order_${params.stage.toLowerCase()}`,
+      idempotencyKey: `commerce_order_sms:${loaded.orderId}:${params.stage}${suffix}`,
+      relatedId: loaded.orderId,
+      metadata: {
+        orderNumber: loaded.ctx.orderNumber,
+        stage: params.stage,
+        pickupUrl: loaded.ctx.pickupUrl,
+        receiptUrl: loaded.ctx.receiptUrl,
+        recipientRole: "buyer",
+      },
+      fallbackTemplate:
+        params.stage === "PAID"
+          ? {
+              fullName: loaded.ctx.fullName,
+              product: loaded.ctx.booklet,
+              amount: loaded.ctx.amount,
+            }
+          : undefined,
+    });
+  } catch (error) {
+    console.error("[commerce-sms] stage failed", {
+      orderId: params.orderId,
+      stage: params.stage,
+      error: error instanceof Error ? error.message : error,
     });
   }
 }
@@ -288,65 +458,37 @@ async function sendCommercePurchaseSms(params: {
  * Buyer + manager SMS after commerce payment PAID.
  * Safe to fire-and-forget from payment callback.
  */
+export async function resendCommerceOrderBuyerSms(params: {
+  organizationId: string;
+  orderId: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const loaded = await loadBookletSmsContext(params);
+  if (!loaded) return { ok: false, error: "سفارش یافت نشد." };
+  if (!loaded.buyerMobile) return { ok: false, error: "شماره موبایل ثبت نشده است." };
+  await enqueueCommerceOrderStageSms({
+    organizationId: params.organizationId,
+    orderId: loaded.orderId,
+    stage: loaded.opsStage,
+    resend: true,
+  });
+  return { ok: true };
+}
+
 export async function enqueueCommerceOrderPaidSms(params: {
   organizationId: string;
   orderId: string;
 }): Promise<void> {
   try {
-    const order = await prisma.commerceOrder.findFirst({
-      where: {
-        id: params.orderId,
-        organizationId: params.organizationId,
-      },
-      select: {
-        id: true,
-        orderNumber: true,
-        buyerMobile: true,
-        buyerName: true,
-        grandTotalRials: true,
-        qrToken: true,
-        items: {
-          orderBy: { createdAt: "asc" },
-          select: {
-            titleSnapshot: true,
-          },
-        },
-      },
-    });
-    if (!order) return;
-
-    const orderNumber = order.orderNumber;
-    const customerName = (order.buyerName ?? "خریدار").trim() || "خریدار";
-    const mobileDisplay = (order.buyerMobile ?? "—").trim() || "—";
-    const products = joinProductTitles(order.items);
-    const amount = formatRials(order.grandTotalRials);
+    const loaded = await loadBookletSmsContext(params);
+    if (!loaded) return;
 
     const jobs: Array<Promise<void>> = [];
-
-    if (order.buyerMobile) {
+    if (loaded.buyerMobile) {
       jobs.push(
-        sendCommercePurchaseSms({
+        enqueueCommerceOrderStageSms({
           organizationId: params.organizationId,
-          toMobile: order.buyerMobile,
-          body: buildBuyerAuditBody({
-            fullName: customerName,
-            product: products,
-            amount,
-            orderNumber,
-            qrUrl: commerceOrderQrUrl(order.qrToken),
-          }),
-          idempotencyKey: `commerce_order_paid:${order.id}:user`,
-          relatedId: order.id,
-          fullName: customerName,
-          product: products,
-          amount,
-          metadata: {
-            orderNumber,
-            amount,
-            products,
-            qrUrl: commerceOrderQrUrl(order.qrToken),
-            recipientRole: "buyer",
-          },
+          orderId: loaded.orderId,
+          stage: "PAID",
         }),
       );
     }
@@ -355,13 +497,12 @@ export async function enqueueCommerceOrderPaidSms(params: {
       params.organizationId,
     );
     const adminBody = buildAdminAuditBody({
-      customerName,
-      mobile: mobileDisplay,
-      products,
-      amount,
-      orderNumber,
+      customerName: loaded.ctx.fullName,
+      mobile: loaded.buyerMobile ?? "—",
+      products: loaded.ctx.booklet,
+      amount: loaded.ctx.amount,
+      orderNumber: loaded.ctx.orderNumber,
     });
-
     for (const recipient of adminRecipients) {
       jobs.push(
         sendCommerceFormSms({
@@ -369,15 +510,15 @@ export async function enqueueCommerceOrderPaidSms(params: {
           toMobile: recipient,
           body: adminBody,
           purpose: "commerce_order_paid_admin",
-          idempotencyKey: `commerce_order_paid:${order.id}:admin:${recipient}`,
-          relatedId: order.id,
-          name: customerName,
-          tracking: orderNumber,
+          idempotencyKey: `commerce_order_paid:${loaded.orderId}:admin:${recipient}`,
+          relatedId: loaded.orderId,
+          name: loaded.ctx.fullName,
+          tracking: loaded.ctx.orderNumber,
           metadata: {
-            orderNumber,
-            amount,
-            products,
-            buyerMobile: mobileDisplay,
+            orderNumber: loaded.ctx.orderNumber,
+            amount: loaded.ctx.amount,
+            products: loaded.ctx.booklet,
+            buyerMobile: loaded.buyerMobile,
             recipientRole: "admin",
           },
         }),
@@ -385,7 +526,6 @@ export async function enqueueCommerceOrderPaidSms(params: {
     }
 
     if (jobs.length === 0) return;
-
     const settled = await Promise.allSettled(jobs);
     for (const result of settled) {
       if (result.status === "rejected") {

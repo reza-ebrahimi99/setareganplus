@@ -27,6 +27,7 @@ import {
   recordCommerceOrderEvent,
   stageChangedEventInput,
 } from "@/lib/commerce/orders/timeline";
+import { enqueueCommerceOrderPaidSms, enqueueCommerceOrderStageSms } from "@/lib/commerce/commerce-sms";
 import { notifyCommerceOpsStaff } from "@/lib/commerce/orders/notify";
 import { prisma } from "@/lib/prisma";
 
@@ -146,6 +147,10 @@ export async function recordCommerceOrderPayment(params: {
     actorUserId: params.actorUserId,
     body: order.buyerName,
   }).catch((error) => console.error("[commerce-ops] notify failed", error));
+  void enqueueCommerceOrderPaidSms({
+    organizationId: order.organizationId,
+    orderId: order.id,
+  }).catch((error) => console.error("[commerce-ops] paid sms failed", error));
 
   return { ok: true };
 }
@@ -260,6 +265,13 @@ export async function advanceCommerceOrderStage(params: {
       actorUserId: params.actorUserId,
       body: order.buyerName,
     }).catch((error) => console.error("[commerce-ops] notify failed", error));
+  }
+  if (gate.next === "IN_PRODUCTION" || gate.next === "READY_FOR_PICKUP" || gate.next === "DELIVERED_TO_STUDENT") {
+    void enqueueCommerceOrderStageSms({
+      organizationId: order.organizationId,
+      orderId: order.id,
+      stage: gate.next,
+    }).catch((error) => console.error("[commerce-ops] stage sms failed", error));
   }
 
   return { ok: true };

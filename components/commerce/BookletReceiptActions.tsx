@@ -5,9 +5,10 @@ import Link from "next/link";
 type Props = {
   orderNumber: string;
   statusHref?: string;
+  qrHref?: string;
 };
 
-export function BookletReceiptActions({ orderNumber, statusHref }: Props) {
+export function BookletReceiptActions({ orderNumber, statusHref, qrHref }: Props) {
   function printReceipt() {
     const previous = document.title;
     document.title = `رسید-جزوه-${orderNumber}`;
@@ -31,6 +32,15 @@ export function BookletReceiptActions({ orderNumber, statusHref }: Props) {
       >
         چاپ رسید
       </button>
+      {qrHref ? (
+        <a
+          href={qrHref}
+          download={`qr-${orderNumber}.png`}
+          className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-border bg-background px-5 text-sm font-semibold text-primary"
+        >
+          ذخیره QR
+        </a>
+      ) : null}
       {statusHref ? (
         <a
           href={statusHref}
@@ -41,7 +51,7 @@ export function BookletReceiptActions({ orderNumber, statusHref }: Props) {
       ) : null}
       <Link
         href="/"
-        className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-border bg-background px-5 text-sm font-medium text-muted"
+        className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-border bg-background px-5 text-sm font-medium text-muted sm:col-span-2"
       >
         بازگشت به صفحه اصلی
       </Link>

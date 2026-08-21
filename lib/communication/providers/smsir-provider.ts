@@ -21,6 +21,7 @@ type SmsIrRuntimeConfig = {
   apiKey: string | null;
   baseUrl: string | null;
   timeoutMs: number;
+  lineNumber: number | null;
   templateIds: Record<SmsIrTemplateKind, number | null>;
   parameterNames: {
     otpCode: string | null;
@@ -106,6 +107,7 @@ function readSmsIrRuntimeConfig(): SmsIrRuntimeConfig {
     apiKey: trimToNull(process.env.SMSIR_API_KEY),
     baseUrl: readBaseUrl(process.env.SMSIR_API_BASE_URL),
     timeoutMs: readSmsIrTimeoutMs(),
+    lineNumber: readPositiveInteger(process.env.SMSIR_LINE_NUMBER),
     templateIds: {
       otp: readPositiveInteger(process.env.SMSIR_OTP_TEMPLATE_ID),
       booking: readPositiveInteger(process.env.SMSIR_BOOKING_TEMPLATE_ID),
@@ -362,12 +364,75 @@ export class SmsIrProvider implements SmsProvider {
   }
 
   async sendText(request: SmsSendTextRequest): Promise<SmsSendResult> {
-    void request;
-    return failure(
-      "invalid",
-      "ارسال متن آزاد توسط سرویس انتخاب‌شده پشتیبانی نمی‌شود.",
-      false,
-    );
+    const config = readSmsIrRuntimeConfig();
+    const body = request.body.trim();
+    if (
+      !this.isEnabled() ||
+      config.apiKey === null ||
+      config.baseUrl === null ||
+      config.lineNumber === null
+    ) {
+      return configurationFailure();
+    }
+    if (!validateMobile(request.toMobile) || body.length === 0 || body.length > 900) {
+      return failure("invalid", "متن یا شماره پیامک معتبر نیست.", false);
+    }
+
+    try {
+      const response = await fetch(`${config.baseUrl}/v1/send`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "X-API-KEY": config.apiKey,
+        },
+        body: JSON.stringify({
+          lineNumber: config.lineNumber,
+          messageText: body,
+          mobiles: [request.toMobile],
+        }),
+        signal: request.signal,
+      });
+
+      if (!response.ok) {
+        let providerStatusCode: number | null = null;
+        try {
+          providerStatusCode = readBusinessStatus(await response.json());
+        } catch {
+          // HTTP status remains sufficient.
+        }
+        if (providerStatusCode === 20) {
+          return mapBusinessFailure(providerStatusCode);
+        }
+        return mapHttpFailure(response.status, providerStatusCode);
+      }
+
+      let payload: unknown;
+      try {
+        payload = await response.json();
+      } catch {
+        return failure("malformed_response", "پاسخ سرویس پیامک قابل تأیید نبود.", true);
+      }
+
+      const providerStatusCode = readBusinessStatus(payload);
+      if (providerStatusCode === null) {
+        return failure("malformed_response", "پاسخ سرویس پیامک قابل تأیید نبود.", true);
+      }
+      if (providerStatusCode !== 1) {
+        return mapBusinessFailure(providerStatusCode);
+      }
+
+      const providerMessageId = readAcceptedMessageId(payload);
+      return success(providerMessageId, providerStatusCode);
+    } catch (error) {
+      if (
+        (error instanceof Error && error.name === "AbortError") ||
+        request.signal?.aborted
+      ) {
+        return failure("timeout", "زمان ارسال پیامک به پایان رسید.", true);
+      }
+      return failure("unavailable", "سرویس پیامک در دسترس نیست.", true);
+    }
   }
 
   async sendOtpTemplate(

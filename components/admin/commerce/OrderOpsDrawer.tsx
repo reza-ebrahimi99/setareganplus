@@ -12,6 +12,7 @@ import { Timeline } from "@/components/admin/Timeline";
 import { OrderBranchBadge } from "@/components/admin/commerce/OrderBranchBadge";
 import { OrderNextAction } from "@/components/admin/commerce/OrderNextAction";
 import { OrderQrThumb } from "@/components/admin/commerce/OrderQrThumb";
+import { OrderOpsQuickLinks } from "@/components/admin/commerce/OrderOpsQuickLinks";
 import {
   OrderDelayBadge,
   OrderHealthBadge,
@@ -166,6 +167,11 @@ function DrawerBody({
       <section className="space-y-2">
         <h3 className="text-sm font-semibold text-primary">QR و اقدام سریع</h3>
         <OrderQrThumb token={detail.qrToken} size={160} />
+        <OrderOpsQuickLinks
+          orderId={detail.id}
+          qrToken={detail.qrToken}
+          canManage={canManage}
+        />
       </section>
 
       <section className="space-y-2">

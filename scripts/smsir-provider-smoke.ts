@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import {
   sendOtpTemplate,
   sendPatternTemplate,
+  sendText,
 } from "../lib/communication/send";
 import {
   NullSmsProvider,
@@ -22,6 +23,7 @@ const ENV_KEYS = [
   "SMSIR_OTP_TEMPLATE_ID",
   "SMSIR_BOOKING_TEMPLATE_ID",
   "SMSIR_FORM_TEMPLATE_ID",
+  "SMSIR_LINE_NUMBER",
 ] as const;
 
 const originalEnv = Object.fromEntries(
@@ -179,6 +181,40 @@ async function main(): Promise<void> {
         assert.fail("fetch must not run without a template");
       });
       const result = await sendOtp();
+      assert.equal(result.ok, false);
+      if (!result.ok) assert.equal(result.errorCode, "configuration");
+    });
+
+    await test("SMS.ir sendText uses bulk send when line number is set", async () => {
+      process.env.SMSIR_LINE_NUMBER = "30001234567";
+      resetSmsProviderCache();
+      mockFetch(async (input, init) => {
+        assert.equal(String(input), "https://api.sms.ir/v1/send");
+        assert.deepEqual(JSON.parse(String(init?.body)), {
+          lineNumber: 30001234567,
+          messageText: "سلام رسید جزوه",
+          mobiles: ["09121234567"],
+        });
+        return jsonResponse({ status: 1, data: { messageId: 555 } });
+      });
+      const result = await sendText({
+        toMobile: "09121234567",
+        body: "سلام رسید جزوه",
+      });
+      assert.equal(result.ok, true);
+      assert.equal(result.providerMessageId, "555");
+    });
+
+    await test("SMS.ir sendText without line number is configuration", async () => {
+      delete process.env.SMSIR_LINE_NUMBER;
+      resetSmsProviderCache();
+      mockFetch(async () => {
+        assert.fail("fetch must not run without a line number");
+      });
+      const result = await sendText({
+        toMobile: "09121234567",
+        body: "سلام رسید جزوه",
+      });
       assert.equal(result.ok, false);
       if (!result.ok) assert.equal(result.errorCode, "configuration");
     });
