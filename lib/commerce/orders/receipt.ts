@@ -9,7 +9,7 @@ import {
   isCommerceOpsStage,
   type CommerceOpsStageValue,
 } from "@/lib/commerce/orders/ops-stage";
-import { generateCommerceOrderQrDataUrl } from "@/lib/commerce/orders/qr";
+import { generateCommerceOrderQrDataUrl, COMMERCE_QR_RECEIPT_SIZE } from "@/lib/commerce/orders/qr";
 import {
   COMMERCE_BOOKLET_PAYMENT_METHOD_LABELS,
   COMMERCE_STUDENT_GRADE_LABELS,
@@ -161,7 +161,7 @@ export async function buildBookletReceiptView(params: {
     pickupBranch: order.pickupBranch ? toCommerceBranchBadge(order.pickupBranch) : null,
     opsStage: stage,
     eta: bookletReadyEtaCopy(stage),
-    qrDataUrl: await generateCommerceOrderQrDataUrl(order.qrToken, 360),
+    qrDataUrl: await generateCommerceOrderQrDataUrl(order.qrToken, COMMERCE_QR_RECEIPT_SIZE),
     generatedAtLabel: `${formatJalaliDateShort(new Date())} ${toPersianDigits(formatTehranTime24(new Date()))}`,
   };
 }

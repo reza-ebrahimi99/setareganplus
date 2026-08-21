@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Timeline } from "@/components/admin/Timeline";
+import { CommerceQrImg } from "@/components/commerce/CommerceQrImg";
 import { BookletReceiptActions } from "@/components/commerce/BookletReceiptActions";
 import { buildOpsTimelineNodes } from "@/lib/commerce/orders/timeline-view";
 import type { BookletReceiptView } from "@/lib/commerce/orders/receipt";
@@ -164,15 +165,13 @@ export function BookletPaymentReceipt({
           <p className="mt-1 text-lg font-bold">{receipt.eta.text}</p>
         </section>
 
-        <section className="booklet-receipt-qr rounded-2xl border border-primary/15 bg-gradient-to-b from-white to-slate-50 px-4 py-6 text-center">
+        <section className="booklet-receipt-qr rounded-2xl border border-primary/15 bg-white px-4 py-6 text-center">
           <p className="text-sm font-semibold text-primary">کد دریافت حضوری</p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <CommerceQrImg
             src={receipt.qrDataUrl}
             alt="کد QR دریافت جزوه"
-            width={220}
-            height={220}
-            className="mx-auto mt-4 rounded-2xl border border-border bg-white p-3 shadow-sm"
+            size={280}
+            className="mx-auto mt-4"
           />
           <p className="mx-auto mt-4 max-w-sm text-sm leading-7 text-muted">
             هنگام مراجعه این QR را به مسئول تحویل نشان دهید.

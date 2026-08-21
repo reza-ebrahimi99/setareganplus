@@ -2022,13 +2022,19 @@ body {
     opacity: 0;
   }
 }
+.commerce-qr {
+  background: #ffffff;
+  image-rendering: auto;
+}
+
+.commerce-qr-frame {
+  background: #ffffff;
+}
+
 @media print {
   .ops-label {
     box-shadow: none !important;
   }
-}
-
-@media print {
   .booklet-receipt-actions {
     display: none !important;
   }
@@ -2037,9 +2043,17 @@ body {
     border: 1px solid #e2e8f0 !important;
     max-width: none !important;
   }
-  .booklet-receipt-qr img {
-    width: 220px;
-    height: 220px;
+  .booklet-receipt-qr img,
+  .commerce-qr {
+    width: 280px !important;
+    height: 280px !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    background: #ffffff !important;
+  }
+  .ops-label .commerce-qr {
+    width: 144px !important;
+    height: 144px !important;
   }
 }
 

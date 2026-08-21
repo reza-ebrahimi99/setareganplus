@@ -165,7 +165,7 @@ function DrawerBody({
 
       <section className="space-y-2">
         <h3 className="text-sm font-semibold text-primary">QR و اقدام سریع</h3>
-        <OrderQrThumb token={detail.qrToken} size={120} />
+        <OrderQrThumb token={detail.qrToken} size={160} />
       </section>
 
       <section className="space-y-2">

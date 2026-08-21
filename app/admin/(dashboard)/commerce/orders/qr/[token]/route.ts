@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { hasPermission } from "@/lib/auth/permissions";
 import { requireAdminSessionOrThrow } from "@/lib/auth/require-admin";
-import { generateCommerceOrderQrPng } from "@/lib/commerce/orders/qr";
+import { generateCommerceOrderQrPng, COMMERCE_QR_DOWNLOAD_SIZE, COMMERCE_QR_PREVIEW_SIZE } from "@/lib/commerce/orders/qr";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +51,9 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   const url = new URL(request.url);
-  const size = url.searchParams.get("preview") === "1" ? 160 : 480;
+  const size = url.searchParams.get("preview") === "1"
+    ? COMMERCE_QR_PREVIEW_SIZE
+    : COMMERCE_QR_DOWNLOAD_SIZE;
   try {
     const png = await generateCommerceOrderQrPng(order.qrToken, size);
     return new NextResponse(new Uint8Array(png), {

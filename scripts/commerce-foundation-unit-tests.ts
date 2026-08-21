@@ -524,6 +524,19 @@ check("order: parse qr input extracts token only", () => {
   assert.equal(parseCommerceOrderQrInput(""), null);
 });
 
+check("order: qr encodes production pickup url with camera-safe render", () => {
+  const qr = require("../lib/commerce/orders/qr") as typeof import("../lib/commerce/orders/qr");
+  assert.equal(
+    qr.commerceOrderQrUrl("abc123token"),
+    "https://setareganplus.ir/admin/commerce/pickup/abc123token",
+  );
+  assert.equal(qr.COMMERCE_QR_ERROR_CORRECTION, "Q");
+  assert.equal(qr.COMMERCE_QR_MARGIN, 4);
+  assert.equal(qr.COMMERCE_QR_DARK, "#000000");
+  assert.equal(qr.COMMERCE_QR_LIGHT, "#ffffff");
+  assert.ok(qr.COMMERCE_QR_MIN_SIZE >= 256);
+});
+
 check("order: booklet ready eta copy", () => {
   const { bookletReadyEtaCopy } = require("../lib/commerce/orders/receipt") as typeof import("../lib/commerce/orders/receipt");
   assert.equal(bookletReadyEtaCopy("PAID").ready, false);
@@ -565,4 +578,26 @@ if (failures > 0) {
   process.exit(1);
 }
 
-console.log("\nAll commerce foundation tests passed.");
+void (async () => {
+  const qr = require("../lib/commerce/orders/qr") as typeof import("../lib/commerce/orders/qr");
+  const sharp = require("sharp") as typeof import("sharp");
+  const jsQR = require("jsqr") as (data: Uint8ClampedArray, width: number, height: number) => { data: string } | null;
+  const token = "tok_scan_fixture";
+  const expected = qr.commerceOrderQrUrl(token);
+  const png = await qr.generateCommerceOrderQrPng(token, qr.COMMERCE_QR_PREVIEW_SIZE);
+  const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const decoded = jsQR(new Uint8ClampedArray(data), info.width, info.height);
+  try {
+    assert.equal(decoded?.data, expected);
+    console.log("  ok  order: generated qr decodes to production pickup url");
+  } catch (error) {
+    console.error("  FAIL order: generated qr decodes to production pickup url");
+    console.error(error);
+    process.exit(1);
+  }
+  console.log("\nAll commerce foundation tests passed.");
+})().catch((error) => {
+  console.error("  FAIL order: generated qr decodes to production pickup url");
+  console.error(error);
+  process.exit(1);
+});
