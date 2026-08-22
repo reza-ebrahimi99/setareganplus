@@ -107,11 +107,20 @@ export function readSmsIrTimeoutMs(fallback = DEFAULT_TIMEOUT_MS): number {
 }
 
 function readSmsIrRuntimeConfig(): SmsIrRuntimeConfig {
+  console.info("[smsir-config] SMSIR_LINE_NUMBER raw", {
+    SMSIR_LINE_NUMBER: process.env.SMSIR_LINE_NUMBER,
+    typeof: typeof process.env.SMSIR_LINE_NUMBER,
+    json: JSON.stringify(process.env.SMSIR_LINE_NUMBER),
+  });
+  const parsedLineNumber = readPositiveInteger(process.env.SMSIR_LINE_NUMBER);
+  console.info("[smsir-config] SMSIR_LINE_NUMBER parsed", {
+    parsedLineNumber,
+  });
   return {
     apiKey: trimToNull(process.env.SMSIR_API_KEY),
     baseUrl: readBaseUrl(process.env.SMSIR_API_BASE_URL),
     timeoutMs: readSmsIrTimeoutMs(),
-    lineNumber: readPositiveInteger(process.env.SMSIR_LINE_NUMBER),
+    lineNumber: parsedLineNumber,
     templateIds: {
       otp: readPositiveInteger(process.env.SMSIR_OTP_TEMPLATE_ID),
       booking: readPositiveInteger(process.env.SMSIR_BOOKING_TEMPLATE_ID),
