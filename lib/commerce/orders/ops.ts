@@ -266,7 +266,7 @@ export async function advanceCommerceOrderStage(params: {
       body: order.buyerName,
     }).catch((error) => console.error("[commerce-ops] notify failed", error));
   }
-  if (gate.next === "IN_PRODUCTION" || gate.next === "READY_FOR_PICKUP" || gate.next === "DELIVERED_TO_STUDENT") {
+  if (gate.next === "READY_FOR_PICKUP" || gate.next === "DELIVERED_TO_STUDENT") {
     void enqueueCommerceOrderStageSms({
       organizationId: order.organizationId,
       orderId: order.id,

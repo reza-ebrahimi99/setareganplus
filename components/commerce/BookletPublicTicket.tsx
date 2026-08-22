@@ -9,6 +9,14 @@ import {
 import type { PublicBookletTicket } from "@/lib/commerce/orders/public-ticket";
 import { toPersianDigits } from "@/lib/persian";
 
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <p>
+      <span className="text-muted">{label}:</span> {value}
+    </p>
+  );
+}
+
 export function BookletPublicTicket({ ticket }: { ticket: PublicBookletTicket }) {
   const timeline = buildOpsTimelineNodes({
     current: ticket.opsStage,
@@ -42,43 +50,30 @@ export function BookletPublicTicket({ ticket }: { ticket: PublicBookletTicket })
 
       <div className="space-y-4 px-4 py-5 sm:px-6">
         <section className="rounded-2xl border border-border bg-white p-4 text-sm leading-7">
-          <p>
-            <span className="text-muted">دانش‌آموز:</span> {ticket.studentName}
-          </p>
-          {ticket.parentName ? (
-            <p>
-              <span className="text-muted">نام پدر:</span> {ticket.parentName}
-            </p>
-          ) : null}
-          <p>
-            <span className="text-muted">جزوه:</span> {ticket.booklet}
-          </p>
-          {ticket.instructor ? (
-            <p>
-              <span className="text-muted">مدرس:</span> {ticket.instructor}
-            </p>
-          ) : null}
-          <p>
-            <span className="text-muted">پایه:</span> {ticket.gradeLabel ?? "—"}
-            {ticket.majorLabel ? ` · ${ticket.majorLabel}` : ""}
-          </p>
-          <p>
-            <span className="text-muted">محل دریافت:</span> {ticket.pickupBranch?.name ?? "—"}
-          </p>
+          <Row label="دانش‌آموز" value={ticket.studentName} />
+          <Row label="جزوه" value={ticket.booklet} />
+          <Row label="مبلغ" value={ticket.amountLabel} />
+          <Row label="محل دریافت" value={ticket.pickupBranch?.name ?? "—"} />
           {ticket.pickupBranch?.address ? (
-            <p className="text-muted">{ticket.pickupBranch.address}</p>
+            <Row label="آدرس" value={ticket.pickupBranch.address} />
           ) : null}
-          <p>
-            <span className="text-muted">ساعات کاری:</span> {ticket.hours}
-          </p>
+          <Row label="شماره سفارش" value={toPersianDigits(ticket.orderNumber)} />
+          <Row label="تاریخ پرداخت" value={ticket.paidAtLabel ?? "—"} />
+          <Row label="وضعیت" value={ticket.statusLabel} />
         </section>
+
+        {waiting ? (
+          <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-950">
+            <p>{ticket.eta.text}</p>
+          </section>
+        ) : null}
 
         <section className="booklet-receipt-qr rounded-2xl border border-primary/15 bg-white px-4 py-6 text-center">
           <CommerceQrImg src={ticket.qrDataUrl} alt="QR دریافت جزوه" size={280} className="mx-auto" />
           <p className="mx-auto mt-4 max-w-sm text-sm leading-7 text-muted">{ticket.instructions}</p>
         </section>
 
-        <section className="rounded-2xl border border-border bg-white p-4">
+        <section id="pipeline" className="rounded-2xl border border-border bg-white p-4">
           <h2 className="text-sm font-semibold text-primary">مسیر سفارش</h2>
           <div className="mt-3">
             <Timeline nodes={timeline} />

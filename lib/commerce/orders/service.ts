@@ -31,7 +31,7 @@ import {
   type CommerceOpsHealthLevel,
   type CommerceOpsPriority,
 } from "@/lib/commerce/orders/intelligence";
-import { enqueueCommerceOrderStageSms } from "@/lib/commerce/commerce-sms";
+import { listCommerceOrderSmsHistory } from "@/lib/commerce/commerce-sms";
 import { notifyCommerceOpsStaff } from "@/lib/commerce/orders/notify";
 import {
   COMMERCE_OPS_ACTIVITY_TITLES,
@@ -295,11 +295,6 @@ export async function createSingleItemCommerceOrder(
       kind: "NEW_ORDER",
       body: profile.buyerName,
     }).catch((error) => console.error("[commerce-ops] notify failed", error));
-    void enqueueCommerceOrderStageSms({
-      organizationId: input.organizationId,
-      orderId: created.id,
-      stage: "REGISTERED",
-    }).catch((error) => console.error("[commerce-ops] registered sms failed", error));
 
     return {
       ok: true,
@@ -951,6 +946,7 @@ export type AdminCommerceOrderDetail = AdminCommerceOrderRow & {
     totalRials: number;
   }>;
   events: AdminCommerceOrderEventRow[];
+  smsHistory: import("@/lib/commerce/commerce-sms").CommerceOrderSmsHistoryItem[];
 };
 
 function actorName(actor: { firstName: string; lastName: string } | null): string | null {
@@ -1001,15 +997,21 @@ export async function getAdminCommerceOrderDetail(params: {
 
   if (!order) return null;
 
-  const intent = await prisma.paymentIntent.findFirst({
-    where: {
+  const [intent, smsHistory] = await Promise.all([
+    prisma.paymentIntent.findFirst({
+      where: {
+        organizationId: params.organizationId,
+        payableType: "COMMERCE_ORDER",
+        payableId: order.id,
+      },
+      orderBy: { updatedAt: "desc" },
+      select: { trackingCode: true, provider: true },
+    }),
+    listCommerceOrderSmsHistory({
       organizationId: params.organizationId,
-      payableType: "COMMERCE_ORDER",
-      payableId: order.id,
-    },
-    orderBy: { updatedAt: "desc" },
-    select: { trackingCode: true, provider: true },
-  });
+      orderId: order.id,
+    }),
+  ]);
 
   const lastEvent = order.events[order.events.length - 1];
   const productTitle =
@@ -1112,6 +1114,7 @@ export async function getAdminCommerceOrderDetail(params: {
       occurredAt: event.occurredAt,
       operatorName: actorName(event.actor),
     })),
+    smsHistory,
   };
 }
 

@@ -3,7 +3,7 @@
  * No PII in the token; order fields are resolved server-side.
  */
 
-import { CommerceOrderPaymentStatus } from "@/generated/prisma/enums";
+import { CommerceOrderPaymentStatus, PaymentStatus } from "@/generated/prisma/enums";
 import { BOOKLET_PICKUP_HOURS, BOOKLET_PICKUP_INSTRUCTIONS } from "@/lib/commerce/booklet-hours";
 import {
   toCommerceBranchBadge,
@@ -45,6 +45,7 @@ export type PublicBookletTicket = {
   instructor: string | null;
   amountLabel: string;
   paymentPaid: boolean;
+  paidAtLabel: string | null;
   opsStage: CommerceOpsStageValue;
   statusLabel: string;
   pickupBranch: CommerceBranchBadge | null;
@@ -118,6 +119,17 @@ export async function getPublicBookletTicket(params: {
   });
   if (!order) return null;
 
+  const intent = await prisma.paymentIntent.findFirst({
+    where: {
+      organizationId: params.organizationId,
+      payableType: "COMMERCE_ORDER",
+      payableId: order.id,
+      status: PaymentStatus.PAID,
+    },
+    orderBy: { paidAt: "desc" },
+    select: { paidAt: true, updatedAt: true },
+  });
+
   const stage = isCommerceOpsStage(order.opsStage) ? order.opsStage : "REGISTERED";
   const studentName =
     order.buyerName?.trim() ||
@@ -152,6 +164,11 @@ export async function getPublicBookletTicket(params: {
     instructor,
     amountLabel: formatRials(order.grandTotalRials),
     paymentPaid: order.paymentStatus === CommerceOrderPaymentStatus.PAID,
+    paidAtLabel: intent?.paidAt
+      ? `${formatJalaliDateShort(intent.paidAt)} ${toPersianDigits(formatTehranTime24(intent.paidAt))}`
+      : intent?.updatedAt
+        ? `${formatJalaliDateShort(intent.updatedAt)} ${toPersianDigits(formatTehranTime24(intent.updatedAt))}`
+        : null,
     opsStage: stage,
     statusLabel: COMMERCE_OPS_STAGE_LABELS[stage],
     pickupBranch: order.pickupBranch ? toCommerceBranchBadge(order.pickupBranch) : null,

@@ -171,6 +171,7 @@ function DrawerBody({
           orderId={detail.id}
           qrToken={detail.qrToken}
           canManage={canManage}
+          smsHistory={detail.smsHistory}
         />
       </section>
 

@@ -546,7 +546,10 @@ check("order: qr encodes production pickup url with camera-safe render", () => {
 check("order: booklet ready eta copy", () => {
   const { bookletReadyEtaCopy } = require("../lib/commerce/orders/receipt") as typeof import("../lib/commerce/orders/receipt");
   assert.equal(bookletReadyEtaCopy("PAID").ready, false);
-  assert.equal(bookletReadyEtaCopy("PAID").text, "۱ تا ۲ روز کاری");
+  assert.equal(
+    bookletReadyEtaCopy("PAID").text.includes("پیامک اطلاع‌رسانی"),
+    true,
+  );
   assert.equal(bookletReadyEtaCopy("READY_FOR_PICKUP").ready, true);
   assert.equal(bookletReadyEtaCopy("DELIVERED_TO_STUDENT").text, "جزوه شما آماده تحویل است.");
 });
@@ -555,6 +558,8 @@ check("order: booklet paid sms is a receipt not a registration template", () => 
   const {
     buildBookletPaidSmsBody,
     buildBookletStageSmsBody,
+    compactSmsLines,
+    chooseBookletBuyerSmsChannel,
   } = require("../lib/commerce/commerce-sms") as typeof import("../lib/commerce/commerce-sms");
   const ctx = {
     fullName: "علی رضایی",
@@ -563,18 +568,25 @@ check("order: booklet paid sms is a receipt not a registration template", () => 
     orderNumber: "ORD-1",
     pickupBranch: "شعبه پسران",
     statusLabel: "پرداخت",
-    receiptUrl: "https://setareganplus.ir/booklet/tok",
-    pickupUrl: "https://setareganplus.ir/booklet/tok",
-    hours: "هر روز ۱۲:۰۰ تا ۲۰:۳۰",
+    bookletUrl: "https://setareganplus.ir/booklet/tok",
   };
   const paid = buildBookletPaidSmsBody(ctx);
+  assert.equal(paid.includes("\n\n"), false);
   assert.equal(paid.includes("جزوه ریاضی"), true);
   assert.equal(paid.includes("ORD-1"), true);
   assert.equal(paid.includes("شعبه پسران"), true);
-  assert.equal(paid.includes("/booklet/tok"), true);
+  assert.equal(paid.includes("https://setareganplus.ir/booklet/tok"), true);
+  assert.equal(paid.includes("/admin/"), false);
+  assert.equal(paid.includes("به زودی با شما تماس"), false);
   const ready = buildBookletStageSmsBody("READY_FOR_PICKUP", ctx);
   assert.equal(ready.includes("جزوه شما آماده تحویل است."), true);
-  assert.equal(ready.includes("هر روز ۱۲:۰۰ تا ۲۰:۳۰"), true);
+  assert.equal(ready.includes("\n\n"), false);
+  assert.equal(ready.includes("زمان تقریبی"), false);
+  const delivered = buildBookletStageSmsBody("DELIVERED_TO_STUDENT", ctx);
+  assert.equal(delivered.includes("با موفقیت تحویل شما شد."), true);
+  assert.equal(compactSmsLines(["a", "", "b"]), "a\nb");
+  const channel = chooseBookletBuyerSmsChannel();
+  assert.ok(channel === "premium" || channel === "legacy");
 });
 
 check("order: pickup branch scope helper", () => {

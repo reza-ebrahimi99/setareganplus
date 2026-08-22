@@ -10,3 +10,10 @@ export const BOOKLET_PICKUP_HOURS = `${BOOKLET_PICKUP_HOURS_DAILY} · ${BOOKLET_
 
 export const BOOKLET_PICKUP_INSTRUCTIONS =
   "هنگام مراجعه فقط QR را به مسئول تحویل نشان دهید.";
+
+export const BOOKLET_READY_NOTICE_LINES = [
+  "پس از آماده شدن جزوه،",
+  "پیامک اطلاع‌رسانی برای شما ارسال خواهد شد.",
+] as const;
+
+export const BOOKLET_READY_NOTICE = BOOKLET_READY_NOTICE_LINES.join(" ");

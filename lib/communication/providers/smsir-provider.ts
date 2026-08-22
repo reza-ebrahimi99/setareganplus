@@ -65,6 +65,10 @@ function readPositiveInteger(value: string | undefined): number | null {
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
+export function hasSmsIrLineNumber(): boolean {
+  return readPositiveInteger(process.env.SMSIR_LINE_NUMBER) !== null;
+}
+
 function readParameterName(
   value: string | undefined,
   fallback: string,

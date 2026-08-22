@@ -9,7 +9,11 @@ import {
   isCommerceOpsStage,
   type CommerceOpsStageValue,
 } from "@/lib/commerce/orders/ops-stage";
-import { BOOKLET_PICKUP_HOURS, BOOKLET_PICKUP_INSTRUCTIONS } from "@/lib/commerce/booklet-hours";
+import {
+  BOOKLET_PICKUP_HOURS,
+  BOOKLET_PICKUP_INSTRUCTIONS,
+  BOOKLET_READY_NOTICE,
+} from "@/lib/commerce/booklet-hours";
 import {
   COMMERCE_QR_RECEIPT_SIZE,
   commerceOrderPublicQrImagePath,
@@ -37,14 +41,14 @@ export function bookletReadyEtaCopy(stage: CommerceOpsStageValue): {
   if (stage === "READY_FOR_PICKUP" || stage === "DELIVERED_TO_STUDENT") {
     return {
       ready: true,
-      heading: "زمان تقریبی آماده شدن",
+    heading: "وضعیت آماده‌سازی",
       text: "جزوه شما آماده تحویل است.",
     };
   }
   return {
     ready: false,
-    heading: "زمان تقریبی آماده شدن",
-    text: "۱ تا ۲ روز کاری",
+    heading: "وضعیت آماده‌سازی",
+    text: BOOKLET_READY_NOTICE,
   };
 }
 

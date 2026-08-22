@@ -65,7 +65,7 @@ export function BookletPaymentReceipt({
         </div>
         <h1 className="text-2xl font-bold leading-snug sm:text-3xl">پرداخت با موفقیت انجام شد</h1>
         <p className="mx-auto mt-3 max-w-md text-sm leading-8 text-white/90">
-          سفارش شما با موفقیت ثبت شد و در سیستم مرکز عملیات جزوه قرار گرفت.
+          پس از آماده شدن جزوه، پیامک اطلاع‌رسانی برای شما ارسال خواهد شد.
         </p>
       </header>
 

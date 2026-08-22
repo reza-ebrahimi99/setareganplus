@@ -188,6 +188,7 @@ export default async function AdminCommerceOrdersPage({
           occurredAtLabel: formatJalaliDateTimeShort(event.occurredAt),
           operatorName: event.operatorName,
         })),
+        smsHistory: detail.smsHistory,
       }
     : null;
 

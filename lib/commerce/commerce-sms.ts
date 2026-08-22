@@ -2,27 +2,27 @@
  * Booklet order SMS — buyer receipt + stage updates.
  * Admin recipients keep the existing form verify template.
  * Payment / stage mutations must never fail because of SMS.
+ *
+ * Buyer channel is exclusive: premium text OR legacy commerce template, never both.
  */
 
 import { SmsMessageStatus } from "@/generated/prisma/enums";
 import { sendTemplateMessage, sendText } from "@/lib/communication/send";
 import { truncateSmsParam } from "@/lib/communication/sms-params";
+import { hasSmsIrLineNumber } from "@/lib/communication/providers/smsir-provider";
 import { readSmsProviderName } from "@/lib/communication/sms-provider";
 import { listEnabledCommerceAdminSmsRecipients } from "@/lib/commerce/notification-settings";
 import {
-  BOOKLET_PICKUP_HOURS,
-  BOOKLET_PICKUP_INSTRUCTIONS,
+  BOOKLET_READY_NOTICE_LINES,
 } from "@/lib/commerce/booklet-hours";
-import {
-  commerceOrderQrUrl,
-  commerceOrderReceiptUrl,
-} from "@/lib/commerce/orders/qr";
+import { commerceOrderQrUrl } from "@/lib/commerce/orders/qr";
 import {
   COMMERCE_OPS_STAGE_LABELS,
   isCommerceOpsStage,
   type CommerceOpsStageValue,
 } from "@/lib/commerce/orders/ops-stage";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
+import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import { formatRials } from "@/lib/registration/format";
 import { prisma } from "@/lib/prisma";
 
@@ -33,10 +33,39 @@ export type BookletSmsContext = {
   orderNumber: string;
   pickupBranch: string;
   statusLabel: string;
-  receiptUrl: string;
-  pickupUrl: string;
-  hours: string;
+  bookletUrl: string;
 };
+
+export type BookletBuyerSmsChannel = "premium" | "legacy";
+
+export const BOOKLET_STUDENT_SMS_STAGES = [
+  "PAID",
+  "READY_FOR_PICKUP",
+  "DELIVERED_TO_STUDENT",
+] as const;
+
+export type BookletStudentSmsStage = (typeof BOOKLET_STUDENT_SMS_STAGES)[number];
+
+export function isBookletStudentSmsStage(
+  value: string | null | undefined,
+): value is BookletStudentSmsStage {
+  return (
+    value === "PAID" ||
+    value === "READY_FOR_PICKUP" ||
+    value === "DELIVERED_TO_STUDENT"
+  );
+}
+
+export function chooseBookletBuyerSmsChannel(): BookletBuyerSmsChannel {
+  return hasSmsIrLineNumber() ? "premium" : "legacy";
+}
+
+export function compactSmsLines(lines: readonly string[]): string {
+  return lines
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .join("\n");
+}
 
 function joinProductTitles(
   items: ReadonlyArray<{ titleSnapshot: string }>,
@@ -46,34 +75,19 @@ function joinProductTitles(
 }
 
 export function buildBookletPaidSmsBody(ctx: BookletSmsContext): string {
-  return [
+  return compactSmsLines([
     `سلام ${ctx.fullName} عزیز 🌹`,
-    "",
-    "خرید شما با موفقیت ثبت شد.",
-    "",
-    "📚 جزوه:",
-    ctx.booklet,
-    "",
-    "💰 مبلغ:",
-    ctx.amount,
-    "",
+    "✅ خرید شما ثبت شد.",
+    `📚 ${ctx.booklet}`,
+    `💰 ${ctx.amount}`,
     "🏢 محل دریافت:",
     ctx.pickupBranch,
-    "",
-    "🧾 شماره سفارش:",
-    ctx.orderNumber,
-    "",
-    "📄 رسید:",
-    ctx.receiptUrl,
-    "",
-    "🎫 QR دریافت:",
-    ctx.pickupUrl,
-    "",
-    BOOKLET_PICKUP_INSTRUCTIONS,
-    "",
+    `🧾 ${ctx.orderNumber}`,
+    "🎫 رسید و QR:",
+    ctx.bookletUrl,
+    ...BOOKLET_READY_NOTICE_LINES,
     "ستارگان پلاس",
-    "setareganplus.ir",
-  ].join("\n");
+  ]);
 }
 
 export function buildBookletStageSmsBody(
@@ -81,88 +95,37 @@ export function buildBookletStageSmsBody(
   ctx: BookletSmsContext,
 ): string {
   if (stage === "PAID") return buildBookletPaidSmsBody(ctx);
-  if (stage === "REGISTERED") {
-    return [
-      `سلام ${ctx.fullName} عزیز`,
-      "",
-      "سفارش جزوه شما ثبت شد.",
-      "",
-      "📚 جزوه:",
-      ctx.booklet,
-      "",
-      "🧾 شماره سفارش:",
-      ctx.orderNumber,
-      "",
-      "🏢 محل دریافت:",
-      ctx.pickupBranch,
-      "",
-      "پس از پرداخت، رسید و QR برای شما پیامک می‌شود.",
-      "",
-      "ستارگان پلاس",
-    ].join("\n");
-  }
-  if (stage === "IN_PRODUCTION") {
-    return [
-      `سلام ${ctx.fullName} عزیز`,
-      "",
-      "جزوه شما وارد مرحله تولید شد.",
-      "",
-      "📚 جزوه:",
-      ctx.booklet,
-      "",
-      "🧾 شماره سفارش:",
-      ctx.orderNumber,
-      "",
-      "زمان تقریبی آماده شدن: ۱ تا ۲ روز کاری",
-      "",
-      "📄 رسید:",
-      ctx.receiptUrl,
-      "",
-      "ستارگان پلاس",
-    ].join("\n");
-  }
   if (stage === "READY_FOR_PICKUP") {
-    return [
-      `سلام ${ctx.fullName} عزیز`,
-      "",
-      "جزوه شما آماده تحویل است.",
-      "",
-      "📚 جزوه:",
-      ctx.booklet,
-      "",
+    return compactSmsLines([
+      `سلام ${ctx.fullName} عزیز 🌹`,
+      "📚 جزوه شما آماده تحویل است.",
       "🏢 محل دریافت:",
       ctx.pickupBranch,
-      "",
-      "🕐 ساعات کاری:",
-      ctx.hours,
-      "",
       "🎫 QR دریافت:",
-      ctx.pickupUrl,
-      "",
-      BOOKLET_PICKUP_INSTRUCTIONS,
-      "",
+      ctx.bookletUrl,
+      "لطفاً هنگام مراجعه",
+      "QR را به مسئول تحویل نشان دهید.",
       "ستارگان پلاس",
-      "setareganplus.ir",
-    ].join("\n");
+    ]);
   }
-  return [
-    `سلام ${ctx.fullName} عزیز`,
-    "",
-    "جزوه شما با موفقیت تحویل داده شد.",
-    "",
-    "📚 جزوه:",
-    ctx.booklet,
-    "",
-    "🏢 محل دریافت:",
-    ctx.pickupBranch,
-    "",
-    "🧾 شماره سفارش:",
-    ctx.orderNumber,
-    "",
-    "از خرید شما سپاسگزاریم.",
-    "",
+  if (stage === "DELIVERED_TO_STUDENT") {
+    return compactSmsLines([
+      `سلام ${ctx.fullName} عزیز 🌹`,
+      "✅ جزوه",
+      ctx.booklet,
+      "با موفقیت تحویل شما شد.",
+      "از اعتماد شما سپاسگزاریم.",
+      ctx.bookletUrl,
+      "ستارگان پلاس",
+    ]);
+  }
+  return compactSmsLines([
+    `سلام ${ctx.fullName} عزیز 🌹`,
+    `📚 ${ctx.booklet}`,
+    `🧾 ${ctx.orderNumber}`,
+    ctx.bookletUrl,
     "ستارگان پلاس",
-  ].join("\n");
+  ]);
 }
 
 function buildAdminAuditBody(params: {
@@ -172,25 +135,42 @@ function buildAdminAuditBody(params: {
   amount: string;
   orderNumber: string;
 }): string {
-  return [
+  return compactSmsLines([
     "🛒 سفارش جدید فروشگاه",
-    "",
-    "نام:",
-    params.customerName,
-    "",
-    "موبایل:",
-    params.mobile,
-    "",
-    "محصول:",
-    params.products,
-    "",
-    "مبلغ:",
-    params.amount,
-    "",
-    "شماره سفارش:",
-    params.orderNumber,
-  ].join("\n");
+    `نام: ${params.customerName}`,
+    `موبایل: ${params.mobile}`,
+    `محصول: ${params.products}`,
+    `مبلغ: ${params.amount}`,
+    `شماره سفارش: ${params.orderNumber}`,
+  ]);
 }
+
+const SMS_STATUS_LABELS: Record<string, string> = {
+  PENDING: "در صف",
+  PROCESSING: "در حال ارسال",
+  SENT: "ارسال شد",
+  FAILED: "ناموفق",
+  CANCELLED: "لغو",
+};
+
+const STAGE_TEMPLATE_LABELS: Record<string, string> = {
+  PAID: "رسید خرید",
+  READY_FOR_PICKUP: "آماده تحویل",
+  DELIVERED_TO_STUDENT: "تحویل شد",
+  REGISTERED: "ثبت سفارش",
+  IN_PRODUCTION: "تولید",
+};
+
+export type CommerceOrderSmsHistoryItem = {
+  id: string;
+  templateLabel: string;
+  stageLabel: string;
+  sentAtLabel: string;
+  status: string;
+  statusLabel: string;
+  providerResponse: string;
+  canRetry: boolean;
+};
 
 async function sendCommerceFormSms(params: {
   organizationId: string;
@@ -273,19 +253,16 @@ async function sendCommerceFormSms(params: {
   });
 }
 
-async function sendCommerceBuyerText(params: {
+async function sendCommerceBuyerExclusive(params: {
   organizationId: string;
   toMobile: string;
   body: string;
   purpose: string;
   idempotencyKey: string;
   relatedId: string;
+  stage: CommerceOpsStageValue;
+  ctx: BookletSmsContext;
   metadata?: Record<string, string | number | boolean | null>;
-  fallbackTemplate?: {
-    fullName: string;
-    product: string;
-    amount: string;
-  };
 }): Promise<void> {
   const mobile = normalizeIranianMobile(params.toMobile);
   if (!mobile.ok) return;
@@ -298,6 +275,19 @@ async function sendCommerceBuyerText(params: {
     select: { id: true },
   });
   if (existing) return;
+
+  const channel = chooseBookletBuyerSmsChannel();
+  const fullName = truncateSmsParam(params.ctx.fullName);
+  const product = truncateSmsParam(params.ctx.booklet);
+  const amount = truncateSmsParam(params.ctx.amount);
+  const useLegacy = channel === "legacy" && params.stage === "PAID";
+  if (useLegacy && (!fullName || !product || !amount)) return;
+  if (channel === "legacy" && params.stage !== "PAID") {
+    console.error("[commerce-sms] premium channel required", {
+      stage: params.stage,
+    });
+    return;
+  }
 
   let messageId: string;
   try {
@@ -314,7 +304,13 @@ async function sendCommerceBuyerText(params: {
         attemptCount: 1,
         maxAttempts: 1,
         idempotencyKey: params.idempotencyKey,
-        metadata: params.metadata ?? {},
+        metadata: {
+          ...(params.metadata ?? {}),
+          channel,
+          stage: params.stage,
+          bookletUrl: params.ctx.bookletUrl,
+          templateKind: useLegacy ? "commerce" : "premium",
+        },
       },
       select: { id: true },
     });
@@ -323,25 +319,18 @@ async function sendCommerceBuyerText(params: {
     return;
   }
 
-  let result = await sendText({
-    toMobile: mobile.normalized,
-    body: params.body,
-    correlationId: messageId,
-  });
-
-  if (!result.ok && params.fallbackTemplate) {
-    const fullName = truncateSmsParam(params.fallbackTemplate.fullName);
-    const product = truncateSmsParam(params.fallbackTemplate.product);
-    const amount = truncateSmsParam(params.fallbackTemplate.amount);
-    if (fullName && product && amount) {
-      result = await sendTemplateMessage({
+  const result = useLegacy
+    ? await sendTemplateMessage({
         kind: "commerce",
         toMobile: mobile.normalized,
-        variables: { fullName, product, amount },
+        variables: { fullName: fullName!, product: product!, amount: amount! },
+        correlationId: messageId,
+      })
+    : await sendText({
+        toMobile: mobile.normalized,
+        body: params.body,
         correlationId: messageId,
       });
-    }
-  }
 
   await prisma.smsMessage.update({
     where: { id: messageId },
@@ -393,7 +382,7 @@ async function loadBookletSmsContext(params: {
   });
   if (!order) return null;
   const stage = isCommerceOpsStage(order.opsStage) ? order.opsStage : "REGISTERED";
-  const pickupUrl = commerceOrderQrUrl(order.qrToken);
+  const bookletUrl = commerceOrderQrUrl(order.qrToken);
   return {
     orderId: order.id,
     buyerMobile: order.buyerMobile,
@@ -405,9 +394,7 @@ async function loadBookletSmsContext(params: {
       orderNumber: order.orderNumber,
       pickupBranch: order.pickupBranch?.name ?? "—",
       statusLabel: COMMERCE_OPS_STAGE_LABELS[stage],
-      receiptUrl: commerceOrderReceiptUrl(order.qrToken),
-      pickupUrl,
-      hours: BOOKLET_PICKUP_HOURS,
+      bookletUrl,
     },
   };
 }
@@ -419,31 +406,23 @@ export async function enqueueCommerceOrderStageSms(params: {
   resend?: boolean;
 }): Promise<void> {
   try {
+    if (!isBookletStudentSmsStage(params.stage) && !params.resend) return;
     const loaded = await loadBookletSmsContext(params);
     if (!loaded?.buyerMobile) return;
     const suffix = params.resend ? `:resend:${Date.now()}` : "";
-    await sendCommerceBuyerText({
+    await sendCommerceBuyerExclusive({
       organizationId: params.organizationId,
       toMobile: loaded.buyerMobile,
       body: buildBookletStageSmsBody(params.stage, loaded.ctx),
       purpose: `commerce_order_${params.stage.toLowerCase()}`,
       idempotencyKey: `commerce_order_sms:${loaded.orderId}:${params.stage}${suffix}`,
       relatedId: loaded.orderId,
+      stage: params.stage,
+      ctx: loaded.ctx,
       metadata: {
         orderNumber: loaded.ctx.orderNumber,
-        stage: params.stage,
-        pickupUrl: loaded.ctx.pickupUrl,
-        receiptUrl: loaded.ctx.receiptUrl,
         recipientRole: "buyer",
       },
-      fallbackTemplate:
-        params.stage === "PAID"
-          ? {
-              fullName: loaded.ctx.fullName,
-              product: loaded.ctx.booklet,
-              amount: loaded.ctx.amount,
-            }
-          : undefined,
     });
   } catch (error) {
     console.error("[commerce-sms] stage failed", {
@@ -454,24 +433,111 @@ export async function enqueueCommerceOrderStageSms(params: {
   }
 }
 
-/**
- * Buyer + manager SMS after commerce payment PAID.
- * Safe to fire-and-forget from payment callback.
- */
 export async function resendCommerceOrderBuyerSms(params: {
   organizationId: string;
   orderId: string;
+  stage?: CommerceOpsStageValue;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const loaded = await loadBookletSmsContext(params);
   if (!loaded) return { ok: false, error: "سفارش یافت نشد." };
   if (!loaded.buyerMobile) return { ok: false, error: "شماره موبایل ثبت نشده است." };
+  const stage = params.stage ?? loaded.opsStage;
+  if (!isBookletStudentSmsStage(stage)) {
+    return { ok: false, error: "برای این مرحله پیامک دانش‌آموز تعریف نشده است." };
+  }
   await enqueueCommerceOrderStageSms({
     organizationId: params.organizationId,
     orderId: loaded.orderId,
-    stage: loaded.opsStage,
+    stage,
     resend: true,
   });
   return { ok: true };
+}
+
+export async function retryCommerceOrderSms(params: {
+  organizationId: string;
+  messageId: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const message = await prisma.smsMessage.findFirst({
+    where: {
+      id: params.messageId,
+      organizationId: params.organizationId,
+      relatedType: "CommerceOrder",
+    },
+    select: {
+      relatedId: true,
+      status: true,
+      metadata: true,
+    },
+  });
+  if (!message?.relatedId) return { ok: false, error: "پیامک یافت نشد." };
+  if (message.status !== SmsMessageStatus.FAILED) {
+    return { ok: false, error: "فقط پیامک ناموفق قابل تلاش مجدد است." };
+  }
+  const meta =
+    message.metadata && typeof message.metadata === "object" && !Array.isArray(message.metadata)
+      ? (message.metadata as Record<string, unknown>)
+      : {};
+  const stageRaw = typeof meta.stage === "string" ? meta.stage : "PAID";
+  const stage = isBookletStudentSmsStage(stageRaw) ? stageRaw : "PAID";
+  return resendCommerceOrderBuyerSms({
+    organizationId: params.organizationId,
+    orderId: message.relatedId,
+    stage,
+  });
+}
+
+export async function listCommerceOrderSmsHistory(params: {
+  organizationId: string;
+  orderId: string;
+}): Promise<CommerceOrderSmsHistoryItem[]> {
+  const rows = await prisma.smsMessage.findMany({
+    where: {
+      organizationId: params.organizationId,
+      relatedType: "CommerceOrder",
+      relatedId: params.orderId,
+    },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    select: {
+      id: true,
+      purpose: true,
+      status: true,
+      sentAt: true,
+      createdAt: true,
+      lastError: true,
+      providerMessageId: true,
+      metadata: true,
+    },
+  });
+  return rows.map((row) => {
+    const meta =
+      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+        ? (row.metadata as Record<string, unknown>)
+        : {};
+    const stage = typeof meta.stage === "string" ? meta.stage : "";
+    const templateKind = typeof meta.templateKind === "string" ? meta.templateKind : "";
+    const templateLabel =
+      templateKind === "commerce"
+        ? "قالب فروشگاه"
+        : templateKind === "form"
+          ? "قالب ثبت‌نام"
+          : templateKind === "premium"
+            ? "پیامک جزوه"
+            : row.purpose.includes("admin")
+              ? "قالب ثبت‌نام"
+              : "پیامک جزوه";
+    return {
+      id: row.id,
+      templateLabel,
+      stageLabel: STAGE_TEMPLATE_LABELS[stage] ?? row.purpose,
+      sentAtLabel: formatJalaliDateTimeShort(row.sentAt ?? row.createdAt),
+      status: row.status,
+      statusLabel: SMS_STATUS_LABELS[row.status] ?? row.status,
+      providerResponse: row.lastError ?? row.providerMessageId ?? "—",
+      canRetry: row.status === SmsMessageStatus.FAILED,
+    };
+  });
 }
 
 export async function enqueueCommerceOrderPaidSms(params: {
@@ -496,6 +562,9 @@ export async function enqueueCommerceOrderPaidSms(params: {
     const adminRecipients = await listEnabledCommerceAdminSmsRecipients(
       params.organizationId,
     );
+    const buyerNormalized = loaded.buyerMobile
+      ? normalizeIranianMobile(loaded.buyerMobile)
+      : null;
     const adminBody = buildAdminAuditBody({
       customerName: loaded.ctx.fullName,
       mobile: loaded.buyerMobile ?? "—",
@@ -504,6 +573,14 @@ export async function enqueueCommerceOrderPaidSms(params: {
       orderNumber: loaded.ctx.orderNumber,
     });
     for (const recipient of adminRecipients) {
+      const adminMobile = normalizeIranianMobile(recipient);
+      if (
+        adminMobile.ok &&
+        buyerNormalized?.ok &&
+        adminMobile.normalized === buyerNormalized.normalized
+      ) {
+        continue;
+      }
       jobs.push(
         sendCommerceFormSms({
           organizationId: params.organizationId,
@@ -520,6 +597,8 @@ export async function enqueueCommerceOrderPaidSms(params: {
             products: loaded.ctx.booklet,
             buyerMobile: loaded.buyerMobile,
             recipientRole: "admin",
+            templateKind: "form",
+            stage: "PAID",
           },
         }),
       );

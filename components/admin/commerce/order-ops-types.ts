@@ -67,6 +67,16 @@ export type OrderOpsDetailView = OrderOpsListItem & {
     occurredAtLabel: string;
     operatorName: string | null;
   }>;
+  smsHistory: Array<{
+    id: string;
+    templateLabel: string;
+    stageLabel: string;
+    sentAtLabel: string;
+    status: string;
+    statusLabel: string;
+    providerResponse: string;
+    canRetry: boolean;
+  }>;
 };
 
 export type OrderOpsKpiView = {
