@@ -559,7 +559,6 @@ check("order: booklet paid sms is a receipt not a registration template", () => 
     buildBookletPaidSmsBody,
     buildBookletStageSmsBody,
     compactSmsLines,
-    isBookletSendTextUnsupported,
   } = require("../lib/commerce/commerce-sms") as typeof import("../lib/commerce/commerce-sms");
   const ctx = {
     fullName: "علی رضایی",
@@ -590,9 +589,6 @@ check("order: booklet paid sms is a receipt not a registration template", () => 
   assert.equal(delivered.includes("با موفقیت تحویل شد."), true);
   assert.equal(delivered.includes("https://setareganplus.ir"), true);
   assert.equal(compactSmsLines(["a", "", "b"]), "a\nb");
-  assert.equal(isBookletSendTextUnsupported("configuration"), true);
-  assert.equal(isBookletSendTextUnsupported("timeout"), false);
-  assert.equal(isBookletSendTextUnsupported("rate_limited"), false);
 });
 
 check("order: pickup branch scope helper", () => {

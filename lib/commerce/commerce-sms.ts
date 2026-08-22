@@ -3,8 +3,7 @@
  * Admin recipients keep the existing form verify template.
  * Payment / stage mutations must never fail because of SMS.
  *
- * Runtime: always try premium sendText first. PAID may fall back once to the
- * commerce verify template if text sending is unsupported. Never send both.
+ * Buyer booklet SMS is sendText-only. Never fall back to a template.
  */
 
 import { SmsMessageStatus } from "@/generated/prisma/enums";
@@ -12,7 +11,6 @@ import { sendTemplateMessage, sendText } from "@/lib/communication/send";
 import { truncateSmsParam } from "@/lib/communication/sms-params";
 import { hasSmsIrLineNumber } from "@/lib/communication/providers/smsir-provider";
 import { readSmsProviderName } from "@/lib/communication/sms-provider";
-import type { SmsProviderErrorCode } from "@/lib/communication/types";
 import { listEnabledCommerceAdminSmsRecipients } from "@/lib/commerce/notification-settings";
 import { commerceOrderQrUrl } from "@/lib/commerce/orders/qr";
 import {
@@ -59,19 +57,6 @@ export function isBookletStudentSmsStage(
 /** Diagnostics only — must not control runtime send behaviour. */
 export function chooseBookletBuyerSmsChannel(): BookletBuyerSmsChannel {
   return hasSmsIrLineNumber() ? "premium" : "legacy";
-}
-
-const SEND_TEXT_UNSUPPORTED: ReadonlySet<SmsProviderErrorCode> = new Set([
-  "configuration",
-  "disabled",
-  "invalid",
-  "rejected",
-]);
-
-export function isBookletSendTextUnsupported(
-  errorCode: SmsProviderErrorCode | null | undefined,
-): boolean {
-  return Boolean(errorCode && SEND_TEXT_UNSUPPORTED.has(errorCode));
 }
 
 export function compactSmsLines(lines: readonly string[]): string {
@@ -353,86 +338,17 @@ async function sendCommerceBuyerExclusive(params: {
     return;
   }
 
-  const canFallbackPaid =
-    params.stage === "PAID" && isBookletSendTextUnsupported(textResult.errorCode);
-
-  if (!canFallbackPaid) {
-    await prisma.smsMessage.update({
-      where: { id: messageId },
-      data: {
-        status: SmsMessageStatus.FAILED,
-        lastError: textResult.safeMessage,
-        attemptCount: 1,
-      },
-    });
-    console.error("[commerce-sms] channel=premium result=failed", {
-      stage: params.stage,
-      reason: textResult.errorCode,
-    });
-    return;
-  }
-
-  const fullName = truncateSmsParam(params.ctx.fullName);
-  const product = truncateSmsParam(params.ctx.booklet);
-  const amount = truncateSmsParam(params.ctx.amount);
-  if (!fullName || !product || !amount) {
-    await prisma.smsMessage.update({
-      where: { id: messageId },
-      data: {
-        status: SmsMessageStatus.FAILED,
-        lastError: textResult.safeMessage,
-      },
-    });
-    console.error("[commerce-sms] channel=premium result=failed", {
-      stage: params.stage,
-      reason: "missing_template_params",
-    });
-    return;
-  }
-
-  const fallback = await sendTemplateMessage({
-    kind: "commerce",
-    toMobile: mobile.normalized,
-    variables: { fullName, product, amount },
-    correlationId: messageId,
-  });
-
   await prisma.smsMessage.update({
     where: { id: messageId },
-    data: fallback.ok
-      ? {
-          status: SmsMessageStatus.SENT,
-          sentAt: new Date(),
-          providerMessageId: fallback.providerMessageId,
-          lastError: null,
-          attemptCount: 2,
-          metadata: {
-            ...(params.metadata ?? {}),
-            channel: "premium",
-            stage: params.stage,
-            bookletUrl: params.ctx.bookletUrl,
-            templateKind: "commerce",
-            fallbackReason: textResult.errorCode,
-          },
-        }
-      : {
-          status: SmsMessageStatus.FAILED,
-          lastError: fallback.safeMessage ?? textResult.safeMessage,
-          attemptCount: 2,
-        },
+    data: {
+      status: SmsMessageStatus.FAILED,
+      lastError: textResult.safeMessage,
+      attemptCount: 1,
+    },
   });
-
-  if (fallback.ok) {
-    console.info("[commerce-sms] channel=premium result=fallback", {
-      stage: params.stage,
-      reason: textResult.errorCode,
-    });
-    return;
-  }
-
   console.error("[commerce-sms] channel=premium result=failed", {
     stage: params.stage,
-    reason: fallback.errorCode ?? textResult.errorCode,
+    reason: textResult.errorCode,
   });
 }
 
