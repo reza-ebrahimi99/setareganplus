@@ -242,6 +242,36 @@ function configurationFailure(): SmsSendFailure {
   );
 }
 
+function sendTextConfigurationReason(
+  enabled: boolean,
+  config: SmsIrRuntimeConfig,
+): string {
+  if (process.env.STAROS_SMS_ENABLED !== "true") return "provider_disabled";
+  if (process.env.STAROS_SMS_PROVIDER?.trim().toLowerCase() !== "smsir") {
+    return "provider_disabled";
+  }
+  if (config.apiKey === null) return "apiKey_missing";
+  if (config.baseUrl === null) return "baseUrl_invalid";
+  if (!enabled) return "provider_disabled";
+  if (config.lineNumber === null) return "lineNumber_null";
+  return "unknown";
+}
+
+function logSmsIrConfigFailure(params: {
+  enabled: boolean;
+  config: SmsIrRuntimeConfig;
+  reason: string;
+}): void {
+  console.info("[smsir-config]", {
+    enabled: params.enabled,
+    apiKeyPresent: params.config.apiKey !== null,
+    baseUrl: params.config.baseUrl,
+    lineNumber: params.config.lineNumber,
+    templateIds: params.config.templateIds,
+    reason: params.reason,
+  });
+}
+
 function validateMobile(mobile: string): boolean {
   return /^09\d{9}$/.test(mobile);
 }
@@ -415,12 +445,18 @@ export class SmsIrProvider implements SmsProvider {
     const config = readSmsIrRuntimeConfig();
     const body = request.body.trim();
     const lineNumber = config.lineNumber;
+    const enabled = this.isEnabled();
     if (
-      !this.isEnabled() ||
+      !enabled ||
       config.apiKey === null ||
       config.baseUrl === null ||
       config.lineNumber === null
     ) {
+      logSmsIrConfigFailure({
+        enabled,
+        config,
+        reason: sendTextConfigurationReason(enabled, config),
+      });
       return logSendTextDiagnostics({
         httpStatus: null,
         rawJson: null,
