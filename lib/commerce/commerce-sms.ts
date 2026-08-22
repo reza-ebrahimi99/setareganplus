@@ -314,6 +314,14 @@ async function sendCommerceBuyerExclusive(params: {
     body: params.body,
     correlationId: messageId,
   });
+  console.info("[commerce-sms] sendText", {
+    channel: "premium",
+    ok: textResult.ok,
+    code: textResult.ok ? null : textResult.code,
+    safeMessage: textResult.safeMessage,
+    providerMessageId: textResult.providerMessageId,
+    retryable: textResult.retryable,
+  });
 
   if (textResult.ok) {
     await prisma.smsMessage.update({

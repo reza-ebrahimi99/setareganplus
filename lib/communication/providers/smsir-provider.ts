@@ -275,6 +275,50 @@ function readAcceptedMessageId(value: unknown): string | null {
     : null;
 }
 
+function readProviderMessage(value: unknown): string | null {
+  if (typeof value !== "object" || value === null) return null;
+  const message = Reflect.get(value, "message");
+  return typeof message === "string" ? message : null;
+}
+
+const SENSITIVE_LOG_KEY =
+  /^(mobile|mobiles|toMobile|phone|apiKey|api_key|authorization|token|messageText)$/i;
+
+function sanitizeSmsIrLogJson(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeSmsIrLogJson(item));
+  }
+  if (typeof value !== "object" || value === null) {
+    return value;
+  }
+  const out: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (SENSITIVE_LOG_KEY.test(key)) continue;
+    out[key] = sanitizeSmsIrLogJson(item);
+  }
+  return out;
+}
+
+function logSendTextDiagnostics(params: {
+  httpStatus: number | null;
+  rawJson: unknown;
+  result: SmsSendResult;
+  lineNumber: number | null;
+}): SmsSendResult {
+  console.info("[smsir] sendText", {
+    httpStatus: params.httpStatus,
+    rawJson:
+      params.rawJson === null || params.rawJson === undefined
+        ? null
+        : sanitizeSmsIrLogJson(params.rawJson),
+    normalizedSmsSendResult: params.result,
+    providerStatus: params.result.providerStatusCode,
+    providerMessage: readProviderMessage(params.rawJson),
+    lineNumber: params.lineNumber,
+  });
+  return params.result;
+}
+
 function mapHttpFailure(
   status: number,
   providerStatusCode: number | null,
@@ -370,16 +414,27 @@ export class SmsIrProvider implements SmsProvider {
   async sendText(request: SmsSendTextRequest): Promise<SmsSendResult> {
     const config = readSmsIrRuntimeConfig();
     const body = request.body.trim();
+    const lineNumber = config.lineNumber;
     if (
       !this.isEnabled() ||
       config.apiKey === null ||
       config.baseUrl === null ||
       config.lineNumber === null
     ) {
-      return configurationFailure();
+      return logSendTextDiagnostics({
+        httpStatus: null,
+        rawJson: null,
+        result: configurationFailure(),
+        lineNumber,
+      });
     }
     if (!validateMobile(request.toMobile) || body.length === 0 || body.length > 900) {
-      return failure("invalid", "متن یا شماره پیامک معتبر نیست.", false);
+      return logSendTextDiagnostics({
+        httpStatus: null,
+        rawJson: null,
+        result: failure("invalid", "متن یا شماره پیامک معتبر نیست.", false),
+        lineNumber,
+      });
     }
 
     try {
@@ -399,43 +454,85 @@ export class SmsIrProvider implements SmsProvider {
       });
 
       if (!response.ok) {
+        let rawJson: unknown = null;
         let providerStatusCode: number | null = null;
         try {
-          providerStatusCode = readBusinessStatus(await response.json());
+          rawJson = await response.json();
+          providerStatusCode = readBusinessStatus(rawJson);
         } catch {
           // HTTP status remains sufficient.
         }
         if (providerStatusCode === 20) {
-          return mapBusinessFailure(providerStatusCode);
+          return logSendTextDiagnostics({
+            httpStatus: response.status,
+            rawJson,
+            result: mapBusinessFailure(providerStatusCode),
+            lineNumber,
+          });
         }
-        return mapHttpFailure(response.status, providerStatusCode);
+        return logSendTextDiagnostics({
+          httpStatus: response.status,
+          rawJson,
+          result: mapHttpFailure(response.status, providerStatusCode),
+          lineNumber,
+        });
       }
 
       let payload: unknown;
       try {
         payload = await response.json();
       } catch {
-        return failure("malformed_response", "پاسخ سرویس پیامک قابل تأیید نبود.", true);
+        return logSendTextDiagnostics({
+          httpStatus: response.status,
+          rawJson: null,
+          result: failure("malformed_response", "پاسخ سرویس پیامک قابل تأیید نبود.", true),
+          lineNumber,
+        });
       }
 
       const providerStatusCode = readBusinessStatus(payload);
       if (providerStatusCode === null) {
-        return failure("malformed_response", "پاسخ سرویس پیامک قابل تأیید نبود.", true);
+        return logSendTextDiagnostics({
+          httpStatus: response.status,
+          rawJson: payload,
+          result: failure("malformed_response", "پاسخ سرویس پیامک قابل تأیید نبود.", true),
+          lineNumber,
+        });
       }
       if (providerStatusCode !== 1) {
-        return mapBusinessFailure(providerStatusCode);
+        return logSendTextDiagnostics({
+          httpStatus: response.status,
+          rawJson: payload,
+          result: mapBusinessFailure(providerStatusCode),
+          lineNumber,
+        });
       }
 
       const providerMessageId = readAcceptedMessageId(payload);
-      return success(providerMessageId, providerStatusCode);
+      return logSendTextDiagnostics({
+        httpStatus: response.status,
+        rawJson: payload,
+        result: success(providerMessageId, providerStatusCode),
+        lineNumber,
+      });
     } catch (error) {
       if (
         (error instanceof Error && error.name === "AbortError") ||
         request.signal?.aborted
       ) {
-        return failure("timeout", "زمان ارسال پیامک به پایان رسید.", true);
+        return logSendTextDiagnostics({
+          httpStatus: null,
+          rawJson: null,
+          result: failure("timeout", "زمان ارسال پیامک به پایان رسید.", true),
+          lineNumber,
+        });
       }
-      return failure("unavailable", "سرویس پیامک در دسترس نیست.", true);
+      return logSendTextDiagnostics({
+        httpStatus: null,
+        rawJson: null,
+        result: failure("unavailable", "سرویس پیامک در دسترس نیست.", true),
+        lineNumber,
+      });
     }
   }
 
