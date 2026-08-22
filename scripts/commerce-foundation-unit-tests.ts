@@ -559,7 +559,7 @@ check("order: booklet paid sms is a receipt not a registration template", () => 
     buildBookletPaidSmsBody,
     buildBookletStageSmsBody,
     compactSmsLines,
-    chooseBookletBuyerSmsChannel,
+    isBookletSendTextUnsupported,
   } = require("../lib/commerce/commerce-sms") as typeof import("../lib/commerce/commerce-sms");
   const ctx = {
     fullName: "علی رضایی",
@@ -567,11 +567,13 @@ check("order: booklet paid sms is a receipt not a registration template", () => 
     amount: "۱۲۰٬۰۰۰ ریال",
     orderNumber: "ORD-1",
     pickupBranch: "شعبه پسران",
+    pickupBranchAddress: "بین کلانتری و بانک مسکن",
     statusLabel: "پرداخت",
     bookletUrl: "https://setareganplus.ir/booklet/tok",
   };
   const paid = buildBookletPaidSmsBody(ctx);
   assert.equal(paid.includes("\n\n"), false);
+  assert.equal(paid.includes("خرید شما با موفقیت ثبت شد."), true);
   assert.equal(paid.includes("جزوه ریاضی"), true);
   assert.equal(paid.includes("ORD-1"), true);
   assert.equal(paid.includes("شعبه پسران"), true);
@@ -580,13 +582,17 @@ check("order: booklet paid sms is a receipt not a registration template", () => 
   assert.equal(paid.includes("به زودی با شما تماس"), false);
   const ready = buildBookletStageSmsBody("READY_FOR_PICKUP", ctx);
   assert.equal(ready.includes("جزوه شما آماده تحویل است."), true);
+  assert.equal(ready.includes("بین کلانتری و بانک مسکن"), true);
+  assert.equal(ready.includes("۸:۰۰ تا ۲۰:۰۰"), true);
   assert.equal(ready.includes("\n\n"), false);
   assert.equal(ready.includes("زمان تقریبی"), false);
   const delivered = buildBookletStageSmsBody("DELIVERED_TO_STUDENT", ctx);
-  assert.equal(delivered.includes("با موفقیت تحویل شما شد."), true);
+  assert.equal(delivered.includes("با موفقیت تحویل شد."), true);
+  assert.equal(delivered.includes("https://setareganplus.ir"), true);
   assert.equal(compactSmsLines(["a", "", "b"]), "a\nb");
-  const channel = chooseBookletBuyerSmsChannel();
-  assert.ok(channel === "premium" || channel === "legacy");
+  assert.equal(isBookletSendTextUnsupported("configuration"), true);
+  assert.equal(isBookletSendTextUnsupported("timeout"), false);
+  assert.equal(isBookletSendTextUnsupported("rate_limited"), false);
 });
 
 check("order: pickup branch scope helper", () => {

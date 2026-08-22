@@ -3,7 +3,8 @@
  * Admin recipients keep the existing form verify template.
  * Payment / stage mutations must never fail because of SMS.
  *
- * Buyer channel is exclusive: premium text OR legacy commerce template, never both.
+ * Runtime: always try premium sendText first. PAID may fall back once to the
+ * commerce verify template if text sending is unsupported. Never send both.
  */
 
 import { SmsMessageStatus } from "@/generated/prisma/enums";
@@ -11,10 +12,8 @@ import { sendTemplateMessage, sendText } from "@/lib/communication/send";
 import { truncateSmsParam } from "@/lib/communication/sms-params";
 import { hasSmsIrLineNumber } from "@/lib/communication/providers/smsir-provider";
 import { readSmsProviderName } from "@/lib/communication/sms-provider";
+import type { SmsProviderErrorCode } from "@/lib/communication/types";
 import { listEnabledCommerceAdminSmsRecipients } from "@/lib/commerce/notification-settings";
-import {
-  BOOKLET_READY_NOTICE_LINES,
-} from "@/lib/commerce/booklet-hours";
 import { commerceOrderQrUrl } from "@/lib/commerce/orders/qr";
 import {
   COMMERCE_OPS_STAGE_LABELS,
@@ -32,6 +31,7 @@ export type BookletSmsContext = {
   amount: string;
   orderNumber: string;
   pickupBranch: string;
+  pickupBranchAddress: string;
   statusLabel: string;
   bookletUrl: string;
 };
@@ -56,8 +56,22 @@ export function isBookletStudentSmsStage(
   );
 }
 
+/** Diagnostics only — must not control runtime send behaviour. */
 export function chooseBookletBuyerSmsChannel(): BookletBuyerSmsChannel {
   return hasSmsIrLineNumber() ? "premium" : "legacy";
+}
+
+const SEND_TEXT_UNSUPPORTED: ReadonlySet<SmsProviderErrorCode> = new Set([
+  "configuration",
+  "disabled",
+  "invalid",
+  "rejected",
+]);
+
+export function isBookletSendTextUnsupported(
+  errorCode: SmsProviderErrorCode | null | undefined,
+): boolean {
+  return Boolean(errorCode && SEND_TEXT_UNSUPPORTED.has(errorCode));
 }
 
 export function compactSmsLines(lines: readonly string[]): string {
@@ -77,15 +91,15 @@ function joinProductTitles(
 export function buildBookletPaidSmsBody(ctx: BookletSmsContext): string {
   return compactSmsLines([
     `سلام ${ctx.fullName} عزیز 🌹`,
-    "✅ خرید شما ثبت شد.",
+    "✅ خرید شما با موفقیت ثبت شد.",
     `📚 ${ctx.booklet}`,
     `💰 ${ctx.amount}`,
     "🏢 محل دریافت:",
     ctx.pickupBranch,
     `🧾 ${ctx.orderNumber}`,
-    "🎫 رسید و QR:",
+    "🔗 رسید و QR:",
     ctx.bookletUrl,
-    ...BOOKLET_READY_NOTICE_LINES,
+    "پس از آماده شدن جزوه، پیامک اطلاع‌رسانی برای شما ارسال خواهد شد.",
     "ستارگان پلاس",
   ]);
 }
@@ -98,25 +112,29 @@ export function buildBookletStageSmsBody(
   if (stage === "READY_FOR_PICKUP") {
     return compactSmsLines([
       `سلام ${ctx.fullName} عزیز 🌹`,
-      "📚 جزوه شما آماده تحویل است.",
+      "✅ جزوه شما آماده تحویل است.",
+      `📚 ${ctx.booklet}`,
       "🏢 محل دریافت:",
       ctx.pickupBranch,
-      "🎫 QR دریافت:",
+      `📍 ${ctx.pickupBranchAddress}`,
+      `🧾 ${ctx.orderNumber}`,
+      "🔗 رسید و QR:",
       ctx.bookletUrl,
-      "لطفاً هنگام مراجعه",
-      "QR را به مسئول تحویل نشان دهید.",
+      "ساعات تحویل:",
+      "شنبه تا پنجشنبه",
+      "۸:۰۰ تا ۲۰:۰۰",
       "ستارگان پلاس",
     ]);
   }
   if (stage === "DELIVERED_TO_STUDENT") {
     return compactSmsLines([
       `سلام ${ctx.fullName} عزیز 🌹`,
-      "✅ جزوه",
+      "جزوه",
       ctx.booklet,
-      "با موفقیت تحویل شما شد.",
+      "با موفقیت تحویل شد.",
       "از اعتماد شما سپاسگزاریم.",
-      ctx.bookletUrl,
-      "ستارگان پلاس",
+      "🌐",
+      "https://setareganplus.ir",
     ]);
   }
   return compactSmsLines([
@@ -276,19 +294,6 @@ async function sendCommerceBuyerExclusive(params: {
   });
   if (existing) return;
 
-  const channel = chooseBookletBuyerSmsChannel();
-  const fullName = truncateSmsParam(params.ctx.fullName);
-  const product = truncateSmsParam(params.ctx.booklet);
-  const amount = truncateSmsParam(params.ctx.amount);
-  const useLegacy = channel === "legacy" && params.stage === "PAID";
-  if (useLegacy && (!fullName || !product || !amount)) return;
-  if (channel === "legacy" && params.stage !== "PAID") {
-    console.error("[commerce-sms] premium channel required", {
-      stage: params.stage,
-    });
-    return;
-  }
-
   let messageId: string;
   try {
     const created = await prisma.smsMessage.create({
@@ -306,10 +311,10 @@ async function sendCommerceBuyerExclusive(params: {
         idempotencyKey: params.idempotencyKey,
         metadata: {
           ...(params.metadata ?? {}),
-          channel,
+          channel: "premium",
           stage: params.stage,
           bookletUrl: params.ctx.bookletUrl,
-          templateKind: useLegacy ? "commerce" : "premium",
+          templateKind: "premium",
         },
       },
       select: { id: true },
@@ -319,32 +324,115 @@ async function sendCommerceBuyerExclusive(params: {
     return;
   }
 
-  const result = useLegacy
-    ? await sendTemplateMessage({
-        kind: "commerce",
-        toMobile: mobile.normalized,
-        variables: { fullName: fullName!, product: product!, amount: amount! },
-        correlationId: messageId,
-      })
-    : await sendText({
-        toMobile: mobile.normalized,
-        body: params.body,
-        correlationId: messageId,
-      });
+  const textResult = await sendText({
+    toMobile: mobile.normalized,
+    body: params.body,
+    correlationId: messageId,
+  });
+
+  if (textResult.ok) {
+    await prisma.smsMessage.update({
+      where: { id: messageId },
+      data: {
+        status: SmsMessageStatus.SENT,
+        sentAt: new Date(),
+        providerMessageId: textResult.providerMessageId,
+        lastError: null,
+        metadata: {
+          ...(params.metadata ?? {}),
+          channel: "premium",
+          stage: params.stage,
+          bookletUrl: params.ctx.bookletUrl,
+          templateKind: "premium",
+        },
+      },
+    });
+    console.info("[commerce-sms] channel=premium result=success", {
+      stage: params.stage,
+    });
+    return;
+  }
+
+  const canFallbackPaid =
+    params.stage === "PAID" && isBookletSendTextUnsupported(textResult.errorCode);
+
+  if (!canFallbackPaid) {
+    await prisma.smsMessage.update({
+      where: { id: messageId },
+      data: {
+        status: SmsMessageStatus.FAILED,
+        lastError: textResult.safeMessage,
+        attemptCount: 1,
+      },
+    });
+    console.error("[commerce-sms] channel=premium result=failed", {
+      stage: params.stage,
+      reason: textResult.errorCode,
+    });
+    return;
+  }
+
+  const fullName = truncateSmsParam(params.ctx.fullName);
+  const product = truncateSmsParam(params.ctx.booklet);
+  const amount = truncateSmsParam(params.ctx.amount);
+  if (!fullName || !product || !amount) {
+    await prisma.smsMessage.update({
+      where: { id: messageId },
+      data: {
+        status: SmsMessageStatus.FAILED,
+        lastError: textResult.safeMessage,
+      },
+    });
+    console.error("[commerce-sms] channel=premium result=failed", {
+      stage: params.stage,
+      reason: "missing_template_params",
+    });
+    return;
+  }
+
+  const fallback = await sendTemplateMessage({
+    kind: "commerce",
+    toMobile: mobile.normalized,
+    variables: { fullName, product, amount },
+    correlationId: messageId,
+  });
 
   await prisma.smsMessage.update({
     where: { id: messageId },
-    data: result.ok
+    data: fallback.ok
       ? {
           status: SmsMessageStatus.SENT,
           sentAt: new Date(),
-          providerMessageId: result.providerMessageId,
+          providerMessageId: fallback.providerMessageId,
           lastError: null,
+          attemptCount: 2,
+          metadata: {
+            ...(params.metadata ?? {}),
+            channel: "premium",
+            stage: params.stage,
+            bookletUrl: params.ctx.bookletUrl,
+            templateKind: "commerce",
+            fallbackReason: textResult.errorCode,
+          },
         }
       : {
           status: SmsMessageStatus.FAILED,
-          lastError: result.safeMessage,
+          lastError: fallback.safeMessage ?? textResult.safeMessage,
+          attemptCount: 2,
         },
+  });
+
+  if (fallback.ok) {
+    console.info("[commerce-sms] channel=premium result=fallback", {
+      stage: params.stage,
+      reason: textResult.errorCode,
+    });
+    return;
+  }
+
+  console.error("[commerce-sms] channel=premium result=failed", {
+    stage: params.stage,
+    reason: fallback.errorCode ?? textResult.errorCode,
   });
 }
 
@@ -373,7 +461,7 @@ async function loadBookletSmsContext(params: {
       grandTotalRials: true,
       qrToken: true,
       opsStage: true,
-      pickupBranch: { select: { name: true } },
+      pickupBranch: { select: { name: true, address: true } },
       items: {
         orderBy: { createdAt: "asc" },
         select: { titleSnapshot: true },
@@ -393,6 +481,7 @@ async function loadBookletSmsContext(params: {
       amount: formatRials(order.grandTotalRials),
       orderNumber: order.orderNumber,
       pickupBranch: order.pickupBranch?.name ?? "—",
+      pickupBranchAddress: order.pickupBranch?.address?.trim() || "—",
       statusLabel: COMMERCE_OPS_STAGE_LABELS[stage],
       bookletUrl,
     },
