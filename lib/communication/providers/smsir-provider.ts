@@ -711,20 +711,34 @@ export class SmsIrProvider implements SmsProvider {
     signal: AbortSignal | undefined,
     config: SmsIrRuntimeConfig,
   ): Promise<SmsSendResult> {
+    const logResult = (result: SmsSendResult): SmsSendResult => {
+      console.info("[smsir] sendVerify result", { result });
+      return result;
+    };
+
     if (
       !this.isEnabled() ||
       config.apiKey === null ||
       config.baseUrl === null ||
       templateId === null
     ) {
-      return configurationFailure();
+      return logResult(configurationFailure());
     }
     if (!validateMobile(mobile) || !validateParameters(parameters)) {
-      return failure("invalid", "پارامترهای پیامک معتبر نیست.", false);
+      return logResult(
+        failure("invalid", "پارامترهای پیامک معتبر نیست.", false),
+      );
     }
 
     try {
-      const response = await fetch(`${config.baseUrl}/v1/send/verify`, {
+      const endpoint = `${config.baseUrl}/v1/send/verify`;
+      console.info("[smsir] sendVerify request", {
+        templateId,
+        mobile: `${mobile.slice(0, 4)}****${mobile.slice(-3)}`,
+        parameterNames: parameters.map((parameter) => parameter.name),
+        endpoint,
+      });
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           Accept: "application/json",
@@ -739,67 +753,98 @@ export class SmsIrProvider implements SmsProvider {
         signal,
       });
 
+      let providerBody: unknown = null;
+      let providerBodyParseFailed = false;
+      try {
+        providerBody = await response.json();
+      } catch {
+        providerBodyParseFailed = true;
+      }
+      const loggedProviderBody = providerBodyParseFailed
+        ? null
+        : sanitizeSmsIrLogJson(providerBody);
+      console.info("[smsir] sendVerify response", {
+        httpStatus: response.status,
+        providerStatus: readBusinessStatus(
+          providerBodyParseFailed ? null : providerBody,
+        ),
+        providerMessage: providerBodyParseFailed
+          ? null
+          : readProviderMessage(providerBody),
+        providerBody: loggedProviderBody,
+      });
+
       if (!response.ok) {
         let providerStatusCode: number | null = null;
         try {
-          providerStatusCode = readBusinessStatus(await response.json());
+          providerStatusCode = providerBodyParseFailed
+            ? null
+            : readBusinessStatus(providerBody);
         } catch {
           // HTTP status remains sufficient for the normalized failure.
         }
         if (providerStatusCode === 20) {
-          return mapBusinessFailure(providerStatusCode);
+          return logResult(mapBusinessFailure(providerStatusCode));
         }
-        return mapHttpFailure(response.status, providerStatusCode);
+        return logResult(mapHttpFailure(response.status, providerStatusCode));
       }
 
-      let payload: unknown;
-      try {
-        payload = await response.json();
-      } catch {
-        return failure(
-          "malformed_response",
-          "پاسخ سرویس پیامک قابل تأیید نبود.",
-          true,
+      if (providerBodyParseFailed) {
+        return logResult(
+          failure(
+            "malformed_response",
+            "پاسخ سرویس پیامک قابل تأیید نبود.",
+            true,
+          ),
         );
       }
+      const payload: unknown = providerBody;
 
       const providerStatusCode = readBusinessStatus(payload);
       if (providerStatusCode === null) {
-        return failure(
-          "malformed_response",
-          "پاسخ سرویس پیامک قابل تأیید نبود.",
-          true,
+        return logResult(
+          failure(
+            "malformed_response",
+            "پاسخ سرویس پیامک قابل تأیید نبود.",
+            true,
+          ),
         );
       }
       if (providerStatusCode !== 1) {
-        return mapBusinessFailure(providerStatusCode);
+        return logResult(mapBusinessFailure(providerStatusCode));
       }
 
       const providerMessageId = readAcceptedMessageId(payload);
       if (providerMessageId === null) {
-        return failure(
-          "malformed_response",
-          "پاسخ سرویس پیامک قابل تأیید نبود.",
-          true,
-          providerStatusCode,
+        return logResult(
+          failure(
+            "malformed_response",
+            "پاسخ سرویس پیامک قابل تأیید نبود.",
+            true,
+            providerStatusCode,
+          ),
         );
       }
-      return success(providerMessageId, providerStatusCode);
+      return logResult(success(providerMessageId, providerStatusCode));
     } catch (error) {
       if (
         (error instanceof Error && error.name === "AbortError") ||
         signal?.aborted
       ) {
-        return failure(
-          "timeout",
-          "زمان ارسال پیامک به پایان رسید.",
-          true,
+        return logResult(
+          failure(
+            "timeout",
+            "زمان ارسال پیامک به پایان رسید.",
+            true,
+          ),
         );
       }
-      return failure(
-        "unavailable",
-        "سرویس پیامک در دسترس نیست.",
-        true,
+      return logResult(
+        failure(
+          "unavailable",
+          "سرویس پیامک در دسترس نیست.",
+          true,
+        ),
       );
     }
   }
