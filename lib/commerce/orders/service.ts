@@ -31,7 +31,8 @@ import {
   type CommerceOpsHealthLevel,
   type CommerceOpsPriority,
 } from "@/lib/commerce/orders/intelligence";
-import { listCommerceOrderSmsHistory } from "@/lib/commerce/commerce-sms";
+import { listBookletSmsHistory } from "@/lib/commerce/booklet-sms/service";
+import type { BookletSmsHistoryItem } from "@/lib/commerce/booklet-sms/types";
 import { notifyCommerceOpsStaff } from "@/lib/commerce/orders/notify";
 import {
   COMMERCE_OPS_ACTIVITY_TITLES,
@@ -946,7 +947,7 @@ export type AdminCommerceOrderDetail = AdminCommerceOrderRow & {
     totalRials: number;
   }>;
   events: AdminCommerceOrderEventRow[];
-  smsHistory: import("@/lib/commerce/commerce-sms").CommerceOrderSmsHistoryItem[];
+  smsHistory: BookletSmsHistoryItem[];
 };
 
 function actorName(actor: { firstName: string; lastName: string } | null): string | null {
@@ -1007,10 +1008,10 @@ export async function getAdminCommerceOrderDetail(params: {
       orderBy: { updatedAt: "desc" },
       select: { trackingCode: true, provider: true },
     }),
-    listCommerceOrderSmsHistory({
+    listBookletSmsHistory({
       organizationId: params.organizationId,
       orderId: order.id,
-    }),
+    }).then((result) => result.items),
   ]);
 
   const lastEvent = order.events[order.events.length - 1];

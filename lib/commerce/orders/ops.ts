@@ -27,7 +27,11 @@ import {
   recordCommerceOrderEvent,
   stageChangedEventInput,
 } from "@/lib/commerce/orders/timeline";
-import { enqueueCommerceOrderPaidSms, enqueueCommerceOrderStageSms } from "@/lib/commerce/commerce-sms";
+import {
+  onBookletOrderPaid,
+  onBookletOrderStageChanged,
+} from "@/lib/commerce/booklet-sms/service";
+import { logOpsBookletSmsReaction } from "@/lib/commerce/booklet-sms/logger";
 import { notifyCommerceOpsStaff } from "@/lib/commerce/orders/notify";
 import { prisma } from "@/lib/prisma";
 
@@ -147,10 +151,18 @@ export async function recordCommerceOrderPayment(params: {
     actorUserId: params.actorUserId,
     body: order.buyerName,
   }).catch((error) => console.error("[commerce-ops] notify failed", error));
-  void enqueueCommerceOrderPaidSms({
+  const paidSms = await onBookletOrderPaid({
     organizationId: order.organizationId,
     orderId: order.id,
-  }).catch((error) => console.error("[commerce-ops] paid sms failed", error));
+  });
+  logOpsBookletSmsReaction({
+    correlationId: paidSms.correlationId,
+    organizationId: order.organizationId,
+    orderId: order.id,
+    ok: paidSms.ok,
+    status: paidSms.status,
+    event: "PAID",
+  });
 
   return { ok: true };
 }
@@ -267,11 +279,19 @@ export async function advanceCommerceOrderStage(params: {
     }).catch((error) => console.error("[commerce-ops] notify failed", error));
   }
   if (gate.next === "READY_FOR_PICKUP" || gate.next === "DELIVERED_TO_STUDENT") {
-    void enqueueCommerceOrderStageSms({
+    const stageSms = await onBookletOrderStageChanged({
       organizationId: order.organizationId,
       orderId: order.id,
       stage: gate.next,
-    }).catch((error) => console.error("[commerce-ops] stage sms failed", error));
+    });
+    logOpsBookletSmsReaction({
+      correlationId: stageSms.correlationId,
+      organizationId: order.organizationId,
+      orderId: order.id,
+      ok: stageSms.ok,
+      status: stageSms.status,
+      event: gate.next,
+    });
   }
 
   return { ok: true };

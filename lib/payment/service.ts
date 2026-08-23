@@ -21,7 +21,8 @@ import {
   RegistrationStatus,
 } from "@/generated/prisma/enums";
 
-import { enqueueCommerceOrderPaidSms } from "@/lib/commerce/commerce-sms";
+import { onBookletOrderPaid } from "@/lib/commerce/booklet-sms/service";
+import { logPaymentBookletSmsReaction } from "@/lib/commerce/booklet-sms/logger";
 import { notifyCommerceOpsStaff } from "@/lib/commerce/orders/notify";
 import { decrementCommerceItemStock } from "@/lib/commerce/inventory";
 import { recordCommerceOrderEvent, stageChangedEventInput } from "@/lib/commerce/orders/timeline";
@@ -871,15 +872,31 @@ export async function verifyPaymentCallback(params: {
 
   if (isCommerce) {
     if (fresh.status === PaymentStatus.PAID) {
-      // Provider send (form verify template) — never block payment.
-      void enqueueCommerceOrderPaidSms({
+      const smsResult = await onBookletOrderPaid({
         organizationId: params.organizationId,
         orderId: intent.payableId,
-      }).catch((error) => {
-        console.error("[payment] commerce SMS notify failed", {
+      });
+      logPaymentBookletSmsReaction({
+        correlationId: smsResult.correlationId,
+        organizationId: params.organizationId,
+        orderId: intent.payableId,
+        paymentIntentId: intent.id,
+        ok: smsResult.ok,
+        status: smsResult.status,
+      });
+      await logPaymentEvent({
+        organizationId: params.organizationId,
+        paymentIntentId: intent.id,
+        fromStatus: fresh.status,
+        toStatus: fresh.status,
+        event: "BOOKLET_SMS_REACTION",
+        message: smsResult.status,
+        metadata: {
+          correlationId: smsResult.correlationId,
           orderId: intent.payableId,
-          error: error instanceof Error ? error.message : error,
-        });
+          ok: smsResult.ok,
+          status: smsResult.status,
+        },
       });
       void notifyCommerceOpsStaff({
         organizationId: params.organizationId,

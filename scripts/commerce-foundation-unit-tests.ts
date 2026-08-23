@@ -558,8 +558,9 @@ check("order: booklet paid sms is a receipt not a registration template", () => 
   const {
     buildBookletPaidSmsBody,
     buildBookletStageSmsBody,
+    buildBookletAdminSmsBody,
     compactSmsLines,
-  } = require("../lib/commerce/commerce-sms") as typeof import("../lib/commerce/commerce-sms");
+  } = require("../lib/commerce/booklet-sms/builder") as typeof import("../lib/commerce/booklet-sms/builder");
   const ctx = {
     fullName: "علی رضایی",
     booklet: "جزوه ریاضی",
@@ -589,6 +590,43 @@ check("order: booklet paid sms is a receipt not a registration template", () => 
   assert.equal(delivered.includes("با موفقیت تحویل شد."), true);
   assert.equal(delivered.includes("https://setareganplus.ir"), true);
   assert.equal(compactSmsLines(["a", "", "b"]), "a\nb");
+  const admin = buildBookletAdminSmsBody(ctx, "09123456789");
+  assert.equal(admin.includes("09123456789"), false);
+  assert.equal(admin.includes("09****6789"), true);
+  assert.equal(admin.includes("ORD-1"), true);
+});
+
+check("order: booklet sms metadata prefers rebuild-from-order retry", () => {
+  const {
+    bookletSmsMetadata,
+    isBookletSmsEvent,
+    parseBookletSmsMetadata,
+  } = require("../lib/commerce/booklet-sms/types") as typeof import("../lib/commerce/booklet-sms/types");
+  assert.equal(isBookletSmsEvent("PAID"), true);
+  assert.equal(isBookletSmsEvent("IN_PRODUCTION"), false);
+  const meta = bookletSmsMetadata({
+    event: "PAID",
+    role: "buyer",
+    builderName: "paid_buyer",
+    correlationId: "corr-1",
+    ctx: {
+      fullName: "علی",
+      booklet: "جزوه",
+      amount: "۱ ریال",
+      orderNumber: "ORD-1",
+      pickupBranch: "شعبه",
+      pickupBranchAddress: "آدرس",
+      statusLabel: "پرداخت",
+      bookletUrl: "https://setareganplus.ir/booklet/tok",
+    },
+    idempotencyBase: "commerce_order_sms:1:PAID",
+  });
+  assert.equal(meta.correlationId, "corr-1");
+  assert.equal(meta.retry.mode, "rebuild_from_order");
+  assert.equal(meta.templateKind, "none");
+  const parsed = parseBookletSmsMetadata({ stage: "READY_FOR_PICKUP", recipientRole: "buyer" });
+  assert.equal(parsed.event, "READY_FOR_PICKUP");
+  assert.equal(parsed.role, "buyer");
 });
 
 check("order: pickup branch scope helper", () => {

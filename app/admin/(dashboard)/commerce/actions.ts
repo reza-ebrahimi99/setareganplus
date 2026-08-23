@@ -14,7 +14,10 @@ import {
   bulkAssignCommerceOrders,
 } from "@/lib/commerce/orders/bulk";
 import { markCommerceOpsNotificationsRead } from "@/lib/commerce/orders/notify";
-import { resendCommerceOrderBuyerSms, retryCommerceOrderSms } from "@/lib/commerce/commerce-sms";
+import {
+  resendBookletSms,
+  retryBookletSms,
+} from "@/lib/commerce/booklet-sms/service";
 import { isCommerceOpsStage } from "@/lib/commerce/orders/ops-stage";
 import { createSingleItemCommerceOrder } from "@/lib/commerce/orders/service";
 import {
@@ -262,12 +265,12 @@ export async function resendOrderSmsAction(
   const stageRaw = String(formData.get("stage") ?? "").trim();
   if (!orderId) return { formError: "سفارش نامعتبر است." };
   const stage = isCommerceOpsStage(stageRaw) ? stageRaw : undefined;
-  const result = await resendCommerceOrderBuyerSms({
+  const result = await resendBookletSms({
     organizationId: session.organization.id,
     orderId,
     stage,
   });
-  if (!result.ok) return { formError: result.error };
+  if (!result.ok) return { formError: result.error.message };
   revalidateCommerceOps(formData);
   return { successMessage: "پیامک دوباره ارسال شد." };
 }
@@ -279,11 +282,11 @@ export async function retryOrderSmsAction(
   const session = await requirePermission("commerce.orders.manage");
   const messageId = String(formData.get("messageId") ?? "").trim();
   if (!messageId) return { formError: "پیامک نامعتبر است." };
-  const result = await retryCommerceOrderSms({
+  const result = await retryBookletSms({
     organizationId: session.organization.id,
     messageId,
   });
-  if (!result.ok) return { formError: result.error };
+  if (!result.ok) return { formError: result.error.message };
   revalidateCommerceOps(formData);
   return { successMessage: "ارسال مجدد انجام شد." };
 }
