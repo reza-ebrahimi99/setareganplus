@@ -85,14 +85,26 @@ function resolvePurpose(purpose?: OtpPurpose): OtpPurpose {
 export async function requestOtp(
   input: RequestOtpInput,
 ): Promise<RequestOtpResult> {
+  console.info("[otp] requestOtp start", {
+    organizationId: input.organizationId,
+    purpose: resolvePurpose(input.purpose),
+  });
   const mobile = normalizeIranianMobile(input.mobile);
   if (!mobile.ok) {
+    console.info("[otp] requestOtp early return", { reason: "invalid_mobile" });
     return { ok: false, error: GENERIC_MOBILE };
   }
+  console.info("[otp] requestOtp normalized mobile", {
+    mobile: `${mobile.normalized.slice(0, 4)}****${mobile.normalized.slice(-3)}`,
+  });
 
   const config = getCommunicationConfig();
   const purpose = resolvePurpose(input.purpose);
   const now = new Date();
+  console.info("[otp] requestOtp config", {
+    smsEnabled: config.smsEnabled,
+    providerName: config.providerName,
+  });
 
   const latest = await prisma.otpChallenge.findFirst({
     where: {
@@ -117,6 +129,9 @@ export async function requestOtp(
     (latest?.resendAvailableAt && latest.resendAvailableAt > now) ||
     (latest?.status === OtpChallengeStatus.LOCKED && latest.expiresAt > now)
   ) {
+    console.info("[otp] requestOtp early return", {
+      reason: "cooldown_or_locked",
+    });
     return { ok: false, error: GENERIC_COOLDOWN };
   }
 
@@ -166,10 +181,17 @@ export async function requestOtp(
     });
 
     if (config.smsEnabled) {
+      console.info("[otp] requestOtp before sendOtpTemplate", {
+        challengeId: challenge.id,
+        mobile: `${mobile.normalized.slice(0, 4)}****${mobile.normalized.slice(-3)}`,
+      });
       const delivery = await sendOtpTemplate({
         toMobile: mobile.normalized,
         code,
         correlationId: challenge.id,
+      });
+      console.info("[otp] requestOtp after sendOtpTemplate", {
+        result: delivery,
       });
       if (!delivery.ok) {
         // A challenge is usable only after the live provider accepts delivery.
@@ -182,13 +204,24 @@ export async function requestOtp(
           },
           data: { status: OtpChallengeStatus.EXPIRED },
         });
+        console.info("[otp] requestOtp early return", {
+          reason: "delivery_failed",
+        });
         return {
           ok: false,
           error: "درخواست کد تأیید در حال حاضر ممکن نیست. لطفاً دوباره تلاش کنید.",
         };
       }
+    } else {
+      console.info("[otp] requestOtp skip sendOtpTemplate", {
+        reason: "sms_disabled",
+      });
     }
 
+    console.info("[otp] requestOtp return", {
+      ok: true,
+      challengeId: challenge.id,
+    });
     return {
       ok: true,
       challengeId: challenge.id,
@@ -198,7 +231,11 @@ export async function requestOtp(
         ? { _testCode: code }
         : {}),
     };
-  } catch {
+  } catch (error) {
+    console.error("[otp] requestOtp catch", {
+      name: error instanceof Error ? error.name : typeof error,
+      message: error instanceof Error ? error.message : "non-error",
+    });
     return {
       ok: false,
       error: "درخواست کد تأیید در حال حاضر ممکن نیست. لطفاً دوباره تلاش کنید.",

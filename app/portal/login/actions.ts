@@ -33,37 +33,63 @@ export async function requestPortalOtpAction(
   _state: PortalLoginState,
   formData: FormData,
 ): Promise<PortalLoginState> {
-  const parsed = normalizeIranianMobile(field(formData, "mobile"));
-  if (!parsed.ok) {
-    return { phase: "mobile", error: "شماره موبایل معتبر وارد کنید." };
-  }
+  console.info("[otp] requestPortalOtpAction start");
+  try {
+    const parsed = normalizeIranianMobile(field(formData, "mobile"));
+    if (!parsed.ok) {
+      console.info("[otp] requestPortalOtpAction invalid mobile");
+      return { phase: "mobile", error: "شماره موبایل معتبر وارد کنید." };
+    }
 
-  const access = await findActivePortalAccessByMobile(parsed.normalized);
-  if (access) {
-    const requested = await requestOtp({
-      organizationId: access.organizationId,
-      mobile: parsed.normalized,
-      purpose: OtpPurpose.LOGIN,
-      idempotencyKey: `portal-login:${access.userId}:${Math.floor(Date.now() / 60_000)}`,
+    console.info("[otp] requestPortalOtpAction normalized mobile", {
+      mobile: `${parsed.normalized.slice(0, 4)}****${parsed.normalized.slice(-3)}`,
     });
-    if (requested.ok) {
-      await prisma.auditLog.create({
-        data: {
-          organizationId: access.organizationId,
-          actorUserId: access.userId,
-          action: AuditAction.OTP_REQUESTED,
-          entityType: "OtpChallenge",
-          entityId: requested.challengeId,
-        },
+
+    const access = await findActivePortalAccessByMobile(parsed.normalized);
+    if (access) {
+      console.info("[otp] requestPortalOtpAction before requestOtp", {
+        organizationId: access.organizationId,
+      });
+      const requested = await requestOtp({
+        organizationId: access.organizationId,
+        mobile: parsed.normalized,
+        purpose: OtpPurpose.LOGIN,
+        idempotencyKey: `portal-login:${access.userId}:${Math.floor(Date.now() / 60_000)}`,
+      });
+      console.info("[otp] requestPortalOtpAction after requestOtp", {
+        ok: requested.ok,
+        error: requested.ok ? null : requested.error,
+        challengeId: requested.ok ? requested.challengeId : null,
+      });
+      if (requested.ok) {
+        await prisma.auditLog.create({
+          data: {
+            organizationId: access.organizationId,
+            actorUserId: access.userId,
+            action: AuditAction.OTP_REQUESTED,
+            entityType: "OtpChallenge",
+            entityId: requested.challengeId,
+          },
+        });
+      }
+    } else {
+      console.info("[otp] requestPortalOtpAction skip requestOtp", {
+        reason: "no_active_portal_access",
       });
     }
-  }
 
-  return {
-    phase: "otp",
-    message: GENERIC_REQUEST,
-    mobile: parsed.normalized,
-  };
+    return {
+      phase: "otp",
+      message: GENERIC_REQUEST,
+      mobile: parsed.normalized,
+    };
+  } catch (error) {
+    console.error("[otp] requestPortalOtpAction exception", {
+      name: error instanceof Error ? error.name : typeof error,
+      message: error instanceof Error ? error.message : "non-error",
+    });
+    throw error;
+  }
 }
 
 export async function verifyPortalOtpAction(
