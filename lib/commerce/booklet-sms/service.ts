@@ -29,6 +29,7 @@ import {
   createBookletSmsCorrelationId,
   isBookletSmsEvent,
   parseBookletSmsMetadata,
+  type BookletSmsContext,
   type BookletSmsEvent,
   type BookletSmsHistoryItem,
   type BookletSmsHistoryResult,
