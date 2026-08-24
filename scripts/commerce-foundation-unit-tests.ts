@@ -599,6 +599,7 @@ check("order: booklet purchase confirmation sms is compact, RTL, and emoji-forma
     pickupBranchAddress: "بین کلانتری و بانک مسکن",
     statusLabel: "پرداخت",
     bookletUrl: "https://setareganplus.ir/o/AB12CD",
+    shortCode: "AB12CD",
   };
   const paid = buildBookletPaidSmsBody(ctx);
   assert.equal(paid.includes("\n\n"), false);
@@ -655,15 +656,182 @@ check("order: booklet sms metadata prefers rebuild-from-order retry", () => {
       pickupBranchAddress: "آدرس",
       statusLabel: "پرداخت",
       bookletUrl: "https://setareganplus.ir/booklet/tok",
+      shortCode: "AB12CD",
     },
     idempotencyBase: "commerce_order_sms:1:PAID",
   });
   assert.equal(meta.correlationId, "corr-1");
   assert.equal(meta.retry.mode, "rebuild_from_order");
   assert.equal(meta.templateKind, "none");
+  assert.equal(meta.channel, "text");
+  const metaVerify = bookletSmsMetadata({
+    event: "PAID",
+    role: "buyer",
+    builderName: "paid_buyer",
+    correlationId: "corr-2",
+    ctx: {
+      fullName: "علی",
+      booklet: "جزوه",
+      amount: "۱ ریال",
+      orderNumber: "ORD-1",
+      pickupBranch: "شعبه",
+      pickupBranchAddress: "آدرس",
+      statusLabel: "پرداخت",
+      bookletUrl: "https://setareganplus.ir/o/AB12CD",
+      shortCode: "AB12CD",
+    },
+    idempotencyBase: "commerce_order_sms:1:PAID",
+    verify: { templateCode: "950772" },
+  });
+  assert.equal(metaVerify.channel, "verify");
+  assert.equal(metaVerify.templateKind, "pattern");
+  assert.equal(metaVerify.verifyTemplateCode, "950772");
   const parsed = parseBookletSmsMetadata({ stage: "READY_FOR_PICKUP", recipientRole: "buyer" });
   assert.equal(parsed.event, "READY_FOR_PICKUP");
   assert.equal(parsed.role, "buyer");
+});
+
+check("order: commerce SMS is dispatched via SMS.ir Verify, not sendText", () => {
+  const {
+    buildBookletPurchaseVerifyParameters,
+    buildBookletReadyVerifyParameters,
+    buildBookletAdminVerifyParameters,
+  } = require("../lib/commerce/booklet-sms/builder") as typeof import("../lib/commerce/booklet-sms/builder");
+
+  const longTitle = "جزوه ریاضی پایه دهم رشته ریاضی و فیزیک ویژه کنکور سراسری";
+  const ctx = {
+    fullName: "علی رضایی بسیار طولانی نام خانوادگی",
+    booklet: longTitle,
+    amount: "۱٬۲۳۴٬۵۶۷٬۸۹۰ ریال",
+    orderNumber: "ORD-20260824-00007",
+    pickupBranch: "شعبه پسران",
+    pickupBranchAddress: "بین کلانتری و بانک مسکن",
+    statusLabel: "پرداخت",
+    bookletUrl: "https://setareganplus.ir/o/AB12CD",
+    shortCode: "AB12CD",
+  };
+
+  const purchase = buildBookletPurchaseVerifyParameters(ctx);
+  assert.equal(Object.keys(purchase).sort().join(","), "FULLNAME,ORDER_NUMBER,PRICE,TITLE");
+  assert.equal(purchase.ORDER_NUMBER, ctx.orderNumber);
+  for (const value of Object.values(purchase)) {
+    assert.equal(value.length <= 25, true);
+  }
+
+  const ready = buildBookletReadyVerifyParameters(ctx);
+  assert.equal(Object.keys(ready).sort().join(","), "FULLNAME,LINK,ORDER_NUMBER,TITLE");
+  // LINK must be the bare short code only — never the full URL.
+  assert.equal(ready.LINK, "AB12CD");
+  assert.equal(ready.LINK.includes("http"), false);
+  assert.equal(ready.LINK.includes("setareganplus.ir"), false);
+  for (const value of Object.values(ready)) {
+    assert.equal(value.length <= 25, true);
+  }
+
+  const admin = buildBookletAdminVerifyParameters(ctx);
+  assert.equal(Object.keys(admin).sort().join(","), "FULLNAME,ORDER_NUMBER,PRICE,TITLE");
+  for (const value of Object.values(admin)) {
+    assert.equal(value.length <= 25, true);
+  }
+});
+
+check("order: booklet verify template ids resolve from the three dedicated env vars", () => {
+  const previous = {
+    purchase: process.env.SMSIR_PURCHASE_TEMPLATE_ID,
+    ready: process.env.SMSIR_READY_TEMPLATE_ID,
+    admin: process.env.SMSIR_ADMIN_TEMPLATE_ID,
+  };
+  try {
+    delete require.cache[require.resolve("../lib/commerce/booklet-sms/verify-config")];
+    process.env.SMSIR_PURCHASE_TEMPLATE_ID = "950772";
+    process.env.SMSIR_READY_TEMPLATE_ID = "939540";
+    process.env.SMSIR_ADMIN_TEMPLATE_ID = "387684";
+    const verifyConfig = require("../lib/commerce/booklet-sms/verify-config") as typeof import("../lib/commerce/booklet-sms/verify-config");
+    assert.equal(verifyConfig.readBookletVerifyTemplateId("purchase"), "950772");
+    assert.equal(verifyConfig.readBookletVerifyTemplateId("ready"), "939540");
+    assert.equal(verifyConfig.readBookletVerifyTemplateId("admin"), "387684");
+    assert.equal(verifyConfig.isBookletVerifyTemplateConfigured("purchase"), true);
+
+    delete require.cache[require.resolve("../lib/commerce/booklet-sms/verify-config")];
+    delete process.env.SMSIR_PURCHASE_TEMPLATE_ID;
+    const verifyConfigUnset = require("../lib/commerce/booklet-sms/verify-config") as typeof import("../lib/commerce/booklet-sms/verify-config");
+    assert.equal(verifyConfigUnset.readBookletVerifyTemplateId("purchase"), null);
+    assert.equal(verifyConfigUnset.isBookletVerifyTemplateConfigured("purchase"), false);
+  } finally {
+    for (const [key, value] of Object.entries({
+      SMSIR_PURCHASE_TEMPLATE_ID: previous.purchase,
+      SMSIR_READY_TEMPLATE_ID: previous.ready,
+      SMSIR_ADMIN_TEMPLATE_ID: previous.admin,
+    })) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    delete require.cache[require.resolve("../lib/commerce/booklet-sms/verify-config")];
+  }
+});
+
+check("order: buyer dispatch resolves to Verify for PAID/READY, text for DELIVERED", () => {
+  const previous = {
+    purchase: process.env.SMSIR_PURCHASE_TEMPLATE_ID,
+    ready: process.env.SMSIR_READY_TEMPLATE_ID,
+  };
+  try {
+    delete require.cache[require.resolve("../lib/commerce/booklet-sms/verify-config")];
+    delete require.cache[require.resolve("../lib/commerce/booklet-sms/buyer")];
+    process.env.SMSIR_PURCHASE_TEMPLATE_ID = "950772";
+    process.env.SMSIR_READY_TEMPLATE_ID = "939540";
+    const buyer = require("../lib/commerce/booklet-sms/buyer") as typeof import("../lib/commerce/booklet-sms/buyer");
+    const ctx = {
+      fullName: "علی",
+      booklet: "جزوه",
+      amount: "۱ ریال",
+      orderNumber: "ORD-1",
+      pickupBranch: "شعبه",
+      pickupBranchAddress: "آدرس",
+      statusLabel: "پرداخت",
+      bookletUrl: "https://setareganplus.ir/o/AB12CD",
+      shortCode: "AB12CD",
+    };
+    const paidResolution = buyer.resolveBuyerDispatch("PAID", ctx);
+    assert.equal(paidResolution.ok, true);
+    if (paidResolution.ok) {
+      assert.equal(paidResolution.dispatch.mode, "verify");
+      if (paidResolution.dispatch.mode === "verify") {
+        assert.equal(paidResolution.dispatch.templateCode, "950772");
+      }
+    }
+    const readyResolution = buyer.resolveBuyerDispatch("READY_FOR_PICKUP", ctx);
+    assert.equal(readyResolution.ok, true);
+    if (readyResolution.ok) {
+      assert.equal(readyResolution.dispatch.mode, "verify");
+      if (readyResolution.dispatch.mode === "verify") {
+        assert.equal(readyResolution.dispatch.templateCode, "939540");
+        assert.equal(readyResolution.dispatch.parameters.LINK, "AB12CD");
+      }
+    }
+    const deliveredResolution = buyer.resolveBuyerDispatch("DELIVERED_TO_STUDENT", ctx);
+    assert.equal(deliveredResolution.ok, true);
+    if (deliveredResolution.ok) {
+      assert.equal(deliveredResolution.dispatch.mode, "text");
+    }
+
+    delete require.cache[require.resolve("../lib/commerce/booklet-sms/verify-config")];
+    delete require.cache[require.resolve("../lib/commerce/booklet-sms/buyer")];
+    delete process.env.SMSIR_PURCHASE_TEMPLATE_ID;
+    const buyerUnset = require("../lib/commerce/booklet-sms/buyer") as typeof import("../lib/commerce/booklet-sms/buyer");
+    const unsetResolution = buyerUnset.resolveBuyerDispatch("PAID", ctx);
+    assert.equal(unsetResolution.ok, false);
+  } finally {
+    for (const [key, value] of Object.entries({
+      SMSIR_PURCHASE_TEMPLATE_ID: previous.purchase,
+      SMSIR_READY_TEMPLATE_ID: previous.ready,
+    })) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    delete require.cache[require.resolve("../lib/commerce/booklet-sms/verify-config")];
+    delete require.cache[require.resolve("../lib/commerce/booklet-sms/buyer")];
+  }
 });
 
 check("order: shipping status label derives from ops stage (courier/shipping-ready)", () => {

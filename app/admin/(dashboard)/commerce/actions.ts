@@ -42,6 +42,9 @@ export type CommerceSmsPreviewActionState = {
   successMessage?: string;
   previewBody?: string;
   previewStage?: string;
+  /** Present only when this stage actually dispatches via SMS.ir Verify. */
+  previewVerifyTemplateCode?: string;
+  previewVerifyParameters?: Record<string, string>;
 };
 
 function allowedBranchIds(session: AdminSessionContext): readonly string[] | null {
@@ -320,6 +323,8 @@ export async function previewOrderSmsAction(
     successMessage: "پیش‌نمایش ساخته شد.",
     previewBody: result.body,
     previewStage: result.event,
+    previewVerifyTemplateCode: result.verify?.templateCode,
+    previewVerifyParameters: result.verify?.parameters,
   };
 }
 

@@ -1,30 +1,60 @@
 /**
- * Plain-text booklet SMS delivery (buyer and shared persist/send/update).
+ * Booklet SMS delivery to the buyer — shared persist/send/update core.
+ *
+ * PAID and READY_FOR_PICKUP dispatch through SMS.ir Verify (the approved
+ * purchase/ready templates), reusing the same sendPatternTemplate() ->
+ * sendVerify() path OTP already uses. DELIVERED_TO_STUDENT has no approved
+ * Verify template and keeps using plain sendText().
  */
 
 import type { Prisma } from "@/generated/prisma/client";
 import { SmsMessageStatus } from "@/generated/prisma/enums";
-import { sendText } from "@/lib/communication/send";
+import { sendPatternTemplate, sendText } from "@/lib/communication/send";
 import type { SmsSendResult } from "@/lib/communication/types";
 import { readSmsProviderName } from "@/lib/communication/sms-provider";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { prisma } from "@/lib/prisma";
+import {
+  buildBookletPurchaseVerifyParameters,
+  buildBookletReadyVerifyParameters,
+} from "@/lib/commerce/booklet-sms/builder";
 import { logBookletSms } from "@/lib/commerce/booklet-sms/logger";
+import { readBookletVerifyTemplateId } from "@/lib/commerce/booklet-sms/verify-config";
 import {
   bookletSmsError,
   bookletSmsMetadata,
   type BookletSmsBuilderName,
   type BookletSmsContext,
+  type BookletSmsErrorCode,
   type BookletSmsEvent,
   type BookletSmsMessageOutcome,
   type BookletSmsRecipientRole,
 } from "@/lib/commerce/booklet-sms/types";
 
+export type BookletSmsDispatch =
+  | { mode: "text" }
+  | { mode: "verify"; templateCode: string; parameters: Record<string, string> };
+
+export type BookletSmsSendTextFn = (request: {
+  toMobile: string;
+  body: string;
+  correlationId: string;
+}) => Promise<SmsSendResult>;
+
+export type BookletSmsSendVerifyFn = (request: {
+  toMobile: string;
+  templateCode: string;
+  parameters: Record<string, string>;
+  correlationId: string;
+}) => Promise<SmsSendResult>;
+
 export type BookletSmsDeliverInput = {
   organizationId: string;
   orderId: string;
   toMobile: string;
-  body: string;
+  /** Always stored on SmsMessage.body for history/audit, regardless of dispatch mode. */
+  renderedBody: string;
+  dispatch: BookletSmsDispatch;
   purpose: string;
   idempotencyKey: string;
   idempotencyBase: string;
@@ -33,11 +63,10 @@ export type BookletSmsDeliverInput = {
   builderName: BookletSmsBuilderName;
   correlationId: string;
   ctx: BookletSmsContext;
-  send?: (request: {
-    toMobile: string;
-    body: string;
-    correlationId: string;
-  }) => Promise<SmsSendResult>;
+  /** Text-channel override (tests only). Defaults to sendText. */
+  send?: BookletSmsSendTextFn;
+  /** Verify-channel override (tests only). Defaults to sendPatternTemplate. */
+  sendVerify?: BookletSmsSendVerifyFn;
   db?: typeof prisma;
 };
 
@@ -50,11 +79,12 @@ function isUniqueConflict(error: unknown): boolean {
   );
 }
 
-export async function deliverPlainTextSms(
+export async function deliverBookletSms(
   input: BookletSmsDeliverInput,
 ): Promise<BookletSmsMessageOutcome> {
   const db = input.db ?? prisma;
   const send = input.send ?? sendText;
+  const sendVerify = input.sendVerify ?? sendPatternTemplate;
   const mobile = normalizeIranianMobile(input.toMobile);
   if (!mobile.ok) {
     logBookletSms({
@@ -112,6 +142,10 @@ export async function deliverPlainTextSms(
     correlationId: input.correlationId,
     ctx: input.ctx,
     idempotencyBase: input.idempotencyBase,
+    verify:
+      input.dispatch.mode === "verify"
+        ? { templateCode: input.dispatch.templateCode }
+        : undefined,
   });
 
   logBookletSms({
@@ -131,7 +165,7 @@ export async function deliverPlainTextSms(
       data: {
         organizationId: input.organizationId,
         toMobile: mobile.normalized,
-        body: input.body,
+        body: input.renderedBody,
         status: SmsMessageStatus.PROCESSING,
         provider: readSmsProviderName(),
         purpose: input.purpose,
@@ -209,13 +243,21 @@ export async function deliverPlainTextSms(
     mobile: mobile.normalized,
   });
 
-  let textResult: SmsSendResult;
+  let sendResult: SmsSendResult;
   try {
-    textResult = await send({
-      toMobile: mobile.normalized,
-      body: input.body,
-      correlationId: input.correlationId,
-    });
+    sendResult =
+      input.dispatch.mode === "verify"
+        ? await sendVerify({
+            toMobile: mobile.normalized,
+            templateCode: input.dispatch.templateCode,
+            parameters: input.dispatch.parameters,
+            correlationId: input.correlationId,
+          })
+        : await send({
+            toMobile: mobile.normalized,
+            body: input.renderedBody,
+            correlationId: input.correlationId,
+          });
   } catch (error) {
     logBookletSms({
       step: "SEND",
@@ -261,7 +303,7 @@ export async function deliverPlainTextSms(
 
   logBookletSms({
     step: "SEND",
-    phase: textResult.ok ? "success" : "failed",
+    phase: sendResult.ok ? "success" : "failed",
     correlationId: input.correlationId,
     event: input.event,
     organizationId: input.organizationId,
@@ -269,12 +311,12 @@ export async function deliverPlainTextSms(
     messageId,
     recipientRole: input.role,
     mobile: mobile.normalized,
-    errorCode: textResult.ok ? null : textResult.errorCode,
+    errorCode: sendResult.ok ? null : sendResult.errorCode,
   });
 
   logBookletSms({
     step: "PROVIDER_RESPONSE",
-    phase: textResult.ok ? "success" : "failed",
+    phase: sendResult.ok ? "success" : "failed",
     correlationId: input.correlationId,
     event: input.event,
     organizationId: input.organizationId,
@@ -282,9 +324,9 @@ export async function deliverPlainTextSms(
     messageId,
     recipientRole: input.role,
     mobile: mobile.normalized,
-    providerMessageId: textResult.providerMessageId,
-    errorCode: textResult.ok ? null : textResult.errorCode,
-    message: textResult.ok ? null : textResult.safeMessage,
+    providerMessageId: sendResult.providerMessageId,
+    errorCode: sendResult.ok ? null : sendResult.errorCode,
+    message: sendResult.ok ? null : sendResult.safeMessage,
   });
 
   logBookletSms({
@@ -302,17 +344,17 @@ export async function deliverPlainTextSms(
   try {
     await db.smsMessage.update({
       where: { id: messageId },
-      data: textResult.ok
+      data: sendResult.ok
         ? {
             status: SmsMessageStatus.SENT,
             sentAt: new Date(),
-            providerMessageId: textResult.providerMessageId,
+            providerMessageId: sendResult.providerMessageId,
             lastError: null,
             metadata: metadata as unknown as Prisma.InputJsonValue,
           }
         : {
             status: SmsMessageStatus.FAILED,
-            lastError: textResult.safeMessage,
+            lastError: sendResult.safeMessage,
             attemptCount: 1,
             metadata: metadata as unknown as Prisma.InputJsonValue,
           },
@@ -351,7 +393,7 @@ export async function deliverPlainTextSms(
     mobile: mobile.normalized,
   });
 
-  if (!textResult.ok) {
+  if (!sendResult.ok) {
     return {
       role: input.role,
       status: "failed",
@@ -367,6 +409,47 @@ export async function deliverPlainTextSms(
   };
 }
 
+export type BookletBuyerDispatchResolution =
+  | { ok: true; dispatch: BookletSmsDispatch }
+  | { ok: false; code: Extract<BookletSmsErrorCode, "VERIFY_NOT_CONFIGURED"> };
+
+/**
+ * Decides text-vs-Verify for a buyer message and builds the Verify
+ * parameters when applicable. Single source of truth reused by the real
+ * send path, the admin test-send path, and the admin preview.
+ */
+export function resolveBuyerDispatch(
+  event: BookletSmsEvent,
+  ctx: BookletSmsContext,
+): BookletBuyerDispatchResolution {
+  if (event === "PAID") {
+    const templateCode = readBookletVerifyTemplateId("purchase");
+    if (!templateCode) return { ok: false, code: "VERIFY_NOT_CONFIGURED" };
+    return {
+      ok: true,
+      dispatch: {
+        mode: "verify",
+        templateCode,
+        parameters: buildBookletPurchaseVerifyParameters(ctx),
+      },
+    };
+  }
+  if (event === "READY_FOR_PICKUP") {
+    const templateCode = readBookletVerifyTemplateId("ready");
+    if (!templateCode) return { ok: false, code: "VERIFY_NOT_CONFIGURED" };
+    return {
+      ok: true,
+      dispatch: {
+        mode: "verify",
+        templateCode,
+        parameters: buildBookletReadyVerifyParameters(ctx),
+      },
+    };
+  }
+  // DELIVERED_TO_STUDENT has no approved Verify template — stays plain text.
+  return { ok: true, dispatch: { mode: "text" } };
+}
+
 export async function sendBuyerSms(params: {
   organizationId: string;
   orderId: string;
@@ -377,6 +460,7 @@ export async function sendBuyerSms(params: {
   ctx: BookletSmsContext;
   idempotencySuffix?: string;
   send?: BookletSmsDeliverInput["send"];
+  sendVerify?: BookletSmsDeliverInput["sendVerify"];
   db?: typeof prisma;
 }): Promise<BookletSmsMessageOutcome> {
   if (!params.buyerMobile) {
@@ -399,12 +483,33 @@ export async function sendBuyerSms(params: {
     };
   }
 
+  const resolution = resolveBuyerDispatch(params.event, params.ctx);
+  if (!resolution.ok) {
+    logBookletSms({
+      step: "SEND",
+      phase: "failed",
+      correlationId: params.correlationId,
+      event: params.event,
+      organizationId: params.organizationId,
+      orderId: params.orderId,
+      recipientRole: "buyer",
+      errorCode: resolution.code,
+    });
+    return {
+      role: "buyer",
+      status: "failed",
+      messageId: null,
+      error: bookletSmsError(resolution.code),
+    };
+  }
+
   const idempotencyBase = `commerce_order_sms:${params.orderId}:${params.event}`;
-  return deliverPlainTextSms({
+  return deliverBookletSms({
     organizationId: params.organizationId,
     orderId: params.orderId,
     toMobile: params.buyerMobile,
-    body: params.body,
+    renderedBody: params.body,
+    dispatch: resolution.dispatch,
     purpose: `commerce_order_${params.event.toLowerCase()}`,
     idempotencyKey: `${idempotencyBase}${params.idempotencySuffix ?? ""}`,
     idempotencyBase,
@@ -419,6 +524,7 @@ export async function sendBuyerSms(params: {
     correlationId: params.correlationId,
     ctx: params.ctx,
     send: params.send,
+    sendVerify: params.sendVerify,
     db: params.db,
   });
 }

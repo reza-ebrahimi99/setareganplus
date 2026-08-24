@@ -22,9 +22,11 @@ import {
   joinProductTitles,
 } from "@/lib/commerce/booklet-sms/builder";
 import {
-  deliverPlainTextSms,
+  deliverBookletSms,
+  resolveBuyerDispatch,
   sendBuyerSms,
   type BookletSmsDeliverInput,
+  type BookletSmsDispatch,
 } from "@/lib/commerce/booklet-sms/buyer";
 import { logBookletSms } from "@/lib/commerce/booklet-sms/logger";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
@@ -50,6 +52,7 @@ import {
 export type BookletSmsServiceDeps = {
   db?: typeof prisma;
   send?: BookletSmsDeliverInput["send"];
+  sendVerify?: BookletSmsDeliverInput["sendVerify"];
   listAdminRecipients?: (organizationId: string) => Promise<string[]>;
 };
 
@@ -151,6 +154,8 @@ async function loadOrder(
       // Every SMS tracking link is the permanent short URL, never the long
       // qrToken pickup-receipt link.
       bookletUrl: commerceOrderShortUrl(order.shortCode),
+      // Bare code for the Verify LINK parameter — never the full URL.
+      shortCode: order.shortCode,
     },
   };
 
@@ -354,6 +359,7 @@ async function runBookletSmsJob(params: {
         ctx: loaded.ctx,
         idempotencySuffix: params.idempotencySuffix,
         send: params.deps?.send,
+        sendVerify: params.deps?.sendVerify,
         db,
       }),
     );
@@ -369,6 +375,7 @@ async function runBookletSmsJob(params: {
       idempotencySuffix: params.idempotencySuffix,
       onlyMobile: params.adminMobile,
       send: params.deps?.send,
+      sendVerify: params.deps?.sendVerify,
       db,
       listRecipients: params.deps?.listAdminRecipients,
     });
@@ -661,8 +668,16 @@ export type BookletSmsPreviewResult =
       ok: true;
       correlationId: string;
       event: BookletSmsEvent;
+      /** Local reference text (SmsMessage.body) — the readable, human-facing rendering. */
       body: string;
       toMobile: string | null;
+      /**
+       * Present only when this event actually dispatches via SMS.ir Verify
+       * (PAID/READY_FOR_PICKUP). The approved template's own wording lives
+       * on SMS.ir, not here — these are exactly the parameters that will be
+       * substituted into it.
+       */
+      verify: { templateCode: string; parameters: Record<string, string> } | null;
     }
   | { ok: false; correlationId: string; error: BookletSmsError };
 
@@ -690,12 +705,18 @@ export async function previewBookletSms(
     return { ok: false, correlationId, error: bookletSmsError("ORDER_NOT_FOUND") };
   }
   const body = buildBuyerMessage(requestedStage, loadedResult.loaded.ctx);
+  const resolution = resolveBuyerDispatch(requestedStage, loadedResult.loaded.ctx);
+  const dispatch: BookletSmsDispatch | null = resolution.ok ? resolution.dispatch : null;
   return {
     ok: true,
     correlationId,
     event: requestedStage,
     body,
     toMobile: loadedResult.loaded.buyerMobile,
+    verify:
+      dispatch && dispatch.mode === "verify"
+        ? { templateCode: dispatch.templateCode, parameters: dispatch.parameters }
+        : null,
   };
 }
 
@@ -737,12 +758,24 @@ export async function sendTestBookletSms(
       }
 
       const body = buildBuyerMessage(requestedStage, loadedResult.loaded.ctx);
+      const resolution = resolveBuyerDispatch(requestedStage, loadedResult.loaded.ctx);
+      if (!resolution.ok) {
+        return finalize({
+          correlationId,
+          organizationId: loadedResult.loaded.organizationId,
+          orderId: loadedResult.loaded.orderId,
+          event: requestedStage,
+          messages: [],
+          code: resolution.code,
+        });
+      }
       const idempotencyBase = `commerce_order_sms_test:${loadedResult.loaded.orderId}:${requestedStage}:${mobile.normalized}`;
-      const outcome = await deliverPlainTextSms({
+      const outcome = await deliverBookletSms({
         organizationId: loadedResult.loaded.organizationId,
         orderId: loadedResult.loaded.orderId,
         toMobile: mobile.normalized,
-        body,
+        renderedBody: body,
+        dispatch: resolution.dispatch,
         purpose: `commerce_order_${requestedStage.toLowerCase()}_test`,
         // Timestamp suffix — a test send must never be blocked by the
         // buyer's own dedup key, and every test send should go through.
@@ -754,6 +787,7 @@ export async function sendTestBookletSms(
         correlationId,
         ctx: loadedResult.loaded.ctx,
         send: deps?.send,
+        sendVerify: deps?.sendVerify,
         db,
       });
 
@@ -811,13 +845,17 @@ export async function listBookletSmsHistory(
           : {};
       const templateKind = typeof meta.templateKind === "string" ? meta.templateKind : "";
       const templateLabel =
-        parsed.role === "admin"
-          ? "پیامک مدیر"
-          : templateKind === "form"
-            ? "قالب ثبت‌نام"
-            : templateKind === "commerce"
-              ? "قالب فروشگاه"
-              : "پیامک جزوه";
+        templateKind === "pattern"
+          ? parsed.role === "admin"
+            ? "قالب تأییدشده مدیر"
+            : "قالب تأییدشده (Verify)"
+          : parsed.role === "admin"
+            ? "پیامک مدیر"
+            : templateKind === "form"
+              ? "قالب ثبت‌نام"
+              : templateKind === "commerce"
+                ? "قالب فروشگاه"
+                : "پیامک جزوه";
       return {
         id: row.id,
         templateLabel,

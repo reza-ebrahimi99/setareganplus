@@ -212,7 +212,23 @@ function OrderSmsPreviewAndTest({ orderId }: { orderId: string }) {
         {previewState.formError ? (
           <p className="mt-1 text-xs text-danger">{previewState.formError}</p>
         ) : null}
-        {previewState.previewBody ? (
+        {previewState.previewVerifyTemplateCode ? (
+          <div className="mt-2 rounded-lg border border-primary/20 bg-primary/5 p-2.5 text-xs leading-6">
+            <p className="font-medium text-primary">
+              ارسال از طریق قالب تأییدشده (Verify) — کد {previewState.previewVerifyTemplateCode}
+            </p>
+            <p className="mt-1 text-muted">
+              متن نهایی پیامک روی سرویس SMS.ir تعریف شده؛ مقادیر زیر جایگزین می‌شوند:
+            </p>
+            <ul className="mt-1 space-y-0.5 font-mono" dir="ltr">
+              {Object.entries(previewState.previewVerifyParameters ?? {}).map(([name, value]) => (
+                <li key={name}>
+                  {name} = {value}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : previewState.previewBody ? (
           <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-border bg-white p-2.5 text-right text-xs leading-6" dir="rtl">
             {previewState.previewBody}
           </pre>
