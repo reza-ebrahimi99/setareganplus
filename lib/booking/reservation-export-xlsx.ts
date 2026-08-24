@@ -80,6 +80,20 @@ function fillArgb(argb: string): ExcelJS.Fill {
   return { type: "pattern", pattern: "solid", fgColor: { argb } };
 }
 
+/**
+ * Defuses spreadsheet formula injection (a.k.a. CSV injection). `studentName`
+ * and `notes` originate from the unauthenticated public booking form
+ * (lib/booking/reserve.ts — free-text, no character restrictions), so a
+ * value crafted to start with =, +, -, or @ could be interpreted as a
+ * formula by Excel/LibreOffice/WPS when a staff member later opens the
+ * export. Prefixing a single quote is the standard mitigation (Excel/Sheets
+ * render the leading apostrophe as a "force text" marker, not as visible
+ * content) and does not otherwise alter the value.
+ */
+function defuseFormula(value: string): string {
+  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+}
+
 /** 10-cell Unicode bar (█ filled / ░ empty) — the "chart" for a count row. */
 function proportionBar(count: number, max: number, width = 10): string {
   if (max <= 0 || count <= 0) return "░".repeat(width);
@@ -298,13 +312,13 @@ function writeMainTable(
       formatJalaliDateShort(row.startsAt),
       weekday,
       toPersianDigits(formatTehranTime24(row.startsAt)),
-      row.studentName || "—",
+      defuseFormula(row.studentName || "—"),
       row.mobile ? toPersianDigits(row.mobile) : "—",
       row.serviceTitle,
       BOOKING_EXPORT_STATUS_LABELS[row.status] ?? row.status,
       toPersianDigits(row.trackingCode),
       formatJalaliDateTimeShort(row.createdAt),
-      row.notes?.trim() || "—",
+      defuseFormula(row.notes?.trim() || "—"),
     ];
     excelRow.height = MAIN_ROW_HEIGHT;
     const isAlt = index % 2 === 1;

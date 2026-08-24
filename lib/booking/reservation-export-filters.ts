@@ -7,12 +7,16 @@
  */
 
 import { BookingStatus } from "@/generated/prisma/enums";
-import { jalaliTehranLocalToUtc, parseJalaliDateInput } from "@/lib/datetime/jalali";
+import {
+  jalaliMonthLength,
+  jalaliTehranLocalToUtc,
+  parseJalaliDateInput,
+  utcToJalaliInTehran,
+} from "@/lib/datetime/jalali";
 import {
   getPersianWeekdayIndex,
   getTehranParts,
   tehranDayBoundsUtc,
-  tehranLocalToUtc,
 } from "@/lib/datetime/tehran-zone";
 
 export const BOOKING_EXPORT_DATE_PRESETS = [
@@ -141,13 +145,18 @@ export function resolveBookingExportDateRange(
   }
 
   if (filters.datePreset === "thisMonth") {
-    const today = getTehranParts(now);
-    const lastDay = new Date(
-      Date.UTC(today.year, today.month, 0),
-    ).getUTCDate();
+    // Jalali month, not Gregorian — "این ماه" means the current Persian
+    // calendar month. Jalali month boundaries never align with Gregorian
+    // ones, so resolving this via getTehranParts()'s Gregorian month/day
+    // (as before) silently returned the wrong ~30-day window — e.g. on
+    // Jalali 1404/06/03 it returned 1404/05/10 → 1404/06/09 instead of the
+    // full 1404/06/01 → 1404/06/31, and near Esfand it could even span into
+    // the next Jalali year.
+    const todayJalali = utcToJalaliInTehran(now);
+    const lastDay = jalaliMonthLength(todayJalali.jy, todayJalali.jm);
     return {
-      from: tehranLocalToUtc(today.year, today.month, 1, 0, 0, 0),
-      to: tehranLocalToUtc(today.year, today.month, lastDay, 23, 59, 59),
+      from: jalaliTehranLocalToUtc(todayJalali.jy, todayJalali.jm, 1, 0, 0, 0),
+      to: jalaliTehranLocalToUtc(todayJalali.jy, todayJalali.jm, lastDay, 23, 59, 59),
     };
   }
 
