@@ -26,6 +26,7 @@ import {
   verifyOtpCode,
 } from "@/lib/communication/otp-crypto";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
+import { maskMobileForDisplay } from "@/lib/communication/sms-params";
 import { prisma } from "@/lib/prisma";
 
 const GENERIC_INVALID = "کد تأیید نامعتبر است.";
@@ -85,14 +86,37 @@ function resolvePurpose(purpose?: OtpPurpose): OtpPurpose {
 export async function requestOtp(
   input: RequestOtpInput,
 ): Promise<RequestOtpResult> {
+  // TEMPORARY DEBUG — OTP delivery investigation. Remove once diagnosed.
+  console.info("[otp-debug] requestOtp ENTER", {
+    organizationId: input.organizationId,
+    purpose: input.purpose ?? "GENERIC",
+    hasIdempotencyKey: Boolean(input.idempotencyKey),
+  });
+
   const mobile = normalizeIranianMobile(input.mobile);
+  // TEMPORARY DEBUG — OTP delivery investigation. Remove once diagnosed.
+  console.info("[otp-debug] requestOtp normalized mobile", {
+    ok: mobile.ok,
+    mobileMasked: mobile.ok ? maskMobileForDisplay(mobile.normalized) : null,
+    error: mobile.ok ? null : mobile.error,
+  });
   if (!mobile.ok) {
+    // TEMPORARY DEBUG — OTP delivery investigation. Remove once diagnosed.
+    console.info("[otp-debug] requestOtp EARLY RETURN", {
+      reason: "invalid_mobile",
+    });
     return { ok: false, error: GENERIC_MOBILE };
   }
 
   const config = getCommunicationConfig();
   const purpose = resolvePurpose(input.purpose);
   const now = new Date();
+  // TEMPORARY DEBUG — OTP delivery investigation. Remove once diagnosed.
+  console.info("[otp-debug] requestOtp config", {
+    smsEnabled: config.smsEnabled,
+    providerName: config.providerName,
+    purpose,
+  });
 
   const latest = await prisma.otpChallenge.findFirst({
     where: {
@@ -108,15 +132,31 @@ export async function requestOtp(
       expiresAt: true,
     },
   });
+  // TEMPORARY DEBUG — OTP delivery investigation. Remove once diagnosed.
+  console.info("[otp-debug] requestOtp latest challenge lookup", {
+    found: Boolean(latest),
+    status: latest?.status ?? null,
+    resendAvailableAt: latest?.resendAvailableAt ?? null,
+    expiresAt: latest?.expiresAt ?? null,
+  });
   const active =
     latest?.status === OtpChallengeStatus.PENDING && latest.expiresAt > now
       ? latest
       : null;
 
-  if (
+  const isRateLimitedOrLocked =
     (latest?.resendAvailableAt && latest.resendAvailableAt > now) ||
-    (latest?.status === OtpChallengeStatus.LOCKED && latest.expiresAt > now)
-  ) {
+    (latest?.status === OtpChallengeStatus.LOCKED && latest.expiresAt > now);
+  // TEMPORARY DEBUG — OTP delivery investigation. Remove once diagnosed.
+  console.info("[otp-debug] requestOtp rate-limit result", {
+    rateLimited: Boolean(isRateLimitedOrLocked),
+    now,
+  });
+  if (isRateLimitedOrLocked) {
+    // TEMPORARY DEBUG — OTP delivery investigation. Remove once diagnosed.
+    console.info("[otp-debug] requestOtp EARLY RETURN", {
+      reason: "rate_limited_or_locked",
+    });
     return { ok: false, error: GENERIC_COOLDOWN };
   }
 
@@ -126,6 +166,13 @@ export async function requestOtp(
   const resendAvailableAt = new Date(
     now.getTime() + config.otpResendCooldownSeconds * 1000,
   );
+  // TEMPORARY DEBUG — OTP delivery investigation. Remove once diagnosed.
+  // Never logs the actual code, only that one was generated.
+  console.info("[otp-debug] requestOtp OTP generated", {
+    codeLength: code.length,
+    expiresAt,
+    resendAvailableAt,
+  });
 
   try {
     const challenge = await prisma.$transaction(async (tx) => {
@@ -164,12 +211,27 @@ export async function requestOtp(
         select: { id: true },
       });
     });
+    // TEMPORARY DEBUG — OTP delivery investigation. Remove once diagnosed.
+    console.info("[otp-debug] requestOtp challenge persisted", {
+      challengeId: challenge.id,
+    });
 
     if (config.smsEnabled) {
+      // TEMPORARY DEBUG — OTP delivery investigation. Remove once diagnosed.
+      console.info("[otp-debug] requestOtp BEFORE sendOtpTemplate", {
+        challengeId: challenge.id,
+        mobileMasked: maskMobileForDisplay(mobile.normalized),
+        correlationId: challenge.id,
+      });
       const delivery = await sendOtpTemplate({
         toMobile: mobile.normalized,
         code,
         correlationId: challenge.id,
+      });
+      // TEMPORARY DEBUG — OTP delivery investigation. Remove once diagnosed.
+      console.info("[otp-debug] requestOtp AFTER sendOtpTemplate", {
+        challengeId: challenge.id,
+        delivery,
       });
       if (!delivery.ok) {
         // A challenge is usable only after the live provider accepts delivery.
@@ -182,13 +244,28 @@ export async function requestOtp(
           },
           data: { status: OtpChallengeStatus.EXPIRED },
         });
+        // TEMPORARY DEBUG — OTP delivery investigation. Remove once diagnosed.
+        console.info("[otp-debug] requestOtp EARLY RETURN", {
+          reason: "sms_delivery_failed",
+          delivery,
+        });
         return {
           ok: false,
           error: "درخواست کد تأیید در حال حاضر ممکن نیست. لطفاً دوباره تلاش کنید.",
         };
       }
+    } else {
+      // TEMPORARY DEBUG — OTP delivery investigation. Remove once diagnosed.
+      console.info("[otp-debug] requestOtp sendOtpTemplate SKIPPED", {
+        reason: "config.smsEnabled is false",
+        challengeId: challenge.id,
+      });
     }
 
+    // TEMPORARY DEBUG — OTP delivery investigation. Remove once diagnosed.
+    console.info("[otp-debug] requestOtp SUCCESS", {
+      challengeId: challenge.id,
+    });
     return {
       ok: true,
       challengeId: challenge.id,
@@ -198,7 +275,14 @@ export async function requestOtp(
         ? { _testCode: code }
         : {}),
     };
-  } catch {
+  } catch (error) {
+    // TEMPORARY DEBUG — OTP delivery investigation. Remove once diagnosed.
+    // Never logs the OTP code — it is not part of the caught error.
+    console.error("[otp-debug] requestOtp CAUGHT EXCEPTION", {
+      name: error instanceof Error ? error.name : typeof error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return {
       ok: false,
       error: "درخواست کد تأیید در حال حاضر ممکن نیست. لطفاً دوباره تلاش کنید.",
