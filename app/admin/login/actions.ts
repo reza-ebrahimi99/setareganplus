@@ -230,37 +230,92 @@ export async function requestAdminOtpLoginAction(
   _state: AdminOtpLoginState,
   formData: FormData,
 ): Promise<AdminOtpLoginState> {
-  const parsed = normalizeIranianMobile(field(formData, "mobile"));
-  if (!parsed.ok) {
-    return { phase: "mobile", error: "شماره موبایل معتبر وارد کنید." };
-  }
-
-  const membership = await findActiveStaffMembershipByMobile(parsed.normalized);
-  if (membership) {
-    const requested = await requestOtp({
-      organizationId: membership.organizationId,
-      mobile: parsed.normalized,
-      purpose: OtpPurpose.STAFF_LOGIN,
-      idempotencyKey: `admin-otp-login:${membership.id}:${Math.floor(Date.now() / 60_000)}`,
+  // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+  console.info("[login-debug] requestAdminOtpLoginAction ENTER");
+  try {
+    const rawMobile = field(formData, "mobile");
+    // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+    console.info("[login-debug] requestAdminOtpLoginAction received mobile", {
+      rawMobile,
     });
-    if (requested.ok) {
-      await prisma.auditLog.create({
-        data: {
-          organizationId: membership.organizationId,
-          actorUserId: membership.user.id,
-          action: AuditAction.OTP_REQUESTED,
-          entityType: "OtpChallenge",
-          entityId: requested.challengeId,
-        },
+
+    const parsed = normalizeIranianMobile(rawMobile);
+    // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+    console.info("[login-debug] requestAdminOtpLoginAction normalized mobile", {
+      ok: parsed.ok,
+      normalized: parsed.ok ? parsed.normalized : null,
+      error: parsed.ok ? null : parsed.error,
+    });
+    // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+    console.info("[login-debug] requestAdminOtpLoginAction validation result", {
+      valid: parsed.ok,
+    });
+    if (!parsed.ok) {
+      // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+      console.info("[login-debug] requestAdminOtpLoginAction EARLY RETURN", {
+        reason: "invalid_mobile",
+      });
+      return { phase: "mobile", error: "شماره موبایل معتبر وارد کنید." };
+    }
+
+    const membership = await findActiveStaffMembershipByMobile(parsed.normalized);
+    // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+    console.info("[login-debug] requestAdminOtpLoginAction membership lookup", {
+      found: Boolean(membership),
+      membershipId: membership?.id ?? null,
+      organizationId: membership?.organizationId ?? null,
+      userId: membership?.user.id ?? null,
+    });
+    if (membership) {
+      // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+      console.info("[login-debug] requestAdminOtpLoginAction BEFORE requestOtp", {
+        organizationId: membership.organizationId,
+        membershipId: membership.id,
+      });
+      const requested = await requestOtp({
+        organizationId: membership.organizationId,
+        mobile: parsed.normalized,
+        purpose: OtpPurpose.STAFF_LOGIN,
+        idempotencyKey: `admin-otp-login:${membership.id}:${Math.floor(Date.now() / 60_000)}`,
+      });
+      // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+      console.info("[login-debug] requestAdminOtpLoginAction AFTER requestOtp", {
+        ok: requested.ok,
+        challengeId: requested.ok ? requested.challengeId : null,
+        error: requested.ok ? null : requested.error,
+      });
+      if (requested.ok) {
+        await prisma.auditLog.create({
+          data: {
+            organizationId: membership.organizationId,
+            actorUserId: membership.user.id,
+            action: AuditAction.OTP_REQUESTED,
+            entityType: "OtpChallenge",
+            entityId: requested.challengeId,
+          },
+        });
+      }
+    } else {
+      // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+      console.info("[login-debug] requestAdminOtpLoginAction requestOtp SKIPPED", {
+        reason: "no_active_membership_for_mobile",
       });
     }
-  }
 
-  return {
-    phase: "otp",
-    message: GENERIC_OTP_REQUEST,
-    mobile: parsed.normalized,
-  };
+    return {
+      phase: "otp",
+      message: GENERIC_OTP_REQUEST,
+      mobile: parsed.normalized,
+    };
+  } catch (error) {
+    // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+    console.error("[login-debug] requestAdminOtpLoginAction THROWN EXCEPTION", {
+      name: error instanceof Error ? error.name : typeof error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    throw error;
+  }
 }
 
 export async function verifyAdminOtpLoginAction(
@@ -331,38 +386,93 @@ export async function requestAdminPasswordResetAction(
   _state: AdminPasswordResetState,
   formData: FormData,
 ): Promise<AdminPasswordResetState> {
-  const parsed = normalizeIranianMobile(field(formData, "mobile"));
-  if (!parsed.ok) {
-    return { phase: "mobile", error: "شماره موبایل معتبر وارد کنید." };
-  }
-
-  const membership = await findActiveStaffMembershipByMobile(parsed.normalized);
-  if (membership) {
-    const requested = await requestOtp({
-      organizationId: membership.organizationId,
-      mobile: parsed.normalized,
-      purpose: OtpPurpose.STAFF_LOGIN,
-      idempotencyKey: `admin-pw-reset:${membership.id}:${Math.floor(Date.now() / 60_000)}`,
+  // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+  console.info("[login-debug] requestAdminPasswordResetAction ENTER");
+  try {
+    const rawMobile = field(formData, "mobile");
+    // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+    console.info("[login-debug] requestAdminPasswordResetAction received mobile", {
+      rawMobile,
     });
-    if (requested.ok) {
-      await prisma.auditLog.create({
-        data: {
-          organizationId: membership.organizationId,
-          actorUserId: membership.user.id,
-          action: AuditAction.OTP_REQUESTED,
-          entityType: "OtpChallenge",
-          entityId: requested.challengeId,
-          metadata: { flow: "staff_password_reset" },
-        },
+
+    const parsed = normalizeIranianMobile(rawMobile);
+    // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+    console.info("[login-debug] requestAdminPasswordResetAction normalized mobile", {
+      ok: parsed.ok,
+      normalized: parsed.ok ? parsed.normalized : null,
+      error: parsed.ok ? null : parsed.error,
+    });
+    // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+    console.info("[login-debug] requestAdminPasswordResetAction validation result", {
+      valid: parsed.ok,
+    });
+    if (!parsed.ok) {
+      // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+      console.info("[login-debug] requestAdminPasswordResetAction EARLY RETURN", {
+        reason: "invalid_mobile",
+      });
+      return { phase: "mobile", error: "شماره موبایل معتبر وارد کنید." };
+    }
+
+    const membership = await findActiveStaffMembershipByMobile(parsed.normalized);
+    // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+    console.info("[login-debug] requestAdminPasswordResetAction membership lookup", {
+      found: Boolean(membership),
+      membershipId: membership?.id ?? null,
+      organizationId: membership?.organizationId ?? null,
+      userId: membership?.user.id ?? null,
+    });
+    if (membership) {
+      // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+      console.info("[login-debug] requestAdminPasswordResetAction BEFORE requestOtp", {
+        organizationId: membership.organizationId,
+        membershipId: membership.id,
+      });
+      const requested = await requestOtp({
+        organizationId: membership.organizationId,
+        mobile: parsed.normalized,
+        purpose: OtpPurpose.STAFF_LOGIN,
+        idempotencyKey: `admin-pw-reset:${membership.id}:${Math.floor(Date.now() / 60_000)}`,
+      });
+      // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+      console.info("[login-debug] requestAdminPasswordResetAction AFTER requestOtp", {
+        ok: requested.ok,
+        challengeId: requested.ok ? requested.challengeId : null,
+        error: requested.ok ? null : requested.error,
+      });
+      if (requested.ok) {
+        await prisma.auditLog.create({
+          data: {
+            organizationId: membership.organizationId,
+            actorUserId: membership.user.id,
+            action: AuditAction.OTP_REQUESTED,
+            entityType: "OtpChallenge",
+            entityId: requested.challengeId,
+            metadata: { flow: "staff_password_reset" },
+          },
+        });
+      }
+    } else {
+      // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+      console.info("[login-debug] requestAdminPasswordResetAction requestOtp SKIPPED", {
+        reason: "no_active_membership_for_mobile",
       });
     }
-  }
 
-  return {
-    phase: "otp",
-    message: GENERIC_OTP_REQUEST,
-    mobile: parsed.normalized,
-  };
+    return {
+      phase: "otp",
+      message: GENERIC_OTP_REQUEST,
+      mobile: parsed.normalized,
+    };
+  } catch (error) {
+    // TEMPORARY DEBUG — login OTP investigation. Remove once diagnosed.
+    console.error("[login-debug] requestAdminPasswordResetAction THROWN EXCEPTION", {
+      name: error instanceof Error ? error.name : typeof error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    throw error;
+  }
 }
 
 export async function verifyAdminPasswordResetOtpAction(
