@@ -450,6 +450,11 @@ export const adminBreadcrumbs = {
     { label: "رزرو نوبت", href: "/admin/bookings" },
     { label: "جزئیات رزرو" },
   ],
+  bookingExport: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "رزرو نوبت", href: "/admin/bookings" },
+    { label: "خروجی اکسل رزروها" },
+  ],
   sitePlacements: [
     { label: "مدیریت", href: "/admin" },
     { label: "جایگاه‌های سایت" },
