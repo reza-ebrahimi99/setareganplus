@@ -97,6 +97,23 @@ export async function loadBookingReservationsForExport(params: {
   }));
 }
 
+/**
+ * Resolves a single service's display title for the "current filters" line
+ * printed on the export page and the Excel report. A single indexed by-id
+ * lookup (not a list scan) — only runs when a serviceId filter is active, so
+ * it never adds a round trip to the common (no service filter) case.
+ */
+export async function loadBookingServiceTitleForExport(params: {
+  organizationId: string;
+  serviceId: string;
+}): Promise<string | null> {
+  const service = await prisma.bookingService.findFirst({
+    where: { id: params.serviceId, organizationId: params.organizationId },
+    select: { title: true },
+  });
+  return service?.title ?? null;
+}
+
 /** Today's reservations only — for the quick "print day schedule" button. Independent of export filters. */
 export async function loadTodayBookingReservations(params: {
   organizationId: string;

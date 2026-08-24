@@ -8,6 +8,7 @@
  */
 
 import { BookingStatus } from "@/generated/prisma/enums";
+import { resolveBookingExportDateRange } from "@/lib/booking/reservation-export-filters";
 import type { BookingExportRow } from "@/lib/booking/reservation-export-query";
 import { formatJalaliDateShort } from "@/lib/datetime/jalali";
 import { formatTehranTime24 } from "@/lib/datetime/tehran-zone";
@@ -32,6 +33,10 @@ export type BookingExportSummary = {
   cancelled: number;
   completed: number;
   noShow: number;
+  /** Counted within the already-loaded (filtered) row set — no extra query. */
+  today: number;
+  thisWeek: number;
+  thisMonth: number;
   byDay: BookingExportCountRow[];
   byHour: BookingExportCountRow[];
   byService: BookingExportCountRow[];
@@ -58,8 +63,29 @@ function toSortedCountRows(
   return rows.sort((a, b) => a.label.localeCompare(b.label));
 }
 
+/**
+ * Counts rows whose slot falls within a named date preset — reuses the same
+ * Tehran-timezone boundary math already used to build the query's own date
+ * filter (resolveBookingExportDateRange), so "today/this week/this month"
+ * never drift from the date logic applied elsewhere. Computed purely
+ * in-memory over the already-loaded rows; no extra database round trip.
+ */
+function countWithinDatePreset(
+  rows: readonly BookingExportRow[],
+  preset: "today" | "thisWeek" | "thisMonth",
+  now: Date,
+): number {
+  const { from, to } = resolveBookingExportDateRange(
+    { datePreset: preset, dateFrom: "", dateTo: "" },
+    now,
+  );
+  if (!from || !to) return 0;
+  return rows.filter((row) => row.startsAt >= from && row.startsAt <= to).length;
+}
+
 export function buildBookingExportSummary(
   rows: readonly BookingExportRow[],
+  now: Date = new Date(),
 ): BookingExportSummary {
   const byDayMap = countBy(rows, (row) => formatJalaliDateShort(row.startsAt));
   // Keyed by zero-padded numeric hour ("08") so sorting stays numeric —
@@ -81,6 +107,9 @@ export function buildBookingExportSummary(
     cancelled: countStatus(BookingStatus.CANCELLED),
     completed: countStatus(BookingStatus.COMPLETED),
     noShow: countStatus(BookingStatus.NO_SHOW),
+    today: countWithinDatePreset(rows, "today", now),
+    thisWeek: countWithinDatePreset(rows, "thisWeek", now),
+    thisMonth: countWithinDatePreset(rows, "thisMonth", now),
     byDay: toSortedCountRows(byDayMap, "label"),
     byHour: [...byHourMap.entries()]
       .sort((a, b) => Number(a[0]) - Number(b[0]))

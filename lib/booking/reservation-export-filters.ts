@@ -163,6 +163,49 @@ export function resolveBookingExportDateRange(
   return { from, to };
 }
 
+const DATE_PRESET_LABELS: Record<BookingExportDatePreset, string> = {
+  today: "امروز",
+  tomorrow: "فردا",
+  thisWeek: "این هفته",
+  thisMonth: "این ماه",
+};
+
+const NO_FILTERS_LABEL = "بدون فیلتر (تمام رزروها)";
+
+/**
+ * Human-readable one-line summary of the active filter set — shown both on
+ * the export page and printed on the Excel report so the report is
+ * self-describing. Pure formatting only; `serviceTitle`/`statusLabel` are
+ * resolved by the caller (already-loaded service list + the existing
+ * BOOKING_EXPORT_STATUS_LABELS map in reservation-export-summary.ts) so this
+ * module stays I/O-free and free of a circular import.
+ */
+export function describeBookingReservationExportFilters(
+  filters: BookingReservationExportFilters,
+  context?: { serviceTitle?: string | null; statusLabel?: string | null },
+): string {
+  const parts: string[] = [];
+
+  if (filters.datePreset) {
+    parts.push(`بازه: ${DATE_PRESET_LABELS[filters.datePreset]}`);
+  } else if (filters.dateFrom || filters.dateTo) {
+    if (filters.dateFrom && filters.dateTo) {
+      parts.push(`بازه: از ${filters.dateFrom} تا ${filters.dateTo}`);
+    } else if (filters.dateFrom) {
+      parts.push(`بازه: از ${filters.dateFrom}`);
+    } else {
+      parts.push(`بازه: تا ${filters.dateTo}`);
+    }
+  }
+
+  if (context?.serviceTitle) parts.push(`خدمت: ${context.serviceTitle}`);
+  if (context?.statusLabel) parts.push(`وضعیت: ${context.statusLabel}`);
+  if (filters.mobile) parts.push(`موبایل: ${filters.mobile}`);
+  if (filters.studentName) parts.push(`نام: ${filters.studentName}`);
+
+  return parts.length > 0 ? parts.join(" · ") : NO_FILTERS_LABEL;
+}
+
 export function bookingReservationExportQueryString(
   filters: BookingReservationExportFilters,
 ): string {
