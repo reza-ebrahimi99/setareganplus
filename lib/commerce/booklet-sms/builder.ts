@@ -24,37 +24,32 @@ export function joinProductTitles(
   );
 }
 
+/**
+ * Purchase confirmation SMS. Compact (no blank lines), Persian RTL,
+ * emoji-formatted. Deliberately excludes "سپاس از اعتماد شما" and
+ * "ستارگان پلاس" per the redesigned copy.
+ */
 export function buildBookletPaidSmsBody(ctx: BookletSmsContext): string {
   return compactSmsLines([
-    `سلام ${ctx.fullName} عزیز 🌹`,
-    "✅ خرید شما با موفقیت ثبت شد.",
+    "🛒 سفارش شما ثبت شد.",
+    `👤 ${ctx.fullName}`,
     `📚 ${ctx.booklet}`,
-    `💰 ${ctx.amount}`,
-    "🏢 محل دریافت:",
-    ctx.pickupBranch,
-    `🧾 ${ctx.orderNumber}`,
-    "🔗 رسید و QR:",
+    `💳 مبلغ: ${ctx.amount}`,
+    `🧾 سفارش: ${ctx.orderNumber}`,
+    "🔗 پیگیری سفارش:",
     ctx.bookletUrl,
-    "پس از آماده شدن جزوه، پیامک اطلاع‌رسانی برای شما ارسال خواهد شد.",
-    "ستارگان پلاس",
   ]);
 }
 
+/** Ready-for-pickup SMS. Fires once when opsStage moves to READY_FOR_PICKUP. */
 export function buildBookletReadySmsBody(ctx: BookletSmsContext): string {
   return compactSmsLines([
-    `سلام ${ctx.fullName} عزیز 🌹`,
-    "✅ جزوه شما آماده تحویل است.",
+    "📦 سفارش شما آماده تحویل است.",
+    `🧾 سفارش: ${ctx.orderNumber}`,
     `📚 ${ctx.booklet}`,
-    "🏢 محل دریافت:",
-    ctx.pickupBranch,
-    `📍 ${ctx.pickupBranchAddress}`,
-    `🧾 ${ctx.orderNumber}`,
-    "🔗 رسید و QR:",
+    "🕘 لطفاً در ساعات کاری برای دریافت مراجعه کنید.",
+    "🔗 پیگیری سفارش:",
     ctx.bookletUrl,
-    "ساعات تحویل:",
-    "شنبه تا پنجشنبه",
-    "۸:۰۰ تا ۲۰:۰۰",
-    "ستارگان پلاس",
   ]);
 }
 
