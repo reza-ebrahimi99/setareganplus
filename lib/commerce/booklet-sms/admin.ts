@@ -1,13 +1,20 @@
 /**
- * Paid-order admin booklet SMS. Plain text only.
+ * Paid-order admin booklet SMS. Sent via SMS.ir Verify (approved admin
+ * notification template) — same sendPatternTemplate() -> sendVerify() path
+ * OTP already uses. No approved template = hard failure, never falls back
+ * to plain sendText (that was the bug: the advertising line was used).
  */
 
 import { listEnabledCommerceAdminSmsRecipients } from "@/lib/commerce/notification-settings";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { prisma } from "@/lib/prisma";
-import { deliverPlainTextSms } from "@/lib/commerce/booklet-sms/buyer";
-import { buildBookletAdminSmsBody } from "@/lib/commerce/booklet-sms/builder";
+import { deliverBookletSms } from "@/lib/commerce/booklet-sms/buyer";
+import {
+  buildBookletAdminSmsBody,
+  buildBookletAdminVerifyParameters,
+} from "@/lib/commerce/booklet-sms/builder";
 import { logBookletSms } from "@/lib/commerce/booklet-sms/logger";
+import { readBookletVerifyTemplateId } from "@/lib/commerce/booklet-sms/verify-config";
 import type { BookletSmsDeliverInput } from "@/lib/commerce/booklet-sms/buyer";
 import {
   bookletSmsError,
@@ -24,6 +31,7 @@ export async function sendAdminPaidSms(params: {
   idempotencySuffix?: string;
   onlyMobile?: string;
   send?: BookletSmsDeliverInput["send"];
+  sendVerify?: BookletSmsDeliverInput["sendVerify"];
   db?: typeof prisma;
   listRecipients?: (organizationId: string) => Promise<string[]>;
 }): Promise<BookletSmsMessageOutcome[]> {
@@ -65,10 +73,35 @@ export async function sendAdminPaidSms(params: {
     ];
   }
 
+  const templateCode = readBookletVerifyTemplateId("admin");
+  if (!templateCode) {
+    logBookletSms({
+      step: "BUILD_ADMIN",
+      phase: "failed",
+      correlationId: params.correlationId,
+      event: "PAID",
+      organizationId: params.organizationId,
+      orderId: params.orderId,
+      recipientRole: "admin",
+      errorCode: "VERIFY_NOT_CONFIGURED",
+    });
+    return [
+      {
+        role: "admin",
+        status: "failed",
+        messageId: null,
+        error: bookletSmsError("VERIFY_NOT_CONFIGURED"),
+      },
+    ];
+  }
+  const verifyParameters = buildBookletAdminVerifyParameters(params.ctx);
+
   const buyerNormalized = params.buyerMobile
     ? normalizeIranianMobile(params.buyerMobile)
     : null;
-  const body = buildBookletAdminSmsBody(
+  // Kept only as the readable SmsMessage.body for admin history — the
+  // actual transmitted content is the approved Verify template text.
+  const renderedBody = buildBookletAdminSmsBody(
     params.ctx,
     buyerNormalized?.ok ? buyerNormalized.normalized : null,
   );
@@ -122,11 +155,12 @@ export async function sendAdminPaidSms(params: {
 
     const idempotencyBase = `commerce_order_paid:${params.orderId}:admin:${adminMobile.normalized}`;
     outcomes.push(
-      await deliverPlainTextSms({
+      await deliverBookletSms({
         organizationId: params.organizationId,
         orderId: params.orderId,
         toMobile: adminMobile.normalized,
-        body,
+        renderedBody,
+        dispatch: { mode: "verify", templateCode, parameters: verifyParameters },
         purpose: "commerce_order_paid_admin",
         idempotencyKey: `${idempotencyBase}${params.idempotencySuffix ?? ""}`,
         idempotencyBase,
@@ -136,6 +170,7 @@ export async function sendAdminPaidSms(params: {
         correlationId: params.correlationId,
         ctx: params.ctx,
         send: params.send,
+        sendVerify: params.sendVerify,
         db: params.db,
       }),
     );

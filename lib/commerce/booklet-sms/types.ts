@@ -52,6 +52,7 @@ export type BookletSmsErrorCode =
   | "UPDATE_FAILED"
   | "MESSAGE_NOT_FOUND"
   | "RETRY_NOT_ELIGIBLE"
+  | "VERIFY_NOT_CONFIGURED"
   | "UNEXPECTED";
 
 export type BookletSmsSkipReason =
@@ -144,6 +145,8 @@ export type BookletSmsContext = {
   pickupBranchAddress: string;
   statusLabel: string;
   bookletUrl: string;
+  /** Bare permanent short code (no scheme/host) — Verify LINK parameter uses this, never bookletUrl. */
+  shortCode: string;
 };
 
 export type BookletSmsMetadataV2 = {
@@ -151,8 +154,12 @@ export type BookletSmsMetadataV2 = {
   domain: "booklet";
   event: BookletSmsEvent;
   recipientRole: BookletSmsRecipientRole;
-  channel: "text";
-  templateKind: "none";
+  /** "verify" = sent via SMS.ir Verify (POST /v1/send/verify, service line). "text" = plain sendText (advertising line). */
+  channel: "text" | "verify";
+  /** "pattern" = SMS.ir approved Verify template id + parameters below. "none" = plain rendered text only. */
+  templateKind: "none" | "pattern";
+  /** Populated only when templateKind is "pattern". */
+  verifyTemplateCode?: string;
   builderName: BookletSmsBuilderName;
   builderVersion: 1;
   correlationId: string;
@@ -188,6 +195,7 @@ export const BOOKLET_SMS_ERROR_MESSAGES: Record<BookletSmsErrorCode, string> = {
   UPDATE_FAILED: "به‌روزرسانی وضعیت پیامک ناموفق بود.",
   MESSAGE_NOT_FOUND: "پیامک یافت نشد.",
   RETRY_NOT_ELIGIBLE: "فقط پیامک ناموفق قابل تلاش مجدد است.",
+  VERIFY_NOT_CONFIGURED: "قالب پیامک تأییدشده (Verify) تنظیم نشده است.",
   UNEXPECTED: "ارسال پیامک با خطای پیش‌بینی‌نشده روبه‌رو شد.",
 };
 
@@ -283,14 +291,17 @@ export function bookletSmsMetadata(params: {
   correlationId: string;
   ctx: BookletSmsContext;
   idempotencyBase: string;
+  /** Omit for the legacy plain-text channel (sendText). */
+  verify?: { templateCode: string };
 }): BookletSmsMetadataV2 {
   return {
     version: 2,
     domain: "booklet",
     event: params.event,
     recipientRole: params.role,
-    channel: "text",
-    templateKind: "none",
+    channel: params.verify ? "verify" : "text",
+    templateKind: params.verify ? "pattern" : "none",
+    ...(params.verify ? { verifyTemplateCode: params.verify.templateCode } : {}),
     builderName: params.builderName,
     builderVersion: 1,
     correlationId: params.correlationId,

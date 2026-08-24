@@ -2,7 +2,7 @@
  * Pure booklet SMS builders. No I/O.
  */
 
-import { maskMobileForDisplay } from "@/lib/communication/sms-params";
+import { maskMobileForDisplay, truncateSmsParam } from "@/lib/communication/sms-params";
 import type { BookletSmsContext, BookletSmsEvent } from "@/lib/commerce/booklet-sms/types";
 
 export function compactSmsLines(lines: readonly string[]): string {
@@ -24,37 +24,32 @@ export function joinProductTitles(
   );
 }
 
+/**
+ * Purchase confirmation SMS. Compact (no blank lines), Persian RTL,
+ * emoji-formatted. Deliberately excludes "سپاس از اعتماد شما" and
+ * "ستارگان پلاس" per the redesigned copy.
+ */
 export function buildBookletPaidSmsBody(ctx: BookletSmsContext): string {
   return compactSmsLines([
-    `سلام ${ctx.fullName} عزیز 🌹`,
-    "✅ خرید شما با موفقیت ثبت شد.",
+    "🛒 سفارش شما ثبت شد.",
+    `👤 ${ctx.fullName}`,
     `📚 ${ctx.booklet}`,
-    `💰 ${ctx.amount}`,
-    "🏢 محل دریافت:",
-    ctx.pickupBranch,
-    `🧾 ${ctx.orderNumber}`,
-    "🔗 رسید و QR:",
+    `💳 مبلغ: ${ctx.amount}`,
+    `🧾 سفارش: ${ctx.orderNumber}`,
+    "🔗 پیگیری سفارش:",
     ctx.bookletUrl,
-    "پس از آماده شدن جزوه، پیامک اطلاع‌رسانی برای شما ارسال خواهد شد.",
-    "ستارگان پلاس",
   ]);
 }
 
+/** Ready-for-pickup SMS. Fires once when opsStage moves to READY_FOR_PICKUP. */
 export function buildBookletReadySmsBody(ctx: BookletSmsContext): string {
   return compactSmsLines([
-    `سلام ${ctx.fullName} عزیز 🌹`,
-    "✅ جزوه شما آماده تحویل است.",
+    "📦 سفارش شما آماده تحویل است.",
+    `🧾 سفارش: ${ctx.orderNumber}`,
     `📚 ${ctx.booklet}`,
-    "🏢 محل دریافت:",
-    ctx.pickupBranch,
-    `📍 ${ctx.pickupBranchAddress}`,
-    `🧾 ${ctx.orderNumber}`,
-    "🔗 رسید و QR:",
+    "🕘 لطفاً در ساعات کاری برای دریافت مراجعه کنید.",
+    "🔗 پیگیری سفارش:",
     ctx.bookletUrl,
-    "ساعات تحویل:",
-    "شنبه تا پنجشنبه",
-    "۸:۰۰ تا ۲۰:۰۰",
-    "ستارگان پلاس",
   ]);
 }
 
@@ -109,4 +104,50 @@ export function buildBuyerMessage(
   ctx: BookletSmsContext,
 ): string {
   return buildBookletStageSmsBody(event, ctx);
+}
+
+// ─── SMS.ir Verify template parameters (POST /v1/send/verify) ──────────────
+//
+// These build the exact `parameters` map for sendPatternTemplate(). SMS.ir
+// caps every Verify parameter at 25 characters — truncateSmsParam mirrors
+// the same limit already used by booking/form templates (no new constant).
+
+/** Purchase confirmation template — FULLNAME, TITLE, PRICE, ORDER_NUMBER. */
+export function buildBookletPurchaseVerifyParameters(
+  ctx: BookletSmsContext,
+): Record<string, string> {
+  return {
+    FULLNAME: truncateSmsParam(ctx.fullName),
+    TITLE: truncateSmsParam(ctx.booklet),
+    PRICE: truncateSmsParam(ctx.amount),
+    ORDER_NUMBER: truncateSmsParam(ctx.orderNumber),
+  };
+}
+
+/**
+ * Ready-for-pickup template — FULLNAME, TITLE, ORDER_NUMBER, LINK.
+ * LINK is the bare short code only (e.g. "AB12CD"), never the full URL —
+ * the approved template text already contains the domain/path.
+ */
+export function buildBookletReadyVerifyParameters(
+  ctx: BookletSmsContext,
+): Record<string, string> {
+  return {
+    FULLNAME: truncateSmsParam(ctx.fullName),
+    TITLE: truncateSmsParam(ctx.booklet),
+    ORDER_NUMBER: truncateSmsParam(ctx.orderNumber),
+    LINK: truncateSmsParam(ctx.shortCode),
+  };
+}
+
+/** Admin new-order notification template — FULLNAME, TITLE, PRICE, ORDER_NUMBER. */
+export function buildBookletAdminVerifyParameters(
+  ctx: BookletSmsContext,
+): Record<string, string> {
+  return {
+    FULLNAME: truncateSmsParam(ctx.fullName),
+    TITLE: truncateSmsParam(ctx.booklet),
+    PRICE: truncateSmsParam(ctx.amount),
+    ORDER_NUMBER: truncateSmsParam(ctx.orderNumber),
+  };
 }

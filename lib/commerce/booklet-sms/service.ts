@@ -7,7 +7,7 @@ import {
   CommerceOrderPaymentStatus,
   SmsMessageStatus,
 } from "@/generated/prisma/enums";
-import { commerceOrderQrUrl } from "@/lib/commerce/orders/qr";
+import { commerceOrderShortUrl } from "@/lib/commerce/orders/qr";
 import {
   COMMERCE_OPS_STAGE_LABELS,
   isCommerceOpsStage,
@@ -21,15 +21,25 @@ import {
   buildBuyerMessage,
   joinProductTitles,
 } from "@/lib/commerce/booklet-sms/builder";
-import { sendBuyerSms, type BookletSmsDeliverInput } from "@/lib/commerce/booklet-sms/buyer";
-import { logBookletSms } from "@/lib/commerce/booklet-sms/logger";
 import {
+  deliverBookletSms,
+  resolveBuyerDispatch,
+  sendBuyerSms,
+  type BookletSmsDeliverInput,
+  type BookletSmsDispatch,
+} from "@/lib/commerce/booklet-sms/buyer";
+import { logBookletSms } from "@/lib/commerce/booklet-sms/logger";
+import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
+import {
+  bookletBuyerBuilderName,
+  bookletSmsError,
   bookletSmsFailure,
   bookletSmsSuccess,
   createBookletSmsCorrelationId,
   isBookletSmsEvent,
   parseBookletSmsMetadata,
   type BookletSmsContext,
+  type BookletSmsError,
   type BookletSmsEvent,
   type BookletSmsHistoryItem,
   type BookletSmsHistoryResult,
@@ -42,6 +52,7 @@ import {
 export type BookletSmsServiceDeps = {
   db?: typeof prisma;
   send?: BookletSmsDeliverInput["send"];
+  sendVerify?: BookletSmsDeliverInput["sendVerify"];
   listAdminRecipients?: (organizationId: string) => Promise<string[]>;
 };
 
@@ -101,6 +112,7 @@ async function loadOrder(
       buyerName: true,
       grandTotalRials: true,
       qrToken: true,
+      shortCode: true,
       opsStage: true,
       paymentStatus: true,
       pickupBranch: { select: { name: true, address: true } },
@@ -139,7 +151,11 @@ async function loadOrder(
       pickupBranch: order.pickupBranch?.name ?? "—",
       pickupBranchAddress: order.pickupBranch?.address?.trim() || "—",
       statusLabel: COMMERCE_OPS_STAGE_LABELS[stage],
-      bookletUrl: commerceOrderQrUrl(order.qrToken),
+      // Every SMS tracking link is the permanent short URL, never the long
+      // qrToken pickup-receipt link.
+      bookletUrl: commerceOrderShortUrl(order.shortCode),
+      // Bare code for the Verify LINK parameter — never the full URL.
+      shortCode: order.shortCode,
     },
   };
 
@@ -343,6 +359,7 @@ async function runBookletSmsJob(params: {
         ctx: loaded.ctx,
         idempotencySuffix: params.idempotencySuffix,
         send: params.deps?.send,
+        sendVerify: params.deps?.sendVerify,
         db,
       }),
     );
@@ -358,6 +375,7 @@ async function runBookletSmsJob(params: {
       idempotencySuffix: params.idempotencySuffix,
       onlyMobile: params.adminMobile,
       send: params.deps?.send,
+      sendVerify: params.deps?.sendVerify,
       db,
       listRecipients: params.deps?.listAdminRecipients,
     });
@@ -645,6 +663,145 @@ export async function retryBookletSms(
   );
 }
 
+export type BookletSmsPreviewResult =
+  | {
+      ok: true;
+      correlationId: string;
+      event: BookletSmsEvent;
+      /** Local reference text (SmsMessage.body) — the readable, human-facing rendering. */
+      body: string;
+      toMobile: string | null;
+      /**
+       * Present only when this event actually dispatches via SMS.ir Verify
+       * (PAID/READY_FOR_PICKUP). The approved template's own wording lives
+       * on SMS.ir, not here — these are exactly the parameters that will be
+       * substituted into it.
+       */
+      verify: { templateCode: string; parameters: Record<string, string> } | null;
+    }
+  | { ok: false; correlationId: string; error: BookletSmsError };
+
+/**
+ * Pure preview — builds the exact message an admin would send, without
+ * writing to SmsMessage or contacting the provider.
+ */
+export async function previewBookletSms(
+  params: BookletSmsOrderRef & { stage?: string },
+  deps?: BookletSmsServiceDeps,
+): Promise<BookletSmsPreviewResult> {
+  const correlationId = createBookletSmsCorrelationId();
+  const db = deps?.db ?? prisma;
+  const requestedStage = isBookletSmsEvent(params.stage) ? params.stage : "PAID";
+  logBookletSms({
+    step: "START",
+    phase: "start",
+    correlationId,
+    event: requestedStage,
+    organizationId: params.organizationId,
+    orderId: params.orderId,
+  });
+  const loadedResult = await loadOrder(params, correlationId, requestedStage, db);
+  if (!loadedResult.ok) {
+    return { ok: false, correlationId, error: bookletSmsError("ORDER_NOT_FOUND") };
+  }
+  const body = buildBuyerMessage(requestedStage, loadedResult.loaded.ctx);
+  const resolution = resolveBuyerDispatch(requestedStage, loadedResult.loaded.ctx);
+  const dispatch: BookletSmsDispatch | null = resolution.ok ? resolution.dispatch : null;
+  return {
+    ok: true,
+    correlationId,
+    event: requestedStage,
+    body,
+    toMobile: loadedResult.loaded.buyerMobile,
+    verify:
+      dispatch && dispatch.mode === "verify"
+        ? { templateCode: dispatch.templateCode, parameters: dispatch.parameters }
+        : null,
+  };
+}
+
+/**
+ * Sends the real, order-derived message text to an admin-chosen test mobile.
+ * Never touches the buyer's own dedup key — always allowed to resend.
+ */
+export async function sendTestBookletSms(
+  params: BookletSmsOrderRef & { stage?: string; testMobile: string },
+  deps?: BookletSmsServiceDeps,
+): Promise<BookletSmsResult> {
+  const requestedStage = isBookletSmsEvent(params.stage) ? params.stage : "PAID";
+  return withWorkflow(
+    { organizationId: params.organizationId, orderId: params.orderId, event: requestedStage },
+    async (correlationId) => {
+      const db = deps?.db ?? prisma;
+      const mobile = normalizeIranianMobile(params.testMobile);
+      if (!mobile.ok) {
+        return finalize({
+          correlationId,
+          organizationId: params.organizationId,
+          orderId: params.orderId,
+          event: requestedStage,
+          messages: [],
+          code: "INVALID_MOBILE",
+        });
+      }
+
+      const loadedResult = await loadOrder(params, correlationId, requestedStage, db);
+      if (!loadedResult.ok) {
+        return finalize({
+          correlationId,
+          organizationId: params.organizationId,
+          orderId: params.orderId,
+          event: requestedStage,
+          messages: [],
+          code: "ORDER_NOT_FOUND",
+        });
+      }
+
+      const body = buildBuyerMessage(requestedStage, loadedResult.loaded.ctx);
+      const resolution = resolveBuyerDispatch(requestedStage, loadedResult.loaded.ctx);
+      if (!resolution.ok) {
+        return finalize({
+          correlationId,
+          organizationId: loadedResult.loaded.organizationId,
+          orderId: loadedResult.loaded.orderId,
+          event: requestedStage,
+          messages: [],
+          code: resolution.code,
+        });
+      }
+      const idempotencyBase = `commerce_order_sms_test:${loadedResult.loaded.orderId}:${requestedStage}:${mobile.normalized}`;
+      const outcome = await deliverBookletSms({
+        organizationId: loadedResult.loaded.organizationId,
+        orderId: loadedResult.loaded.orderId,
+        toMobile: mobile.normalized,
+        renderedBody: body,
+        dispatch: resolution.dispatch,
+        purpose: `commerce_order_${requestedStage.toLowerCase()}_test`,
+        // Timestamp suffix — a test send must never be blocked by the
+        // buyer's own dedup key, and every test send should go through.
+        idempotencyKey: `${idempotencyBase}:${Date.now()}`,
+        idempotencyBase,
+        event: requestedStage,
+        role: "buyer",
+        builderName: bookletBuyerBuilderName(requestedStage),
+        correlationId,
+        ctx: loadedResult.loaded.ctx,
+        send: deps?.send,
+        sendVerify: deps?.sendVerify,
+        db,
+      });
+
+      return finalize({
+        correlationId,
+        organizationId: loadedResult.loaded.organizationId,
+        orderId: loadedResult.loaded.orderId,
+        event: requestedStage,
+        messages: [outcome],
+      });
+    },
+  );
+}
+
 export async function listBookletSmsHistory(
   params: BookletSmsOrderRef,
   deps?: BookletSmsServiceDeps,
@@ -688,13 +845,17 @@ export async function listBookletSmsHistory(
           : {};
       const templateKind = typeof meta.templateKind === "string" ? meta.templateKind : "";
       const templateLabel =
-        parsed.role === "admin"
-          ? "پیامک مدیر"
-          : templateKind === "form"
-            ? "قالب ثبت‌نام"
-            : templateKind === "commerce"
-              ? "قالب فروشگاه"
-              : "پیامک جزوه";
+        templateKind === "pattern"
+          ? parsed.role === "admin"
+            ? "قالب تأییدشده مدیر"
+            : "قالب تأییدشده (Verify)"
+          : parsed.role === "admin"
+            ? "پیامک مدیر"
+            : templateKind === "form"
+              ? "قالب ثبت‌نام"
+              : templateKind === "commerce"
+                ? "قالب فروشگاه"
+                : "پیامک جزوه";
       return {
         id: row.id,
         templateLabel,
