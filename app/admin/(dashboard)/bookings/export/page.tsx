@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import { AdminStatCard } from "@/components/admin/AdminStatCard";
+import { BookingExportStatCard } from "@/components/admin/bookings/BookingExportStatCard";
+import { ExportExcelButton } from "@/components/admin/bookings/ExportExcelButton";
 import { PrintQueueButton } from "@/components/admin/commerce/PrintQueueButton";
 import { adminBreadcrumbs } from "@/content/admin";
 import { requirePermission } from "@/lib/auth/require-admin";
 import {
   bookingReservationExportQueryString,
   parseBookingReservationExportFilters,
+  type BookingExportDatePreset,
 } from "@/lib/booking/reservation-export-filters";
 import {
   loadBookingReservationsForExport,
@@ -28,16 +30,19 @@ type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const DATE_PRESET_OPTIONS = [
+const DATE_CHIPS: ReadonlyArray<{ value: BookingExportDatePreset | ""; label: string }> = [
   { value: "today", label: "امروز" },
   { value: "tomorrow", label: "فردا" },
   { value: "thisWeek", label: "این هفته" },
   { value: "thisMonth", label: "این ماه" },
-] as const;
+  { value: "", label: "همه" },
+];
 
-const inputClass = "rounded-xl border border-border px-3 py-2 text-sm";
-const buttonClass =
-  "inline-flex min-h-11 items-center rounded-xl border border-border bg-surface px-4 text-sm font-medium text-primary hover:bg-background";
+const inputClass =
+  "rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground transition focus:border-secondary/60 focus:outline-none";
+const labelClass = "mb-1.5 block text-xs font-medium text-muted";
+const toolbarButtonClass =
+  "inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-border bg-surface px-4 text-sm font-medium text-primary transition hover:bg-background";
 
 export default async function BookingsExportPage({ searchParams }: Props) {
   const query = await searchParams;
@@ -78,6 +83,12 @@ export default async function BookingsExportPage({ searchParams }: Props) {
 
   return (
     <>
+      <style>{`
+        @media print {
+          @page { size: A4 portrait; margin: 14mm; }
+        }
+      `}</style>
+
       <AdminPageHeader
         title="خروجی اکسل رزروها"
         description="ساخت گزارش مدیریتی حرفه‌ای از رزروهای نوبت‌دهی با فیلتر دلخواه"
@@ -85,98 +96,167 @@ export default async function BookingsExportPage({ searchParams }: Props) {
         compact
       />
 
-      <div className="mb-5 flex flex-wrap gap-2 print:hidden">
-        <Link
-          href={exportHref}
-          className={`${buttonClass} border-primary bg-primary text-white hover:bg-primary/90`}
-        >
-          📥 خروجی اکسل
-        </Link>
-        <PrintQueueButton label="🖨 چاپ برنامه روز" />
-        <Link href={refreshHref} className={buttonClass}>
-          🔄 بروزرسانی
-        </Link>
+      <div className="admin-card mb-6 flex flex-wrap items-center justify-between gap-3 p-4 print:hidden">
+        <div>
+          <p className="text-sm font-semibold text-primary">
+            {toPersianDigits(String(rows.length))} رزرو مطابق با فیلترهای فعلی
+          </p>
+          <p className="mt-0.5 text-xs text-muted">
+            فایل اکسل دقیقاً همین نتایج را شامل می‌شود.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <ExportExcelButton href={exportHref} />
+          <PrintQueueButton label="🖨 چاپ برنامه روز" />
+          <Link href={refreshHref} className={toolbarButtonClass}>
+            🔄 بروزرسانی
+          </Link>
+        </div>
       </div>
 
-      <form className="admin-card mb-6 grid gap-3 p-4 print:hidden sm:grid-cols-2 lg:grid-cols-4">
-        <select name="datePreset" defaultValue={filters.datePreset} className={inputClass}>
-          <option value="">بازه دلخواه (تاریخ‌ها را پر کنید)</option>
-          {DATE_PRESET_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <input
-          type="text"
-          name="dateFrom"
-          defaultValue={filters.dateFrom}
-          placeholder="از تاریخ (مثلاً ۱۴۰۴/۰۱/۰۱)"
-          dir="ltr"
-          className={inputClass}
+      <div className="mb-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-6 print:hidden">
+        <BookingExportStatCard
+          tone="total"
+          label="کل رزروها"
+          value={toPersianDigits(String(summary.total))}
+          subtitle="مطابق فیلتر فعلی"
         />
-        <input
-          type="text"
-          name="dateTo"
-          defaultValue={filters.dateTo}
-          placeholder="تا تاریخ (مثلاً ۱۴۰۴/۰۱/۳۰)"
-          dir="ltr"
-          className={inputClass}
+        <BookingExportStatCard
+          tone="confirmed"
+          label="تایید شده"
+          value={toPersianDigits(String(summary.confirmed))}
+          subtitle="آماده حضور"
         />
-        <select name="serviceId" defaultValue={filters.serviceId} className={inputClass}>
-          <option value="">همه خدمت‌ها</option>
-          {services.map((service) => (
-            <option key={service.id} value={service.id}>
-              {service.title}
-            </option>
-          ))}
-        </select>
-        <select name="status" defaultValue={filters.status} className={inputClass}>
-          <option value="">همه وضعیت‌ها</option>
-          {Object.entries(BOOKING_EXPORT_STATUS_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <input
-          type="text"
-          name="mobile"
-          defaultValue={filters.mobile}
-          placeholder="جستجوی شماره موبایل"
-          dir="ltr"
-          className={inputClass}
+        <BookingExportStatCard
+          tone="pending"
+          label="در انتظار"
+          value={toPersianDigits(String(summary.pending))}
+          subtitle="نیازمند پیگیری"
         />
-        <input
-          type="text"
-          name="studentName"
-          defaultValue={filters.studentName}
-          placeholder="جستجوی نام دانش‌آموز"
-          className={inputClass}
+        <BookingExportStatCard
+          tone="cancelled"
+          label="لغو شده"
+          value={toPersianDigits(String(summary.cancelled))}
+          subtitle="لغوشده توسط مراجعه‌کننده یا مرکز"
         />
-        <button className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white">
-          اعمال فیلتر
-        </button>
+        <BookingExportStatCard
+          tone="completed"
+          label="تکمیل شده"
+          value={toPersianDigits(String(summary.completed))}
+          subtitle="جلسه برگزار شد"
+        />
+        <BookingExportStatCard
+          tone="noShow"
+          label="عدم حضور"
+          value={toPersianDigits(String(summary.noShow))}
+          subtitle="مراجعه‌نشده"
+        />
+      </div>
+
+      <form className="admin-card mb-8 space-y-4 p-5 print:hidden">
+        <div>
+          <p className={labelClass}>بازه زمانی سریع</p>
+          <div className="flex flex-wrap gap-2">
+            {DATE_CHIPS.map((chip) => {
+              const active = filters.datePreset === chip.value;
+              return (
+                <button
+                  key={chip.label}
+                  type="submit"
+                  name="datePreset"
+                  value={chip.value}
+                  className={`inline-flex min-h-10 items-center rounded-full border px-4 text-sm font-medium transition ${
+                    active
+                      ? "border-primary bg-primary text-white"
+                      : "border-border bg-background text-foreground hover:border-primary/40 hover:bg-primary/5"
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="block text-sm">
+            <span className={labelClass}>یا از تاریخ (بازه دلخواه)</span>
+            <input
+              type="text"
+              name="dateFrom"
+              defaultValue={filters.dateFrom}
+              placeholder="مثلاً ۱۴۰۴/۰۱/۰۱"
+              dir="ltr"
+              className={`${inputClass} w-full`}
+            />
+          </label>
+          <label className="block text-sm">
+            <span className={labelClass}>تا تاریخ</span>
+            <input
+              type="text"
+              name="dateTo"
+              defaultValue={filters.dateTo}
+              placeholder="مثلاً ۱۴۰۴/۰۱/۳۰"
+              dir="ltr"
+              className={`${inputClass} w-full`}
+            />
+          </label>
+          <label className="block text-sm">
+            <span className={labelClass}>خدمت</span>
+            <select name="serviceId" defaultValue={filters.serviceId} className={`${inputClass} w-full`}>
+              <option value="">همه خدمت‌ها</option>
+              {services.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm">
+            <span className={labelClass}>وضعیت رزرو</span>
+            <select name="status" defaultValue={filters.status} className={`${inputClass} w-full`}>
+              <option value="">همه وضعیت‌ها</option>
+              {Object.entries(BOOKING_EXPORT_STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm">
+            <span className={labelClass}>جستجوی شماره موبایل</span>
+            <input
+              type="text"
+              name="mobile"
+              defaultValue={filters.mobile}
+              placeholder="۰۹xxxxxxxxx"
+              dir="ltr"
+              className={`${inputClass} w-full`}
+            />
+          </label>
+          <label className="block text-sm">
+            <span className={labelClass}>جستجوی نام دانش‌آموز</span>
+            <input
+              type="text"
+              name="studentName"
+              defaultValue={filters.studentName}
+              placeholder="نام یا نام خانوادگی"
+              className={`${inputClass} w-full`}
+            />
+          </label>
+          <div className="flex items-end">
+            <button className="min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary/90">
+              اعمال فیلتر
+            </button>
+          </div>
+        </div>
       </form>
 
-      <div className="mb-4 grid gap-4 sm:grid-cols-3 lg:grid-cols-6 print:hidden">
-        <AdminStatCard label="کل رزروها" value={toPersianDigits(String(summary.total))} />
-        <AdminStatCard label="تایید شده" value={toPersianDigits(String(summary.confirmed))} />
-        <AdminStatCard label="در انتظار" value={toPersianDigits(String(summary.pending))} />
-        <AdminStatCard label="لغو شده" value={toPersianDigits(String(summary.cancelled))} />
-        <AdminStatCard label="تکمیل شده" value={toPersianDigits(String(summary.completed))} />
-        <AdminStatCard label="عدم حضور" value={toPersianDigits(String(summary.noShow))} />
-      </div>
-
-      <p className="mb-8 text-sm text-muted print:hidden">
-        {toPersianDigits(String(rows.length))} رزرو مطابق با فیلترهای انتخاب‌شده — فایل
-        اکسل دقیقاً همین نتایج را شامل می‌شود.
-      </p>
-
       <section className="hidden print:block">
-        <h2 className="mb-3 text-lg font-bold">
-          برنامه امروز — {formatJalaliDateShort(new Date())}
-        </h2>
+        <h2 className="mb-1 text-lg font-bold">برنامه امروز</h2>
+        <p className="mb-4 text-sm text-muted">
+          {formatJalaliDateShort(new Date())} · SetareganPlus ERP
+        </p>
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
