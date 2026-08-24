@@ -594,6 +594,7 @@ export class SmsIrProvider implements SmsProvider {
       [{ name: config.parameterNames.otpCode, value: request.code }],
       request.signal,
       config,
+      /* isOtp */ true,
     );
   }
 
@@ -625,6 +626,7 @@ export class SmsIrProvider implements SmsProvider {
         ],
         request.signal,
         config,
+        /* isOtp */ false,
       );
     }
     if (request.kind === "commerce") {
@@ -647,6 +649,7 @@ export class SmsIrProvider implements SmsProvider {
         ],
         request.signal,
         config,
+        /* isOtp */ false,
       );
     }
     return this.sendVerify(
@@ -661,6 +664,7 @@ export class SmsIrProvider implements SmsProvider {
       ],
       request.signal,
       config,
+      /* isOtp */ false,
     );
   }
 
@@ -682,6 +686,7 @@ export class SmsIrProvider implements SmsProvider {
       parameters,
       request.signal,
       config,
+      /* isOtp */ false,
     );
   }
 
@@ -710,6 +715,7 @@ export class SmsIrProvider implements SmsProvider {
     parameters: Array<{ name: string | null; value: string }>,
     signal: AbortSignal | undefined,
     config: SmsIrRuntimeConfig,
+    isOtp: boolean,
   ): Promise<SmsSendResult> {
     if (
       !this.isEnabled() ||
@@ -723,39 +729,72 @@ export class SmsIrProvider implements SmsProvider {
       return failure("invalid", "پارامترهای پیامک معتبر نیست.", false);
     }
 
+    // ─── TEMPORARY DEBUG — SMS.ir Verify delivery investigation ───────────
+    // Remove this whole block once the non-delivery issue is diagnosed.
+    // Logs the recipient mobile number and, for non-OTP calls, full
+    // parameter values (product/price/tracking — not secrets). OTP calls
+    // never log the actual code, only its parameter name.
+    const debugUrl = `${config.baseUrl}/v1/send/verify`;
+    const debugRequestBody = { mobile, templateId, parameters };
+    console.info("[smsir-verify-debug] REQUEST", {
+      isOtp,
+      url: debugUrl,
+      templateId,
+      mobile,
+      parameters: isOtp
+        ? parameters.map((p) => ({ name: p.name, value: "[REDACTED:OTP]" }))
+        : parameters,
+      requestBody: isOtp
+        ? { ...debugRequestBody, parameters: "[REDACTED:OTP]" }
+        : debugRequestBody,
+    });
+    // ────────────────────────────────────────────────────────────────────
+
     try {
-      const response = await fetch(`${config.baseUrl}/v1/send/verify`, {
+      const response = await fetch(debugUrl, {
         method: "POST",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
           "X-API-KEY": config.apiKey,
         },
-        body: JSON.stringify({
-          mobile,
-          templateId,
-          parameters,
-        }),
+        body: JSON.stringify(debugRequestBody),
         signal,
       });
 
+      // Read the body exactly once (as text, then parsed) so both the
+      // !response.ok and response.ok branches below can use the identical
+      // parsed payload the original code computed independently in each
+      // branch — behavior is unchanged, only where the read happens moved.
+      const rawResponseText = await response.text();
+      let payload: unknown = null;
+      try {
+        payload = rawResponseText ? JSON.parse(rawResponseText) : null;
+      } catch {
+        payload = null;
+      }
+
+      // ─── TEMPORARY DEBUG — SMS.ir Verify delivery investigation ─────────
+      console.info("[smsir-verify-debug] RESPONSE", {
+        isOtp,
+        url: debugUrl,
+        httpStatus: response.status,
+        httpStatusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        rawBody: rawResponseText,
+        parsedBody: payload,
+      });
+      // ────────────────────────────────────────────────────────────────────
+
       if (!response.ok) {
-        let providerStatusCode: number | null = null;
-        try {
-          providerStatusCode = readBusinessStatus(await response.json());
-        } catch {
-          // HTTP status remains sufficient for the normalized failure.
-        }
+        const providerStatusCode = readBusinessStatus(payload);
         if (providerStatusCode === 20) {
           return mapBusinessFailure(providerStatusCode);
         }
         return mapHttpFailure(response.status, providerStatusCode);
       }
 
-      let payload: unknown;
-      try {
-        payload = await response.json();
-      } catch {
+      if (payload === null) {
         return failure(
           "malformed_response",
           "پاسخ سرویس پیامک قابل تأیید نبود.",
@@ -786,6 +825,16 @@ export class SmsIrProvider implements SmsProvider {
       }
       return success(providerMessageId, providerStatusCode);
     } catch (error) {
+      // ─── TEMPORARY DEBUG — SMS.ir Verify delivery investigation ─────────
+      console.error("[smsir-verify-debug] FETCH_ERROR", {
+        isOtp,
+        url: debugUrl,
+        error:
+          error instanceof Error
+            ? { name: error.name, message: error.message }
+            : error,
+      });
+      // ────────────────────────────────────────────────────────────────────
       if (
         (error instanceof Error && error.name === "AbortError") ||
         signal?.aborted
