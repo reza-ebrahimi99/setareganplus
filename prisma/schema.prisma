@@ -4005,6 +4005,10 @@ model CommerceOrder {
   specialNotes   String?
   handoverStaffUserId String?
   qrToken        String                    @unique @default(cuid())
+  /// Permanent public tracking payload (6-char code) — QR + SMS always use
+  /// the short link built from this, never the long qrToken. Generated once
+  /// at order creation and never reassigned.
+  shortCode      String                    @unique
   inProductionAt DateTime?
   opsVip         Boolean                   @default(false)
   pickupSignedBy String?

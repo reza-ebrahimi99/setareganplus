@@ -57,6 +57,45 @@ export function commerceOrderAdminPickupPath(token: string): string {
   return `/admin/commerce/pickup/${encodeURIComponent(token)}`;
 }
 
+// ─── Public order tracking (short link + tracking page) ────────────────────
+//
+// The pickup receipt above (`/booklet/{qrToken}`) stays untouched. Public
+// order tracking is a separate, additive surface: a short permanent link
+// that every SMS and QR uses, redirecting to a full status page keyed by
+// the order number.
+
+/**
+ * Uppercase alphanumeric — e.g. `AB12CD` (matches the public short-link
+ * format). The generator lives in `short-code.ts` (needs `node:crypto`,
+ * server-only); this file stays import-safe for client components.
+ */
+export const COMMERCE_SHORT_CODE_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+export const COMMERCE_SHORT_CODE_LENGTH = 6;
+
+export function isCommerceShortCode(value: string | null | undefined): boolean {
+  return typeof value === "string" && new RegExp(
+    `^[${COMMERCE_SHORT_CODE_ALPHABET}]{${COMMERCE_SHORT_CODE_LENGTH},12}$`,
+  ).test(value.trim().toUpperCase());
+}
+
+/** `/o/{shortCode}` — the permanent short link. QR and SMS always use this. */
+export function commerceOrderShortPath(shortCode: string): string {
+  return `/o/${encodeURIComponent(shortCode.trim().toUpperCase())}`;
+}
+
+export function commerceOrderShortUrl(shortCode: string): string {
+  return `${PUBLIC_SITE_ORIGIN}${commerceOrderShortPath(shortCode)}`;
+}
+
+/** `/order/{orderNumber}` — the public tracking page the short link resolves to. */
+export function commerceOrderTrackingPath(orderNumber: string): string {
+  return `/order/${encodeURIComponent(orderNumber)}`;
+}
+
+export function commerceOrderTrackingUrl(orderNumber: string): string {
+  return `${PUBLIC_SITE_ORIGIN}${commerceOrderTrackingPath(orderNumber)}`;
+}
+
 /**
  * Extract the existing qrToken from a scanned URL, path, or raw token.
  * Never treats student fields as QR payload.
@@ -99,24 +138,48 @@ function clampQrSize(size: number): number {
   return Math.min(1024, Math.max(COMMERCE_QR_MIN_SIZE, Math.floor(size)));
 }
 
-export async function generateCommerceOrderQrPng(
-  token: string,
-  size = COMMERCE_QR_DOWNLOAD_SIZE,
-): Promise<Buffer> {
-  return QRCode.toBuffer(commerceOrderQrUrl(token), {
+/** Shared renderer — every commerce QR (pickup or short link) goes through this. */
+async function generateQrPngForPayload(payload: string, size: number): Promise<Buffer> {
+  return QRCode.toBuffer(payload, {
     type: "png",
     width: clampQrSize(size),
     ...QR_RENDER,
   });
 }
 
-export async function generateCommerceOrderQrDataUrl(
-  token: string,
-  size = COMMERCE_QR_PREVIEW_SIZE,
-): Promise<string> {
-  return QRCode.toDataURL(commerceOrderQrUrl(token), {
+async function generateQrDataUrlForPayload(payload: string, size: number): Promise<string> {
+  return QRCode.toDataURL(payload, {
     type: "image/png",
     width: clampQrSize(size),
     ...QR_RENDER,
   });
+}
+
+export async function generateCommerceOrderQrPng(
+  token: string,
+  size = COMMERCE_QR_DOWNLOAD_SIZE,
+): Promise<Buffer> {
+  return generateQrPngForPayload(commerceOrderQrUrl(token), size);
+}
+
+export async function generateCommerceOrderQrDataUrl(
+  token: string,
+  size = COMMERCE_QR_PREVIEW_SIZE,
+): Promise<string> {
+  return generateQrDataUrlForPayload(commerceOrderQrUrl(token), size);
+}
+
+/** QR for the public tracking page — always encodes the short link, never qrToken. */
+export async function generateCommerceOrderShortQrPng(
+  shortCode: string,
+  size = COMMERCE_QR_DOWNLOAD_SIZE,
+): Promise<Buffer> {
+  return generateQrPngForPayload(commerceOrderShortUrl(shortCode), size);
+}
+
+export async function generateCommerceOrderShortQrDataUrl(
+  shortCode: string,
+  size = COMMERCE_QR_PREVIEW_SIZE,
+): Promise<string> {
+  return generateQrDataUrlForPayload(commerceOrderShortUrl(shortCode), size);
 }
