@@ -543,6 +543,35 @@ check("order: qr encodes production pickup url with camera-safe render", () => {
   assert.ok(qr.COMMERCE_QR_MIN_SIZE >= 256);
 });
 
+check("order: permanent short link, tracking page url, and short-code generator", () => {
+  const qr = require("../lib/commerce/orders/qr") as typeof import("../lib/commerce/orders/qr");
+  assert.equal(qr.commerceOrderShortPath("ab12cd"), "/o/AB12CD");
+  assert.equal(qr.commerceOrderShortUrl("ab12cd"), "https://setareganplus.ir/o/AB12CD");
+  assert.equal(
+    qr.commerceOrderTrackingPath("ORD-1"),
+    "/order/ORD-1",
+  );
+  assert.equal(
+    qr.commerceOrderTrackingUrl("ORD-1"),
+    "https://setareganplus.ir/order/ORD-1",
+  );
+  assert.equal(qr.isCommerceShortCode("AB12CD"), true);
+  assert.equal(qr.isCommerceShortCode("ab12cd"), true);
+  assert.equal(qr.isCommerceShortCode("AB-12"), false);
+  assert.equal(qr.isCommerceShortCode(""), false);
+
+  const shortCodeGen = require("../lib/commerce/orders/short-code") as typeof import("../lib/commerce/orders/short-code");
+  const codes = new Set<string>();
+  for (let i = 0; i < 500; i += 1) {
+    const code = shortCodeGen.generateCommerceOrderShortCode();
+    assert.equal(code.length, qr.COMMERCE_SHORT_CODE_LENGTH);
+    assert.equal(qr.isCommerceShortCode(code), true);
+    codes.add(code);
+  }
+  // 500 draws from a 32^6 space should essentially never collide.
+  assert.ok(codes.size >= 495);
+});
+
 check("order: booklet ready eta copy", () => {
   const { bookletReadyEtaCopy } = require("../lib/commerce/orders/receipt") as typeof import("../lib/commerce/orders/receipt");
   assert.equal(bookletReadyEtaCopy("PAID").ready, false);
@@ -554,7 +583,7 @@ check("order: booklet ready eta copy", () => {
   assert.equal(bookletReadyEtaCopy("DELIVERED_TO_STUDENT").text, "جزوه شما آماده تحویل است.");
 });
 
-check("order: booklet paid sms is a receipt not a registration template", () => {
+check("order: booklet purchase confirmation sms is compact, RTL, and emoji-formatted", () => {
   const {
     buildBookletPaidSmsBody,
     buildBookletStageSmsBody,
@@ -569,23 +598,31 @@ check("order: booklet paid sms is a receipt not a registration template", () => 
     pickupBranch: "شعبه پسران",
     pickupBranchAddress: "بین کلانتری و بانک مسکن",
     statusLabel: "پرداخت",
-    bookletUrl: "https://setareganplus.ir/booklet/tok",
+    bookletUrl: "https://setareganplus.ir/o/AB12CD",
   };
   const paid = buildBookletPaidSmsBody(ctx);
   assert.equal(paid.includes("\n\n"), false);
-  assert.equal(paid.includes("خرید شما با موفقیت ثبت شد."), true);
-  assert.equal(paid.includes("جزوه ریاضی"), true);
-  assert.equal(paid.includes("ORD-1"), true);
-  assert.equal(paid.includes("شعبه پسران"), true);
-  assert.equal(paid.includes("https://setareganplus.ir/booklet/tok"), true);
+  assert.equal(paid.includes("🛒 سفارش شما ثبت شد."), true);
+  assert.equal(paid.includes("👤 علی رضایی"), true);
+  assert.equal(paid.includes("📚 جزوه ریاضی"), true);
+  assert.equal(paid.includes("💳 مبلغ: ۱۲۰٬۰۰۰ ریال"), true);
+  assert.equal(paid.includes("🧾 سفارش: ORD-1"), true);
+  assert.equal(paid.includes("🔗 پیگیری سفارش:"), true);
+  assert.equal(paid.includes("https://setareganplus.ir/o/AB12CD"), true);
   assert.equal(paid.includes("/admin/"), false);
-  assert.equal(paid.includes("به زودی با شما تماس"), false);
+  assert.equal(paid.includes("سپاس از اعتماد شما"), false);
+  assert.equal(paid.includes("ستارگان پلاس"), false);
+
   const ready = buildBookletStageSmsBody("READY_FOR_PICKUP", ctx);
-  assert.equal(ready.includes("جزوه شما آماده تحویل است."), true);
-  assert.equal(ready.includes("بین کلانتری و بانک مسکن"), true);
-  assert.equal(ready.includes("۸:۰۰ تا ۲۰:۰۰"), true);
   assert.equal(ready.includes("\n\n"), false);
-  assert.equal(ready.includes("زمان تقریبی"), false);
+  assert.equal(ready.includes("📦 سفارش شما آماده تحویل است."), true);
+  assert.equal(ready.includes("🧾 سفارش: ORD-1"), true);
+  assert.equal(ready.includes("📚 جزوه ریاضی"), true);
+  assert.equal(ready.includes("🕘 لطفاً در ساعات کاری برای دریافت مراجعه کنید."), true);
+  assert.equal(ready.includes("🔗 پیگیری سفارش:"), true);
+  assert.equal(ready.includes("https://setareganplus.ir/o/AB12CD"), true);
+  assert.equal(ready.includes("ستارگان پلاس"), false);
+
   const delivered = buildBookletStageSmsBody("DELIVERED_TO_STUDENT", ctx);
   assert.equal(delivered.includes("با موفقیت تحویل شد."), true);
   assert.equal(delivered.includes("https://setareganplus.ir"), true);
@@ -627,6 +664,26 @@ check("order: booklet sms metadata prefers rebuild-from-order retry", () => {
   const parsed = parseBookletSmsMetadata({ stage: "READY_FOR_PICKUP", recipientRole: "buyer" });
   assert.equal(parsed.event, "READY_FOR_PICKUP");
   assert.equal(parsed.role, "buyer");
+});
+
+check("order: shipping status label derives from ops stage (courier/shipping-ready)", () => {
+  const { commerceShippingStatusLabel } = require("../lib/commerce/orders/ops-stage") as typeof import("../lib/commerce/orders/ops-stage");
+  assert.equal(
+    commerceShippingStatusLabel({ opsStage: "REGISTERED" }),
+    "در انتظار آماده‌سازی",
+  );
+  assert.equal(
+    commerceShippingStatusLabel({ opsStage: "IN_PRODUCTION" }),
+    "در حال آماده‌سازی",
+  );
+  assert.equal(
+    commerceShippingStatusLabel({ opsStage: "READY_FOR_PICKUP" }),
+    "آماده تحویل حضوری",
+  );
+  assert.equal(
+    commerceShippingStatusLabel({ opsStage: "DELIVERED_TO_STUDENT" }),
+    "تحویل داده شد",
+  );
 });
 
 check("order: pickup branch scope helper", () => {
@@ -679,6 +736,24 @@ void (async () => {
     console.error(error);
     process.exit(1);
   }
+
+  const shortCode = "AB12CD";
+  const expectedShort = qr.commerceOrderShortUrl(shortCode);
+  const shortPng = await qr.generateCommerceOrderShortQrPng(shortCode, qr.COMMERCE_QR_PREVIEW_SIZE);
+  const { data: shortData, info: shortInfo } = await sharp(shortPng)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const decodedShort = jsQR(new Uint8ClampedArray(shortData), shortInfo.width, shortInfo.height);
+  try {
+    assert.equal(decodedShort?.data, expectedShort);
+    console.log("  ok  order: generated tracking qr decodes to the permanent short link");
+  } catch (error) {
+    console.error("  FAIL order: generated tracking qr decodes to the permanent short link");
+    console.error(error);
+    process.exit(1);
+  }
+
   console.log("\nAll commerce foundation tests passed.");
 })().catch((error) => {
   console.error("  FAIL order: generated qr decodes to production pickup url");
