@@ -1,6 +1,6 @@
 # 05 — Profile Hub (the heart)
 
-[Index](./README.md) · Previous: [Identity](./04-identity.md) · Next: [Timeline](./06-timeline.md)
+[Index](./README.md) · Previous: [Identity](./04-identity.md) · Next: [Experience Engine](./06-experience-engine.md)
 
 ---
 
@@ -8,7 +8,7 @@
 
 After login, the default screen is **Home of My Profile**, not a catalog and not CRM.
 
-The hub is a **premium personal dashboard**. Each section is a filtered view of a module projection. Empty sections show a calm empty state, not errors.
+The hub is a **premium personal dashboard**. Every section **reads Experience Engine projections** ([06](./06-experience-engine.md)). It does not UNION live booking/order/CRM tables. Empty sections show a calm empty state, not errors.
 
 ---
 
@@ -18,26 +18,26 @@ Nav (RTL, Persian labels):
 
 | Section | Audience | Source |
 |---------|----------|--------|
-| خانه Home | all | snapshot KPIs + next actions |
-| سفارش‌ها Orders | student/parent | books + booklet projections |
-| جزوه‌ها Booklets | student/parent | booklet ops |
-| کتاب‌ها Books | student/parent | book ERP orders |
-| رزروها Reservations | all | booking |
-| مشاوره Consulting | all | booking services tagged consultation |
-| دوره‌ها Courses | all | enrollment when exists; else browse CTA to public courses **then login to enroll** |
-| پرداخت‌ها Payments | student/parent | treasury |
-| کیف پول Wallet | all | wallet ledger |
-| تخفیف‌ها Discounts | all | applied + available |
-| کوپن‌ها Coupons | all | held coupons |
-| امتیاز Points | all | loyalty |
-| فایل‌ها Files | all | file vault |
-| اعلان‌ها Notifications | all | in-app |
-| پیام‌ها Messages | all | future thread model; v1 = notifications + SMS history projection |
-| روند Timeline | all | timeline |
-| پروفایل Profile | all | ExperienceProfile + User |
-| تنظیمات Settings | all | prefs, sessions, consents |
+| خانه Home | all | Engine: widgets + feed + quick actions + card |
+| سفارش‌ها Orders | student/parent | Engine projections of book + booklet events |
+| جزوه‌ها Booklets | student/parent | Engine (booklet events) |
+| کتاب‌ها Books | student/parent | Engine (book events) |
+| رزروها Reservations | all | Engine (booking events) |
+| مشاوره Consulting | all | Engine (booking tagged consultation) |
+| دوره‌ها Courses | all | Engine when CLASS_* exists; else public browse |
+| پرداخت‌ها Payments | student/parent | Engine wallet/payment views |
+| کیف پول Wallet | all | Engine **Wallet View** (ledger is treasury) |
+| تخفیف‌ها Discounts | all | Engine + marketing events |
+| کوپن‌ها Coupons | all | Engine |
+| امتیاز Points | all | Engine loyalty view |
+| فایل‌ها Files | all | Engine downloads index |
+| اعلان‌ها Notifications | all | Engine in-app |
+| پیام‌ها Messages | all | v1 = Engine notifications |
+| روند Timeline | all | Engine timeline |
+| پروفایل Profile | all | Identity + Engine card |
+| تنظیمات Settings | all | prefs (engine layout, consents) |
 | معرفی Referral | all | referral tools |
-| دستاوردها Achievements | student | **loyalty +** published CMS achievements (two subtabs, not mixed rows) |
+| دستاوردها Achievements | student | Engine: loyalty badges + CMS projection |
 
 Teacher/consultant/school grants **add** a top-level «پنل معلم / مشاور / مدرسه» (see [08](./08-partner-platforms.md)).
 
@@ -49,10 +49,10 @@ Parent hub: same IA but orders/files scoped to **selected child** (existing auth
 
 Premium, not a widget dump:
 
-- Identity strip: photo, name, grade/role, Jalali date
-- Next action (1): e.g. «بیعانه سفارش کتاب», «رزرو مشاوره فردا», «جزوه آماده دریافت»
-- Three numbers: مانده، امتیاز، رزروهای پیش رو
-- Timeline preview (5 events)
+- Identity strip + **Digital Student Card** (Engine)
+- **Quick Actions** (max 3) from Engine
+- **Widgets** (remaining, points, next reservation) from snapshots — not live ERP queries
+- **Activity Feed** preview (not the full timeline)
 - Recommendations (AI flag) — dismissible
 
 ---

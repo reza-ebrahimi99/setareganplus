@@ -24,24 +24,28 @@ SXP does **not** become Shopify, does **not** replace Pen Book Agency ERP, and d
 ## 2. Hub, not a storefront
 
 ```text
-                    ┌──────────────────────────┐
-                    │     EXPERIENCE HUB       │
-                    │     /portal  (evolved)   │
-                    │  Profile · Timeline ·    │
-                    │  Wallet · Files · Home   │
-                    └────────────┬─────────────┘
-         read models / events    │    never owns foreign ledgers
-        ┌────────────┬───────────┼──────────┬────────────┐
-        ▼            ▼           ▼          ▼            ▼
-     Booking      Booklet      Books      CRM*       Treasury
-     (exists)     (branch)     (ERP docs)  (exists)   (intents)
-        │            │           │          │            │
-        └────────────┴───────────┴──────────┴────────────┘
-                         write their own tables
-                         emit DomainEventOutbox
+     Booking / Booklet / Books / CRM / ERP / Treasury / Identity
+                    write own ledgers
+                    MUST publish DomainEventOutbox
+                              │
+                              ▼
+                 ┌────────────────────────────┐
+                 │     EXPERIENCE ENGINE      │
+                 │  sole hub projector        │
+                 │  Timeline · Feed · Notify  │
+                 │  Widgets · Card · Views    │
+                 │  NO business documents     │
+                 └─────────────┬──────────────┘
+                               ▼
+                 ┌────────────────────────────┐
+                 │   EXPERIENCE HUB  /portal  │
+                 │   Profile UI — reads only  │
+                 └────────────────────────────┘
 ```
 
-\*CRM remains staff-owned. Hub shows “your admissions / your assigned advisor” as a **projection**, not a second pipeline.
+CRM remains staff-owned. The Engine projects “your advisor” into widgets; it is not a second pipeline.
+
+The Hub UI never queries booking/order/CRM tables as its source of truth. See [06](./06-experience-engine.md).
 
 ---
 
@@ -74,7 +78,7 @@ Anonymous booking/forms that exist today are a **compatibility exception** until
 
 | Key | Default | Effect |
 |-----|---------|--------|
-| `sxp` | false | Hub chrome, timeline projector, extra portal nav |
+| `sxp` | false | Hub chrome, Experience Engine worker, extra portal nav |
 | `sxp.wallet` | false | Wallet UI |
 | `sxp.loyalty` | false | Tiers/points |
 | `sxp.referral` | false | Profile referral tools |

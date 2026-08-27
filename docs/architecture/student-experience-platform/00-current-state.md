@@ -104,7 +104,7 @@ Public site is informational; registration/booking/forms already collect data wi
 | Booklet | Unmerged: `CommerceOpsStage` REGISTERED → DELIVERED_TO_STUDENT, pickup, QR | Different pipeline from published books |
 | Book Agency ERP | Docs only, `bookCommerce` off | Procurement/warehouse ledger |
 | SMS | `SmsMessage` queue + SMS.ir | |
-| Outbox | `DomainEventOutbox` (forms/booking types today) | **SXP timeline consumer** |
+| Outbox | `DomainEventOutbox` (forms/booking types today) | **Experience Engine inbox** (plus existing CRM/SMS workers) |
 | Media | `MediaAsset` on disk (`STAROS_MEDIA_ROOT`) | Files vault points here |
 | Achievements | Public CMS `Achievement` on Student | **Not** loyalty badges — do not overload |
 
@@ -114,6 +114,6 @@ Public site is informational; registration/booking/forms already collect data wi
 
 1. SXP Hub **extends `/portal`**, it does not replace `/admin` or `/book`.
 2. Identity = existing `User`. Profile = new org-scoped `ExperienceProfile` **linked** to User + Student/Guardian/Partner.
-3. Timeline **projects** `DomainEventOutbox` (+ new types). Modules keep writing to their tables.
-4. Wallet/loyalty/referral live on the **User/Profile**, shared with Book ERP partner wallets via the same wallet ledger (one money notebook).
+3. **Experience Engine** is the only hub projector: consume `DomainEventOutbox` via a **private inbox** (do not steal CRM/SMS processing). Hub UI only reads Engine surfaces.
+4. Wallet/loyalty **ledgers** stay on User/org; Engine owns **views**. Unify with Book ERP wallet grain.
 5. Flag `sxp` off ⇒ today’s portal/admin behavior unchanged.

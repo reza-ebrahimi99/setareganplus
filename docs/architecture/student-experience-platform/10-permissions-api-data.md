@@ -37,7 +37,7 @@ No separate public API gateway in v1.
 | Server Components + loaders | Hub pages (like today’s portal) |
 | Server Actions | OTP, profile edits, coupon apply, role switch |
 | Route Handlers | QR images, file download, referral redirect `/r/[token]`, exports |
-| Outbox + CLI workers | timeline, notifications, loyalty earn, referral convert |
+| Outbox + CLI workers | Experience Engine (`sxp:experience-engine-once`); existing SMS/CRM workers unchanged |
 
 All loaders take trusted `PortalContext` / admin session. **Never** trust `userId` from the client.
 
@@ -47,13 +47,16 @@ JSON REST for mobile apps is **future**; keep loaders extractable in `lib/sxp/*`
 
 ## 3. Database strategy (logical only — no Prisma in this pack)
 
-**New tables (when approved):** ExperienceProfile, ExperienceRoleGrant, ExperienceTimelineEvent, ExperienceFile, ExperienceNotification, Wallet (if not already from Book ERP), WalletLedger, LoyaltyAccount, LoyaltyLedger, LoyaltyBadge, ReferralCode, ReferralAttribution, HubOrderProjection (optional — can query live with indexes if volume is low).
+**New tables (when approved, Engine vs identity):**
 
-**Prefer one wallet ledger** shared with Book ERP. If Book ERP ships first, SXP uses it; if SXP ships first, Book ERP must attach `userId` to wallet.
+- Identity/hub: ExperienceProfile, ExperienceRoleGrant
+- **Experience Engine:** ExperienceEngineInbox, ExperienceTimelineEvent, ExperienceFeedItem (or flag on timeline), ExperienceNotification, ExperienceFile (index), ExperienceFavorite, ExperienceRecentView, ExperienceWidgetSnapshot, ExperienceStudentCard, WalletView, LoyaltyAccountView, HubOrder/Reservation/Payment snapshots
+- **Business (not Engine):** Wallet + WalletLedger, LoyaltyAccount + LoyaltyLedger (if GMV points), ReferralCode
 
-**Do not** add columns to `User` for interests/address (profile table).  
-**Do not** dump timeline JSON onto Student.  
-**Do not** use CMS `Achievement` for loyalty.
+**Do not** let Hub loaders query booking/order tables in steady state.  
+**Do not** mark shared `DomainEventOutbox` PROCESSED from the Engine (use inbox).  
+**Do not** add columns to `User` for interests/address.  
+**Do not** use CMS `Achievement` for Engine badges.
 
 Indexes: see [03](./03-domain-model.md). Expand-only migrations; `sxp` flag default false.
 

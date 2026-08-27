@@ -9,28 +9,29 @@
 | Phase | Name | In | Exit |
 |-------|------|----|------|
 | **S0** | Flag + no UX change | `sxp=false`, docs only | production identical |
-| **S1** | Profile + timeline projector | ExperienceProfile, outbox→timeline for **existing** BOOKING/FORM/SMS events, hub Home + Timeline + Profile | today’s portal still works; new nav behind flag |
-| **S2** | Files vault | point assessment/certificate media + future receipts | download authz uses guardian flags |
-| **S3** | Hub reservations | BookingReservation projection | matches `/admin/bookings` for that user/mobile |
-| **S4** | Wallet + loyalty + referral | ledgers, hub sections | no cash payout |
-| **S5** | Booklet orders in hub | map ops stages | only if booklet tables exist |
-| **S6** | Book orders in hub | map ERP statuses | only if `bookCommerce` data exists |
-| **S7** | Payments/invoices | PaymentIntent + documents as files | remaining/deposit visible |
-| **S8** | Partner modes | teacher/consultant/school | snapshots; no extra admin perms |
-| **S9** | Notifications in-app | bell | SMS unchanged |
-| **S10** | Login-required public actions | flags | dual-run legacy forms |
-| **S11** | AI suggestions | read-only | no auto-execute |
+| **S1** | **Experience Engine v0** | Inbox + TimelineAppender + FeedCurator + WidgetSnapshotter + Profile; consume **existing** BOOKING/FORM/SMS events only; hub Home + Timeline | today’s portal works; Engine is the only hub read path behind flag |
+| **S2** | Downloads + Student Card | FILE_READY index, digital card | guardian flags on downloads |
+| **S3** | Reservations widgets | booking events → HubReservation | no live `findMany` on booking in hub |
+| **S4** | Wallet **views** + loyalty **views** + referral | ledgers remain treasury; Engine projects | no cash payout |
+| **S5** | Booklet in hub | booklet events | tables must exist |
+| **S6** | Books in hub | book events | `bookCommerce` data |
+| **S7** | Payments views | PAYMENT_* | remaining/deposit on widgets |
+| **S8** | Partner modes | teacher/consultant/school | still Engine read models |
+| **S9** | In-app notifications handler | bell | SMS unchanged |
+| **S10** | Favorites / recents / extra widgets | engine-owned state | |
+| **S11** | Login-required public actions | flags | dual-run |
+| **S12** | AI suggestion widget | read-only | no auto-execute |
 
-Book Agency ERP phases (A–P in sibling pack) stay **independent**. SXP S5–S7 **consume** them when present.
+Book Agency ERP phases (A–P in sibling pack) stay **independent**. SXP S5–S7 **consume their events** when present — still through the Experience Engine.
 
-Workers: `sxp:timeline-projector-once`, later loyalty/referral. Same VPS cron pattern.
+Workers: `sxp:experience-engine-once` (inbox handlers). Do **not** replace `communication:worker-once` or CRM workers.
 
 ---
 
 ## 2. Migration strategy
 
 1. Ship S1 with flag **off** on production org.
-2. Backfill timeline from recent outbox (and optionally from booking/form tables once).
+2. Backfill Engine inbox from recent outbox (and optionally from booking/form tables **once**).
 3. Create ExperienceProfile lazily on first flagged login (from User + Student portrait).
 4. Do not move portal cookies.
 5. Dual-run: old `/portal/student` routes remain; hub wraps them as sections.
@@ -56,7 +57,9 @@ Emergency env `STAROS_SXP_HARD_OFF=true`.
 | Replacing auth with NextAuth | Forbidden |
 | Second User table | Forbidden |
 | Breaking XOR portal links | Additive grants; keep XOR per link row |
-| Timeline HTTP fan-out | Projector + indexes |
+| Timeline HTTP fan-out | Experience Engine snapshots + indexes |
+| Second projector in booking/booklet | Forbidden; Engine is the only hub consumer |
+| Engine marks shared outbox PROCESSED | Use `ExperienceEngineInbox`; leave CRM/SMS workers |
 | Mixing CMS achievements with loyalty | Two tabs / two tables |
 | Hub writes stock/CRM | Loaders read-only except profile/prefs |
 | Permission bleed to teachers | grants ≠ `commerce.manage` |
@@ -70,7 +73,8 @@ Emergency env `STAROS_SXP_HARD_OFF=true`.
 
 ## 5. Success
 
-- Login still OTP; existing student can see assessments **and** (when flagged) a timeline including a past booking if any
+- Login still OTP; existing student can see assessments **and** (when flagged) Engine timeline including a past booking event
+- Hub Home widgets come from Engine snapshots, not live booking SQL
 - Parent still cannot see unauthorized children
-- Admin CRM unchanged
+- Admin CRM / SMS workers unchanged
 - `/book` still books appointments

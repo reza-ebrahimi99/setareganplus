@@ -9,7 +9,7 @@
 - RTL, Persian first, Vazirmatn, existing color tokens (navy / gold / surface)
 - Mobile-first hub (parents on phones); dense tables only on desktop staff
 - Large type, short copy, one primary CTA per screen
-- Fast: projections + keyset pagination; no full-ledger scans
+- Fast: **Experience Engine snapshots** + keyset pagination; no full-ledger scans and no live ERP UNION
 - Skeleton loaders; never flash other students’ data
 - Accessibility: existing skip links, focus rings, `aria-current`
 

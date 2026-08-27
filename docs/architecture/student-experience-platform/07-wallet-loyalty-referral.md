@@ -1,6 +1,10 @@
 # 07 — Wallet, Loyalty, Referral
 
-[Index](./README.md) · Previous: [Timeline](./06-timeline.md) · Next: [Partner platforms](./08-partner-platforms.md)
+[Index](./README.md) · Previous: [Experience Engine](./06-experience-engine.md) · Next: [Partner platforms](./08-partner-platforms.md)
+
+---
+
+Ledgers below are **business data** (Treasury / marketing). The Experience Engine owns **views** of wallet, points, and badges on the hub — it does not become a second cash drawer. See [06 §2](./06-experience-engine.md).
 
 ---
 
@@ -14,7 +18,7 @@ Grain: `(organizationId, userId)`.
 
 Ledger append-only, idempotency keys, staff adjust permission `sxp.wallet.adjust`.
 
-Hub: balance by bucket (gift vs commission vs reward) + history. Payout history for partners lives here too.
+Hub: Engine **Wallet View** (buckets + history). Payout history for partners is the same view.
 
 Scholarship credit: finance approval required (same as Book ERP).
 

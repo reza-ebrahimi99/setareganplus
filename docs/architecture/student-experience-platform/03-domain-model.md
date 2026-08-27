@@ -8,7 +8,7 @@
 
 Same as StarOS: `organizationId` on tenant rows; no unscoped reads; append-only ledgers; integer Rials; UTC; soft-delete masters.
 
-SXP adds **projections**. Source documents remain in their modules.
+SXP adds the **Experience Engine**: projections and hub-only state. Source documents remain in their modules. The Hub UI does not query those modules for steady-state screens.
 
 ---
 
@@ -34,22 +34,40 @@ erDiagram
 
 ---
 
-## 3. Timeline, files, notifications
+## 3. Experience Engine (projections)
+
+Logical store owned by the Engine (not business documents). See [06](./06-experience-engine.md).
 
 ```mermaid
 erDiagram
+  ExperienceEngineInbox ||--o{ ExperienceTimelineEvent : projects
+  DomainEventOutbox ||--o{ ExperienceEngineInbox : consumed_per_handler
   ExperienceProfile ||--o{ ExperienceTimelineEvent : reads
-  DomainEventOutbox ||--o{ ExperienceTimelineEvent : projected_from
-  ExperienceProfile ||--o{ ExperienceFile : vault
-  MediaAsset ||--o{ ExperienceFile : blob
+  ExperienceTimelineEvent ||--o{ ExperienceFeedItem : curated
   ExperienceProfile ||--o{ ExperienceNotification : bell
+  ExperienceProfile ||--o{ ExperienceFile : downloads_index
+  MediaAsset ||--o{ ExperienceFile : blob
+  ExperienceProfile ||--o{ ExperienceFavorite : pins
+  ExperienceProfile ||--o{ ExperienceRecentView : ring
+  ExperienceProfile ||--o{ ExperienceWidgetSnapshot : home
+  ExperienceProfile ||--o| ExperienceStudentCard : presentation
+  ExperienceProfile ||--o| WalletView : display
+  ExperienceProfile ||--o| LoyaltyAccountView : display
 ```
 
-**ExperienceTimelineEvent:** append-only; `userId`, `organizationId`, `type`, `title`, `summary`, `occurredAt`, `actorType` (USER/STAFF/SYSTEM), `module`, `entityType`, `entityId`, `visibility` (SELF, GUARDIANS, STAFF), `payload` snapshot JSON. Profile **only reads**.
+**Inbox:** unique `(outboxEventId, handlerName)` — Engine does not monopolize `DomainEventOutbox.status`.
 
-**ExperienceFile:** `kind` RECEIPT | INVOICE | PDF | ASSESSMENT | REPORT | HOMEWORK | DIGITAL_PRODUCT | CERTIFICATE | OTHER; `mediaAssetId`; `sourceModule`; `sourceId`; `visibility`. Generated files are copied/pointed here when created.
+**Timeline / Feed / Notifications / Files:** as before; Profile **only reads**.
 
-**ExperienceNotification:** in-app; may duplicate SMS. Status UNREAD/READ. Not a replacement for `SmsMessage`.
+**Favorites / Recents / Widgets / Card / Quick Actions:** hub-only; pointers to foreign ids, no copied catalogs.
+
+**WalletView / LoyaltyAccountView:** refreshed from treasury/loyalty **events**, not live SUM of ledgers in HTTP.
+
+**ExperienceTimelineEvent:** append-only; `userId`, `organizationId`, `type`, `title`, `summary`, `occurredAt`, `actorType` (USER/STAFF/SYSTEM), `module`, `entityType`, `entityId`, `visibility` (SELF, GUARDIANS, STAFF), `payload` snapshot JSON. Hub **only reads**.
+
+**ExperienceFile:** `kind` RECEIPT | INVOICE | PDF | ASSESSMENT | REPORT | HOMEWORK | DIGITAL_PRODUCT | CERTIFICATE | OTHER; `mediaAssetId`; `sourceModule`; `sourceId`; `visibility`.
+
+**ExperienceNotification:** in-app; not a replacement for `SmsMessage`.
 
 ---
 
@@ -74,16 +92,16 @@ Loyalty tiers: BRONZE, SILVER, GOLD, DIAMOND — computed from points/GMV thresh
 
 ---
 
-## 5. Hub projections (not new source of truth)
+## 5. Hub projections (built only by Experience Engine)
 
-| Projection | Built from |
-|------------|------------|
-| HubOrder | Booklet `CommerceOrder` and/or Book `SalesOrder` + payment remaining |
-| HubReservation | `BookingReservation` |
-| HubPayment | `PaymentIntent` + allocations + commercial documents |
-| HubCourse | future enrollment; until then public `content/courses` is browse-only |
+| Projection | Event sources (not live tables in HTTP) |
+|------------|------------------------------------------|
+| HubOrder | BOOKLET_* / BOOK_ORDER_* + PAYMENT_* snapshots |
+| HubReservation | BOOKING_* |
+| HubPayment | PAYMENT_* / WALLET_LEDGER_POSTED |
+| HubCourse | CLASS_* when enrollment exists |
 
-Statuses in the Hub are **mapped labels**, stored on the projection for speed, refreshed by the same outbox consumer as timeline.
+Statuses are **mapped labels** on Engine snapshots. Bootstrap backfill is allowed once; steady state is events.
 
 ---
 

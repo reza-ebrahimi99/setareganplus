@@ -2,40 +2,41 @@
 
 [Index](./README.md) · Previous: [Partner platforms](./08-partner-platforms.md) · Next: [Permissions / API / data](./10-permissions-api-data.md)
 
-SXP **adapts** modules. It does not fork them.
+SXP **adapts** modules. It does not fork them. Each module **must publish events**. The **Experience Engine** is the only hub consumer ([06](./06-experience-engine.md)).
 
 ---
 
 ## 1. Booking (exists on master)
 
 - Keep `/book/[serviceSlug]` public **browse**; login gate via `sxp.forceLoginForBooking` (default off for compatibility).
-- Projector: existing `BOOKING_*` outbox types → timeline + HubReservation.
-- Consulting / class / meeting / school: classify via service slug, `FormPurpose`, or a future `serviceKind` on `BookingService.settings` (JSON already there — **no migration required** to start).
-- Check-in QR stays booking-owned; hub shows “completed”.
+- **Publish** existing `BOOKING_*` outbox types. Engine projects timeline + HubReservation + widgets.
+- Hub does **not** query `BookingReservation` in steady state (one-time backfill allowed).
+- Consulting / class / meeting / school: classify via service slug, `FormPurpose`, or `BookingService.settings` JSON.
+- Check-in QR stays booking-owned; Engine shows “completed”.
 
 ---
 
 ## 2. Booklet commerce (unmerged branch)
 
 - Ops pipeline stays `CommerceOpsStage`.
-- Hub maps to user language (Registered / Printing / Binding / Packaging / Ready / Delivered) using ops + optional metadata.
-- Pickup QR / short code / SMS stay booklet-owned; hub links to tracking if public token exists.
+- **Publish** stage/order events. Engine maps user labels (Registered / Printing / Binding / Packaging / Ready / Delivered).
+- Pickup QR / short code / SMS stay booklet-owned.
 - `productLine = BOOKLET` when discriminator exists.
 
 ---
 
 ## 3. Book commerce (ERP sibling pack)
 
-- Hub maps Reserved / Waiting Procurement / Ready / Delivered / Gifted / Returned from sales + reservation + PR coverage.
-- Inventory and Pen-warehouse POs are **staff ERP**, never hub.
-- Remaining/deposit from treasury allocations.
+- **Publish** sales/reservation/fulfillment events. Engine maps Reserved / Waiting Procurement / Ready / Delivered / Gifted / Returned.
+- Inventory and Pen-warehouse POs are **staff ERP**, never hub (no Engine inventory widgets).
+- Remaining/deposit arrive as PAYMENT_* snapshots.
 
 ---
 
 ## 4. CRM
 
 - Staff write-model unchanged (`/admin/leads`, automations).
-- Hub may show: assigned advisor name, “open tickets” if we later add customer-visible tasks.
+- Hub may show advisor name **via Engine widget** if CRM publishes a customer-visible event; no live CRM queries from `/portal`.
 - New orders/bookings emit outbox events; CRM automations **may** already consume booking/form events — add book events additively.
 - **No duplicated Lead** when User exists: Party/Lead links from Book ERP apply. Timeline does not clone the CRM board.
 
@@ -44,8 +45,8 @@ SXP **adapts** modules. It does not fork them.
 ## 5. School ERP (students, assessments, files)
 
 - Keep `Student`, grades, majors, assessment results, CMS achievements.
-- Hub Home academic cards reuse `loadStudentPortalDashboard` (extend DTO, don’t replace).
-- Assessment PDFs → file vault when generated.
+- Hub Home academic cards: S1 may wrap existing `loadStudentPortalDashboard` as a **bootstrap**; steady state is Engine widgets from academic events (`FILE_READY`, result published).
+- Assessment PDFs → Engine downloads index when `FILE_READY` fires.
 - Guardian visibility flags remain the authorization spine for child data.
 
 ---

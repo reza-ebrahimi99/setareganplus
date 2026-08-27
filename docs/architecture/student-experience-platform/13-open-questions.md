@@ -18,6 +18,8 @@ Answer or defer **before** production code.
 | Q10 | Duplicate User rows (same human, two mobiles)? | Manual merge tool later | no auto-merge |
 | Q11 | Implementation base | `origin/master` | master |
 | Q12 | Public self-signup | Off unless referral token + flag | `sxp.publicSignup=false` |
+| Q13 | Shared outbox `PROCESSED` vs Engine inbox? | **Inbox per handler** | Inbox |
+| Q14 | May S1 Hub query booking tables before events are complete? | One-time backfill only | Backfill then events |
 
 ---
 
@@ -29,7 +31,7 @@ NextAuth · rewriting CRM/booking/auth · native apps · AI auto-purchase · cas
 
 ## Approval language
 
-> Approved to implement SXP Phase S1 from `docs/architecture/student-experience-platform/` on `master`.
+> Approved to implement SXP Phase S1 (Experience Engine v0) from `docs/architecture/student-experience-platform/` on `master`.
 
 Until that exists, **do not** generate Prisma, migrations, routes, pages, or components.
 

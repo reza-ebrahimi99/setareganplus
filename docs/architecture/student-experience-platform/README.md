@@ -25,12 +25,12 @@ This is **not** a bookstore, **not** an ecommerce site, and **not** only a schoo
 
 1. [Current state](./00-current-state.md) — what StarOS actually is
 2. [Overview](./01-overview.md) — vision, hub model, flags
-3. [Bounded contexts](./02-bounded-contexts.md) — 20 contexts and ownership
+3. [Bounded contexts](./02-bounded-contexts.md) — 21 contexts; **Experience Engine** is the hub projector
 4. [Domain model](./03-domain-model.md) — logical entities (no Prisma)
 5. [Identity](./04-identity.md) — one User, many roles, sessions
-6. [Profile hub](./05-profile-hub.md) — dashboard IA, orders, files, settings
-7. [Timeline](./06-timeline.md) — first-class event log
-8. [Wallet, loyalty, referral](./07-wallet-loyalty-referral.md)
+6. [Profile hub](./05-profile-hub.md) — dashboard IA; UI reads the Engine only
+7. [Experience Engine](./06-experience-engine.md) — timeline, feed, widgets, card, … (sole hub consumer)
+8. [Wallet, loyalty, referral](./07-wallet-loyalty-referral.md) — **ledgers**; Engine owns **views**
 9. [Teacher / consultant / school platforms](./08-partner-platforms.md)
 10. [Module integrations](./09-module-integrations.md) — books, booklets, booking, CRM, ERP
 11. [Permissions, API, data](./10-permissions-api-data.md)
@@ -44,7 +44,7 @@ Sibling pack (Book Agency ERP, separate PR): `docs/architecture/book-commerce-er
 
 ## One-sentence summary
 
-Keep StarOS modules as they are; add a **profile-centric Experience Hub** that reads a unified timeline, wallet, loyalty, files, and order/booking projections from those modules — behind `sxp=off` until cutover.
+Keep StarOS modules as they are; add an **Experience Engine** that is the **only** projector of the personal hub (timeline, feed, notifications, widgets, …) from domain events — behind `sxp=off` until cutover. Modules keep their ledgers. The Hub only reads the Engine.
 
 ---
 
