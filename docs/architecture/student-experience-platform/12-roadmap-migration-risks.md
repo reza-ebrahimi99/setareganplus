@@ -2,6 +2,8 @@
 
 [Index](./README.md) · Previous: [UX](./11-ux-public.md) · Next: [Open questions](./13-open-questions.md)
 
+**Additive (does not change the table below):** Super App / My Profile v2 mapping lives in [s2-profile-v2](./s2-profile-v2/README.md). S2 remains **Downloads + Student Card**. Do not collapse S3–S12.
+
 ---
 
 ## 1. Roadmap (sequence, not a calendar)
