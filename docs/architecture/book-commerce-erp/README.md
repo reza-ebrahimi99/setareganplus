@@ -1,113 +1,111 @@
 # StarOS Book Commerce ERP — Architecture Index
 
-**Status:** DRAFT — awaiting product / architecture approval  
-**Scope:** Documentation only. **Do not implement** until this pack is explicitly approved.  
-**Module name (FA):** بازرگانی کتاب — آژانس کتاب کانون فرهنگی آموزش  
-**Module name (EN):** Book Commerce ERP (Pen Book Agency)  
-**Product line code:** `BOOK_AGENCY`  
-**Non-negotiable:** Current production must never break.
+**Status:** Principle-approved v1 **extended** — ERP pack v2. **No implementation until explicit go-ahead.**  
+**Product (FA):** بازرگانی کتاب — ERP آژانس‌های کتاب قلم  
+**Product (EN):** Pen Book Agency ERP  
+**Product line:** `BOOK_AGENCY`  
+**Feature flag:** `bookCommerce` = **OFF** by default (per organization; hard-off env optional)  
+**This is not an online bookstore.** It is a complete agency operating system. Public storefront is a later, flagged module.
+
+**Non-negotiable:** Additive only. Do not rewrite booking, CRM, booklet commerce, authentication, or existing RBAC. Do not generate Prisma, migrations, routes, pages, or components until explicitly approved.
 
 ---
 
 ## Approval gate
 
-This folder is a **design contract**, not a sprint backlog to start coding from chat.
-
 | Gate | State |
 |------|--------|
-| Repository inspection | Done (this pack) |
-| Architecture approval | **Waiting** |
-| Schema approval | **Waiting** |
-| UX / navigation approval | **Waiting** |
-| Implementation | **Blocked** |
+| Repository inspection | Done — [00](./00-current-state.md) |
+| v1 architecture (principle) | Approved |
+| v2 ERP expansion (this pack) | **Waiting explicit implementation approval** |
+| Prisma / routes / UI | **Blocked** |
 
-If a later chat says “start building,” implementers must still treat **this pack** as the source of truth — not ad-hoc prompts.
+If a later message says “start building,” implementers still follow **this folder**, not chat improvisation.
 
 ---
 
-## Reading order
+## Reading order (v2)
 
-1. [Current state & constraints](./00-current-state.md) — what StarOS actually is today
-2. [Architecture](./01-architecture.md) — bounded contexts, 30 domain modules, reuse vs new
-3. [Database ERD](./02-database-erd.md) — models, relations, indexes
-4. [Referral & marketing engine](./03-referral-marketing.md) — partners, campaigns, wallets, gamification
-5. [Permissions, UX, UI](./04-permissions-ux.md) — RBAC, dashboards, navigation, admin + mobile
-6. [Folder structure](./05-folder-structure.md) — where code will live when approved
-7. [Development roadmap](./06-roadmap.md) — phased delivery that cannot break production
-8. [Risks, migration, deployment](./07-risk-migration-deployment.md)
+1. [Current state](./00-current-state.md) — production constraints (unchanged truth)
+2. [Overview](./01-overview.md) — what an agency ERP is, bounded contexts, diagrams, flags, permissions, folder map
+3. [Domain model](./02-domain-model.md) — logical entities, relations, indexes (no Prisma)
+4. [Warehouse](./03-warehouse.md) — multi-warehouse, locations, ledger, scanner, counts, transfers
+5. [Catalog](./04-catalog.md) — SKU, price history, bundles, barcode/QR print, Excel import engine
+6. [Procurement](./05-procurement.md) — reservation → need → PR → PO → Pen warehouse → GRN → fulfill
+7. [Sales](./06-sales.md) — orders, reservation slips, delivery, documents, CRM links
+8. [Marketing](./07-marketing.md) — campaigns, schools, coupons, rules engine
+9. [Commission](./08-commission.md) — teacher & consultant incentive platforms + dashboards
+10. [Treasury](./09-treasury.md) — deposit, installment, remaining, wallet, AR
+11. [Reporting](./10-reporting.md) — operational reports, executive analytics, AI-ready signals
+12. [Public store](./11-public-store.md) — deferred storefront contract
+13. [Roadmap](./12-roadmap.md) — phases, deployment, migration, risks
+14. [Open questions](./13-open-questions.md) — decisions still needed before code
+
+v1 provenance: [`archive/v1-principle-approval/`](./archive/v1-principle-approval/README.md)
 
 ---
 
 ## One-sentence summary
 
-Build an **additive**, feature-flagged Book Agency ERP beside existing StarOS domains (CRM, forms, booking, portal, SMS), reuse the Commerce / Payment / Communication foundations where they already exist, and treat **جزوه (booklet shop)** and **کتاب (published-book agency)** as two product lines that must not overwrite each other.
+A **multi-warehouse, document-driven ERP** for Pen Book Agencies: catalog and price history, location-level stock ledger, demand-driven procurement from the Pen warehouse, reservations, deposits and installments, school/teacher/consultant growth engines, and executive analytics — running as an additive StarOS module with `bookCommerce` off until cutover.
 
 ---
 
-## What this is not
+## What this is / is not
 
-- Not a rewrite of SetareganPlus.
-- Not NextAuth (production uses hashed cookie sessions).
-- Not a second inventory number on `CommerceItem.stockQuantity` as the long-term truth.
-- Not a merge of handwritten Excel into production without a dual-run cutover.
-- Not a public shop launch in phase 1.
-
----
-
-## Coverage matrix
-
-| # | Module | Spec |
-|---|--------|------|
-| 1 | Product Catalog | [01 §5.1](./01-architecture.md) · [02 §3](./02-database-erd.md) |
-| 2 | Inventory | [01 §5.2](./01-architecture.md) · [02 §4](./02-database-erd.md) |
-| 3 | Warehouse movements | [01 §5.3](./01-architecture.md) |
-| 4 | Orders | [01 §5.4](./01-architecture.md) |
-| 5 | Order items | [01 §5.5](./01-architecture.md) |
-| 6 | Reservation | [01 §5.6](./01-architecture.md) |
-| 7 | Partial payment | [01 §5.7](./01-architecture.md) |
-| 8 | Deposit | [01 §5.8](./01-architecture.md) |
-| 9 | Remaining balance | [01 §5.9](./01-architecture.md) |
-| 10 | Customer profile | [01 §5.10](./01-architecture.md) · Party |
-| 11 | Delivery | [01 §5.11](./01-architecture.md) |
-| 12 | Invoice | [01 §5.12](./01-architecture.md) |
-| 13 | Receipt | [01 §5.13](./01-architecture.md) |
-| 14 | SMS | [01 §5.14](./01-architecture.md) |
-| 15 | QR | [01 §5.15](./01-architecture.md) |
-| 16 | Barcode | [01 §5.16](./01-architecture.md) |
-| 17 | Excel import | [01 §5.17](./01-architecture.md) |
-| 18 | Excel export | [01 §5.18](./01-architecture.md) |
-| 19 | Supplier ordering | [01 §5.19](./01-architecture.md) |
-| 20 | Purchase planning | [01 §5.20](./01-architecture.md) |
-| 21 | Inventory counting | [01 §5.21](./01-architecture.md) |
-| 22 | Stock adjustment | [01 §5.22](./01-architecture.md) |
-| 23 | Reports | [01 §5.23](./01-architecture.md) |
-| 24 | Analytics | [01 §5.24](./01-architecture.md) |
-| 25 | Audit logs | [01 §5.25](./01-architecture.md) |
-| 26 | Permissions | [04](./04-permissions-ux.md) |
-| 27 | Performance | [01 §5.27](./01-architecture.md) |
-| 28 | Scalability | [01 §5.28](./01-architecture.md) |
-| 29 | Multi branch | [01 §5.29](./01-architecture.md) |
-| 30 | Multi tenant | [01 §5.30](./01-architecture.md) |
-| — | Referral & marketing | [03](./03-referral-marketing.md) |
-| — | Folder structure | [05](./05-folder-structure.md) |
-| — | Roadmap | [06](./06-roadmap.md) |
-| — | Risk / migration / deploy | [07](./07-risk-migration-deployment.md) |
-
-Open decisions for sign-off: **D1–D10** in [07 §6](./07-risk-migration-deployment.md).
+| This is | This is not |
+|---------|-------------|
+| Agency operations ERP (انبارداری، خرید، فروش، خزانه، پورسانت) | Shopify-style public bookstore |
+| Unlimited warehouses + locations (shelf, reserved, gift, return, damaged) | One scalar `stockQuantity` |
+| Procurement from Pen central warehouse driven by student demand | Guesswork Excel to the publisher |
+| Teacher/consultant **incentive platforms** with their own dashboards | A single affiliate cookie |
+| Multi-agency SaaS-ready via existing `organizationId` | A hardcoded single-tenant rewrite |
+| Admin-first | Public catalog in the first delivery |
 
 ---
 
-## Glossary
+## Bounded contexts (v2)
 
-| Term | Meaning |
-|------|---------|
-| **StarOS / SetareganPlus** | The existing multi-tenant education platform (CRM, forms, booking, portal, SMS). |
-| **Book Agency / Pen Book Agency** | Kanoon Farhangi Amoozesh book-resale operation: thousands of published books, deposits, warehouse replenishment. |
-| **Booklet commerce (جزوه)** | Existing *unmerged* physical-booklet production + on-site pickup shop on `cursor/commerce-order-tracking-sms-581d`. Different SKU, different ops pipeline. |
-| **CommerceItem** | Universal sellable catalog entity (goods, services, events). Book SKUs should *extend* this, not fork a parallel product table if booklet commerce lands. |
-| **Inventory ledger** | Append-only stock movements. Balances are projections, never the only record. |
-| **Reservation** | Soft hold of ATP (available-to-promise) until pay / expire / cancel / issue. |
-| **Deposit (بیعانه)** | Allocated customer payment that does not necessarily complete the order. Remaining balance is first-class. |
-| **Party** | Canonical person/org record that can be a customer, school, teacher, supplier, or affiliate without duplicating Student / Lead / User. |
-| **Partner** | Referral / marketing actor (teacher, consultant, school, parent, student, affiliate). |
-| **Feature flag** | Per-organization kill switch. Default **off** in production until cutover. |
+```text
+                    StarOS platform (DO NOT REWRITE)
+     Identity · Org/Branch · Audit · Media · SMS · PaymentIntent · Outbox
+     CRM Lead · Student · Guardian · User  (link only — no second master)
+                                    │
+        ┌───────────────┬───────────┼────────────┬──────────────┐
+        ▼               ▼           ▼            ▼              ▼
+   CATALOG         WAREHOUSE    PROCUREMENT    SALES        TREASURY
+   titles/SKU      locations    PR / PO / GRN  orders       deposit
+   price history   ledger       replenishment  reservation  installment
+   bundles         transfer     Pen warehouse  delivery     remaining
+   labels/QR       count        Excel to Pen   documents    wallet/AR
+        │               │           │            │              │
+        └───────────────┴─────┬─────┴────────────┴──────────────┘
+                              ▼
+                    MARKETING + COMMISSION
+              campaigns · schools · teachers · consultants
+                              ▼
+                         INSIGHTS + AI SIGNALS
+                    (read models; no live ledger scans)
+```
+
+Booklet commerce (جزوه), if it later merges, remains `productLine = BOOKLET` and **never** shares this warehouse location model or Pen-procurement workflow.
+
+---
+
+## Feature flags
+
+| Key | Default | Meaning |
+|-----|---------|---------|
+| `bookCommerce` | **false** | Master switch. Nav, mutations, workers no-op when off. |
+| `bookCommerce.publicStore` | false | Public catalog |
+| `bookCommerce.marketing` | false | Campaigns / school programs |
+| `bookCommerce.partnerPortals` | false | Teacher/consultant dashboards |
+| `bookCommerce.onlinePayment` | false | Gateway checkout |
+| `bookCommerce.ai` | false | Write AI feature snapshots (still collect domain events either way) |
+| `bookCommerce.hardOff` (env) | unset | Emergency disable all tenants |
+
+---
+
+## READY FOR IMPLEMENTATION
+
+**Not yet.** This pack is the contract. Wait for an explicit message to generate production code. Until then: documentation only.

@@ -1,10 +1,10 @@
 # 00 — Current State & Constraints
 
-**Status:** DRAFT — awaiting approval  
+**Status:** Inspection canon (unchanged). v1 architecture principle-approved; v2 ERP pack supersedes implementation shape.  
 **Inspection date:** 2026-08-27  
 **Rule:** Design against *production truth*, not the agent snapshot and not the prompt’s assumed stack.
 
-[Index](./README.md) · Next: [Architecture](./01-architecture.md)
+[Index](./README.md) · Next: [Overview](./01-overview.md)
 
 ---
 
@@ -156,4 +156,4 @@ Public site copy already states SetareganPlus does **not** claim official Kanoon
 3. **Payments reuse `PaymentIntent`**; deposits are allocations + remaining balance.
 4. **Customers are Parties**, linked to Lead / Student / Guardian / User when known.
 5. **Marketing is a separate bounded context** with its own wallets, not a column on `CommerceOrder`.
-6. Implementation is **blocked** until this pack is approved.
+6. Implementation remains **blocked** until the v2 pack is explicitly approved for code. Feature flag `bookCommerce` stays **OFF**.
