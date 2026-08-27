@@ -1,6 +1,6 @@
 # SetareganPlus Experience Platform (SXP)
 
-**Status:** Architecture only — **no implementation until explicit approval**  
+**Status:** S1 contract **frozen**. S1 code shipped separately. **My Profile v2 architecture is proposed — no S2 code until explicit approval.**  
 **Product (FA):** سکوی تجربه ستارگان‌پلاس  
 **Product (EN):** SetareganPlus Experience Platform  
 **Heart:** **My Profile** — not the store, not booking, not CRM  
@@ -16,8 +16,10 @@ This is **not** a bookstore, **not** an ecommerce site, and **not** only a schoo
 | Gate | State |
 |------|--------|
 | Production inspection | Done — [00](./00-current-state.md) |
-| Architecture pack | **Waiting implementation approval** |
-| Code / Prisma / routes | **Blocked** |
+| S1 architecture | **Frozen** — [06](./06-experience-engine.md), [12](./12-roadmap-migration-risks.md) |
+| S1 implementation | Shipped on `origin/master` lineage — PR **#8** (`cursor/sxp-phase-s1-0a18`) |
+| My Profile v2 architecture | **Waiting approval** — [s2-profile-v2](./s2-profile-v2/README.md) |
+| S2+ code / Prisma / routes | **Blocked** |
 
 ---
 
@@ -37,6 +39,7 @@ This is **not** a bookstore, **not** an ecommerce site, and **not** only a schoo
 12. [UX & public website](./11-ux-public.md)
 13. [Roadmap, migration, risks](./12-roadmap-migration-risks.md)
 14. [Open questions](./13-open-questions.md)
+15. **[My Profile v2 — Super App architecture](./s2-profile-v2/README.md)** — extends S1; does **not** replace this pack
 
 Sibling pack (Book Agency ERP, separate PR): `docs/architecture/book-commerce-erp/`
 
@@ -50,4 +53,5 @@ Keep StarOS modules as they are; add an **Experience Engine** that is the **only
 
 ## READY FOR IMPLEMENTATION
 
-**Not yet.** This pack is the contract. Wait for an explicit go-ahead before any production code.
+**S1:** approved and implemented (flag default off).  
+**S2 / My Profile v2 code:** **Not yet.** Wait for an explicit go-ahead before any production code. Architecture for that slice is [s2-profile-v2](./s2-profile-v2/README.md).
