@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PortalAccountType } from "@/generated/prisma/enums";
 import { Container } from "@/components/ui/Container";
-import { PortalNav } from "@/components/portal/PortalNav";
+import { PortalNav, type PortalNavItem } from "@/components/portal/PortalNav";
 
 const studentNav = [
   { href: "/portal/student", label: "خانه", match: "exact" as const },
@@ -23,6 +23,7 @@ type PortalShellProps = {
   userDisplayName: string;
   organizationName: string;
   showAccountSwitcher?: boolean;
+  extraNavItems?: PortalNavItem[];
 };
 
 export function PortalShell({
@@ -31,6 +32,7 @@ export function PortalShell({
   userDisplayName,
   organizationName,
   showAccountSwitcher = false,
+  extraNavItems = [],
 }: PortalShellProps) {
   const navItems =
     accountType === PortalAccountType.STUDENT ? studentNav : parentNav;
@@ -71,7 +73,7 @@ export function PortalShell({
             </div>
           </div>
           <div className="mt-3">
-            <PortalNav items={navItems} />
+            <PortalNav items={[...navItems, ...extraNavItems]} />
           </div>
         </Container>
       </header>
