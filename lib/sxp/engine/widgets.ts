@@ -37,11 +37,17 @@ export type RecentFeedWidgetPayload = {
   }>;
 };
 
+export type FilesReadyWidgetPayload = {
+  empty: false;
+  count: number;
+};
+
 export type WidgetPayload =
   | EmptyWidgetPayload
   | NextActionWidgetPayload
   | UpcomingReservationWidgetPayload
-  | RecentFeedWidgetPayload;
+  | RecentFeedWidgetPayload
+  | FilesReadyWidgetPayload;
 
 export type TimelineSlice = {
   eventType: string;
@@ -91,9 +97,13 @@ function topFeedEvent(events: TimelineSlice[]): TimelineSlice | null {
 /**
  * Pure snapshot builder. Hub HTTP must persist/read these blobs, not live ERP tables.
  */
-export function buildWidgetSnapshots(events: TimelineSlice[]): WidgetSnapshotMap {
+export function buildWidgetSnapshots(
+  events: TimelineSlice[],
+  extras?: { filesCount?: number },
+): WidgetSnapshotMap {
   const upcoming = latestActiveBooking(events);
   const topFeed = topFeedEvent(events);
+  const filesCount = extras?.filesCount ?? 0;
   const feedItems = events
     .filter((event) => isFeedEligibleEventType(event.eventType))
     .sort((a, b) => {
@@ -142,6 +152,10 @@ export function buildWidgetSnapshots(events: TimelineSlice[]): WidgetSnapshotMap
       feedItems.length > 0
         ? { empty: false, items: feedItems }
         : empty("no_events"),
+    FILES_READY:
+      filesCount > 0
+        ? { empty: false, count: filesCount }
+        : empty("no_events"),
   };
 }
 
@@ -152,4 +166,5 @@ export const DEFAULT_WIDGET_KEYS: ExperienceWidgetKey[] = [
   ExperienceWidgetKey.LOYALTY_CHIP,
   ExperienceWidgetKey.READY_PICKUP,
   ExperienceWidgetKey.RECENT_FEED,
+  ExperienceWidgetKey.FILES_READY,
 ];

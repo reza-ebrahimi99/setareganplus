@@ -355,7 +355,9 @@ body {
   .public-form-section,
   .public-form-section-delay,
   .public-form-field,
-  .public-form-success-mark {
+  .public-form-success-mark,
+  .sxp-rise,
+  .sxp-skeleton {
     animation: none !important;
     opacity: 1;
     transform: none;
@@ -364,4 +366,30 @@ body {
   .public-form-spinner {
     animation: none !important;
   }
+}
+
+@keyframes sxp-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.sxp-skeleton {
+  background: linear-gradient(90deg, #e2e8f0 0%, #f8fafc 45%, #e2e8f0 100%);
+  background-size: 200% 100%;
+  animation: sxp-shimmer 1.2s ease-in-out infinite;
+}
+
+.sxp-rise {
+  animation: public-form-rise 180ms ease-out both;
+}
+
+.sxp-hero-cover {
+  background:
+    radial-gradient(ellipse 80% 70% at 12% 18%, rgb(212 175 55 / 0.38), transparent 58%),
+    radial-gradient(ellipse 50% 40% at 88% 80%, rgb(255 255 255 / 0.08), transparent 60%),
+    linear-gradient(135deg, #0f172a 0%, #1e293b 52%, #0f172a 100%);
 }

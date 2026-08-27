@@ -10,7 +10,9 @@ import {
   smsInboxEventId,
 } from "@/lib/sxp/constants";
 import { SXP_OUTBOX_EVENT_TYPES } from "@/lib/sxp/engine/catalog";
+import { runDownloadIndexer } from "@/lib/sxp/engine/handlers/download-indexer";
 import { runFeedCurator } from "@/lib/sxp/engine/handlers/feed-curator";
+import { runStudentCardRefresher } from "@/lib/sxp/engine/handlers/student-card-refresher";
 import { runTimelineAppender } from "@/lib/sxp/engine/handlers/timeline-appender";
 import { runWidgetSnapshotter } from "@/lib/sxp/engine/handlers/widget-snapshotter";
 import { claimHandlerInbox, completeHandlerInbox } from "@/lib/sxp/engine/inbox";
@@ -22,6 +24,8 @@ const HANDLERS: ExperienceEngineHandlerName[] = [
   ExperienceEngineHandlerName.TIMELINE_APPENDER,
   ExperienceEngineHandlerName.FEED_CURATOR,
   ExperienceEngineHandlerName.WIDGET_SNAPSHOTTER,
+  ExperienceEngineHandlerName.STUDENT_CARD_REFRESHER,
+  ExperienceEngineHandlerName.DOWNLOAD_INDEXER,
 ];
 
 export type ExperienceEngineBatchResult = {
@@ -91,7 +95,13 @@ async function runHandler(
   if (handlerName === ExperienceEngineHandlerName.FEED_CURATOR) {
     return runFeedCurator({ event });
   }
-  return runWidgetSnapshotter({ event });
+  if (handlerName === ExperienceEngineHandlerName.WIDGET_SNAPSHOTTER) {
+    return runWidgetSnapshotter({ event });
+  }
+  if (handlerName === ExperienceEngineHandlerName.STUDENT_CARD_REFRESHER) {
+    return runStudentCardRefresher({ event });
+  }
+  return runDownloadIndexer({ event });
 }
 
 async function processEvent(event: EngineSourceEvent): Promise<{

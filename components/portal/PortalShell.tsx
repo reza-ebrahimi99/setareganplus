@@ -24,6 +24,8 @@ type PortalShellProps = {
   organizationName: string;
   showAccountSwitcher?: boolean;
   extraNavItems?: PortalNavItem[];
+  hideNavOnMobile?: boolean;
+  mobileTabBar?: React.ReactNode;
 };
 
 export function PortalShell({
@@ -33,6 +35,8 @@ export function PortalShell({
   organizationName,
   showAccountSwitcher = false,
   extraNavItems = [],
+  hideNavOnMobile = false,
+  mobileTabBar,
 }: PortalShellProps) {
   const navItems =
     accountType === PortalAccountType.STUDENT ? studentNav : parentNav;
@@ -72,14 +76,15 @@ export function PortalShell({
               </form>
             </div>
           </div>
-          <div className="mt-3">
+          <div className={hideNavOnMobile ? "mt-3 hidden sm:block" : "mt-3"}>
             <PortalNav items={[...navItems, ...extraNavItems]} />
           </div>
         </Container>
       </header>
-      <main className="flex-1 py-5 sm:py-8">
+      <main className={`flex-1 py-5 sm:py-8${mobileTabBar ? " max-sm:pb-24" : ""}`}>
         <Container>{children}</Container>
       </main>
+      {mobileTabBar}
     </div>
   );
 }

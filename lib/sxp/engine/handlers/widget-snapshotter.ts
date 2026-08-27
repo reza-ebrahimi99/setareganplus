@@ -50,7 +50,14 @@ export async function runWidgetSnapshotter(params: {
     };
   });
 
-  const snapshots = buildWidgetSnapshots(slices);
+  const filesCount = await prisma.experienceFile.count({
+    where: {
+      organizationId: params.event.organizationId,
+      userId: owner.userId,
+    },
+  });
+
+  const snapshots = buildWidgetSnapshots(slices, { filesCount });
   const refreshedAt = new Date();
 
   for (const widgetKey of DEFAULT_WIDGET_KEYS) {
