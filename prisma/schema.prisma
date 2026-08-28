@@ -277,6 +277,12 @@ enum AuditAction {
   CRM_BRANCH_ASSIGNED
   CRM_CALL_LOGGED
   CRM_TASK_COMPLETED
+  BOOKS_SETTINGS_UPDATED
+  BOOKS_CATALOG_TYPE_SAVED
+  BOOKS_CATALOG_SKU_CREATED
+  BOOKS_CATALOG_SKU_UPDATED
+  BOOKS_CATALOG_PRICE_CHANGED
+  BOOKS_CATALOG_IMPORTED
 }
 
 // ─── Form builder (Sprint 3.4A) ─────────────────────────────────────────────
@@ -506,6 +512,16 @@ model Organization {
   experienceEngineInbox     ExperienceEngineInbox[]
   experienceTimelineEvents  ExperienceTimelineEvent[]
   experienceWidgetSnapshots ExperienceWidgetSnapshot[]
+  bookAgencyProfile         BookAgencyProfile?
+  bookDocumentSequences     DocumentSequence[]
+  bookPublishers            BookPublisher[]
+  bookTypes                 BookType[]
+  bookTitles                BookTitle[]
+  bookSkus                  BookSku[]
+  bookSkuPrices             BookSkuPrice[]
+  bookSkuTags               BookSkuTag[]
+  bookImportJobs            BookImportJob[]
+  bookImportRowResults      BookImportRowResult[]
 
   @@map("organizations")
 }
@@ -577,6 +593,8 @@ model User {
   experienceProfiles        ExperienceProfile[]
   experienceTimelineEvents  ExperienceTimelineEvent[]
   experienceWidgetSnapshots ExperienceWidgetSnapshot[]
+  bookSkuPricesCreated      BookSkuPrice[]             @relation("BookSkuPriceCreator")
+  bookImportJobsCreated     BookImportJob[]            @relation("BookImportJobCreator")
 
   @@index([status])
   @@index([deletedAt])
@@ -931,6 +949,8 @@ model MediaAsset {
   galleryAlbumCovers      GalleryAlbum[]     @relation("GalleryAlbumCover")
   galleryAlbumItems       GalleryAlbumItem[]
   mediaPlacements         MediaPlacement[]
+  bookAgencyProfileLogos  BookAgencyProfile[] @relation("BookAgencyProfileLogo")
+  bookImportJobReports    BookImportJob[]     @relation("BookImportJobReport")
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])
@@ -1223,6 +1243,7 @@ model Tag {
   organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   forms        FormTag[]
   submissions  FormSubmissionTag[]
+  bookSkus     BookSkuTag[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -2050,6 +2071,7 @@ model StudentGrade {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   students     Student[]
   assessments  Assessment[]
+  bookTitles   BookTitle[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -2072,6 +2094,7 @@ model StudentMajor {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   students     Student[]
+  bookTitles   BookTitle[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -2339,6 +2362,7 @@ model Subject {
 
   organization   Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   subjectResults AssessmentSubjectResult[]
+  bookTitles     BookTitle[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -2470,11 +2494,59 @@ enum ExperienceWidgetKey {
   RECENT_FEED
 }
 
+// ─── Book Commerce ERP — Pen Book Agency (Phase A: Foundation, Phase B: Catalog) ──
+// Additive-only StarOS module. Never rewrites booking, CRM, SMS, auth, or RBAC.
+// Flag: OrganizationFeatureFlag key "bookCommerce". No row = OFF. Hard-off env
+// STAROS_BOOKS_ERP_HARD_OFF wins over an enabled per-org flag.
+// See docs/architecture/book-commerce-erp/ for the full contract (v2 pack).
+// This slice ships Foundation (flag table, AgencyProfile, DocumentSequence) and
+// Catalog (publisher/type/title/SKU, temporal price history, tag reuse, Excel
+// import). Warehouse ledger, sales/reservations, procurement, treasury,
+// marketing, commission, partner portals, and reporting are later approved
+// phases — do not add those tables in this section without a new approval.
+// No scalar stock column exists anywhere in this section on purpose.
+
+enum BookSkuStatus {
+  ACTIVE
+  INACTIVE
+  DISCONTINUED
+}
+
+enum BookPriceKind {
+  LIST
+  SALE
+}
+
+enum BookImportJobType {
+  CATALOG
+}
+
+enum BookImportJobStatus {
+  UPLOADED
+  PREVIEWED
+  VALIDATED
+  COMMITTING
+  DONE
+  FAILED
+  CANCELLED
+}
+
+enum BookImportRowAction {
+  INSERT
+  UPDATE
+  SKIP
+  DUPLICATE_FLAG
+  ERROR
+}
+
+/// Generic organization-scoped feature flag store. First consumer: "bookCommerce".
+/// Reused verbatim by any future module that needs a per-org on/off switch.
 model OrganizationFeatureFlag {
   id             String   @id @default(cuid())
   organizationId String
   key            String
   enabled        Boolean  @default(false)
+  payload        Json?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -2484,6 +2556,7 @@ model OrganizationFeatureFlag {
   @@index([organizationId, enabled])
   @@map("organization_feature_flags")
 }
+
 
 model ExperienceProfile {
   id             String    @id @default(cuid())
@@ -2575,4 +2648,255 @@ model ExperienceWidgetSnapshot {
   @@unique([organizationId, userId, widgetKey])
   @@index([organizationId, userId])
   @@map("experience_widget_snapshots")
+}
+
+/// 1:1 Organization. Book Agency settings — never a second Organization row.
+model BookAgencyProfile {
+  id                          String    @id @default(cuid())
+  organizationId              String    @unique
+  legalName                   String?
+  logoMediaAssetId            String?
+  defaultDepositPercent       Int       @default(30)
+  defaultReservationTtlHours  Int       @default(168)
+  allowIssueUnpaid            Boolean   @default(false)
+  installmentEnabled          Boolean   @default(true)
+  countGiftsInGmv             Boolean   @default(false)
+  showStudentNamesToTeachers  Boolean   @default(false)
+  centralVisibleToAllCashiers Boolean   @default(true)
+  instantInternalTransfer     Boolean   @default(true)
+  invoiceAtFulfillment        Boolean   @default(true)
+  barcodeSymbologyDefault     String    @default("CODE128")
+  numberFormatPrefix          String    @default("BA")
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+  deletedAt                   DateTime?
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  logoMediaAsset MediaAsset?  @relation("BookAgencyProfileLogo", fields: [logoMediaAssetId], references: [id], onDelete: SetNull)
+
+  @@map("book_agency_profiles")
+}
+
+/// (organizationId, documentType, periodKey) → next integer, incremented under a row lock.
+/// No documents exist yet in this slice; sales/procurement phases will consume it.
+model DocumentSequence {
+  id             String   @id @default(cuid())
+  organizationId String
+  documentType   String
+  periodKey      String
+  currentValue   Int      @default(0)
+  prefix         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, documentType, periodKey])
+  @@map("book_document_sequences")
+}
+
+model BookPublisher {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  titles       BookTitle[]
+
+  @@unique([organizationId, name])
+  @@unique([organizationId, id])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("book_publishers")
+}
+
+/// Future-proof, admin-manageable book type taxonomy (Normal/Blue/Green/Purple/
+/// Orange/Summer/Gift/Collection/Magazine/Exam/Booklet/EducationalPackage/
+/// SchoolPackage/SpecialEdition, ...). Never a hardcoded enum — new types are
+/// data, not migrations. `isSystem` marks the seeded starter set.
+model BookType {
+  id             String    @id @default(cuid())
+  organizationId String
+  code           String
+  label          String
+  sortOrder      Int       @default(0)
+  isSystem       Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  titles       BookTitle[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, id])
+  @@index([organizationId, sortOrder])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("book_types")
+}
+
+/// Master title. Grade/subject/major reuse the existing school taxonomies —
+/// never a duplicate "book grade" or "book field" table.
+model BookTitle {
+  id             String    @id @default(cuid())
+  organizationId String
+  publisherId    String?
+  bookTypeId     String?
+  gradeId        String?
+  subjectId      String?
+  majorId        String?
+  title          String
+  description    String?
+  keywords       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  publisher    BookPublisher? @relation(fields: [organizationId, publisherId], references: [organizationId, id], onDelete: Restrict)
+  bookType     BookType?      @relation(fields: [organizationId, bookTypeId], references: [organizationId, id], onDelete: Restrict)
+  grade        StudentGrade?  @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
+  subject      Subject?       @relation(fields: [organizationId, subjectId], references: [organizationId, id], onDelete: Restrict)
+  major        StudentMajor?  @relation(fields: [organizationId, majorId], references: [organizationId, id], onDelete: Restrict)
+  skus         BookSku[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, publisherId])
+  @@index([organizationId, bookTypeId])
+  @@index([organizationId, gradeId])
+  @@index([organizationId, subjectId])
+  @@index([organizationId, majorId])
+  @@index([organizationId, deletedAt])
+  @@map("book_titles")
+}
+
+/// Sellable edition. No scalar stock column — quantity lives only in the
+/// warehouse ledger of a later phase. `searchText` is a denormalized lowercase
+/// projection (title + internalCode + barcode + keywords) for staff search.
+model BookSku {
+  id             String        @id @default(cuid())
+  organizationId String
+  titleId        String
+  internalCode   String
+  barcode        String?
+  editionLabel   String?
+  editionYear    String?
+  status         BookSkuStatus @default(ACTIVE)
+  searchText     String        @default("")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  title        BookTitle      @relation(fields: [organizationId, titleId], references: [organizationId, id], onDelete: Restrict)
+  prices       BookSkuPrice[]
+  tags         BookSkuTag[]
+  importRows   BookImportRowResult[]
+
+  @@unique([organizationId, internalCode])
+  @@unique([organizationId, id])
+  @@index([organizationId, titleId])
+  @@index([organizationId, status, deletedAt])
+  @@index([organizationId, barcode])
+  @@map("book_skus")
+}
+
+/// Temporal price history. Never UPDATE amountRials in place — close the
+/// covering row (`effectiveTo = now`) and insert a new one.
+model BookSkuPrice {
+  id              String        @id @default(cuid())
+  organizationId  String
+  skuId           String
+  kind            BookPriceKind @default(LIST)
+  amountRials     Int
+  effectiveFrom   DateTime      @default(now())
+  effectiveTo     DateTime?
+  source          String        @default("MANUAL")
+  reason          String?
+  createdByUserId String?
+  createdAt       DateTime      @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  sku          BookSku      @relation(fields: [organizationId, skuId], references: [organizationId, id], onDelete: Restrict)
+  createdBy    User?        @relation("BookSkuPriceCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, skuId, kind, effectiveFrom])
+  @@index([organizationId, skuId, effectiveTo])
+  @@map("book_sku_prices")
+}
+
+/// Reuses the existing generic Tag model — never a duplicate "BookTag" master.
+model BookSkuTag {
+  id             String   @id @default(cuid())
+  organizationId String
+  skuId          String
+  tagId          String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  sku          BookSku      @relation(fields: [organizationId, skuId], references: [organizationId, id], onDelete: Cascade)
+  tag          Tag          @relation(fields: [organizationId, tagId], references: [organizationId, id], onDelete: Cascade)
+
+  @@unique([organizationId, skuId, tagId])
+  @@index([organizationId, tagId])
+  @@map("book_sku_tags")
+}
+
+/// Enterprise Excel import: upload → preview → validate → commit → report.
+/// Never evaluates formulas; values only. Committed in transactional chunks.
+model BookImportJob {
+  id                 String               @id @default(cuid())
+  organizationId     String
+  jobType            BookImportJobType    @default(CATALOG)
+  status             BookImportJobStatus  @default(UPLOADED)
+  fileName           String
+  checksum           String
+  totalRows          Int                  @default(0)
+  processedRows      Int                  @default(0)
+  insertedCount      Int                  @default(0)
+  updatedCount       Int                  @default(0)
+  skippedCount       Int                  @default(0)
+  duplicateCount     Int                  @default(0)
+  errorCount         Int                  @default(0)
+  priceChangeCount   Int                  @default(0)
+  reportMediaAssetId String?
+  createdByUserId    String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  completedAt        DateTime?
+
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  reportMedia  MediaAsset?           @relation("BookImportJobReport", fields: [reportMediaAssetId], references: [id], onDelete: SetNull)
+  createdBy    User?                 @relation("BookImportJobCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  rows         BookImportRowResult[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, createdAt])
+  @@index([organizationId, status])
+  @@map("book_import_jobs")
+}
+
+/// Per-row outcome, survives for the downloadable Import Report.
+model BookImportRowResult {
+  id             String              @id @default(cuid())
+  organizationId String
+  jobId          String
+  rowNumber      Int
+  action         BookImportRowAction
+  internalCode   String?
+  skuId          String?
+  message        String?
+  createdAt      DateTime            @default(now())
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  job          BookImportJob @relation(fields: [organizationId, jobId], references: [organizationId, id], onDelete: Cascade)
+  sku          BookSku?      @relation(fields: [organizationId, skuId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, jobId, rowNumber])
+  @@index([organizationId, jobId, action])
+  @@map("book_import_row_results")
 }
