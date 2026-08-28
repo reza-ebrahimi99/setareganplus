@@ -38,7 +38,9 @@
     "test:crm-import:integration": "tsx --env-file=.env scripts/crm-import-integration-tests.ts",
     "test:crm-dashboard": "tsx scripts/crm-dashboard-unit-tests.ts",
     "test:staff-smoke": "prisma generate && tsx scripts/staff-rbac-smoke.ts",
-    "test:staff": "tsx --env-file=scripts/staff-test.env --env-file=.env scripts/staff-integration-tests.ts"
+    "test:staff": "tsx --env-file=scripts/staff-test.env --env-file=.env scripts/staff-integration-tests.ts",
+    "test:books-catalog": "tsx scripts/books-catalog-unit-tests.ts",
+    "books:set-flag": "tsx --env-file=.env scripts/books-set-org-flag.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

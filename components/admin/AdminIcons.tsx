@@ -153,6 +153,7 @@ const navIconMap: Record<AdminNavIcon, React.ComponentType<IconProps>> = {
   finance: FinanceIcon,
   reports: ChartIcon,
   settings: SettingsIcon,
+  books: BookIcon,
 };
 
 const statIconMap: Record<AdminStatIcon, React.ComponentType<IconProps>> = {
