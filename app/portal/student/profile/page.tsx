@@ -75,6 +75,10 @@ export default async function StudentPortalProfilePage() {
         <ExperienceProfileStrip
           displayName={experience.displayName}
           interests={experience.interests}
+          membershipLabel={experience.membershipLabel}
+          membershipLevelLabel={experience.membershipLevelLabel}
+          completionRatio={experience.completionRatio}
+          studentCode={experience.studentCode}
         />
       ) : null}
     </div>

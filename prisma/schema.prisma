@@ -50,10 +50,12 @@
 // - Lead extended with owner, score, pipeline/stage, source links.
 // - Domain events processed by crm:automation-worker-once; due items by crm:scheduled-worker-once.
 //
-// Experience Engine (SXP Phase S1):
+// Experience Engine (SXP Phase S1 + additive S2):
 // - OrganizationFeatureFlag key "sxp" defaults OFF (no row = off). STAROS_SXP_HARD_OFF=true kills the flag.
+// - S2 sub-flag "sxp.files" gates the Downloads vault UI (also default OFF).
 // - ExperienceEngineInbox is a private per-handler cursor. Do not mark DomainEventOutbox processed.
 // - Hub HTTP reads Experience* projections only. Worker may resolve User from booking/form/SMS.
+// - S2 projections: ExperienceStudentCard, ExperienceFile. No FILE_READY enum until a publisher exists.
 //
 // FormVersion lifecycle (enforced by application layer; documented here):
 // - DRAFT: editable fields/settings; not public; does not accept submissions.
@@ -506,6 +508,8 @@ model Organization {
   experienceEngineInbox     ExperienceEngineInbox[]
   experienceTimelineEvents  ExperienceTimelineEvent[]
   experienceWidgetSnapshots ExperienceWidgetSnapshot[]
+  experienceStudentCards    ExperienceStudentCard[]
+  experienceFiles           ExperienceFile[]
 
   @@map("organizations")
 }
@@ -577,6 +581,8 @@ model User {
   experienceProfiles        ExperienceProfile[]
   experienceTimelineEvents  ExperienceTimelineEvent[]
   experienceWidgetSnapshots ExperienceWidgetSnapshot[]
+  experienceStudentCards    ExperienceStudentCard[]
+  experienceFiles           ExperienceFile[]
 
   @@index([status])
   @@index([deletedAt])
@@ -2434,16 +2440,18 @@ model AssessmentSubjectResult {
   @@map("assessment_subject_results")
 }
 
-// ─── Experience Engine (SXP Phase S1) ────────────────────────────────────────
+// ─── Experience Engine (SXP Phase S1 + additive S2) ──────────────────────────
 // Additive hub projector. Default-off via OrganizationFeatureFlag key "sxp".
 // Inbox is private to the engine; CRM/SMS workers keep their DomainEventOutbox semantics.
 // Timeline is append-only. Widget snapshots are the only Home data source.
-// Do not add SMS_SENT to DomainEventType; SMS uses synthetic inbox keys.
+// S2 adds StudentCardRefresher + DownloadIndexer. Do not add SMS_SENT or FILE_READY to DomainEventType.
 
 enum ExperienceEngineHandlerName {
   TIMELINE_APPENDER
   FEED_CURATOR
   WIDGET_SNAPSHOTTER
+  STUDENT_CARD_REFRESHER
+  DOWNLOAD_INDEXER
 }
 
 enum ExperienceEngineInboxStatus {
@@ -2468,6 +2476,18 @@ enum ExperienceWidgetKey {
   LOYALTY_CHIP
   READY_PICKUP
   RECENT_FEED
+  FILES_READY
+}
+
+enum ExperienceFileKind {
+  RECEIPT
+  CERTIFICATE
+  INVOICE
+  BOOKLET
+  BOOK
+  PDF
+  MEDIA
+  OTHER
 }
 
 model OrganizationFeatureFlag {
@@ -2491,6 +2511,7 @@ model ExperienceProfile {
   userId         String
   displayName    String?
   interests      String?
+  coverMediaId   String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
@@ -2575,4 +2596,64 @@ model ExperienceWidgetSnapshot {
   @@unique([organizationId, userId, widgetKey])
   @@index([organizationId, userId])
   @@map("experience_widget_snapshots")
+}
+
+model ExperienceStudentCard {
+  id                 String   @id @default(cuid())
+  organizationId     String
+  userId             String
+  studentId          String
+  displayName        String
+  studentCode        String?
+  maskedNationalCode String?
+  schoolName         String
+  branchName         String?
+  gradeName          String?
+  schoolYear         String?
+  membershipLabel    String
+  portraitUrl        String?
+  qrPayload          String
+  qrTokenHash        String
+  portalId           String
+  completionRatio    Float    @default(0)
+  payload            Json?
+  refreshedAt        DateTime @default(now())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, userId, studentId])
+  @@unique([organizationId, id])
+  @@index([organizationId, userId])
+  @@index([userId])
+  @@map("experience_student_cards")
+}
+
+model ExperienceFile {
+  id             String                       @id @default(cuid())
+  organizationId String
+  userId         String
+  sourceFileId   String
+  title          String
+  mime           String?
+  sizeBytes      Int?
+  mediaStorageKey String?
+  kind           ExperienceFileKind           @default(OTHER)
+  sourceType     String
+  sourceId       String
+  visibility     ExperienceTimelineVisibility @default(SELF)
+  inboxId        String?
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime                     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, userId, sourceFileId])
+  @@unique([organizationId, id])
+  @@index([organizationId, userId, createdAt])
+  @@index([organizationId, userId, kind])
+  @@map("experience_files")
 }

@@ -1,10 +1,11 @@
 #!/usr/bin/env tsx
 /**
- * Operator helper: enable/disable the organization-scoped `sxp` flag.
+ * Operator helper: enable/disable organization-scoped SXP flags.
  * Default remains OFF. Does not change STAROS_SXP_HARD_OFF.
  *
  * Usage:
  *   npm run sxp:set-flag -- --slug=demo --enabled=true
+ *   npm run sxp:set-flag -- --slug=demo --key=sxp.files --enabled=true
  */
 
 if (!process.env.DATABASE_URL) {
@@ -12,7 +13,7 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
-import { SXP_FEATURE_FLAG_KEY } from "../lib/sxp/constants";
+import { SXP_FEATURE_FLAG_KEY, SXP_FILES_FLAG_KEY } from "../lib/sxp/constants";
 import { prisma } from "../lib/prisma";
 
 function readArg(name: string): string | null {
@@ -33,11 +34,20 @@ function parseEnabled(raw: string | null): boolean {
   throw new Error("Pass --enabled=true or --enabled=false");
 }
 
+function parseKey(raw: string | null): string {
+  const value = (raw ?? SXP_FEATURE_FLAG_KEY).trim();
+  if (value === SXP_FEATURE_FLAG_KEY || value === SXP_FILES_FLAG_KEY) {
+    return value;
+  }
+  throw new Error(`Pass --key=${SXP_FEATURE_FLAG_KEY} or --key=${SXP_FILES_FLAG_KEY}`);
+}
+
 async function main() {
   const slug = readArg("slug");
   if (!slug) {
     throw new Error("Pass --slug=<organization-slug>");
   }
+  const key = parseKey(readArg("key"));
   const enabled = parseEnabled(readArg("enabled"));
 
   const organization = await prisma.organization.findFirst({
@@ -52,13 +62,13 @@ async function main() {
     where: {
       organizationId_key: {
         organizationId: organization.id,
-        key: SXP_FEATURE_FLAG_KEY,
+        key,
       },
     },
     update: { enabled },
     create: {
       organizationId: organization.id,
-      key: SXP_FEATURE_FLAG_KEY,
+      key,
       enabled,
     },
     select: { enabled: true, key: true },

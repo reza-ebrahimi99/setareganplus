@@ -1,4 +1,8 @@
-import { SXP_FEATURE_FLAG_KEY, SXP_HARD_OFF_ENV } from "@/lib/sxp/constants";
+import {
+  SXP_FEATURE_FLAG_KEY,
+  SXP_FILES_FLAG_KEY,
+  SXP_HARD_OFF_ENV,
+} from "@/lib/sxp/constants";
 import { prisma } from "@/lib/prisma";
 
 export function isSxpHardOff(
@@ -40,5 +44,32 @@ export async function isSxpEnabled(organizationId: string): Promise<boolean> {
   return resolveSxpFlag({
     hardOff: false,
     orgFlagEnabled: row?.enabled ?? null,
+  });
+}
+
+/**
+ * Files vault requires the master `sxp` flag AND an enabled `sxp.files` row.
+ */
+export function resolveSxpFilesFlag(input: {
+  sxpEnabled: boolean;
+  filesRowEnabled: boolean | null;
+}): boolean {
+  return input.sxpEnabled && input.filesRowEnabled === true;
+}
+
+export async function isSxpFilesEnabled(organizationId: string): Promise<boolean> {
+  if (!(await isSxpEnabled(organizationId))) return false;
+  const row = await prisma.organizationFeatureFlag.findUnique({
+    where: {
+      organizationId_key: {
+        organizationId,
+        key: SXP_FILES_FLAG_KEY,
+      },
+    },
+    select: { enabled: true },
+  });
+  return resolveSxpFilesFlag({
+    sxpEnabled: true,
+    filesRowEnabled: row?.enabled ?? null,
   });
 }

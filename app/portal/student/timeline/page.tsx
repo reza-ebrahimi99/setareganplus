@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ExperienceTimelineView } from "@/components/sxp/ExperienceTimelineView";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
 import { loadExperienceTimeline } from "@/lib/sxp/hub/load-timeline";
+import { SXP_STUDENT_PATHS } from "@/lib/sxp/hub/paths";
 import { assertSxpEnabledOrNotFound } from "@/lib/sxp/hub/require";
 
 export const metadata: Metadata = {
@@ -10,9 +11,22 @@ export const metadata: Metadata = {
 };
 export const dynamic = "force-dynamic";
 
-export default async function StudentExperienceTimelinePage() {
+type PageProps = {
+  searchParams: Promise<{ q?: string; type?: string; cursor?: string }>;
+};
+
+export default async function StudentExperienceTimelinePage({
+  searchParams,
+}: PageProps) {
   const context = await requireStudentPortalAccess();
   await assertSxpEnabledOrNotFound(context.organization.id);
-  const timeline = await loadExperienceTimeline(context);
+  const params = await searchParams;
+  const timeline = await loadExperienceTimeline({
+    context,
+    feedHref: SXP_STUDENT_PATHS.timelineFeed,
+    q: params.q,
+    type: params.type,
+    cursor: params.cursor,
+  });
   return <ExperienceTimelineView timeline={timeline} />;
 }
