@@ -6,6 +6,7 @@ import {
 } from "@/lib/auth/permissions";
 import type { AdminSessionContext } from "@/lib/auth/require-admin";
 import { getTehranParts, tehranDayBoundsUtc } from "@/lib/datetime/tehran-zone";
+import { runKpiFormula, sumKpiPoints } from "@/lib/kpi/run-formula";
 import { prisma } from "@/lib/prisma";
 
 type LeadAggregateGroup = {
@@ -277,6 +278,10 @@ export async function loadCrmDashboardInsights(
       tehranToday.day,
     );
 
+    const branchIds = session.membership.allBranches
+      ? undefined
+      : session.membership.branchIds;
+
     const [rawGroups, newToday, importedToday, importedUnassigned, reports] =
       await Promise.all([
         prisma.lead.groupBy({
@@ -284,19 +289,25 @@ export async function loadCrmDashboardInsights(
           where: leadScope,
           _count: { _all: true },
         }),
-        prisma.lead.count({
-          where: {
-            ...leadScope,
-            createdAt: { gte: startUtc, lte: endUtc },
-          },
-        }),
-        prisma.lead.count({
-          where: {
-            ...leadScope,
-            sourceType: "IMPORT",
-            createdAt: { gte: startUtc, lte: endUtc },
-          },
-        }),
+        // KPI Engine — leads_created_count (today)
+        runKpiFormula("count_leads_created", {
+          organizationId: session.organization.id,
+          from: startUtc,
+          to: endUtc,
+          grain: "total",
+          dimension: "none",
+          branchIds,
+        }).then(sumKpiPoints),
+        // KPI Engine — leads created today with sourceType IMPORT
+        runKpiFormula("count_leads_created", {
+          organizationId: session.organization.id,
+          from: startUtc,
+          to: endUtc,
+          grain: "total",
+          dimension: "none",
+          branchIds,
+          leadScope: { sourceType: "IMPORT" },
+        }).then(sumKpiPoints),
         prisma.lead.count({
           where: {
             ...leadScope,

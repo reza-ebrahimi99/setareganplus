@@ -12,6 +12,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { SmsMessageStatus } from "@/generated/prisma/enums";
 import { getCommunicationConfig } from "@/lib/communication/config";
 import {
+  sendPatternTemplate,
   sendTemplateMessage,
   sendText,
 } from "@/lib/communication/send";
@@ -308,8 +309,39 @@ export async function processSmsMessage(messageId: string): Promise<{
 
   const provider = getSmsProvider();
   const templateDelivery = parseSmsTemplateDelivery(message.metadata);
+  const metadataRecord =
+    message.metadata &&
+    typeof message.metadata === "object" &&
+    !Array.isArray(message.metadata)
+      ? (message.metadata as Record<string, unknown>)
+      : null;
+  const patternCode =
+    typeof metadataRecord?.smsTemplateCode === "string"
+      ? metadataRecord.smsTemplateCode.trim()
+      : "";
+
   let result: SmsSendResult;
-  if (templateDelivery.state === "valid") {
+  if (patternCode && templateDelivery.state === "valid") {
+    // Per-form / per-flow SMS.ir pattern override (admin-configured code).
+    const parameters: Record<string, string> =
+      templateDelivery.descriptor.kind === "booking"
+        ? {
+            name: templateDelivery.descriptor.variables.name,
+            date: templateDelivery.descriptor.variables.date,
+            time: templateDelivery.descriptor.variables.time,
+            tracking: templateDelivery.descriptor.variables.tracking,
+          }
+        : {
+            name: templateDelivery.descriptor.variables.name,
+            tracking: templateDelivery.descriptor.variables.tracking,
+          };
+    result = await sendPatternTemplate({
+      toMobile: message.toMobile,
+      templateCode: patternCode,
+      parameters,
+      correlationId: message.id,
+    });
+  } else if (templateDelivery.state === "valid") {
     if (templateDelivery.descriptor.kind === "booking") {
       result = await sendTemplateMessage({
         kind: "booking",

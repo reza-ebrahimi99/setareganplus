@@ -1,15 +1,20 @@
-import { createHash, randomBytes } from "node:crypto";
-import { promises as fs } from "node:fs";
-import path from "node:path";
-
 /**
  * Persistent media storage (outside git / deploy tree).
  * Production root: STAROS_MEDIA_ROOT (e.g. /var/www/staros-media)
  * Public URLs: STAROS_MEDIA_PUBLIC_BASE + "/" + storageKey (e.g. /media/forms/…)
+ *
+ * Keys under `private/` are NOT publicly servable. Nginx must not alias
+ * `/media/private/` (or must deny it). App downloads use auth-gated routes.
  */
+
+import { createHash, randomBytes } from "node:crypto";
+import { promises as fs } from "node:fs";
+import path from "node:path";
 
 const FORMS_SUBDIR = "forms";
 const TEAM_SUBDIR = "team";
+/** Registration FILE_UPLOAD documents — never via public /media URLs. */
+const PRIVATE_FORM_UPLOAD_SUBDIR = "private/form-uploads";
 
 export function getMediaRoot(): string {
   const configured = process.env.STAROS_MEDIA_ROOT?.trim();
@@ -35,8 +40,18 @@ export function getMediaPublicBase(): string {
   return "/media";
 }
 
+export function isPrivateMediaStorageKey(storageKey: string): boolean {
+  const key = storageKey.replace(/^\/+/, "").replace(/\\/g, "/");
+  return key === "private" || key.startsWith("private/");
+}
+
 /** Public URL for a storageKey — never exposes absolute filesystem paths. */
 export function publicUrlForStorageKey(storageKey: string): string {
+  if (isPrivateMediaStorageKey(storageKey)) {
+    throw new Error(
+      "Private media storage keys must not be exposed as public URLs.",
+    );
+  }
   const base = getMediaPublicBase();
   const key = storageKey.replace(/^\/+/, "");
   return `${base}/${key}`;
@@ -64,22 +79,26 @@ export function absolutePathForStorageKey(storageKey: string): string {
   return absolute;
 }
 
-export function generateFormsStorageKey(extension: string): string {
+function buildRandomStorageKey(subdir: string, extension: string): string {
   const safeExt = extension.replace(/[^a-z0-9]/gi, "").toLowerCase();
   if (!safeExt) {
     throw new Error("Missing file extension.");
   }
   const name = randomBytes(16).toString("hex");
-  return `${FORMS_SUBDIR}/${name}.${safeExt}`;
+  return `${subdir}/${name}.${safeExt}`;
+}
+
+export function generateFormsStorageKey(extension: string): string {
+  return buildRandomStorageKey(FORMS_SUBDIR, extension);
 }
 
 export function generateTeamStorageKey(extension: string): string {
-  const safeExt = extension.replace(/[^a-z0-9]/gi, "").toLowerCase();
-  if (!safeExt) {
-    throw new Error("Missing file extension.");
-  }
-  const name = randomBytes(16).toString("hex");
-  return `${TEAM_SUBDIR}/${name}.${safeExt}`;
+  return buildRandomStorageKey(TEAM_SUBDIR, extension);
+}
+
+/** Registration document uploads — stored under private/ (not public /media). */
+export function generatePrivateFormUploadStorageKey(extension: string): string {
+  return buildRandomStorageKey(PRIVATE_FORM_UPLOAD_SUBDIR, extension);
 }
 
 export function sha256Hex(buffer: Buffer): string {

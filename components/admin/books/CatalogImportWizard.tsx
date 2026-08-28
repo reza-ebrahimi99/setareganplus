@@ -11,8 +11,10 @@ import {
   CATALOG_IMPORT_MAPPING_FIELDS,
   type CatalogImportColumnMapping,
   type CatalogImportMappingField,
-  type CatalogWorkbookInspection,
-  type InvalidCatalogRow,
+} from "@/lib/books/catalog/import-mapping";
+import type {
+  CatalogWorkbookInspection,
+  InvalidCatalogRow,
 } from "@/lib/books/catalog/import-parser";
 import type { CatalogImportSummary } from "@/lib/books/catalog/import-service";
 import { toPersianDigits } from "@/lib/persian";

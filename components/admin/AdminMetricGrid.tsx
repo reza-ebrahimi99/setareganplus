@@ -2,7 +2,12 @@ import { AdminStatCard } from "./AdminStatCard";
 import type { AdminStatIcon } from "@/content/admin";
 
 type AdminMetricGridProps = {
-  items: ReadonlyArray<{ label: string; icon?: AdminStatIcon }>;
+  items: ReadonlyArray<{
+    label: string;
+    icon?: AdminStatIcon;
+    value?: string | number | null;
+    hint?: string | null;
+  }>;
   headingId?: string;
   heading?: string;
   compact?: boolean;
@@ -30,7 +35,13 @@ export function AdminMetricGrid({
       >
         {items.map((item) => (
           <li key={item.label}>
-            <AdminStatCard label={item.label} icon={item.icon} compact={compact} />
+            <AdminStatCard
+              label={item.label}
+              icon={item.icon}
+              compact={compact}
+              value={item.value}
+              hint={item.hint}
+            />
           </li>
         ))}
       </ul>

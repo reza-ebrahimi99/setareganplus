@@ -1,25 +1,16 @@
-import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { TeamDirectory } from "@/components/team/TeamDirectory";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
+import { getPublicPageMetadata } from "@/lib/seo/public-pages";
 import { loadPublicTeamPage } from "@/lib/website/load-team";
 import { listPublicTeamDepartments } from "@/lib/website/team-departments";
 
 /** ISR-friendly; mutations call revalidatePath("/team"). */
 export const revalidate = 120;
 
-export const metadata: Metadata = {
-  title: "تیم مؤسسه علمی ستارگان",
-  description:
-    "آشنایی با مدیران، معلمان، مشاوران و همکاران مؤسسه علمی ستارگان در واحدهای آموزشی و اجرایی.",
-  openGraph: {
-    title: "تیم مؤسسه علمی ستارگان",
-    description:
-      "معرفی اعضای تیم مدیریتی و آموزشی مؤسسه علمی ستارگان.",
-  },
-};
+export const metadata = getPublicPageMetadata("team");
 
 type PageProps = {
   searchParams: Promise<{ q?: string; department?: string; page?: string }>;

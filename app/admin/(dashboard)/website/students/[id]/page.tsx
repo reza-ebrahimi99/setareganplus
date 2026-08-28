@@ -74,6 +74,7 @@ export default async function EditStudentPage({ params }: PageProps) {
           parentName: student.parentName,
           schoolYear: student.schoolYear,
           slug: student.slug,
+          kanoonStudentId: student.kanoonStudentId,
           seoTitle: student.seoTitle,
           seoDescription: student.seoDescription,
           displayOrder: student.displayOrder,

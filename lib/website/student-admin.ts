@@ -28,6 +28,7 @@ export async function listAdminStudents(
             { firstName: { contains: q, mode: "insensitive" as const } },
             { lastName: { contains: q, mode: "insensitive" as const } },
             { slug: { contains: q, mode: "insensitive" as const } },
+            { kanoonStudentId: { contains: q } },
             { parentName: { contains: q, mode: "insensitive" as const } },
           ],
         }
@@ -55,6 +56,7 @@ export async function listAdminStudents(
       firstName: true,
       lastName: true,
       slug: true,
+      kanoonStudentId: true,
       schoolYear: true,
       displayOrder: true,
       featuredPriority: true,
@@ -86,6 +88,7 @@ export async function loadAdminStudent(
       parentName: true,
       schoolYear: true,
       slug: true,
+      kanoonStudentId: true,
       seoTitle: true,
       seoDescription: true,
       displayOrder: true,

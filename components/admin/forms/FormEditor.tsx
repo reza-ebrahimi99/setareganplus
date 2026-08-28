@@ -17,7 +17,9 @@ import {
   FORM_FIELD_TYPE_OPTIONS,
   getFormFieldTypeLabel,
   isChoiceFieldType,
+  isFileUploadFieldType,
 } from "@/lib/forms/form-field-type-labels";
+import { readFileUploadConfig } from "@/lib/forms/file-upload-config";
 import type { EditorField } from "@/lib/forms/load-form-editor";
 import { toPersianDigits } from "@/lib/persian";
 import type { FormFieldType } from "@/generated/prisma/enums";
@@ -79,6 +81,11 @@ function FieldEditorPanel({
   const values = state.values;
   const errors = state.fieldErrors;
   const showOptions = isChoiceFieldType(type as FormFieldType);
+  const showUpload = isFileUploadFieldType(type as FormFieldType);
+  const uploadDefaults = readFileUploadConfig(field?.config);
+  const defaultMaxMb = String(
+    Math.round(uploadDefaults.maxBytes / (1024 * 1024)) || 5,
+  );
 
   const defaultOptionsText =
     values?.optionsText ??
@@ -279,6 +286,104 @@ function FieldEditorPanel({
       ) : (
         <input type="hidden" name="optionsText" value="" />
       )}
+
+      {showUpload ? (
+        <fieldset className="space-y-3 rounded-xl border border-border px-3 py-3">
+          <legend className="px-1 text-sm font-medium text-primary">
+            تنظیمات بارگذاری فایل
+          </legend>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="uploadMultiple"
+              value="true"
+              defaultChecked={
+                values?.uploadMultiple ?? uploadDefaults.multiple
+              }
+              className="size-4 rounded border-border"
+            />
+            اجازه چند فایل
+          </label>
+          <div>
+            <label
+              htmlFor="upload-max-files"
+              className="text-sm font-medium text-primary"
+            >
+              حداکثر تعداد فایل
+            </label>
+            <input
+              id="upload-max-files"
+              name="uploadMaxFiles"
+              type="number"
+              min={1}
+              max={10}
+              defaultValue={
+                values?.uploadMaxFiles ?? String(uploadDefaults.maxFiles)
+              }
+              className={fieldClassName(Boolean(errors?.uploadMaxFiles))}
+            />
+            {errors?.uploadMaxFiles ? (
+              <p className="mt-1.5 text-sm text-red-700">
+                {errors.uploadMaxFiles}
+              </p>
+            ) : null}
+          </div>
+          <div>
+            <label
+              htmlFor="upload-max-mb"
+              className="text-sm font-medium text-primary"
+            >
+              حداکثر حجم هر فایل (مگابایت)
+            </label>
+            <input
+              id="upload-max-mb"
+              name="uploadMaxBytesMb"
+              type="number"
+              min={1}
+              max={10}
+              step={1}
+              defaultValue={values?.uploadMaxBytesMb ?? defaultMaxMb}
+              className={fieldClassName(Boolean(errors?.uploadMaxBytes))}
+            />
+            {errors?.uploadMaxBytes ? (
+              <p className="mt-1.5 text-sm text-red-700">
+                {errors.uploadMaxBytes}
+              </p>
+            ) : null}
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-primary">انواع مجاز</p>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="uploadAllowImages"
+                value="true"
+                defaultChecked={
+                  values?.uploadAllowImages ??
+                  uploadDefaults.allowedMimeTypes.some((mime) =>
+                    mime.startsWith("image/"),
+                  )
+                }
+                className="size-4 rounded border-border"
+              />
+              تصویر (JPEG / PNG / WebP)
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="uploadAllowPdf"
+                value="true"
+                defaultChecked={
+                  values?.uploadAllowPdf ??
+                  uploadDefaults.allowedMimeTypes.includes("application/pdf")
+                }
+                className="size-4 rounded border-border"
+              />
+              PDF
+            </label>
+          </div>
+        </fieldset>
+      ) : null}
 
       <VisibilityConditionEditor
         field={field}

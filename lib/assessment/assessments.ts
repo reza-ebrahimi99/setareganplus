@@ -4,6 +4,7 @@ import { getCurrentOrganization } from "@/lib/organizations/get-current-organiza
 import { ensureDefaultAssessmentProviders } from "@/lib/assessment/providers";
 import { ASSESSMENT_TYPE_LABELS } from "@/lib/assessment/types";
 import { listPublicAssessmentProviders } from "@/lib/assessment/providers";
+import { getPublicAssessmentTopResults } from "@/lib/assessment/featured-results";
 
 export { listPublicAssessmentProviders };
 export { ASSESSMENT_TYPE_LABELS };
@@ -95,7 +96,7 @@ export async function loadAdminAssessment(
   organizationId: string,
   assessmentId: string,
 ) {
-  return prisma.assessment.findFirst({
+  const assessment = await prisma.assessment.findFirst({
     where: { id: assessmentId, organizationId, deletedAt: null },
     select: {
       id: true,
@@ -110,12 +111,31 @@ export async function loadAdminAssessment(
       maxScore: true,
       description: true,
       isPublished: true,
+      publishFeaturedResults: true,
+      featuredResultsLimit: true,
       archivedAt: true,
       provider: { select: { id: true, name: true, slug: true } },
       grade: { select: { id: true, name: true, slug: true } },
-      _count: { select: { results: { where: { deletedAt: null } } } },
+      _count: {
+        select: {
+          results: { where: { deletedAt: null } },
+        },
+      },
     },
   });
+
+  if (!assessment) return null;
+
+  const featuredCount = await prisma.assessmentResult.count({
+    where: {
+      organizationId,
+      assessmentId: assessment.id,
+      deletedAt: null,
+      isFeatured: true,
+    },
+  });
+
+  return { ...assessment, featuredCount };
 }
 
 export type PublicAssessmentCard = {
@@ -126,13 +146,11 @@ export type PublicAssessmentCard = {
   assessmentTypeLabel: string;
   assessmentDate: Date | null;
   schoolYear: string | null;
-  participants: number | null;
   providerName: string;
   providerSlug: string;
   providerColor: string | null;
   gradeName: string;
   gradeSlug: string;
-  resultCount: number;
 };
 
 function publicAssessmentWhere(
@@ -223,10 +241,8 @@ export async function loadPublicAssessmentPage(filters?: {
       assessmentType: true,
       assessmentDate: true,
       schoolYear: true,
-      participants: true,
       provider: { select: { name: true, slug: true, color: true } },
       grade: { select: { name: true, slug: true } },
-      _count: { select: { results: { where: { deletedAt: null } } } },
     },
   });
 
@@ -240,13 +256,11 @@ export async function loadPublicAssessmentPage(filters?: {
         assessmentTypeLabel: ASSESSMENT_TYPE_LABELS[row.assessmentType],
         assessmentDate: row.assessmentDate,
         schoolYear: row.schoolYear,
-        participants: row.participants,
         providerName: row.provider.name,
         providerSlug: row.provider.slug,
         providerColor: row.provider.color,
         gradeName: row.grade.name,
         gradeSlug: row.grade.slug,
-        resultCount: row._count.results,
       }),
     ),
     total,
@@ -281,41 +295,40 @@ export async function loadPublicAssessmentBySlug(slug: string) {
       assessmentType: true,
       assessmentDate: true,
       schoolYear: true,
-      participants: true,
       maxScore: true,
+      isPublished: true,
+      publishFeaturedResults: true,
+      featuredResultsLimit: true,
       provider: { select: { name: true, slug: true, color: true } },
       grade: { select: { name: true, slug: true } },
-      results: {
-        where: {
-          deletedAt: null,
-          isFeatured: true,
-          student: {
-            deletedAt: null,
-            archivedAt: null,
-            isActive: true,
-          },
-        },
-        orderBy: [{ score: "desc" }, { createdAt: "desc" }],
-        take: 12,
-        select: {
-          id: true,
-          score: true,
-          scaledScore: true,
-          rankSchool: true,
-          rankCity: true,
-          rankProvince: true,
-          rankCountry: true,
-          percentile: true,
-        },
-      },
-      _count: { select: { results: { where: { deletedAt: null } } } },
     },
   });
 
   if (!row) return null;
 
+  const topResultsByGrade = row.publishFeaturedResults
+    ? await getPublicAssessmentTopResults({
+        organizationId: organization.id,
+        assessmentId: row.id,
+        limit: row.featuredResultsLimit,
+      })
+    : [];
+
   return {
-    ...row,
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    description: row.description,
+    assessmentType: row.assessmentType,
     assessmentTypeLabel: ASSESSMENT_TYPE_LABELS[row.assessmentType],
+    assessmentDate: row.assessmentDate,
+    schoolYear: row.schoolYear,
+    maxScore: row.maxScore,
+    isPublished: row.isPublished,
+    publishFeaturedResults: row.publishFeaturedResults,
+    featuredResultsLimit: row.featuredResultsLimit,
+    provider: row.provider,
+    grade: row.grade,
+    topResultsByGrade,
   };
 }

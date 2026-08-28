@@ -1,20 +1,16 @@
-import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { galleryContent } from "@/content/home";
+import { getPublicPageMetadata } from "@/lib/seo/public-pages";
 import { loadPublicGalleryAlbums } from "@/lib/website/gallery-public";
 import { toPersianDigits } from "@/lib/persian";
 
 export const revalidate = 120;
 
-export const metadata: Metadata = {
-  title: "گالری تصاویر",
-  description:
-    "گالری تصاویر فعالیت‌ها، رویدادها و فضای آموزشی مجموعه ستارگان — بدون انتشار هویت فردی.",
-};
+export const metadata = getPublicPageMetadata("gallery");
 
 export default async function GalleryPage() {
   const albums = await loadPublicGalleryAlbums();

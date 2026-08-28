@@ -11,6 +11,7 @@ import {
   studentPortraitStorageKeysToUnlink,
 } from "@/lib/media/student-portrait";
 import { prisma } from "@/lib/prisma";
+import { normalizeKanoonStudentId } from "@/lib/website/kanoon-student-id";
 import {
   ensureDefaultStudentGrades,
   gradeRequiresMajor,
@@ -61,6 +62,35 @@ async function uniqueStudentSlug(
     candidate = `${base}-${i + 2}`;
   }
   return `${base}-${Date.now().toString(36)}`;
+}
+
+async function resolveKanoonStudentId(options: {
+  organizationId: string;
+  raw: string;
+  excludeId?: string;
+  fieldErrors: Record<string, string>;
+}): Promise<string | null> {
+  const parsed = normalizeKanoonStudentId(options.raw);
+  if (!parsed.ok) {
+    options.fieldErrors.kanoonStudentId = parsed.error;
+    return null;
+  }
+  if (!parsed.value) return null;
+
+  const duplicate = await prisma.student.findFirst({
+    where: {
+      organizationId: options.organizationId,
+      kanoonStudentId: parsed.value,
+      ...(options.excludeId ? { id: { not: options.excludeId } } : {}),
+    },
+    select: { id: true },
+  });
+  if (duplicate) {
+    options.fieldErrors.kanoonStudentId =
+      "شناسه قلم‌چی در این سازمان قبلاً ثبت شده است.";
+    return null;
+  }
+  return parsed.value;
 }
 
 /** Resolve majorId from form: required for grades 10–12; cleared otherwise. */
@@ -137,6 +167,12 @@ export async function createStudent(
     fieldErrors,
   });
 
+  const kanoonStudentId = await resolveKanoonStudentId({
+    organizationId,
+    raw: readString(formData, "kanoonStudentId"),
+    fieldErrors,
+  });
+
   if (Object.keys(fieldErrors).length > 0) {
     return { formError: "لطفاً خطاهای فرم را برطرف کنید.", fieldErrors };
   }
@@ -159,6 +195,7 @@ export async function createStudent(
       firstName,
       lastName,
       fullName,
+      kanoonStudentId,
       biography,
       parentName,
       schoolYear,
@@ -217,6 +254,13 @@ export async function updateStudent(
     fieldErrors,
   });
 
+  const kanoonStudentId = await resolveKanoonStudentId({
+    organizationId,
+    raw: readString(formData, "kanoonStudentId"),
+    excludeId: existing.id,
+    fieldErrors,
+  });
+
   if (Object.keys(fieldErrors).length > 0) {
     return { formError: "لطفاً خطاهای فرم را برطرف کنید.", fieldErrors };
   }
@@ -240,6 +284,7 @@ export async function updateStudent(
       firstName,
       lastName,
       fullName,
+      kanoonStudentId,
       biography: readString(formData, "biography").trim().slice(0, 5000),
       parentName:
         readString(formData, "parentName").trim().slice(0, 120) || null,

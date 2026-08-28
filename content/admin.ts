@@ -17,12 +17,21 @@ export type AdminNavIcon =
   | "settings"
   | "books";
 
+type AdminNavChildItem = {
+  href: string;
+  label: string;
+  permission?: Permission;
+};
+
+export type { AdminNavChildItem };
+
 type AdminNavItemEnabled = {
   href: string;
   label: string;
   icon: AdminNavIcon;
   enabled: true;
   permission?: Permission;
+  children?: readonly AdminNavChildItem[];
 };
 
 type AdminNavItemDisabled = {
@@ -47,6 +56,13 @@ export const adminNavGroups: ReadonlyArray<{
         icon: "overview",
         enabled: true,
         permission: "crm.view_assigned",
+      },
+      {
+        href: "/admin/admissions",
+        label: "میز کار پذیرش",
+        icon: "leads",
+        enabled: true,
+        permission: "reports.view",
       },
       {
         href: "/admin/leads",
@@ -76,7 +92,79 @@ export const adminNavGroups: ReadonlyArray<{
         enabled: true,
         permission: "booking.view_all",
       },
-      { label: "ثبت‌نام‌ها", icon: "enrollments", enabled: false },
+      {
+        href: "/admin/registrations",
+        label: "ثبت‌نام‌ها",
+        icon: "enrollments",
+        enabled: true,
+        permission: "registrations.view",
+        children: [
+          {
+            href: "/admin/registrations",
+            label: "همه ثبت‌نام‌ها",
+            permission: "registrations.view",
+          },
+          {
+            href: "/admin/registrations/abandoned",
+            label: "ثبت‌نام‌های ناقص",
+            permission: "registrations.view",
+          },
+          {
+            href: "/admin/registrations/flows",
+            label: "جریان‌های ثبت‌نام",
+            permission: "registration_flows.view",
+          },
+        ],
+      },
+      {
+        href: "/admin/commerce",
+        label: "فروشگاه",
+        icon: "courses",
+        enabled: true,
+        permission: "commerce.view",
+        children: [
+          {
+            href: "/admin/commerce",
+            label: "داشبورد",
+            permission: "commerce.view",
+          },
+          {
+            href: "/admin/commerce/categories",
+            label: "دسته‌بندی‌ها",
+            permission: "commerce.categories.manage",
+          },
+          {
+            href: "/admin/commerce/products",
+            label: "محصولات",
+            permission: "commerce.products.manage",
+          },
+          {
+            href: "/admin/commerce/orders",
+            label: "مرکز عملیات جزوه",
+            permission: "commerce.orders.view",
+          },
+          {
+            href: "/admin/commerce/production",
+            label: "صف تولید",
+            permission: "commerce.orders.view",
+          },
+          {
+            href: "/admin/commerce/performance",
+            label: "عملکرد کارکنان",
+            permission: "commerce.orders.view",
+          },
+          {
+            href: "/admin/commerce/pickup",
+            label: "میز دریافت",
+            permission: "commerce.orders.view",
+          },
+          {
+            href: "/admin/commerce/payments",
+            label: "پرداخت‌ها",
+            permission: "commerce.payments.view",
+          },
+        ],
+      },
     ],
   },
   {
@@ -202,6 +290,20 @@ export const adminNavGroups: ReadonlyArray<{
         permission: "website.manage",
       },
       {
+        href: "/admin/website/marketing-cards",
+        label: "کارت‌های نمایندگی",
+        icon: "settings",
+        enabled: true,
+        permission: "website.manage",
+      },
+      {
+        href: "/admin/website/pages",
+        label: "صفحات",
+        icon: "settings",
+        enabled: true,
+        permission: "website.manage",
+      },
+      {
         href: "/admin/website/assessments",
         label: "آزمون‌ها",
         icon: "settings",
@@ -226,6 +328,13 @@ export const adminNavGroups: ReadonlyArray<{
         icon: "settings",
         enabled: true,
         permission: "communication.manage",
+      },
+      {
+        href: "/admin/settings/commerce-notifications",
+        label: "اعلان‌های فروشگاه",
+        icon: "settings",
+        enabled: true,
+        permission: "commerce.orders.manage",
       },
       {
         href: "/admin/settings/automations",
@@ -255,6 +364,10 @@ export const adminBreadcrumbs = {
     { label: "مدیریت", href: "/admin" },
     { label: "نمای کلی" },
   ],
+  admissions: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "میز کار پذیرش" },
+  ],
   leads: [
     { label: "مدیریت", href: "/admin" },
     { label: "متقاضیان و CRM" },
@@ -276,6 +389,89 @@ export const adminBreadcrumbs = {
   bookings: [
     { label: "مدیریت", href: "/admin" },
     { label: "رزرو نوبت" },
+  ],
+  registrations: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "ثبت‌نام‌ها" },
+  ],
+  registrationDetail: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "ثبت‌نام‌ها", href: "/admin/registrations" },
+    { label: "پرونده ثبت‌نام" },
+  ],
+  registrationAbandoned: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "ثبت‌نام‌ها", href: "/admin/registrations" },
+    { label: "ثبت‌نام‌های ناقص" },
+  ],
+  registrationFlows: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "ثبت‌نام‌ها", href: "/admin/registrations" },
+    { label: "جریان‌های ثبت‌نام" },
+  ],
+  registrationFlowsNew: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "ثبت‌نام‌ها", href: "/admin/registrations" },
+    { label: "جریان‌های ثبت‌نام", href: "/admin/registrations/flows" },
+    { label: "جریان جدید" },
+  ],
+  registrationFlowDetail: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "ثبت‌نام‌ها", href: "/admin/registrations" },
+    { label: "جریان‌های ثبت‌نام", href: "/admin/registrations/flows" },
+    { label: "ویرایش جریان" },
+  ],
+  commerce: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه" },
+  ],
+  commerceCategories: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "دسته‌بندی‌ها" },
+  ],
+  commerceProducts: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "محصولات" },
+  ],
+  commerceOrders: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "مرکز عملیات جزوه" },
+  ],
+  commerceProduction: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "مرکز عملیات جزوه", href: "/admin/commerce/orders" },
+    { label: "صف تولید" },
+  ],
+  commercePerformance: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "مرکز عملیات جزوه", href: "/admin/commerce/orders" },
+    { label: "عملکرد کارکنان" },
+  ],
+  commercePickup: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "مرکز عملیات جزوه", href: "/admin/commerce/orders" },
+    { label: "میز دریافت" },
+  ],
+  commerceLabels: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "مرکز عملیات جزوه", href: "/admin/commerce/orders" },
+    { label: "برچسب چاپ" },
+  ],
+  commerceNotifications: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "اعلان‌های فروشگاه" },
+  ],
+  commercePayments: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "پرداخت‌ها" },
   ],
   bookingServices: [
     { label: "مدیریت", href: "/admin" },
@@ -303,6 +499,11 @@ export const adminBreadcrumbs = {
     { label: "مدیریت", href: "/admin" },
     { label: "رزرو نوبت", href: "/admin/bookings" },
     { label: "جزئیات رزرو" },
+  ],
+  bookingExport: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "رزرو نوبت", href: "/admin/bookings" },
+    { label: "خروجی اکسل رزروها" },
   ],
   sitePlacements: [
     { label: "مدیریت", href: "/admin" },
@@ -389,8 +590,9 @@ export const dashboardQuickActions: readonly AdminQuickActionItem[] = [
   },
   {
     label: "مدیریت ثبت‌نام‌ها",
-    description: "در نقشه توسعه — پس از اتصال ماژول ثبت‌نام",
-    enabled: false,
+    description: "مرکز مدیریت ثبت‌نام‌های آنلاین",
+    href: "/admin/registrations",
+    enabled: true,
   },
 ];
 

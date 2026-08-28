@@ -10,14 +10,15 @@ import {
 } from "@/app/admin/(dashboard)/crm/import/actions";
 import type { CrmImportResult } from "@/lib/crm/import-service";
 import type { ImportAssignmentConfig } from "@/lib/crm/import-assignment";
-import {
-  CRM_IMPORT_MAX_BYTES,
-  type ImportColumnMapping,
-  type ImportDuplicateStrategy,
-  type ImportMappingField,
-  type WorkbookInspection,
+import type {
+  ImportColumnMapping,
+  ImportDuplicateStrategy,
+  ImportMappingField,
+  WorkbookInspection,
 } from "@/lib/crm/import-parser";
 import type { LeadOwnerOption } from "@/lib/crm/lead-owners";
+
+const CRM_IMPORT_MAX_BYTES = 5 * 1024 * 1024;
 
 type Props = {
   branches: Array<{ id: string; name: string }>;

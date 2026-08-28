@@ -9,7 +9,10 @@ import {
   listAdminStudentOptions,
   loadAdminAchievement,
 } from "@/lib/website/achievement-admin";
-import { listAdminAchievementCategories } from "@/lib/website/achievement-categories";
+import {
+  categoriesForAchievementForm,
+  listAdminAchievementCategories,
+} from "@/lib/website/achievement-categories";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "ویرایش افتخار" };
@@ -19,6 +22,12 @@ type PageProps = { params: Promise<{ id: string }> };
 function toDateInputValue(date: Date | null): string {
   if (!date) return "";
   return date.toISOString().slice(0, 10);
+}
+
+function toDateTimeLocalValue(date: Date | null): string {
+  if (!date) return "";
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
 }
 
 export default async function EditAchievementPage({ params }: PageProps) {
@@ -50,9 +59,10 @@ export default async function EditAchievementPage({ params }: PageProps) {
           name: student.fullName,
           gradeName: student.grade.name,
         }))}
-        categories={categories
-          .filter((category) => category.isActive && !category.archivedAt)
-          .map((category) => ({ id: category.id, name: category.name }))}
+        categories={categoriesForAchievementForm(
+          categories,
+          achievement.categoryId,
+        )}
         achievement={{
           id: achievement.id,
           studentId: achievement.studentId,
@@ -73,6 +83,13 @@ export default async function EditAchievementPage({ params }: PageProps) {
           featuredPriority: achievement.featuredPriority,
           isFeatured: achievement.isFeatured,
           isPublished: achievement.isPublished,
+          showInHomepageHero: achievement.showInHomepageHero,
+          showInHomepageSlider: achievement.showInHomepageSlider,
+          showInHomepageTicker: achievement.showInHomepageTicker,
+          showInAchievementHero: achievement.showInAchievementHero,
+          showInAchievementGallery: achievement.showInAchievementGallery,
+          heroPublishFrom: toDateTimeLocalValue(achievement.heroPublishFrom),
+          heroPublishUntil: toDateTimeLocalValue(achievement.heroPublishUntil),
           archivedAt: achievement.archivedAt,
           coverUrl: achievementCoverPublicUrl(achievement.coverMedia),
           certificateUrl: achievementCertificatePublicUrl(

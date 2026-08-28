@@ -1,5 +1,6 @@
 import {
   FormVersionStatus,
+  type FormMode,
   type FormPurpose,
   type FormFieldType,
 } from "@/generated/prisma/enums";
@@ -14,6 +15,7 @@ import { redirect } from "next/navigation";
 
 export type EditorField = {
   id: string;
+  formStepId: string | null;
   fieldKey: string;
   sortOrder: number;
   type: FormFieldType;
@@ -23,6 +25,14 @@ export type EditorField = {
   required: boolean;
   config: unknown;
   visibilityConditions: unknown;
+};
+
+export type EditorStep = {
+  id: string;
+  stepKey: string;
+  sortOrder: number;
+  title: string;
+  description: string | null;
 };
 
 export type EditorDisplayStatus = "DRAFT" | "PUBLISHED" | "PAUSED";
@@ -44,6 +54,7 @@ export type FormEditorData = {
     id: string;
     slug: string;
     purpose: FormPurpose;
+    mode: FormMode;
     publishedVersionId: string | null;
   };
   draft: {
@@ -64,6 +75,7 @@ export type FormEditorData = {
     schedule: EditorScheduleSettings;
   } | null;
   fields: EditorField[];
+  steps: EditorStep[];
   displayStatus: EditorDisplayStatus;
   headerTitle: string;
 };
@@ -130,6 +142,7 @@ export async function loadFormEditor(
         id: true,
         slug: true,
         purpose: true,
+        mode: true,
         publishedVersionId: true,
       },
     });
@@ -164,10 +177,21 @@ export async function loadFormEditor(
             deletedAt: true,
           },
         },
+        steps: {
+          orderBy: { sortOrder: "asc" },
+          select: {
+            id: true,
+            stepKey: true,
+            sortOrder: true,
+            title: true,
+            description: true,
+          },
+        },
         fields: {
           orderBy: { sortOrder: "asc" },
           select: {
             id: true,
+            formStepId: true,
             fieldKey: true,
             sortOrder: true,
             type: true,
@@ -252,6 +276,7 @@ export async function loadFormEditor(
           id: form.id,
           slug: form.slug,
           purpose: form.purpose,
+          mode: form.mode,
           publishedVersionId: form.publishedVersionId,
         },
         draft: draft
@@ -268,6 +293,7 @@ export async function loadFormEditor(
         publishedVersion,
         fields: (draft?.fields ?? []).map((field) => ({
           id: field.id,
+          formStepId: field.formStepId,
           fieldKey: field.fieldKey,
           sortOrder: field.sortOrder,
           type: field.type,
@@ -277,6 +303,13 @@ export async function loadFormEditor(
           required: field.required,
           config: field.config,
           visibilityConditions: field.visibilityConditions,
+        })),
+        steps: (draft?.steps ?? []).map((step) => ({
+          id: step.id,
+          stepKey: step.stepKey,
+          sortOrder: step.sortOrder,
+          title: step.title,
+          description: step.description,
         })),
         displayStatus,
         headerTitle,

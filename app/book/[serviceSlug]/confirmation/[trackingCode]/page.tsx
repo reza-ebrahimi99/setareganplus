@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicFormShell } from "@/components/forms/PublicFormShell";
 import { generateCheckInQrDataUrl } from "@/lib/booking/generate-checkin-qr";
+import { getBookingConfirmationPath } from "@/lib/booking/public-url";
 import { parseBookingServiceSettings } from "@/lib/booking/service-settings";
 import { buildPublicCheckInUrl } from "@/lib/booking/tokens";
 import {
@@ -12,6 +13,7 @@ import {
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { prisma } from "@/lib/prisma";
 import { toPersianDigits } from "@/lib/persian";
+import { createPageMetadata } from "@/lib/seo/create-page-metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -26,11 +28,16 @@ const MEETING_LABELS: Record<string, string> = {
   PHONE: "تلفنی",
 };
 
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: "رسید رزرو",
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { serviceSlug, trackingCode } = await params;
+  return createPageMetadata({
+    title: "رسید رزرو | ستارگان پلاس",
+    description: "رسید تأیید رزرو نوبت در ستارگان پلاس.",
+    path: getBookingConfirmationPath(serviceSlug, trackingCode),
     robots: { index: false, follow: false },
-  };
+  });
 }
 
 export default async function BookingConfirmationPage({

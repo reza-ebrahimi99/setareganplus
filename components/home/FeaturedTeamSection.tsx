@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
-import { SectionHeader } from "@/components/ui/SectionHeader";
 import { TeamMemberCard } from "@/components/team/TeamMemberCard";
+import { featuredTeachersContent } from "@/content/home";
 import { loadFeaturedTeamMembers } from "@/lib/website/load-team";
+import { toPersianDigits } from "@/lib/persian";
 
 export async function FeaturedTeamSection() {
   const members = await loadFeaturedTeamMembers();
@@ -11,17 +12,25 @@ export async function FeaturedTeamSection() {
   return (
     <section
       aria-labelledby="featured-team-heading"
-      className="border-y border-border/60 bg-gradient-to-b from-background via-surface to-background py-14 sm:py-16"
+      className="section-rhythm-light border-y border-border/50"
     >
-      <Container>
-        <SectionHeader
-          eyebrow="مؤسسه علمی ستارگان"
-          heading="تیم مدیریت"
-          description="آشنایی با بخشی از همکاران و مدیران مؤسسه که در هدایت آموزشی و اجرایی مجموعه نقش دارند."
-          headingId="featured-team-heading"
-        />
+      <Container className="py-12 sm:py-16">
+        <div className="max-w-2xl">
+          <p className="text-xs font-medium tracking-[0.18em] text-secondary">
+            {toPersianDigits(featuredTeachersContent.eyebrow)}
+          </p>
+          <h2
+            id="featured-team-heading"
+            className="mt-3 text-3xl font-bold tracking-tight text-primary sm:text-4xl"
+          >
+            {toPersianDigits(featuredTeachersContent.heading)}
+          </h2>
+          <p className="mt-4 text-base leading-9 text-muted sm:text-lg">
+            {toPersianDigits(featuredTeachersContent.description)}
+          </p>
+        </div>
 
-        <div className="mt-10 grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4 lg:gap-6">
+        <div className="mt-10 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4 lg:gap-7">
           {members.map((member, index) => (
             <TeamMemberCard
               key={member.id}
@@ -34,10 +43,10 @@ export async function FeaturedTeamSection() {
 
         <div className="mt-10 flex justify-center">
           <Link
-            href="/team"
-            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary/92 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+            href={featuredTeachersContent.cta.href}
+            className="team-directory-cta inline-flex min-h-12 items-center justify-center rounded-2xl border border-secondary/35 bg-primary px-7 py-2.5 text-sm font-semibold text-secondary transition hover:bg-primary/92 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
           >
-            مشاهده همه اعضای تیم
+            {featuredTeachersContent.cta.label}
           </Link>
         </div>
       </Container>

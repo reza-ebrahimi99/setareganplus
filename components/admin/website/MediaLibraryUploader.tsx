@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useCallback, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import {
   uploadLibraryMediaAction,
   type MediaLibraryActionState,
@@ -10,7 +10,15 @@ import { LIBRARY_IMAGE_MAX_BYTES } from "@/lib/media/library-constants";
 
 const emptyState: MediaLibraryActionState = {};
 
-export function MediaLibraryUploader() {
+type MediaLibraryUploaderProps = {
+  compact?: boolean;
+  onUploaded?: (state: MediaLibraryActionState) => void;
+};
+
+export function MediaLibraryUploader({
+  compact = false,
+  onUploaded,
+}: MediaLibraryUploaderProps = {}) {
   const [state, action, pending] = useActionState(
     uploadLibraryMediaAction,
     emptyState,
@@ -21,6 +29,16 @@ export function MediaLibraryUploader() {
   >([]);
   const [dragging, setDragging] = useState(false);
   const maxMb = Math.round(LIBRARY_IMAGE_MAX_BYTES / (1024 * 1024));
+  const lastNotifiedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!onUploaded) return;
+    if (!state.uploadedCount || state.uploadedCount < 1) return;
+    const key = `${state.uploadedCount}:${state.successMessage ?? ""}`;
+    if (lastNotifiedRef.current === key) return;
+    lastNotifiedRef.current = key;
+    onUploaded(state);
+  }, [onUploaded, state]);
 
   const applyFiles = useCallback((fileList: FileList | null) => {
     if (!fileList || !inputRef.current) return;
@@ -39,7 +57,13 @@ export function MediaLibraryUploader() {
   }, []);
 
   return (
-    <section className="admin-card space-y-4 p-4 sm:p-5">
+    <section
+      className={
+        compact
+          ? "space-y-4"
+          : "admin-card space-y-4 p-4 sm:p-5"
+      }
+    >
       <div>
         <h2 className="text-sm font-semibold text-primary">بارگذاری چندفایلی</h2>
         <p className="mt-1 text-xs leading-6 text-muted">

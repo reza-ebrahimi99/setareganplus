@@ -21,6 +21,7 @@ export const ASSESSMENT_IMPORT_ALLOWED_MIME_TYPES = [
 
 export const ASSESSMENT_IMPORT_FIELDS = [
   "IGNORE",
+  "kanoonStudentId",
   "studentSlug",
   "fullName",
   "firstName",
@@ -40,6 +41,12 @@ export const ASSESSMENT_IMPORT_FIELDS = [
 ] as const;
 
 export type AssessmentImportField = (typeof ASSESSMENT_IMPORT_FIELDS)[number];
+
+export type AssessmentStudentMatchMethod =
+  | "kanoon"
+  | "name_grade"
+  | "slug"
+  | "name";
 
 export type AssessmentColumnMapping = Record<
   string,
@@ -61,6 +68,7 @@ export type WorkbookInspection = {
 
 export type ParsedImportRow = {
   excelRow: number;
+  kanoonStudentId?: string;
   studentSlug?: string;
   fullName?: string;
   firstName?: string;
@@ -92,6 +100,8 @@ export type ValidatedImportRow =
       excelRow: number;
       studentId: string;
       studentName: string;
+      kanoonStudentId: string | null;
+      matchedBy: AssessmentStudentMatchMethod;
       data: ParsedImportRow;
       isDuplicateInFile?: boolean;
       restoresSoftDeleted?: boolean;
@@ -102,6 +112,8 @@ export type ValidatedImportRow =
       error: string;
       data: ParsedImportRow;
       code?: string;
+      matchedBy?: "not_found";
+      kanoonStudentId?: string | null;
     };
 
 export type AssessmentImportResult = {

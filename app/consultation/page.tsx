@@ -1,17 +1,14 @@
-import type { Metadata } from "next";
 import { SitePlacementSection } from "@/components/site/SitePlacementSection";
 import { InnerPageLayout } from "@/components/layout/InnerPageLayout";
 import { ContentCard } from "@/components/ui/ContentCard";
 import { registrationNotice } from "@/content/site";
 import { consultationContent } from "@/content/consultation";
+import { getPublicPageMetadata } from "@/lib/seo/public-pages";
 import { loadResolvedSitePlacement } from "@/lib/site/load-site-placement";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: consultationContent.title,
-  description: consultationContent.subtitle,
-};
+export const metadata = getPublicPageMetadata("consultation");
 
 export default async function ConsultationPage() {
   const [formPlacement, bookingPlacement] = await Promise.all([

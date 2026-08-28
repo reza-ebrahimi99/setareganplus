@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { AssessmentDirectory } from "@/components/assessments/AssessmentDirectory";
@@ -9,20 +8,12 @@ import {
 } from "@/lib/assessment/assessments";
 import { isAssessmentType } from "@/lib/assessment/types";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
+import { getPublicPageMetadata } from "@/lib/seo/public-pages";
 import { listPublicStudentGrades } from "@/lib/website/student-grades";
 
 export const revalidate = 120;
 
-export const metadata: Metadata = {
-  title: "آزمون | مؤسسه علمی ستارگان",
-  description:
-    "آزمون‌های قلم‌چی، مدرسه، میان‌ترم، پایان‌ترم، المپیاد و ورودی دانش‌آموزان مؤسسه علمی ستارگان.",
-  openGraph: {
-    title: "آزمون | مؤسسه علمی ستارگان",
-    description:
-      "فهرست آزمون‌ها و نتایج منتشرشده دانش‌آموزان مؤسسه علمی ستارگان.",
-  },
-};
+export const metadata = getPublicPageMetadata("assessments");
 
 type PageProps = {
   searchParams: Promise<{

@@ -3,12 +3,12 @@
  * Runs outside the capacity transaction.
  */
 
-import type { Prisma } from "@/generated/prisma/client";
 import {
   DomainEventType,
   FormFieldSemantic,
   LeadSourceType,
 } from "@/generated/prisma/enums";
+import { enqueueDomainEvent } from "@/lib/automation/enqueue";
 import { parseFormCrmSettings } from "@/lib/crm/form-crm-settings";
 import { upsertLead } from "@/lib/crm/leads";
 import { recordCrmActivity } from "@/lib/crm/activity";
@@ -80,18 +80,17 @@ export async function processFormSubmissionCrm(params: {
       select: { id: true },
     });
     if (!existingEvent) {
-      await prisma.domainEventOutbox.create({
-        data: {
-          organizationId: params.organizationId,
-          branchId: params.branchId,
-          eventType: DomainEventType.FORM_SUBMISSION_RECEIVED,
-          aggregateType: "FormSubmission",
-          aggregateId: submission.id,
-          payload: {
-            submissionId: submission.id,
-            formId: params.formId,
-            formVersionId: params.formVersionId,
-          } satisfies Prisma.InputJsonObject,
+      await enqueueDomainEvent({
+        organizationId: params.organizationId,
+        branchId: params.branchId,
+        eventType: DomainEventType.FORM_SUBMISSION_RECEIVED,
+        aggregateType: "FormSubmission",
+        aggregateId: submission.id,
+        dedupeKey: `FORM_SUBMISSION_RECEIVED:${submission.id}`,
+        payload: {
+          submissionId: submission.id,
+          formId: params.formId,
+          formVersionId: params.formVersionId,
         },
       });
     }
@@ -182,31 +181,20 @@ export async function processFormSubmissionCrm(params: {
     });
 
     if (result.created) {
-      const existingLeadEvent = await prisma.domainEventOutbox.findFirst({
-        where: {
-          organizationId: params.organizationId,
-          eventType: DomainEventType.FORM_LEAD_CREATED,
-          aggregateType: "Lead",
-          aggregateId: result.leadId,
+      await enqueueDomainEvent({
+        organizationId: params.organizationId,
+        branchId: params.branchId,
+        eventType: DomainEventType.FORM_LEAD_CREATED,
+        aggregateType: "Lead",
+        aggregateId: result.leadId,
+        dedupeKey: `FORM_LEAD_CREATED:${result.leadId}`,
+        payload: {
+          leadId: result.leadId,
+          submissionId: submission.id,
+          formId: params.formId,
         },
-        select: { id: true },
       });
-      if (!existingLeadEvent) {
-        await prisma.domainEventOutbox.create({
-          data: {
-            organizationId: params.organizationId,
-            branchId: params.branchId,
-            eventType: DomainEventType.FORM_LEAD_CREATED,
-            aggregateType: "Lead",
-            aggregateId: result.leadId,
-            payload: {
-              leadId: result.leadId,
-              submissionId: submission.id,
-              formId: params.formId,
-            } satisfies Prisma.InputJsonObject,
-          },
-        });
-      }
+      // upsertLead also emits LEAD_CREATED; trigger aliases cover both.
     }
   } catch {
     // Never fail the public form path.

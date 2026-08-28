@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { JalaliDateField } from "@/components/datetime/JalaliDateField";
 import { FORM_SUBMISSION_STATUS_OPTIONS } from "@/lib/forms/form-submission-status-labels";
 import type { ResponseListFilters } from "@/lib/forms/load-form-responses";
 
@@ -70,12 +71,10 @@ export function ResponsesFilters({ formId, filters }: ResponsesFiltersProps) {
         <label htmlFor="filter-from" className="text-xs font-medium text-muted">
           از تاریخ
         </label>
-        <input
+        <JalaliDateField
           id="filter-from"
           name="from"
-          type="date"
-          defaultValue={filters.from ?? ""}
-          className="mt-1.5 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+          defaultValue={filters.from ?? null}
         />
       </div>
 
@@ -83,12 +82,10 @@ export function ResponsesFilters({ formId, filters }: ResponsesFiltersProps) {
         <label htmlFor="filter-to" className="text-xs font-medium text-muted">
           تا تاریخ
         </label>
-        <input
+        <JalaliDateField
           id="filter-to"
           name="to"
-          type="date"
-          defaultValue={filters.to ?? ""}
-          className="mt-1.5 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+          defaultValue={filters.to ?? null}
         />
       </div>
 

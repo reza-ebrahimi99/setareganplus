@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FormFieldType } from "@/generated/prisma/enums";
-import { PublicForm } from "@/components/forms/PublicForm";
+import { PublicFormEntry } from "@/components/forms/PublicFormEntry";
 import { AVAILABILITY_MESSAGES } from "@/lib/forms/evaluate-form-availability";
 import { getFormPurposeLabel } from "@/lib/forms/form-purpose-labels";
 import {
@@ -164,7 +164,7 @@ export async function EmbeddedPublicForm({
           compact ? "p-4" : "p-5 sm:p-7"
         }`}
       >
-        <PublicForm
+        <PublicFormEntry
           data={data}
           displayMode={displayMode}
           instanceId={instanceId ?? `embed-${data.form.slug}`}

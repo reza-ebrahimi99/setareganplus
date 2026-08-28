@@ -37,6 +37,10 @@ export async function getMediaAssetDependencies(
     achievementCovers,
     achievementCerts,
     formPosters,
+    marketingCards,
+    pageSectionMedia,
+    pageSeoImages,
+    formAnswers,
   ] = await Promise.all([
     prisma.galleryAlbumItem.findMany({
       where: {
@@ -88,6 +92,53 @@ export async function getMediaAssetDependencies(
         id: true,
         versionNumber: true,
         form: { select: { id: true, slug: true } },
+      },
+      take: 50,
+    }),
+    prisma.websiteMarketingCard.findMany({
+      where: { organizationId, imageMediaId: mediaId, deletedAt: null },
+      select: { id: true, title: true, sectionKey: true },
+      take: 50,
+    }),
+    prisma.websitePageSectionMedia.findMany({
+      where: {
+        organizationId,
+        mediaId,
+        section: { deletedAt: null, page: { deletedAt: null } },
+      },
+      select: {
+        id: true,
+        role: true,
+        section: {
+          select: {
+            id: true,
+            type: true,
+            page: { select: { id: true, title: true } },
+          },
+        },
+      },
+      take: 50,
+    }),
+    prisma.websitePage.findMany({
+      where: {
+        organizationId,
+        seoImageMediaId: mediaId,
+        deletedAt: null,
+      },
+      select: { id: true, title: true, slug: true },
+      take: 50,
+    }),
+    prisma.formAnswer.findMany({
+      where: {
+        organizationId,
+        valueJson: {
+          string_contains: mediaId,
+        },
+      },
+      select: {
+        id: true,
+        fieldKey: true,
+        submission: { select: { id: true, formId: true } },
       },
       take: 50,
     }),
@@ -164,6 +215,42 @@ export async function getMediaAssetDependencies(
       label: "پوستر فرم",
       detail: `فرم «${version.form.slug}» (نسخه ${version.versionNumber})`,
       href: `/admin/forms/${version.form.id}`,
+    });
+  }
+
+  for (const card of marketingCards) {
+    dependencies.push({
+      kind: "website_marketing_card",
+      label: "کارت نمایندگی",
+      detail: `«${card.title}» (${card.sectionKey})`,
+      href: `/admin/website/marketing-cards/${card.id}`,
+    });
+  }
+
+  for (const link of pageSectionMedia) {
+    dependencies.push({
+      kind: "website_page_section_media",
+      label: "بخش صفحه‌ساز",
+      detail: `صفحه «${link.section.page.title}» · بخش ${link.section.type} (${link.role})`,
+      href: `/admin/website/pages/${link.section.page.id}`,
+    });
+  }
+
+  for (const page of pageSeoImages) {
+    dependencies.push({
+      kind: "website_page_seo_image",
+      label: "تصویر سئو صفحه",
+      detail: `صفحه «${page.title}» (${page.slug})`,
+      href: `/admin/website/pages/${page.id}`,
+    });
+  }
+
+  for (const answer of formAnswers) {
+    dependencies.push({
+      kind: "form_answer_file",
+      label: "پاسخ بارگذاری فایل فرم",
+      detail: `فیلد «${answer.fieldKey}» · ارسال ${answer.submission.id}`,
+      href: `/admin/forms/${answer.submission.formId}/responses`,
     });
   }
 

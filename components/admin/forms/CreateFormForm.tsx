@@ -6,7 +6,9 @@ import {
   createFormAction,
   type CreateFormState,
 } from "@/app/admin/(dashboard)/forms/actions";
+import { FORM_MODE_OPTIONS } from "@/lib/forms/form-mode-labels";
 import { FORM_PURPOSE_OPTIONS } from "@/lib/forms/form-purpose-labels";
+import { FormMode } from "@/generated/prisma/enums";
 
 const initialState: CreateFormState = {};
 
@@ -123,6 +125,56 @@ export function CreateFormForm() {
           </p>
         ) : null}
       </div>
+
+      <fieldset>
+        <legend className="text-sm font-medium text-primary">حالت فرم</legend>
+        <p id="form-mode-hint" className="mt-1.5 text-xs leading-6 text-muted">
+          حالت ثبت‌نام زیرساخت چندمرحله‌ای را روی همین فرم‌ساز فعال می‌کند؛ رفتار
+          عمومی فرم‌های استاندارد تغییر نمی‌کند.
+        </p>
+        <div
+          className="mt-3 space-y-2"
+          role="radiogroup"
+          aria-describedby={
+            errors?.mode ? "form-mode-error form-mode-hint" : "form-mode-hint"
+          }
+        >
+          {FORM_MODE_OPTIONS.map((option) => {
+            const inputId = `form-mode-${option.value.toLowerCase()}`;
+            return (
+              <label
+                key={option.value}
+                htmlFor={inputId}
+                className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-surface px-3 py-3 hover:border-secondary/40"
+              >
+                <input
+                  id={inputId}
+                  type="radio"
+                  name="mode"
+                  value={option.value}
+                  defaultChecked={
+                    (values?.mode ?? FormMode.STANDARD) === option.value
+                  }
+                  className="mt-1"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-foreground">
+                    {option.label}
+                  </span>
+                  <span className="mt-0.5 block text-xs leading-6 text-muted">
+                    {option.description}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+        {errors?.mode ? (
+          <p id="form-mode-error" className="mt-1.5 text-sm text-red-700">
+            {errors.mode}
+          </p>
+        ) : null}
+      </fieldset>
 
       <div>
         <label

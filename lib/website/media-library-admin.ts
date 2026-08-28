@@ -12,7 +12,9 @@ import {
   normalizeOptionalText,
   publicLibraryUrl,
 } from "@/lib/media/library-image";
+import { formUploadSecureDownloadPath } from "@/lib/media/form-file-upload";
 import { getMediaAssetDependencies } from "@/lib/media/media-dependencies";
+import { isPrivateMediaStorageKey } from "@/lib/media/storage";
 import { prisma } from "@/lib/prisma";
 
 export const MEDIA_LIBRARY_PAGE_SIZE = 24;
@@ -69,7 +71,9 @@ function mapAdminMedia(row: {
     byteSize: row.byteSize,
     width: row.width,
     height: row.height,
-    url: publicLibraryUrl(row.storageKey),
+    url: isPrivateMediaStorageKey(row.storageKey)
+      ? formUploadSecureDownloadPath(row.id)
+      : publicLibraryUrl(row.storageKey),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -83,6 +87,8 @@ export async function listAdminMediaAssets(
     category?: string;
     sort?: AdminMediaSort;
     page?: number;
+    /** When true, only rows whose mimeType starts with `image/`. */
+    imagesOnly?: boolean;
   } = {},
 ): Promise<AdminMediaListResult> {
   const pageSize = MEDIA_LIBRARY_PAGE_SIZE;
@@ -97,6 +103,9 @@ export async function listAdminMediaAssets(
     deletedAt: null,
     ...(statusFilter !== "all" ? { status: statusFilter } : {}),
     ...(category ? { category } : {}),
+    ...(options.imagesOnly
+      ? { mimeType: { startsWith: "image/" } }
+      : {}),
     ...(q
       ? {
           OR: [

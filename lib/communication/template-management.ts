@@ -8,6 +8,7 @@ export const SMS_TEMPLATE_EDITOR_TYPES = [
   "OTP",
   "BOOKING",
   "FORM",
+  "REGISTRATION",
 ] as const;
 
 export type SmsTemplateEditorType =
@@ -18,6 +19,7 @@ export const SMS_TEMPLATE_TYPE_LABELS: Record<SmsTemplateEditorType, string> = {
   OTP: "رمز یک‌بارمصرف",
   BOOKING: "رزرو",
   FORM: "فرم",
+  REGISTRATION: "ثبت‌نام",
 };
 
 const PURPOSE_BY_EDITOR_TYPE: Record<
@@ -28,6 +30,7 @@ const PURPOSE_BY_EDITOR_TYPE: Record<
   OTP: SmsTemplatePurpose.OTP,
   BOOKING: SmsTemplatePurpose.BOOKING_CONFIRMATION,
   FORM: SmsTemplatePurpose.FORM_CONFIRMATION,
+  REGISTRATION: SmsTemplatePurpose.REGISTRATION_CONFIRMATION,
 };
 
 const EDITOR_TYPE_BY_PURPOSE: Record<
@@ -38,6 +41,7 @@ const EDITOR_TYPE_BY_PURPOSE: Record<
   OTP: "OTP",
   BOOKING_CONFIRMATION: "BOOKING",
   FORM_CONFIRMATION: "FORM",
+  REGISTRATION_CONFIRMATION: "REGISTRATION",
 };
 
 export function purposeForSmsTemplateType(

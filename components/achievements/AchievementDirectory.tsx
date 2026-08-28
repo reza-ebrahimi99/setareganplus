@@ -40,19 +40,28 @@ export function AchievementDirectory({
   activeSchoolYear,
   query,
 }: AchievementDirectoryProps) {
+  const featuredCount = data.achievements.filter((item) => item.isFeatured)
+    .length;
+
   return (
     <div className="space-y-10">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="achievement-stat-glass rounded-2xl px-5 py-4">
           <p className="text-xs text-muted">افتخارات منتشرشده</p>
           <p className="mt-1 text-2xl font-bold text-primary">
             {toPersianDigits(data.total)}
           </p>
         </div>
-        <div className="rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm">
-          <p className="text-xs text-muted">مؤسسه</p>
-          <p className="mt-1 text-base font-semibold text-primary">
-            علمی ستارگان
+        <div className="achievement-stat-glass rounded-2xl px-5 py-4">
+          <p className="text-xs text-muted">در این صفحه</p>
+          <p className="mt-1 text-2xl font-bold text-primary">
+            {toPersianDigits(data.achievements.length)}
+          </p>
+        </div>
+        <div className="achievement-stat-glass rounded-2xl px-5 py-4">
+          <p className="text-xs text-muted">موارد برجسته</p>
+          <p className="mt-1 text-2xl font-bold text-secondary">
+            {toPersianDigits(featuredCount)}
           </p>
         </div>
       </div>
@@ -73,8 +82,13 @@ export function AchievementDirectory({
         </p>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {data.achievements.map((achievement) => (
-            <AchievementCard key={achievement.id} achievement={achievement} />
+          {data.achievements.map((achievement, index) => (
+            <AchievementCard
+              key={achievement.id}
+              achievement={achievement}
+              priority={index < 3}
+              featured={achievement.isFeatured}
+            />
           ))}
         </div>
       )}
@@ -98,7 +112,7 @@ export function AchievementDirectory({
                   activeGrade,
                   activeSchoolYear,
                 )}
-                className="min-h-11 rounded-xl border border-border bg-surface px-4 py-2 text-sm"
+                className="min-h-11 rounded-xl border border-border bg-surface px-4 py-2 text-sm transition hover:border-secondary/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
               >
                 قبلی
               </Link>
@@ -112,7 +126,7 @@ export function AchievementDirectory({
                   activeGrade,
                   activeSchoolYear,
                 )}
-                className="min-h-11 rounded-xl border border-border bg-surface px-4 py-2 text-sm"
+                className="min-h-11 rounded-xl border border-border bg-surface px-4 py-2 text-sm transition hover:border-secondary/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
               >
                 بعدی
               </Link>

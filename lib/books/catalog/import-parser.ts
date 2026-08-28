@@ -7,26 +7,20 @@ import {
   BOOKS_IMPORT_PREVIEW_ROWS,
 } from "@/lib/books/constants";
 
-export const CATALOG_IMPORT_MAPPING_FIELDS = [
-  "IGNORE",
-  "internalCode",
-  "title",
-  "publisherName",
-  "bookTypeName",
-  "gradeName",
-  "subjectName",
-  "majorName",
-  "editionLabel",
-  "editionYear",
-  "barcode",
-  "listPriceRials",
-  "salePriceRials",
-  "keywords",
-  "tags",
-] as const;
+// Client-safe mapping fields live in ./import-mapping so client components can
+// import them without pulling this server-only module (exceljs + node:crypto)
+// into the client bundle. Re-exported here for existing server-side importers.
+import {
+  CATALOG_IMPORT_MAPPING_FIELDS,
+  type CatalogImportColumnMapping,
+  type CatalogImportMappingField,
+} from "./import-mapping";
 
-export type CatalogImportMappingField = (typeof CATALOG_IMPORT_MAPPING_FIELDS)[number];
-export type CatalogImportColumnMapping = Record<string, CatalogImportMappingField>;
+export {
+  CATALOG_IMPORT_MAPPING_FIELDS,
+  type CatalogImportColumnMapping,
+  type CatalogImportMappingField,
+};
 
 const FIELD_ALIASES: Readonly<
   Record<Exclude<CatalogImportMappingField, "IGNORE">, readonly string[]>

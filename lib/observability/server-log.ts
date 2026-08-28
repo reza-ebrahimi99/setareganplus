@@ -10,6 +10,7 @@ export type ServerLogCategory =
   | "analytics"
   | "media"
   | "mutation"
+  | "attribution"
   | "system";
 
 export type ServerLogFields = {

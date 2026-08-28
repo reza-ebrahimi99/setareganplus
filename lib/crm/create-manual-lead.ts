@@ -12,11 +12,14 @@ import {
   CrmTaskPriority,
   CrmTaskStatus,
   CrmTaskType,
+  DomainEventType,
   LeadSourceType,
   LeadStatus,
 } from "@/generated/prisma/enums";
+import { enqueueDomainEvent } from "@/lib/automation/enqueue";
 import { permissionsForRole } from "@/lib/auth/permissions";
 import { recordCrmActivity } from "@/lib/crm/activity";
+import { ensureOpenOwnershipPeriod } from "@/lib/crm/ownership-history";
 import { ensureDefaultPipeline } from "@/lib/crm/pipeline";
 import { toLatinDigits } from "@/lib/forms/latin-digits";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
@@ -550,6 +553,31 @@ export async function createManualLead(params: {
         },
       });
     }
+
+    await ensureOpenOwnershipPeriod({
+      organizationId: actor.organizationId,
+      leadId: lead.id,
+      ownerUserId: input.ownerUserId,
+      source: "MANUAL",
+      actorUserId: actor.userId,
+      effectiveFrom: occurredAt,
+      tx,
+    });
+
+    await enqueueDomainEvent({
+      organizationId: actor.organizationId,
+      branchId: input.branchId,
+      eventType: DomainEventType.LEAD_CREATED,
+      aggregateType: "Lead",
+      aggregateId: lead.id,
+      dedupeKey: `LEAD_CREATED:${lead.id}`,
+      payload: {
+        leadId: lead.id,
+        sourceType: LeadSourceType.MANUAL,
+        ownerUserId: input.ownerUserId,
+      },
+      tx,
+    });
 
     return {
       status: "created",

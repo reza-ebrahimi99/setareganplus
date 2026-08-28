@@ -1,38 +1,31 @@
-import type { Metadata } from "next";
-import { InnerPageLayout } from "@/components/layout/InnerPageLayout";
-import { ContentCard } from "@/components/ui/ContentCard";
-import { aboutContent } from "@/content/site";
+import { AboutFinalCta } from "@/components/about/AboutFinalCta";
+import { AboutHero } from "@/components/about/AboutHero";
+import { AboutStatistics } from "@/components/about/AboutStatistics";
+import { AiStarOsBlock } from "@/components/about/AiStarOsBlock";
+import { CampusGallery } from "@/components/about/CampusGallery";
+import { CoreValues } from "@/components/about/CoreValues";
+import { EcosystemGrid } from "@/components/about/EcosystemGrid";
+import { FounderAchievements } from "@/components/about/FounderAchievements";
+import { MissionVision } from "@/components/about/MissionVision";
+import { StoryTimeline } from "@/components/about/StoryTimeline";
+import { SiteShell } from "@/components/layout/SiteShell";
+import { getPublicPageMetadata } from "@/lib/seo/public-pages";
 
-export const metadata: Metadata = {
-  title: aboutContent.title,
-  description: aboutContent.subtitle,
-};
+export const metadata = getPublicPageMetadata("about");
 
 export default function AboutPage() {
   return (
-    <InnerPageLayout
-      activePath="/about"
-      breadcrumbs={aboutContent.breadcrumbs}
-      title={aboutContent.title}
-      subtitle={aboutContent.subtitle}
-      eyebrow="درباره سکو"
-      cta={{
-        heading: "آشنایی با مسیر ثبت‌نام",
-        description:
-          "برای آشنایی با مراحل پیش‌ثبت‌نام و خدمات مرکز، صفحات مرتبط را ببینید.",
-        primary: { label: "پیش‌ثبت‌نام", href: "/pre-registration" },
-        secondary: { label: "سوالات متداول", href: "/faq" },
-      }}
-    >
-      <div className="space-y-6">
-        {aboutContent.sections.map((section) => (
-          <ContentCard
-            key={section.heading}
-            heading={section.heading}
-            body={section.body}
-          />
-        ))}
-      </div>
-    </InnerPageLayout>
+    <SiteShell activePath="/about">
+      <AboutHero />
+      <StoryTimeline />
+      <AboutStatistics />
+      <MissionVision />
+      <CoreValues />
+      <EcosystemGrid />
+      <CampusGallery />
+      <FounderAchievements />
+      <AiStarOsBlock />
+      <AboutFinalCta />
+    </SiteShell>
   );
 }

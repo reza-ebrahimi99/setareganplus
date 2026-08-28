@@ -655,7 +655,7 @@ async function main() {
     const formSms = await prisma.smsMessage.findFirst({
       where: {
         organizationId: org.id,
-        idempotencyKey: `form_confirmation:${submission.id}`,
+        idempotencyKey: `form_submitted:${submission.id}:user`,
       },
     });
     assert(formSms, "form confirmation SMS enqueued");
@@ -682,7 +682,7 @@ async function main() {
     const count = await prisma.smsMessage.count({
       where: {
         organizationId: org.id,
-        idempotencyKey: `form_confirmation:${submission.id}`,
+        idempotencyKey: `form_submitted:${submission.id}:user`,
       },
     });
     assert(count === 1, "form SMS not duplicated");
@@ -692,7 +692,7 @@ async function main() {
       await prisma.smsMessage.deleteMany({
         where: {
           organizationId: org.id,
-          purpose: "form_confirmation",
+          purpose: "form_submitted",
           relatedType: "FormSubmission",
         },
       });

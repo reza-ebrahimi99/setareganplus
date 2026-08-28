@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
-import { FormVersionStatus } from "@/generated/prisma/enums";
+import { FormMode, FormVersionStatus } from "@/generated/prisma/enums";
+import { isFormMode } from "@/lib/forms/form-mode-labels";
 import { isFormPurpose } from "@/lib/forms/form-purpose-labels";
 import { mapPrismaFormError } from "@/lib/forms/map-prisma-form-error";
 import { normalizeFormSlug } from "@/lib/forms/normalize-form-slug";
@@ -15,6 +16,7 @@ export type CreateFormFieldErrors = {
   title?: string;
   slug?: string;
   purpose?: string;
+  mode?: string;
   confirmationMessage?: string;
 };
 
@@ -22,6 +24,7 @@ export type CreateFormValues = {
   title: string;
   slug: string;
   purpose: string;
+  mode: string;
   confirmationMessage: string;
 };
 
@@ -49,6 +52,7 @@ export async function createFormAction(
   const title = readString(formData, "title").trim();
   const rawSlug = readString(formData, "slug");
   const purposeRaw = readString(formData, "purpose").trim();
+  const modeRaw = readString(formData, "mode").trim() || FormMode.STANDARD;
   const confirmationMessage = readString(
     formData,
     "confirmationMessage",
@@ -58,6 +62,7 @@ export async function createFormAction(
     title,
     slug: rawSlug.trim().toLowerCase(),
     purpose: purposeRaw,
+    mode: modeRaw,
     confirmationMessage,
   };
 
@@ -80,6 +85,10 @@ export async function createFormAction(
     fieldErrors.purpose = "هدف فرم نامعتبر است.";
   }
 
+  if (!isFormMode(modeRaw)) {
+    fieldErrors.mode = "حالت فرم نامعتبر است.";
+  }
+
   if (!confirmationMessage) {
     fieldErrors.confirmationMessage = "پیام تأیید پس از ثبت الزامی است.";
   } else if (confirmationMessage.length > 2000) {
@@ -91,7 +100,7 @@ export async function createFormAction(
     return { fieldErrors, values };
   }
 
-  if (!slugResult.ok || !isFormPurpose(purposeRaw)) {
+  if (!slugResult.ok || !isFormPurpose(purposeRaw) || !isFormMode(modeRaw)) {
     return {
       formError: "اطلاعات فرم نامعتبر است.",
       values,
@@ -100,6 +109,7 @@ export async function createFormAction(
 
   const slug = slugResult.slug;
   const purpose = purposeRaw;
+  const mode = modeRaw;
 
   const existing = await prisma.form.findFirst({
     where: {
@@ -127,6 +137,7 @@ export async function createFormAction(
           organizationId: organization.id,
           slug,
           purpose,
+          mode,
           isAdmissionForm: purpose === "ADMISSION",
           branchId: null,
         },

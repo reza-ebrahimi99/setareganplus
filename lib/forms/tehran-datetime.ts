@@ -1,18 +1,22 @@
 /**
- * Asia/Tehran wall-clock helpers for admin datetime-local inputs.
- * Iran uses a fixed UTC+03:30 offset (DST abolished).
+ * Asia/Tehran wall-clock helpers for admin datetime-local form values.
+ * Uses Intl Asia/Tehran via tehran-zone (no fixed UTC+03:30 arithmetic).
+ * Store UTC in DB; convert only at input/output boundaries.
  */
 
-const TEHRAN_OFFSET_MS = (3 * 60 + 30) * 60 * 1000;
+import {
+  getTehranParts,
+  tehranLocalToUtc,
+} from "@/lib/datetime/tehran-zone";
 
+function pad2(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+/** Format a UTC instant as `YYYY-MM-DDTHH:mm` in Asia/Tehran wall time. */
 export function formatDateTimeLocalInTehran(date: Date): string {
-  const shifted = new Date(date.getTime() + TEHRAN_OFFSET_MS);
-  const year = shifted.getUTCFullYear();
-  const month = String(shifted.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(shifted.getUTCDate()).padStart(2, "0");
-  const hour = String(shifted.getUTCHours()).padStart(2, "0");
-  const minute = String(shifted.getUTCMinutes()).padStart(2, "0");
-  return `${year}-${month}-${day}T${hour}:${minute}`;
+  const parts = getTehranParts(date);
+  return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}T${pad2(parts.hour)}:${pad2(parts.minute)}`;
 }
 
 /**
@@ -46,10 +50,7 @@ export function parseTehranDateTimeLocal(value: string): Date | null {
     return null;
   }
 
-  const utcMs =
-    Date.UTC(year, month - 1, day, hour, minute, 0, 0) - TEHRAN_OFFSET_MS;
-  const date = new Date(utcMs);
-
+  const date = tehranLocalToUtc(year, month, day, hour, minute, 0);
   if (Number.isNaN(date.getTime())) {
     return null;
   }

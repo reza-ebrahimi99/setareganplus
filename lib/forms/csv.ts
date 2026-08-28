@@ -1,3 +1,7 @@
+/**
+ * CSV / spreadsheet export helpers for form answers.
+ */
+
 import {
   FormFieldType,
   type FormFieldType as FormFieldTypeValue,
@@ -14,7 +18,30 @@ type AnswerLike = {
 };
 
 /**
+ * Neutralize spreadsheet formula injection for CSV / Excel cells.
+ * Prefixes values that begin with = + - @ tab or CR.
+ */
+export function neutralizeSpreadsheetFormula(value: string): string {
+  if (value.length === 0) {
+    return value;
+  }
+  const first = value.charAt(0);
+  if (
+    first === "=" ||
+    first === "+" ||
+    first === "-" ||
+    first === "@" ||
+    first === "\t" ||
+    first === "\r"
+  ) {
+    return `'${value}`;
+  }
+  return value;
+}
+
+/**
  * CSV cell text for an answer. Multiple choice joined with " | ".
+ * All returned values are formula-injection safe.
  */
 export function formatAnswerForCsv(
   type: FormFieldTypeValue,
@@ -32,15 +59,20 @@ export function formatAnswerForCsv(
         const match = parsed?.options.find((option) => option.value === value);
         return match?.label ?? value;
       });
-    return labels.join(" | ");
+    return neutralizeSpreadsheetFormula(labels.join(" | "));
   }
 
   if (type === FormFieldType.CONSENT) {
-    return answer.valueJson === true ? "بله" : answer.valueJson === false ? "خیر" : "";
+    return answer.valueJson === true
+      ? "بله"
+      : answer.valueJson === false
+        ? "خیر"
+        : "";
   }
 
   const display = formatAnswerDisplay(type, answer, config);
-  return display === "—" ? "" : display;
+  const text = display === "—" ? "" : display;
+  return neutralizeSpreadsheetFormula(text);
 }
 
 export function escapeCsvCell(value: string): string {

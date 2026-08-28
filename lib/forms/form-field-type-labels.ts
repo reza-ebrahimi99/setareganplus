@@ -20,6 +20,7 @@ export const FORM_FIELD_TYPE_LABELS: Record<FormFieldTypeValue, string> = {
   [FormFieldType.CONSENT]: "رضایت‌نامه",
   [FormFieldType.INFORMATIONAL]: "متن راهنما (بدون پاسخ)",
   [FormFieldType.NATIONAL_ID]: "کد ملی",
+  [FormFieldType.FILE_UPLOAD]: "بارگذاری فایل",
 };
 
 export const FORM_FIELD_TYPE_OPTIONS: ReadonlyArray<{
@@ -44,6 +45,10 @@ export function isFormFieldType(value: string): value is FormFieldTypeValue {
 
 export function isChoiceFieldType(type: FormFieldTypeValue): boolean {
   return CHOICE_FIELD_TYPES.has(type);
+}
+
+export function isFileUploadFieldType(type: FormFieldTypeValue): boolean {
+  return type === FormFieldType.FILE_UPLOAD;
 }
 
 export function getFormFieldTypeLabel(type: FormFieldTypeValue): string {

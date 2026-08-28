@@ -24,6 +24,19 @@ export const PERMISSIONS = [
   "automations.manage",
   "website.manage",
   "students.portal.manage",
+  "registrations.view",
+  "registrations.manage",
+  "registration_flows.view",
+  "registration_flows.manage",
+  "commerce.view",
+  "commerce.manage",
+  "commerce.categories.manage",
+  "commerce.products.manage",
+  "commerce.orders.view",
+  "commerce.orders.manage",
+  "commerce.orders.rollback",
+  "commerce.payments.view",
+  "commerce.reports.view",
   "portal.student.access",
   "portal.guardian.access",
   "books.view",
@@ -53,6 +66,18 @@ const CRM_MANAGER = new Set<Permission>([
   "booking.view_all",
   "booking.view_assigned",
   "reports.view",
+  "registrations.view",
+  "registrations.manage",
+  "registration_flows.view",
+  "registration_flows.manage",
+]);
+
+const BRANCH_COMMERCE_OPS = new Set<Permission>([
+  ...CRM_MANAGER,
+  "commerce.view",
+  "commerce.orders.view",
+  "commerce.orders.manage",
+  "commerce.orders.rollback",
 ]);
 const CRM_AGENT = new Set<Permission>([
   "crm.view_assigned",
@@ -64,6 +89,8 @@ const CRM_AGENT = new Set<Permission>([
   "crm.call",
   "crm.send_sms",
   "booking.view_assigned",
+  "registrations.view",
+  "registration_flows.view",
 ]);
 
 export const ROLE_LABELS: Readonly<Record<SystemRoleValue, string>> = {
@@ -80,11 +107,12 @@ export const ROLE_LABELS: Readonly<Record<SystemRoleValue, string>> = {
   FINANCE: "امور مالی",
   REGISTRATION_STAFF: "کارشناس ثبت‌نام",
   SUPPORT: "پشتیبانی",
-  CONTENT_MANAGER: "مدیر محتوا",
+  CONTENT_MANAGER: "مدیر محتوا / بازاریابی",
   STUDENT: "دانش‌آموز",
   PARENT: "والد",
 };
 
+/** Staff creation/edit only — never STUDENT or PARENT. */
 export const STAFF_ASSIGNABLE_ROLES = [
   SystemRole.ORGANIZATION_ADMIN,
   SystemRole.BRANCH_MANAGER,
@@ -93,13 +121,18 @@ export const STAFF_ASSIGNABLE_ROLES = [
   SystemRole.ADVISOR,
   SystemRole.CALL_OPERATOR,
   SystemRole.REPORT_VIEWER,
+  SystemRole.REGISTRATION_STAFF,
+  SystemRole.CONTENT_MANAGER,
+  SystemRole.TEACHER,
+  SystemRole.FINANCE,
+  SystemRole.SUPPORT,
 ] as const;
 
 const ROLE_PERMISSIONS: Readonly<Partial<Record<SystemRoleValue, ReadonlySet<Permission>>>> = {
   PLATFORM_ADMIN: ALL,
   ORGANIZATION_OWNER: ALL,
   ORGANIZATION_ADMIN: ALL,
-  BRANCH_MANAGER: CRM_MANAGER,
+  BRANCH_MANAGER: BRANCH_COMMERCE_OPS,
   ADMISSIONS_MANAGER: CRM_MANAGER,
   ADMISSIONS_AGENT: CRM_AGENT,
   ADVISOR: new Set([
@@ -120,14 +153,35 @@ const ROLE_PERMISSIONS: Readonly<Partial<Record<SystemRoleValue, ReadonlySet<Per
     "crm.send_sms",
   ]),
   REPORT_VIEWER: new Set(["reports.view"]),
-  REGISTRATION_STAFF: new Set<Permission>([...CRM_AGENT, "students.portal.manage"]),
+  REGISTRATION_STAFF: new Set<Permission>([
+    ...CRM_AGENT,
+    "students.portal.manage",
+    "registrations.view",
+    "registrations.manage",
+    "registration_flows.view",
+    "registration_flows.manage",
+  ]),
   SUPPORT: new Set(["crm.view_assigned", "crm.add_note", "crm.call", "crm.send_sms"]),
   CONTENT_MANAGER: new Set([
     "forms.manage",
     "website.manage",
     "students.portal.manage",
+    "commerce.view",
+    "commerce.categories.manage",
+    "commerce.products.manage",
   ]),
-  FINANCE: new Set(["reports.view"]),
+  TEACHER: new Set([
+    "booking.view_assigned",
+    "website.manage",
+  ]),
+  FINANCE: new Set([
+    "reports.view",
+    "commerce.view",
+    "commerce.orders.view",
+    "commerce.orders.manage",
+    "commerce.payments.view",
+    "commerce.reports.view",
+  ]),
   STUDENT: new Set(["portal.student.access"]),
   PARENT: new Set(["portal.guardian.access"]),
 };

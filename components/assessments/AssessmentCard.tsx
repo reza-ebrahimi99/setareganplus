@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { PublicAssessmentCard } from "@/lib/assessment/assessments";
 import { formatJalaliDateShort } from "@/lib/datetime/jalali";
-import { toPersianDigits } from "@/lib/persian";
 
 type AssessmentCardProps = {
   assessment: PublicAssessmentCard;
@@ -50,7 +49,6 @@ export function AssessmentCard({ assessment }: AssessmentCardProps) {
             assessment.assessmentDate
               ? formatJalaliDateShort(assessment.assessmentDate)
               : null,
-            `${toPersianDigits(assessment.resultCount)} نتیجه`,
           ]
             .filter(Boolean)
             .join(" · ")}

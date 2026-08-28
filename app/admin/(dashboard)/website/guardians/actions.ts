@@ -3,15 +3,13 @@
 import { revalidatePath } from "next/cache";
 import {
   GuardianRelationshipType,
-  MembershipStatus,
   PortalAccountType,
-  SystemRole,
-  UserStatus,
 } from "@/generated/prisma/enums";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { logServerError } from "@/lib/observability/server-log";
 import { persianPrismaError } from "@/lib/prisma/user-facing-error";
+import { ensurePortalAccessLink } from "@/lib/portal/admin/access";
 import { prisma } from "@/lib/prisma";
 
 function readString(formData: FormData, key: string): string {
@@ -187,48 +185,6 @@ export async function unlinkGuardianStudent(formData: FormData) {
   revalidatePortalAdmin();
 }
 
-async function ensurePortalMembership(params: {
-  organizationId: string;
-  userId: string;
-  accountType: PortalAccountType;
-}) {
-  const role =
-    params.accountType === PortalAccountType.STUDENT
-      ? SystemRole.STUDENT
-      : SystemRole.PARENT;
-
-  // One membership per user per organization (unique). Reuse staff rows;
-  // only create STUDENT/PARENT when no membership exists yet.
-  const existing = await prisma.organizationMembership.findFirst({
-    where: {
-      organizationId: params.organizationId,
-      userId: params.userId,
-      deletedAt: null,
-    },
-    select: { id: true, status: true, role: true },
-  });
-  if (existing) {
-    if (existing.status !== MembershipStatus.ACTIVE) {
-      await prisma.organizationMembership.update({
-        where: { id: existing.id },
-        data: { status: MembershipStatus.ACTIVE },
-      });
-    }
-    return existing.id;
-  }
-
-  const created = await prisma.organizationMembership.create({
-    data: {
-      organizationId: params.organizationId,
-      userId: params.userId,
-      role,
-      status: MembershipStatus.ACTIVE,
-    },
-    select: { id: true },
-  });
-  return created.id;
-}
-
 export async function createPortalAccessLink(formData: FormData) {
   const session = await requirePermission("students.portal.manage");
   const organizationId = session.organization.id;
@@ -247,83 +203,16 @@ export async function createPortalAccessLink(formData: FormData) {
   if (accountType === PortalAccountType.STUDENT && !studentId) return;
   if (accountType === PortalAccountType.GUARDIAN && !guardianId) return;
 
-  if (studentId) {
-    const student = await prisma.student.findFirst({
-      where: { id: studentId, organizationId, deletedAt: null },
-      select: { id: true },
-    });
-    if (!student) return;
-  }
-  if (guardianId) {
-    const guardian = await prisma.studentGuardian.findFirst({
-      where: { id: guardianId, organizationId, deletedAt: null },
-      select: { id: true },
-    });
-    if (!guardian) return;
-  }
-
   try {
-    let user = await prisma.user.findFirst({
-      where: { normalizedMobile: mobileParsed.normalized, deletedAt: null },
-      select: { id: true },
-    });
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          firstName,
-          lastName,
-          mobile: mobileParsed.normalized,
-          normalizedMobile: mobileParsed.normalized,
-          status: UserStatus.ACTIVE,
-        },
-        select: { id: true },
-      });
-    }
-
-    await ensurePortalMembership({
+    await ensurePortalAccessLink({
       organizationId,
-      userId: user.id,
       accountType,
+      normalizedMobile: mobileParsed.normalized,
+      firstName,
+      lastName,
+      studentId,
+      guardianId,
     });
-
-    const existing = await prisma.portalAccountLink.findFirst({
-      where: {
-        organizationId,
-        userId: user.id,
-        ...(accountType === PortalAccountType.STUDENT
-          ? { studentId }
-          : { guardianId }),
-      },
-      select: { id: true },
-    });
-
-    if (existing) {
-      await prisma.portalAccountLink.update({
-        where: { id: existing.id },
-        data: {
-          accountType,
-          studentId:
-            accountType === PortalAccountType.STUDENT ? studentId : null,
-          guardianId:
-            accountType === PortalAccountType.GUARDIAN ? guardianId : null,
-          isActive: true,
-          deletedAt: null,
-        },
-      });
-    } else {
-      await prisma.portalAccountLink.create({
-        data: {
-          organizationId,
-          userId: user.id,
-          accountType,
-          studentId:
-            accountType === PortalAccountType.STUDENT ? studentId : null,
-          guardianId:
-            accountType === PortalAccountType.GUARDIAN ? guardianId : null,
-          isActive: true,
-        },
-      });
-    }
   } catch (error) {
     logServerError(
       {

@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { AchievementDirectory } from "@/components/achievements/AchievementDirectory";
@@ -8,20 +7,12 @@ import {
   listPublicAchievementCategories,
   loadPublicAchievementPage,
 } from "@/lib/website/achievements";
+import { getPublicPageMetadata } from "@/lib/seo/public-pages";
 import { listPublicStudentGrades } from "@/lib/website/student-grades";
 
 export const revalidate = 120;
 
-export const metadata: Metadata = {
-  title: "افتخارات مؤسسه علمی ستارگان",
-  description:
-    "افتخارات، المپیادها، پذیرش مدارس استعداد، مسابقات و گواهی‌های مؤسسه علمی ستارگان — بدون انتشار هویت فردی دانش‌آموزان.",
-  openGraph: {
-    title: "افتخارات مؤسسه علمی ستارگان",
-    description:
-      "نمایش عمومی موفقیت‌های مؤسسه در المپیادها، مسابقات و گواهی‌ها بدون مشخصات فردی.",
-  },
-};
+export const metadata = getPublicPageMetadata("achievements");
 
 type PageProps = {
   searchParams: Promise<{

@@ -1,4 +1,8 @@
 import type { Prisma } from "@/generated/prisma/client";
+import {
+  tehranDayBoundsUtc,
+  tehranLocalToUtc,
+} from "@/lib/datetime/tehran-zone";
 import { isFormSubmissionStatus } from "@/lib/forms/form-submission-status-labels";
 
 export type ResponseListFilters = {
@@ -49,20 +53,57 @@ export function buildResponseFiltersQuery(
   return params.toString();
 }
 
-function parseDayStart(value: string): Date | null {
+function parseGregorianYmd(
+  value: string,
+): { year: number; month: number; day: number } | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return null;
   }
-  const date = new Date(`${value}T00:00:00.000Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
+  const year = Number(value.slice(0, 4));
+  const month = Number(value.slice(5, 7));
+  const day = Number(value.slice(8, 10));
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+    return null;
+  }
+  const probe = tehranLocalToUtc(year, month, day, 12, 0, 0);
+  if (Number.isNaN(probe.getTime())) {
+    return null;
+  }
+  return { year, month, day };
 }
 
-function parseDayEnd(value: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+/**
+ * Start of the given Gregorian civil day in Asia/Tehran → UTC.
+ * Filter `from`/`to` values are Gregorian YYYY-MM-DD from JalaliDateField.
+ */
+function parseDayStart(value: string): Date | null {
+  const parts = parseGregorianYmd(value);
+  if (!parts) {
     return null;
   }
-  const date = new Date(`${value}T23:59:59.999Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
+  return tehranDayBoundsUtc(parts.year, parts.month, parts.day).startUtc;
+}
+
+/**
+ * Inclusive end of the given Gregorian civil day in Asia/Tehran → UTC
+ * (23:59:59.999 Tehran), so same-day rows are not dropped.
+ */
+function parseDayEnd(value: string): Date | null {
+  const parts = parseGregorianYmd(value);
+  if (!parts) {
+    return null;
+  }
+  const { endUtc } = tehranDayBoundsUtc(parts.year, parts.month, parts.day);
+  // tehranDayBoundsUtc ends at 23:59:59.000; include the final second fully.
+  return new Date(endUtc.getTime() + 999);
 }
 
 /**
@@ -138,10 +179,11 @@ export function getTehranDayStart(now = new Date()): Date {
     day: "2-digit",
   }).formatToParts(now);
 
-  const year = parts.find((part) => part.type === "year")?.value ?? "1970";
-  const month = parts.find((part) => part.type === "month")?.value ?? "01";
-  const day = parts.find((part) => part.type === "day")?.value ?? "01";
+  const year = Number(parts.find((part) => part.type === "year")?.value ?? "1970");
+  const month = Number(
+    parts.find((part) => part.type === "month")?.value ?? "01",
+  );
+  const day = Number(parts.find((part) => part.type === "day")?.value ?? "01");
 
-  // Approximate Tehran midnight as UTC+03:30 without DST handling complexity.
-  return new Date(`${year}-${month}-${day}T00:00:00.000+03:30`);
+  return tehranLocalToUtc(year, month, day, 0, 0, 0);
 }

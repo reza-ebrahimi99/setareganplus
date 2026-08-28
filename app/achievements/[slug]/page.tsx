@@ -7,6 +7,7 @@ import { PageHero } from "@/components/ui/PageHero";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { loadPublicAchievementBySlug } from "@/lib/website/achievements";
 import { formatJalaliDateShort } from "@/lib/datetime/jalali";
+import { createPageMetadata } from "@/lib/seo/create-page-metadata";
 import { siteConfig } from "@/content/site";
 
 export const revalidate = 120;
@@ -18,11 +19,18 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const achievement = await loadPublicAchievementBySlug(slug);
-  if (!achievement) return { title: "افتخار یافت نشد" };
+  if (!achievement) {
+    return createPageMetadata({
+      title: "افتخار یافت نشد | ستارگان پلاس",
+      description: "افتخار درخواستی در سایت ستارگان پلاس یافت نشد.",
+      path: `/achievements/${slug}`,
+      robots: { index: false, follow: false },
+    });
+  }
 
   const title =
     achievement.seoTitle?.trim() ||
-    `${achievement.title} | افتخارات ستارگان`;
+    `${achievement.title} | افتخارات ستارگان پلاس`;
   const description =
     achievement.seoDescription?.trim() ||
     achievement.shortDescription ||
@@ -30,25 +38,15 @@ export async function generateMetadata({
       achievement.gradeName ? ` · ${achievement.gradeName}` : ""
     }`;
 
-  return {
+  return createPageMetadata({
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      type: "article",
-      ...(achievement.coverUrlLarge || achievement.coverUrl
-        ? {
-            images: [
-              {
-                url: achievement.coverUrlLarge || achievement.coverUrl!,
-                alt: achievement.coverAlt,
-              },
-            ],
-          }
-        : {}),
-    },
-  };
+    path: `/achievements/${slug}`,
+    keywords: [achievement.title, achievement.categoryName, "افتخارات"],
+    openGraphType: "article",
+    imageUrl: achievement.coverUrlLarge || achievement.coverUrl,
+    imageAlt: achievement.coverAlt,
+  });
 }
 
 export default async function AchievementDetailPage({ params }: PageProps) {

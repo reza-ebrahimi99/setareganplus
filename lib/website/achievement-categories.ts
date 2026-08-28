@@ -12,25 +12,79 @@ export const DEFAULT_ACHIEVEMENT_CATEGORIES = [
   { slug: "other", name: "سایر", icon: "spark", color: "#475569" },
 ] as const;
 
+/**
+ * Ensures default categories exist for an org.
+ * Inserts any missing default slugs so existing orgs pick up new defaults
+ * without wiping or renaming admin-customized rows.
+ */
 export async function ensureDefaultAchievementCategories(
   organizationId: string,
 ): Promise<void> {
-  const existing = await prisma.achievementCategory.count({
+  const existing = await prisma.achievementCategory.findMany({
     where: { organizationId, deletedAt: null },
+    select: { slug: true },
   });
-  if (existing > 0) return;
+  const existingSlugs = new Set(existing.map((row) => row.slug));
+  const missing = DEFAULT_ACHIEVEMENT_CATEGORIES.filter(
+    (category) => !existingSlugs.has(category.slug),
+  );
+  if (missing.length === 0) return;
+
+  const maxSort = await prisma.achievementCategory.aggregate({
+    where: { organizationId, deletedAt: null },
+    _max: { displayOrder: true },
+  });
+  let nextSort = (maxSort._max.displayOrder ?? -1) + 1;
 
   await prisma.achievementCategory.createMany({
-    data: DEFAULT_ACHIEVEMENT_CATEGORIES.map((category, index) => ({
-      organizationId,
-      slug: category.slug,
-      name: category.name,
-      icon: category.icon,
-      color: category.color,
-      displayOrder: index,
-      isActive: true,
-    })),
+    data: missing.map((category) => {
+      const defaultIndex = DEFAULT_ACHIEVEMENT_CATEGORIES.findIndex(
+        (item) => item.slug === category.slug,
+      );
+      return {
+        organizationId,
+        slug: category.slug,
+        name: category.name,
+        icon: category.icon,
+        color: category.color,
+        displayOrder: defaultIndex >= 0 ? defaultIndex : nextSort++,
+        isActive: true,
+      };
+    }),
   });
+}
+
+export type AdminAchievementCategoryOption = {
+  id: string;
+  name: string;
+  isActive: boolean;
+  archivedAt: Date | null;
+};
+
+/** Active categories plus the currently assigned one when editing. */
+export function categoriesForAchievementForm(
+  categories: AdminAchievementCategoryOption[],
+  selectedCategoryId?: string,
+): Array<{ id: string; name: string }> {
+  const active = categories.filter(
+    (category) => category.isActive && !category.archivedAt,
+  );
+  const selected = categories.find(
+    (category) => category.id === selectedCategoryId,
+  );
+  if (
+    selected &&
+    !active.some((category) => category.id === selected.id)
+  ) {
+    return [
+      ...active,
+      { id: selected.id, name: `${selected.name} (غیرفعال)` },
+    ];
+  }
+  return active.map((category) => ({
+    id: category.id,
+    name: category.name,
+  }));
 }
 
 export async function listAdminAchievementCategories(organizationId: string) {

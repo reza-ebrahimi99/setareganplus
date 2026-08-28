@@ -5,7 +5,10 @@ import {
   UserStatus,
   type SystemRole as SystemRoleValue,
 } from "@/generated/prisma/enums";
-import { isAdminPortalRole } from "@/lib/auth/constants";
+import {
+  isAdminPortalRole,
+  isPortalOnlyRole,
+} from "@/lib/auth/constants";
 import { hashSessionToken } from "@/lib/auth/crypto";
 import { readAdminSessionToken } from "@/lib/auth/session";
 import { hasPermission, type Permission } from "@/lib/auth/permissions";
@@ -155,6 +158,10 @@ export async function getAdminSession(): Promise<AdminSessionContext | null> {
     !membership.organization.isActive ||
     membership.organization.deletedAt
   ) {
+    return null;
+  }
+
+  if (isPortalOnlyRole(membership.role) && !session.user.isPlatformAdmin) {
     return null;
   }
 

@@ -5,12 +5,14 @@ import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { FormEditor } from "@/components/admin/forms/FormEditor";
 import { FormBookingConnection } from "@/components/admin/forms/FormBookingConnection";
+import { FormEditorWorkspace } from "@/components/admin/forms/FormEditorWorkspace";
 import { FormPosterManager } from "@/components/admin/forms/FormPosterManager";
 import { FormScheduleSettings } from "@/components/admin/forms/FormScheduleSettings";
 import { FormPublishControls } from "@/components/admin/forms/FormPublishControls";
 import { FormShareCard } from "@/components/admin/forms/FormShareCard";
 import { adminBreadcrumbs } from "@/content/admin";
 import { generateFormQrDataUrl } from "@/lib/forms/generate-form-qr";
+import { getFormModeLabel } from "@/lib/forms/form-mode-labels";
 import { getFormPurposeLabel } from "@/lib/forms/form-purpose-labels";
 import { loadFormEditor } from "@/lib/forms/load-form-editor";
 import { parseFormBookingSettings } from "@/lib/booking/form-booking-settings";
@@ -76,6 +78,7 @@ export default async function AdminFormEditorPage({
     draft,
     publishedVersion,
     fields,
+    steps,
     displayStatus,
     headerTitle,
   } = result.data;
@@ -90,7 +93,13 @@ export default async function AdminFormEditorPage({
         opensAt: null,
         registrationDeadline: null,
         capacity: null,
-        settings: { showRemainingCapacity: false, confirmationSmsEnabled: false },
+        settings: {
+          showRemainingCapacity: false,
+          confirmationSmsEnabled: false,
+          adminNotificationSmsEnabled: false,
+          adminSmsRecipients: [],
+          smsTemplateCode: null,
+        },
       };
 
   const sharePoster = isPublished
@@ -124,80 +133,8 @@ export default async function AdminFormEditorPage({
     bookingVersion?.settings,
   );
 
-  return (
+  const formTabContent = (
     <>
-      <AdminPageHeader
-        title={headerTitle}
-        description="مدیریت پرسش‌های پیش‌نویس و وضعیت انتشار فرم"
-        breadcrumbs={[
-          { label: "مدیریت", href: "/admin" },
-          { label: "فرم‌ساز", href: "/admin/forms" },
-          { label: headerTitle },
-        ]}
-        showNotice
-        compact
-      />
-
-      <div className="mb-6 space-y-4 rounded-xl border border-border bg-surface px-4 py-4 sm:px-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0 space-y-1 text-sm">
-            <p className="text-muted">
-              نامک:{" "}
-              <span className="font-mono text-foreground" dir="ltr">
-                {form.slug}
-              </span>
-            </p>
-            <p className="text-muted">
-              هدف:{" "}
-              <span className="text-foreground">
-                {getFormPurposeLabel(form.purpose)}
-              </span>
-            </p>
-            {draft ? (
-              <p className="text-muted">
-                نسخه پیش‌نویس:{" "}
-                <span className="text-foreground">
-                  {toPersianDigits(draft.versionNumber)}
-                </span>
-              </p>
-            ) : null}
-            {publishedVersion ? (
-              <p className="text-muted">
-                نسخه منتشرشده:{" "}
-                <span className="text-foreground">
-                  {toPersianDigits(publishedVersion.versionNumber)}
-                </span>
-              </p>
-            ) : null}
-          </div>
-
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <Link
-              href={`/admin/forms/${form.id}/responses`}
-              className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-background"
-            >
-              پاسخ‌ها
-            </Link>
-            <Link
-              href="/admin/forms"
-              className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-background"
-            >
-              بازگشت به فرم‌ها
-            </Link>
-          </div>
-        </div>
-
-        <FormPublishControls
-          formId={form.id}
-          displayStatus={displayStatus}
-          hasDraft={Boolean(draft)}
-          isPublished={isPublished}
-          draftVersionId={draft?.id ?? null}
-          draftVersionNumber={draft?.versionNumber ?? null}
-          publishedVersionNumber={publishedVersion?.versionNumber ?? null}
-        />
-      </div>
-
       <div className="mb-6">
         <FormShareCard
           formId={form.id}
@@ -273,6 +210,97 @@ export default async function AdminFormEditorPage({
           }
         />
       )}
+    </>
+  );
+
+  return (
+    <>
+      <AdminPageHeader
+        title={headerTitle}
+        description="مدیریت پرسش‌های پیش‌نویس و وضعیت انتشار فرم"
+        breadcrumbs={[
+          { label: "مدیریت", href: "/admin" },
+          { label: "فرم‌ساز", href: "/admin/forms" },
+          { label: headerTitle },
+        ]}
+        showNotice
+        compact
+      />
+
+      <div className="mb-6 space-y-4 rounded-xl border border-border bg-surface px-4 py-4 sm:px-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 space-y-1 text-sm">
+            <p className="text-muted">
+              نامک:{" "}
+              <span className="font-mono text-foreground" dir="ltr">
+                {form.slug}
+              </span>
+            </p>
+            <p className="text-muted">
+              هدف:{" "}
+              <span className="text-foreground">
+                {getFormPurposeLabel(form.purpose)}
+              </span>
+            </p>
+            <p className="text-muted">
+              حالت:{" "}
+              <span className="text-foreground">
+                {getFormModeLabel(form.mode)}
+              </span>
+            </p>
+            {draft ? (
+              <p className="text-muted">
+                نسخه پیش‌نویس:{" "}
+                <span className="text-foreground">
+                  {toPersianDigits(draft.versionNumber)}
+                </span>
+              </p>
+            ) : null}
+            {publishedVersion ? (
+              <p className="text-muted">
+                نسخه منتشرشده:{" "}
+                <span className="text-foreground">
+                  {toPersianDigits(publishedVersion.versionNumber)}
+                </span>
+              </p>
+            ) : null}
+          </div>
+
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Link
+              href={`/admin/forms/${form.id}/responses`}
+              className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-background"
+            >
+              پاسخ‌ها
+            </Link>
+            <Link
+              href="/admin/forms"
+              className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-background"
+            >
+              بازگشت به فرم‌ها
+            </Link>
+          </div>
+        </div>
+
+        <FormPublishControls
+          formId={form.id}
+          displayStatus={displayStatus}
+          hasDraft={Boolean(draft)}
+          isPublished={isPublished}
+          draftVersionId={draft?.id ?? null}
+          draftVersionNumber={draft?.versionNumber ?? null}
+          publishedVersionNumber={publishedVersion?.versionNumber ?? null}
+        />
+      </div>
+
+      <FormEditorWorkspace
+        mode={form.mode}
+        formId={form.id}
+        editable={Boolean(draft)}
+        steps={steps}
+        fields={fields}
+        formContent={formTabContent}
+      />
     </>
   );
 }

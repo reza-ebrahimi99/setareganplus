@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AssessmentTopResultsSection } from "@/components/assessments/AssessmentTopResultsSection";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { loadPublicAssessmentBySlug } from "@/lib/assessment/assessments";
 import { formatJalaliDateShort } from "@/lib/datetime/jalali";
-import { toPersianDigits } from "@/lib/persian";
+import { createPageMetadata } from "@/lib/seo/create-page-metadata";
 import { siteConfig } from "@/content/site";
 
 export const revalidate = 120;
@@ -18,22 +19,27 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const assessment = await loadPublicAssessmentBySlug(slug);
-  if (!assessment) return { title: "آزمون یافت نشد" };
+  if (!assessment) {
+    return createPageMetadata({
+      title: "آزمون یافت نشد | ستارگان پلاس",
+      description: "آزمون درخواستی در سایت ستارگان پلاس یافت نشد.",
+      path: `/assessments/${slug}`,
+      robots: { index: false, follow: false },
+    });
+  }
 
-  const title = `${assessment.title} | آزمون ستارگان`;
+  const title = `${assessment.title} | آزمون ستارگان پلاس`;
   const description =
     assessment.description?.trim() ||
     `${assessment.title} — ${assessment.provider.name} · ${assessment.grade.name}`;
 
-  return {
+  return createPageMetadata({
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      type: "article",
-    },
-  };
+    path: `/assessments/${slug}`,
+    keywords: [assessment.title, assessment.provider.name, "آزمون"],
+    openGraphType: "article",
+  });
 }
 
 export default async function AssessmentDetailPage({ params }: PageProps) {
@@ -116,20 +122,6 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
                     : "—"}
                 </dd>
               </div>
-              <div>
-                <dt className="text-muted">شرکت‌کنندگان</dt>
-                <dd className="font-medium text-primary">
-                  {assessment.participants != null
-                    ? toPersianDigits(assessment.participants)
-                    : "—"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted">نتایج ثبت‌شده</dt>
-                <dd className="font-medium text-primary">
-                  {toPersianDigits(assessment._count.results)}
-                </dd>
-              </div>
             </dl>
 
             <div className="prose prose-slate max-w-none text-base leading-8 text-foreground">
@@ -153,7 +145,7 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
           <aside className="admin-card space-y-3 p-5 sm:p-6">
             <h2 className="text-lg font-bold text-primary">نتایج فردی</h2>
             <p className="text-sm leading-7 text-muted">
-              نتایج فردی دانش‌آموزان به‌صورت عمومی منتشر نمی‌شود و فقط از طریق
+              نتایج کامل دانش‌آموزان به‌صورت عمومی منتشر نمی‌شود و فقط از طریق
               پرتال امن اولیا و دانش‌آموزان قابل مشاهده است.
             </p>
             <Link
@@ -164,6 +156,22 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
             </Link>
           </aside>
         </div>
+
+        {assessment.publishFeaturedResults ? (
+          <div className="mt-10">
+            <AssessmentTopResultsSection
+              groups={assessment.topResultsByGrade}
+              showEmptyState
+              heroTitle={`برترین‌های آزمون ${assessment.provider.name}`}
+              heroSubtitle="افتخارآفرینان ستارگان آینده"
+              updatedAtLabel={
+                assessment.assessmentDate
+                  ? formatJalaliDateShort(assessment.assessmentDate)
+                  : null
+              }
+            />
+          </div>
+        ) : null}
       </Container>
     </SiteShell>
   );
