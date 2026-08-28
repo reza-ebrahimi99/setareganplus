@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-type PortalNavItem = {
+export type PortalNavItem = {
   href: string;
   label: string;
   match?: "exact" | "prefix";

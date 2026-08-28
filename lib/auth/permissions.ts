@@ -39,6 +39,11 @@ export const PERMISSIONS = [
   "commerce.reports.view",
   "portal.student.access",
   "portal.guardian.access",
+  "books.view",
+  "books.settings.manage",
+  "books.catalog.manage",
+  "books.import",
+  "books.export",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
