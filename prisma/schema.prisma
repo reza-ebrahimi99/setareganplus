@@ -50,6 +50,11 @@
 // - Lead extended with owner, score, pipeline/stage, source links.
 // - Domain events processed by crm:automation-worker-once; due items by crm:scheduled-worker-once.
 //
+// Experience Engine (SXP Phase S1):
+// - OrganizationFeatureFlag key "sxp" defaults OFF (no row = off). STAROS_SXP_HARD_OFF=true kills the flag.
+// - ExperienceEngineInbox is a private per-handler cursor. Do not mark DomainEventOutbox processed.
+// - Hub HTTP reads Experience* projections only. Worker may resolve User from booking/form/SMS.
+//
 // FormVersion lifecycle (enforced by application layer; documented here):
 // - DRAFT: editable fields/settings; not public; does not accept submissions.
 // - PUBLISHED: immutable definition; accepts new submissions; ONLY status eligible for
@@ -446,56 +451,61 @@ model Organization {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  branches             Branch[]
-  leads                Lead[]
-  memberships          OrganizationMembership[]
-  auditLogs            AuditLog[]
-  forms                Form[]
-  formVersions         FormVersion[]
-  formFields           FormField[]
-  formSubmissions      FormSubmission[]
-  formAnswers          FormAnswer[]
-  formTemplates        FormTemplate[]
-  formTemplateFields   FormTemplateField[]
-  tags                 Tag[]
-  formTags             FormTag[]
-  formSubmissionTags   FormSubmissionTag[]
-  automationRules      AutomationRule[]
-  domainEvents         DomainEventOutbox[]
-  formAnalyticsEvents  FormAnalyticsEvent[]
-  formAnalyticsDaily   FormAnalyticsDaily[]
-  mediaAssets          MediaAsset[]
-  galleryAlbums        GalleryAlbum[]
-  mediaPlacements      MediaPlacement[]
-  bookingServices      BookingService[]
-  bookingAdvisors      BookingAdvisor[]
-  bookingSlots         BookingSlot[]
-  bookingReservations  BookingReservation[]
-  sitePlacements       SitePlacement[]
-  smsTemplates         SmsTemplate[]
-  smsMessages          SmsMessage[]
-  otpChallenges        OtpChallenge[]
-  crmPipelines         CrmPipeline[]
-  crmPipelineStages    CrmPipelineStage[]
-  crmTasks             CrmTask[]
-  crmActivities        CrmActivity[]
-  crmCallLogs          CrmCallLog[]
-  crmLeadImportReports CrmLeadImportReport[]
-  automationExecutions AutomationExecution[]
-  teamDepartments      TeamDepartment[]
-  teamMembers          TeamMember[]
-  studentGrades          StudentGrade[]
-  studentMajors          StudentMajor[]
-  students               Student[]
-  achievementCategories  AchievementCategory[]
-  achievements           Achievement[]
-  assessmentProviders    AssessmentProvider[]
-  subjects               Subject[]
-  assessments            Assessment[]
-  assessmentResults      AssessmentResult[]
-  studentGuardians           StudentGuardian[]
-  studentGuardianRelations   StudentGuardianRelation[]
-  portalAccountLinks         PortalAccountLink[]
+  branches                  Branch[]
+  leads                     Lead[]
+  memberships               OrganizationMembership[]
+  auditLogs                 AuditLog[]
+  forms                     Form[]
+  formVersions              FormVersion[]
+  formFields                FormField[]
+  formSubmissions           FormSubmission[]
+  formAnswers               FormAnswer[]
+  formTemplates             FormTemplate[]
+  formTemplateFields        FormTemplateField[]
+  tags                      Tag[]
+  formTags                  FormTag[]
+  formSubmissionTags        FormSubmissionTag[]
+  automationRules           AutomationRule[]
+  domainEvents              DomainEventOutbox[]
+  formAnalyticsEvents       FormAnalyticsEvent[]
+  formAnalyticsDaily        FormAnalyticsDaily[]
+  mediaAssets               MediaAsset[]
+  galleryAlbums             GalleryAlbum[]
+  mediaPlacements           MediaPlacement[]
+  bookingServices           BookingService[]
+  bookingAdvisors           BookingAdvisor[]
+  bookingSlots              BookingSlot[]
+  bookingReservations       BookingReservation[]
+  sitePlacements            SitePlacement[]
+  smsTemplates              SmsTemplate[]
+  smsMessages               SmsMessage[]
+  otpChallenges             OtpChallenge[]
+  crmPipelines              CrmPipeline[]
+  crmPipelineStages         CrmPipelineStage[]
+  crmTasks                  CrmTask[]
+  crmActivities             CrmActivity[]
+  crmCallLogs               CrmCallLog[]
+  crmLeadImportReports      CrmLeadImportReport[]
+  automationExecutions      AutomationExecution[]
+  teamDepartments           TeamDepartment[]
+  teamMembers               TeamMember[]
+  studentGrades             StudentGrade[]
+  studentMajors             StudentMajor[]
+  students                  Student[]
+  achievementCategories     AchievementCategory[]
+  achievements              Achievement[]
+  assessmentProviders       AssessmentProvider[]
+  subjects                  Subject[]
+  assessments               Assessment[]
+  assessmentResults         AssessmentResult[]
+  studentGuardians          StudentGuardian[]
+  studentGuardianRelations  StudentGuardianRelation[]
+  portalAccountLinks        PortalAccountLink[]
+  featureFlags              OrganizationFeatureFlag[]
+  experienceProfiles        ExperienceProfile[]
+  experienceEngineInbox     ExperienceEngineInbox[]
+  experienceTimelineEvents  ExperienceTimelineEvent[]
+  experienceWidgetSnapshots ExperienceWidgetSnapshot[]
 
   @@map("organizations")
 }
@@ -552,18 +562,21 @@ model User {
   updatedAt        DateTime   @updatedAt
   deletedAt        DateTime?
 
-  memberships          OrganizationMembership[]
-  auditLogs            AuditLog[]               @relation("AuditLogActor")
-  adminSessions        AdminSession[]
-  mediaAssets          MediaAsset[]             @relation("MediaAssetCreator")
-  bookingAdvisors      BookingAdvisor[]
-  bookingCheckIns      BookingCheckIn[]
-  ownedLeads           Lead[]                   @relation("LeadOwner")
-  assignedCrmTasks     CrmTask[]                @relation("CrmTaskAssignee")
-  createdCrmTasks      CrmTask[]                @relation("CrmTaskCreator")
-  crmActivities        CrmActivity[]            @relation("CrmActivityActor")
-  crmLeadImportReports CrmLeadImportReport[]    @relation("CrmLeadImportActor")
-  portalAccountLinks   PortalAccountLink[]
+  memberships               OrganizationMembership[]
+  auditLogs                 AuditLog[]                 @relation("AuditLogActor")
+  adminSessions             AdminSession[]
+  mediaAssets               MediaAsset[]               @relation("MediaAssetCreator")
+  bookingAdvisors           BookingAdvisor[]
+  bookingCheckIns           BookingCheckIn[]
+  ownedLeads                Lead[]                     @relation("LeadOwner")
+  assignedCrmTasks          CrmTask[]                  @relation("CrmTaskAssignee")
+  createdCrmTasks           CrmTask[]                  @relation("CrmTaskCreator")
+  crmActivities             CrmActivity[]              @relation("CrmActivityActor")
+  crmLeadImportReports      CrmLeadImportReport[]      @relation("CrmLeadImportActor")
+  portalAccountLinks        PortalAccountLink[]
+  experienceProfiles        ExperienceProfile[]
+  experienceTimelineEvents  ExperienceTimelineEvent[]
+  experienceWidgetSnapshots ExperienceWidgetSnapshot[]
 
   @@index([status])
   @@index([deletedAt])
@@ -908,16 +921,16 @@ model MediaAsset {
   updatedAt       DateTime         @updatedAt
   deletedAt       DateTime?
 
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  createdBy    User?         @relation("MediaAssetCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  formPosters              FormVersion[]         @relation("FormVersionPoster")
-  teamPortraits            TeamMember[]          @relation("TeamMemberPortrait")
-  studentPortraits         Student[]             @relation("StudentPortrait")
-  achievementCertificates  Achievement[]         @relation("AchievementCertificate")
-  achievementCovers        Achievement[]         @relation("AchievementCover")
-  galleryAlbumCovers       GalleryAlbum[]        @relation("GalleryAlbumCover")
-  galleryAlbumItems        GalleryAlbumItem[]
-  mediaPlacements          MediaPlacement[]
+  organization            Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdBy               User?              @relation("MediaAssetCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  formPosters             FormVersion[]      @relation("FormVersionPoster")
+  teamPortraits           TeamMember[]       @relation("TeamMemberPortrait")
+  studentPortraits        Student[]          @relation("StudentPortrait")
+  achievementCertificates Achievement[]      @relation("AchievementCertificate")
+  achievementCovers       Achievement[]      @relation("AchievementCover")
+  galleryAlbumCovers      GalleryAlbum[]     @relation("GalleryAlbumCover")
+  galleryAlbumItems       GalleryAlbumItem[]
+  mediaPlacements         MediaPlacement[]
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])
@@ -2091,10 +2104,10 @@ model Student {
   archivedAt       DateTime?
   deletedAt        DateTime?
 
-  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  grade              StudentGrade       @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
-  major              StudentMajor?      @relation(fields: [organizationId, majorId], references: [organizationId, id], onDelete: Restrict)
-  portraitMedia      MediaAsset?        @relation("StudentPortrait", fields: [portraitMediaId], references: [id], onDelete: SetNull)
+  organization       Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  grade              StudentGrade              @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
+  major              StudentMajor?             @relation(fields: [organizationId, majorId], references: [organizationId, id], onDelete: Restrict)
+  portraitMedia      MediaAsset?               @relation("StudentPortrait", fields: [portraitMediaId], references: [id], onDelete: SetNull)
   achievements       Achievement[]
   assessmentResults  AssessmentResult[]
   guardianRelations  StudentGuardianRelation[]
@@ -2126,7 +2139,7 @@ model AchievementCategory {
   archivedAt     DateTime?
   deletedAt      DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   achievements Achievement[]
 
   @@unique([organizationId, slug])
@@ -2207,21 +2220,21 @@ enum PortalAccountType {
 
 /// Parent / legal guardian / authorized family member (portal identity, not public CMS).
 model StudentGuardian {
-  id             String                   @id @default(cuid())
-  organizationId String
-  firstName      String
-  lastName       String
-  fullName       String
-  nationalId     String?
-  mobile         String
+  id               String                   @id @default(cuid())
+  organizationId   String
+  firstName        String
+  lastName         String
+  fullName         String
+  nationalId       String?
+  mobile           String
   normalizedMobile String
   relationshipType GuardianRelationshipType @default(GUARDIAN)
-  isPrimary      Boolean                  @default(false)
-  isActive       Boolean                  @default(true)
-  createdAt      DateTime                 @default(now())
-  updatedAt      DateTime                 @updatedAt
-  archivedAt     DateTime?
-  deletedAt      DateTime?
+  isPrimary        Boolean                  @default(false)
+  isActive         Boolean                  @default(true)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  archivedAt       DateTime?
+  deletedAt        DateTime?
 
   organization Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   relations    StudentGuardianRelation[]
@@ -2235,22 +2248,22 @@ model StudentGuardian {
 }
 
 model StudentGuardianRelation {
-  id                     String                   @id @default(cuid())
-  organizationId         String
-  studentId              String
-  guardianId             String
-  relationshipType       GuardianRelationshipType @default(GUARDIAN)
-  isPrimary              Boolean                  @default(false)
-  canViewAcademicData    Boolean                  @default(true)
-  canViewAchievements    Boolean                  @default(true)
-  canViewCertificates    Boolean                  @default(true)
-  canReceiveNotifications Boolean                 @default(true)
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime                 @updatedAt
-  deletedAt              DateTime?
+  id                      String                   @id @default(cuid())
+  organizationId          String
+  studentId               String
+  guardianId              String
+  relationshipType        GuardianRelationshipType @default(GUARDIAN)
+  isPrimary               Boolean                  @default(false)
+  canViewAcademicData     Boolean                  @default(true)
+  canViewAchievements     Boolean                  @default(true)
+  canViewCertificates     Boolean                  @default(true)
+  canReceiveNotifications Boolean                  @default(true)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  deletedAt               DateTime?
 
-  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  student      Student        @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student      Student         @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
   guardian     StudentGuardian @relation(fields: [organizationId, guardianId], references: [organizationId, id], onDelete: Restrict)
 
   @@unique([organizationId, studentId, guardianId])
@@ -2353,9 +2366,9 @@ model Assessment {
   archivedAt     DateTime?
   deletedAt      DateTime?
 
-  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  provider     AssessmentProvider  @relation(fields: [organizationId, providerId], references: [organizationId, id], onDelete: Restrict)
-  grade        StudentGrade        @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  provider     AssessmentProvider @relation(fields: [organizationId, providerId], references: [organizationId, id], onDelete: Restrict)
+  grade        StudentGrade       @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
   results      AssessmentResult[]
 
   @@unique([organizationId, slug])
@@ -2419,4 +2432,147 @@ model AssessmentSubjectResult {
   @@unique([assessmentResultId, subjectId])
   @@index([subjectId])
   @@map("assessment_subject_results")
+}
+
+// ─── Experience Engine (SXP Phase S1) ────────────────────────────────────────
+// Additive hub projector. Default-off via OrganizationFeatureFlag key "sxp".
+// Inbox is private to the engine; CRM/SMS workers keep their DomainEventOutbox semantics.
+// Timeline is append-only. Widget snapshots are the only Home data source.
+// Do not add SMS_SENT to DomainEventType; SMS uses synthetic inbox keys.
+
+enum ExperienceEngineHandlerName {
+  TIMELINE_APPENDER
+  FEED_CURATOR
+  WIDGET_SNAPSHOTTER
+}
+
+enum ExperienceEngineInboxStatus {
+  PENDING
+  PROCESSED
+  SKIPPED
+  FAILED
+  DEAD_LETTER
+}
+
+enum ExperienceTimelineVisibility {
+  SELF
+  GUARDIANS
+  STAFF
+  SYSTEM_HIDDEN
+}
+
+enum ExperienceWidgetKey {
+  NEXT_ACTION
+  UPCOMING_RESERVATION
+  OPEN_BALANCE
+  LOYALTY_CHIP
+  READY_PICKUP
+  RECENT_FEED
+}
+
+model OrganizationFeatureFlag {
+  id             String   @id @default(cuid())
+  organizationId String
+  key            String
+  enabled        Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, key])
+  @@index([organizationId, enabled])
+  @@map("organization_feature_flags")
+}
+
+model ExperienceProfile {
+  id             String    @id @default(cuid())
+  organizationId String
+  userId         String
+  displayName    String?
+  interests      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, userId])
+  @@unique([organizationId, id])
+  @@index([organizationId, deletedAt])
+  @@index([userId])
+  @@map("experience_profiles")
+}
+
+model ExperienceEngineInbox {
+  id             String                      @id @default(cuid())
+  organizationId String
+  /// DomainEventOutbox.id, or synthetic "sms-message:{SmsMessage.id}".
+  outboxEventId  String
+  handlerName    ExperienceEngineHandlerName
+  status         ExperienceEngineInboxStatus @default(PENDING)
+  attemptCount   Int                         @default(0)
+  lastError      String?
+  processedAt    DateTime?
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, outboxEventId, handlerName])
+  @@index([organizationId, status, createdAt])
+  @@index([handlerName, status, createdAt])
+  @@map("experience_engine_inbox")
+}
+
+model ExperienceTimelineEvent {
+  id             String                       @id @default(cuid())
+  organizationId String
+  userId         String
+  inboxId        String
+  sourceType     String
+  sourceEventId  String
+  eventType      String
+  aggregateType  String
+  aggregateId    String
+  occurredAt     DateTime
+  title          String
+  summary        String?
+  href           String?
+  visibility     ExperienceTimelineVisibility @default(SELF)
+  feedEligible   Boolean                      @default(false)
+  feedRank       Int                          @default(0)
+  payload        Json?
+  createdAt      DateTime                     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, userId, sourceEventId])
+  @@unique([organizationId, id])
+  @@index([organizationId, userId, occurredAt])
+  @@index([organizationId, userId, feedEligible, feedRank, occurredAt])
+  @@index([organizationId, userId, visibility, occurredAt])
+  @@index([organizationId, sourceEventId])
+  @@index([userId, occurredAt])
+  @@map("experience_timeline_events")
+}
+
+model ExperienceWidgetSnapshot {
+  id             String              @id @default(cuid())
+  organizationId String
+  userId         String
+  widgetKey      ExperienceWidgetKey
+  payload        Json
+  refreshedAt    DateTime            @default(now())
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, userId, widgetKey])
+  @@index([organizationId, userId])
+  @@map("experience_widget_snapshots")
 }
