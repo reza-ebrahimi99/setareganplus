@@ -41,6 +41,11 @@ export {
 
 export {
   HIGH_SCHOOL_MAJOR_OPTIONS,
+  listHighSchoolMajorOptionsForForm,
+  type HighSchoolMajorId,
+} from "@/lib/guidance/onboarding-options";
+
+export {
   completeGuidanceCandidateOnboarding,
   validateGuidanceOnboardingInput,
 } from "@/lib/guidance/onboarding";

@@ -2,6 +2,7 @@
 
 /**
  * Guidance Platform — external candidate onboarding form.
+ * Client-only: serializable props + Server Action submit. No Prisma / server modules.
  */
 
 import { useActionState, useState, type FormEvent } from "react";
@@ -10,22 +11,34 @@ import {
   submitGuidanceOnboardingAction,
   type GuidanceOnboardingFormState,
 } from "@/app/portal/student/services/guidance/onboarding/actions";
-import { HIGH_SCHOOL_MAJOR_OPTIONS } from "@/lib/guidance/onboarding";
-import { IRAN_PROVINCES } from "@/lib/registration/iran-locations";
 
 const fieldClass =
   "mt-1.5 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20";
 
 const labelClass = "block text-sm font-medium text-foreground";
 
+export type GuidanceOnboardingFormOption = {
+  id: string;
+  label: string;
+};
+
 type GuidanceOnboardingFormProps = {
   mobile: string;
+  provinces: readonly string[];
+  majors: readonly GuidanceOnboardingFormOption[];
 };
 
 const initial: GuidanceOnboardingFormState = {};
 
-export function GuidanceOnboardingForm({ mobile }: GuidanceOnboardingFormProps) {
-  const [state, action] = useActionState(submitGuidanceOnboardingAction, initial);
+export function GuidanceOnboardingForm({
+  mobile,
+  provinces,
+  majors,
+}: GuidanceOnboardingFormProps) {
+  const [state, action] = useActionState(
+    submitGuidanceOnboardingAction,
+    initial,
+  );
   const [clientError, setClientError] = useState<string | null>(null);
 
   function validate(event: FormEvent<HTMLFormElement>) {
@@ -44,7 +57,9 @@ export function GuidanceOnboardingForm({ mobile }: GuidanceOnboardingFormProps) 
     for (const name of required) {
       const el = form.elements.namedItem(name);
       const value =
-        el && "value" in el && typeof el.value === "string" ? el.value.trim() : "";
+        el && "value" in el && typeof el.value === "string"
+          ? el.value.trim()
+          : "";
       if (!value) {
         event.preventDefault();
         setClientError("لطفاً همه فیلدهای الزامی را تکمیل کنید.");
@@ -68,7 +83,10 @@ export function GuidanceOnboardingForm({ mobile }: GuidanceOnboardingFormProps) 
       <input type="hidden" name="mobile" value={mobile} />
 
       {(clientError || state.error) && (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+        <p
+          className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+          role="alert"
+        >
           {clientError ?? state.error}
         </p>
       )}
@@ -157,7 +175,7 @@ export function GuidanceOnboardingForm({ mobile }: GuidanceOnboardingFormProps) 
             <option value="" disabled>
               انتخاب استان
             </option>
-            {IRAN_PROVINCES.map((province) => (
+            {provinces.map((province) => (
               <option key={province} value={province}>
                 {province}
               </option>
@@ -199,7 +217,9 @@ export function GuidanceOnboardingForm({ mobile }: GuidanceOnboardingFormProps) 
             aria-invalid={Boolean(fieldErrors.graduationYear)}
           />
           {fieldErrors.graduationYear ? (
-            <p className="mt-1 text-xs text-red-600">{fieldErrors.graduationYear}</p>
+            <p className="mt-1 text-xs text-red-600">
+              {fieldErrors.graduationYear}
+            </p>
           ) : null}
         </div>
         <div>
@@ -216,14 +236,16 @@ export function GuidanceOnboardingForm({ mobile }: GuidanceOnboardingFormProps) 
             <option value="" disabled>
               انتخاب رشته
             </option>
-            {HIGH_SCHOOL_MAJOR_OPTIONS.map((major) => (
+            {majors.map((major) => (
               <option key={major.id} value={major.id}>
                 {major.label}
               </option>
             ))}
           </select>
           {fieldErrors.highSchoolMajor ? (
-            <p className="mt-1 text-xs text-red-600">{fieldErrors.highSchoolMajor}</p>
+            <p className="mt-1 text-xs text-red-600">
+              {fieldErrors.highSchoolMajor}
+            </p>
           ) : null}
         </div>
       </div>
@@ -271,7 +293,9 @@ export function GuidanceOnboardingForm({ mobile }: GuidanceOnboardingFormProps) 
             aria-invalid={Boolean(fieldErrors.parentMobile)}
           />
           {fieldErrors.parentMobile ? (
-            <p className="mt-1 text-xs text-red-600">{fieldErrors.parentMobile}</p>
+            <p className="mt-1 text-xs text-red-600">
+              {fieldErrors.parentMobile}
+            </p>
           ) : null}
         </div>
       </div>
