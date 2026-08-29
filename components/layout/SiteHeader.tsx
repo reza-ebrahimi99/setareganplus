@@ -7,12 +7,14 @@ import { Container } from "@/components/ui/Container";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { heroMedia } from "@/content/home";
 import { headerCtas } from "@/content/public-nav";
+import type { PublicNavItem } from "@/content/public-nav";
 import { siteConfig } from "@/content/site";
 import { hasMediaUrl } from "@/lib/media";
 import { MainNav } from "./MainNav";
 
 type SiteHeaderProps = {
   activePath?: string;
+  navItems?: readonly PublicNavItem[];
 };
 
 const headerTagline = "اکوسیستم آموزشی ستارگان";
@@ -58,7 +60,7 @@ function HeaderLogo({
   );
 }
 
-export function SiteHeader({ activePath }: SiteHeaderProps) {
+export function SiteHeader({ activePath, navItems }: SiteHeaderProps) {
   const isHome = activePath === "/";
   const [scrolled, setScrolled] = useState(false);
 
@@ -146,6 +148,7 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
           <MainNav
             activePath={activePath}
             overHero={overHero}
+            items={navItems}
             mobileExtra={
               <div className="flex flex-col gap-2">
                 <Button href={headerCtas.primary.href} variant="secondary">

@@ -15,6 +15,8 @@ const FORMS_SUBDIR = "forms";
 const TEAM_SUBDIR = "team";
 /** Registration FILE_UPLOAD documents — never via public /media URLs. */
 const PRIVATE_FORM_UPLOAD_SUBDIR = "private/form-uploads";
+/** Guidance ERP private documents (final grades, etc.) — never public /media. */
+const PRIVATE_GUIDANCE_UPLOAD_SUBDIR = "private/guidance-uploads";
 
 export function getMediaRoot(): string {
   const configured = process.env.STAROS_MEDIA_ROOT?.trim();
@@ -99,6 +101,13 @@ export function generateTeamStorageKey(extension: string): string {
 /** Registration document uploads — stored under private/ (not public /media). */
 export function generatePrivateFormUploadStorageKey(extension: string): string {
   return buildRandomStorageKey(PRIVATE_FORM_UPLOAD_SUBDIR, extension);
+}
+
+/** Guidance document uploads — stored under private/ (not public /media). */
+export function generatePrivateGuidanceUploadStorageKey(
+  extension: string,
+): string {
+  return buildRandomStorageKey(PRIVATE_GUIDANCE_UPLOAD_SUBDIR, extension);
 }
 
 export function sha256Hex(buffer: Buffer): string {
