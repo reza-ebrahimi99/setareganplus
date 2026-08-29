@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { AiAssistantHost } from "@/components/ai/AiAssistantHost";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
@@ -62,6 +62,12 @@ const vazirmatn = localFont({
   display: "swap",
   fallback: ["Vazirmatn", "Tahoma", "Segoe UI", "sans-serif"],
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_ORIGIN),
