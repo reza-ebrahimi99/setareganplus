@@ -289,6 +289,10 @@ enum AuditAction {
   BOOKS_CATALOG_SKU_UPDATED
   BOOKS_CATALOG_PRICE_CHANGED
   BOOKS_CATALOG_IMPORTED
+  GUIDANCE_PLAN_CREATED
+  GUIDANCE_DOCUMENT_UPLOADED
+  GUIDANCE_DOCUMENT_REPLACED
+  GUIDANCE_STATUS_CHANGED
 }
 
 // ─── Form builder (Sprint 3.4A) ─────────────────────────────────────────────
@@ -593,6 +597,8 @@ model Organization {
   bookSkuTags                          BookSkuTag[]
   bookImportJobs                       BookImportJob[]
   bookImportRowResults                 BookImportRowResult[]
+  guidancePlans                        GuidancePlan[]
+  guidanceDocuments                    GuidanceDocument[]
 
   @@map("organizations")
 }
@@ -688,6 +694,8 @@ model User {
   experienceWidgetSnapshots   ExperienceWidgetSnapshot[]
   bookSkuPricesCreated        BookSkuPrice[]           @relation("BookSkuPriceCreator")
   bookImportJobsCreated       BookImportJob[]          @relation("BookImportJobCreator")
+  guidancePlans               GuidancePlan[]           @relation("GuidancePlanUser")
+  guidanceDocumentsVerified   GuidanceDocument[]       @relation("GuidanceDocumentVerifier")
 
   @@index([status])
   @@index([deletedAt])
@@ -1319,6 +1327,7 @@ model MediaAsset {
   commerceItemPrimaryImages    CommerceItem[]                @relation("CommerceItemPrimaryImage")
   bookAgencyProfileLogos       BookAgencyProfile[]           @relation("BookAgencyProfileLogo")
   bookImportJobReports         BookImportJob[]               @relation("BookImportJobReport")
+  guidanceDocuments            GuidanceDocument[]
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])
@@ -2711,6 +2720,7 @@ model Student {
   assessmentResults  AssessmentResult[]
   guardianRelations  StudentGuardianRelation[]
   portalAccountLinks PortalAccountLink[]
+  guidancePlans      GuidancePlan[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, kanoonStudentId])
@@ -4592,4 +4602,99 @@ model BookImportRowResult {
   @@unique([organizationId, jobId, rowNumber])
   @@index([organizationId, jobId, action])
   @@map("book_import_row_results")
+}
+
+// ─── Guidance ERP (Phase 0) ───────────────────────────────────────────────────
+// سامانه جامع انتخاب رشته — minimal case + versioned documents only.
+// Reuses Organization, User, Student, MediaAsset, AuditLog. No rank/prefs/AI/pay.
+
+enum GuidancePlanStatus {
+  PRE_REGISTERED
+  INTAKE_INCOMPLETE
+  FINAL_GRADES_UPLOADED
+}
+
+enum GuidanceExamGroup {
+  MATHEMATICS
+  EXPERIMENTAL_SCIENCES
+  HUMANITIES
+  ARTS
+  LANGUAGES
+}
+
+enum GuidanceDocumentType {
+  FINAL_GRADES
+}
+
+enum GuidanceDocumentVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+/// Guidance case (SoR). External surfaces must use publicId — never expose id.
+model GuidancePlan {
+  id             String             @id @default(cuid())
+  /// Immutable public identifier for portal URLs, APIs, and integrations.
+  publicId       String             @default(cuid())
+  organizationId String
+  studentId      String
+  userId         String
+  status         GuidancePlanStatus @default(PRE_REGISTERED)
+  examGroup      GuidanceExamGroup
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  // Composite FK: student must belong to the same organization.
+  student      Student             @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  user         User                @relation("GuidancePlanUser", fields: [userId], references: [id], onDelete: Restrict)
+  documents    GuidanceDocument[]
+
+  @@unique([organizationId, publicId])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, deletedAt])
+  @@index([organizationId, studentId, deletedAt])
+  @@index([organizationId, userId, deletedAt])
+  @@index([userId])
+  @@map("guidance_plans")
+}
+
+/// Versioned guidance uploads. Blob lives on MediaAsset; row holds type, version, verification.
+model GuidanceDocument {
+  id                 String                             @id @default(cuid())
+  organizationId     String
+  planId             String
+  mediaAssetId       String
+  documentType       GuidanceDocumentType
+  /// Monotonic per plan + documentType (1, 2, …). Replacements append a new version.
+  versionNumber      Int
+  /// Student UX reads the latest active version only; history remains for audit.
+  isLatest           Boolean                            @default(true)
+  /// Snapshot at upload (also on MediaAsset) for stable audit even if asset metadata changes.
+  originalFilename   String
+  mimeType           String
+  fileSizeBytes      Int
+  checksum           String
+  verificationStatus GuidanceDocumentVerificationStatus @default(PENDING)
+  verifiedByUserId   String?
+  verifiedAt         DateTime?
+  createdAt          DateTime                           @default(now())
+  updatedAt          DateTime                           @updatedAt
+  deletedAt          DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  plan         GuidancePlan @relation(fields: [organizationId, planId], references: [organizationId, id], onDelete: Restrict)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+  verifiedBy   User?        @relation("GuidanceDocumentVerifier", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, planId, documentType, versionNumber])
+  @@unique([organizationId, id])
+  @@index([organizationId, planId, documentType, isLatest])
+  @@index([organizationId, verificationStatus])
+  @@index([mediaAssetId])
+  @@index([organizationId, deletedAt])
+  @@index([verifiedByUserId])
+  @@map("guidance_documents")
 }
