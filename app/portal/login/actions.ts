@@ -5,6 +5,13 @@ import { AuditAction, OtpPurpose } from "@/generated/prisma/enums";
 import { readSessionRequestMetadata } from "@/lib/auth/session";
 import { consumeOtp, requestOtp, verifyOtp } from "@/lib/communication/otp";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
+import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
+import {
+  GUIDANCE_ONBOARDING_PATH,
+  candidateNeedsGuidanceOnboarding,
+  provisionExternalGuidanceCandidate,
+} from "@/lib/guidance/external-candidate";
+import { getPublicOrganizationBySlug } from "@/lib/organizations/get-current-organization";
 import { prisma } from "@/lib/prisma";
 import { PORTAL_NO_ACCESS_MESSAGE } from "@/lib/portal/auth";
 import { findActivePortalAccessByMobile } from "@/lib/portal/auth/portal-login";
@@ -13,8 +20,7 @@ import {
   setPortalSessionCookie,
 } from "@/lib/portal/auth/session";
 
-const GENERIC_REQUEST =
-  "اگر حساب فعالی برای این شماره وجود داشته باشد، کد ورود ارسال شده است.";
+const GENERIC_REQUEST = "کد ورود به شماره موبایل شما ارسال شد.";
 const GENERIC_VERIFY = "کد ورود نامعتبر یا منقضی است.";
 
 export type PortalLoginState = {
@@ -29,6 +35,10 @@ function field(formData: FormData, key: string): string {
   return typeof item === "string" ? item.trim() : "";
 }
 
+/**
+ * Always request OTP for any valid mobile (existing portal users and
+ * new external Guidance candidates). Never silently skip SMS.
+ */
 export async function requestPortalOtpAction(
   _state: PortalLoginState,
   formData: FormData,
@@ -39,24 +49,32 @@ export async function requestPortalOtpAction(
   }
 
   const access = await findActivePortalAccessByMobile(parsed.normalized);
-  if (access) {
-    const requested = await requestOtp({
-      organizationId: access.organizationId,
-      mobile: parsed.normalized,
-      purpose: OtpPurpose.LOGIN,
-      idempotencyKey: `portal-login:${access.userId}:${Math.floor(Date.now() / 60_000)}`,
-    });
-    if (requested.ok) {
-      await prisma.auditLog.create({
-        data: {
-          organizationId: access.organizationId,
-          actorUserId: access.userId,
-          action: AuditAction.OTP_REQUESTED,
-          entityType: "OtpChallenge",
-          entityId: requested.challengeId,
+  const organizationId =
+    access?.organizationId ??
+    (await getPublicOrganizationBySlug()).id;
+
+  const requested = await requestOtp({
+    organizationId,
+    mobile: parsed.normalized,
+    purpose: OtpPurpose.LOGIN,
+    idempotencyKey: access
+      ? `portal-login:${access.userId}:${Math.floor(Date.now() / 60_000)}`
+      : `portal-login-external:${parsed.normalized}:${Math.floor(Date.now() / 60_000)}`,
+  });
+
+  if (requested.ok) {
+    await prisma.auditLog.create({
+      data: {
+        organizationId,
+        actorUserId: access?.userId ?? null,
+        action: AuditAction.OTP_REQUESTED,
+        entityType: "OtpChallenge",
+        entityId: requested.challengeId,
+        metadata: {
+          flow: access ? "portal-login" : "portal-external-candidate",
         },
-      });
-    }
+      },
+    });
   }
 
   return {
@@ -66,6 +84,38 @@ export async function requestPortalOtpAction(
   };
 }
 
+async function resolvePostLoginRedirect(params: {
+  organizationId: string;
+  userId: string;
+}): Promise<string> {
+  const link = await prisma.portalAccountLink.findFirst({
+    where: {
+      organizationId: params.organizationId,
+      userId: params.userId,
+      deletedAt: null,
+      isActive: true,
+      studentId: { not: null },
+    },
+    orderBy: { createdAt: "asc" },
+    select: { studentId: true },
+  });
+  if (!link?.studentId) {
+    return "/portal";
+  }
+
+  const needs = await candidateNeedsGuidanceOnboarding({
+    organizationId: params.organizationId,
+    userId: params.userId,
+    studentId: link.studentId,
+  });
+  return needs ? GUIDANCE_ONBOARDING_PATH : "/portal";
+}
+
+/**
+ * Verify OTP. Existing portal users log in normally.
+ * Unknown mobiles (Guidance enabled) become external candidates and
+ * are redirected to Guidance onboarding.
+ */
 export async function verifyPortalOtpAction(
   _state: PortalLoginState,
   formData: FormData,
@@ -81,15 +131,21 @@ export async function verifyPortalOtpAction(
   }
 
   const access = await findActivePortalAccessByMobile(parsed.normalized);
+  const publicOrganization = await getPublicOrganizationBySlug();
+  const organizationId = access?.organizationId ?? publicOrganization.id;
+
   if (!access) {
-    return {
-      phase: "mobile",
-      error: PORTAL_NO_ACCESS_MESSAGE,
-    };
+    const guidanceOn = await isGuidanceEnabled(organizationId);
+    if (!guidanceOn) {
+      return {
+        phase: "mobile",
+        error: PORTAL_NO_ACCESS_MESSAGE,
+      };
+    }
   }
 
   const verified = await verifyOtp({
-    organizationId: access.organizationId,
+    organizationId,
     mobile: parsed.normalized,
     code,
     purpose: OtpPurpose.LOGIN,
@@ -99,7 +155,7 @@ export async function verifyPortalOtpAction(
   }
 
   const consumed = await consumeOtp({
-    organizationId: access.organizationId,
+    organizationId,
     challengeId: verified.challengeId,
   });
   if (!consumed.ok) {
@@ -107,30 +163,64 @@ export async function verifyPortalOtpAction(
   }
 
   const requestMetadata = await readSessionRequestMetadata();
+
+  let userId: string;
+  let membershipId: string;
+  let redirectPath = "/portal";
+
+  if (access) {
+    userId = access.userId;
+    membershipId = access.membershipId;
+    redirectPath = await resolvePostLoginRedirect({
+      organizationId: access.organizationId,
+      userId: access.userId,
+    });
+  } else {
+    const provisioned = await provisionExternalGuidanceCandidate({
+      organizationId,
+      normalizedMobile: parsed.normalized,
+      ipAddress: requestMetadata.ipAddress,
+      userAgent: requestMetadata.userAgent,
+    });
+    if (!provisioned.ok) {
+      return {
+        phase: "otp",
+        error: provisioned.error,
+        mobile: parsed.normalized,
+      };
+    }
+    userId = provisioned.userId;
+    membershipId = provisioned.membershipId;
+    redirectPath = GUIDANCE_ONBOARDING_PATH;
+  }
+
   const { token, expiresAt } = await createPortalSession({
-    userId: access.userId,
-    organizationMembershipId: access.membershipId,
+    userId,
+    organizationMembershipId: membershipId,
     ...requestMetadata,
   });
 
   const now = new Date();
   await prisma.$transaction([
     prisma.user.update({
-      where: { id: access.userId },
+      where: { id: userId },
       data: { lastLoginAt: now, mobileVerifiedAt: now },
     }),
     prisma.auditLog.create({
       data: {
-        organizationId: access.organizationId,
-        actorUserId: access.userId,
+        organizationId,
+        actorUserId: userId,
         action: AuditAction.LOGIN_SUCCESS,
         entityType: "PortalSession",
+        metadata: {
+          flow: access ? "portal-login" : "portal-external-candidate",
+        },
       },
     }),
     prisma.auditLog.create({
       data: {
-        organizationId: access.organizationId,
-        actorUserId: access.userId,
+        organizationId,
+        actorUserId: userId,
         action: AuditAction.OTP_VERIFIED,
         entityType: "OtpChallenge",
         entityId: verified.challengeId,
@@ -139,5 +229,5 @@ export async function verifyPortalOtpAction(
   ]);
 
   await setPortalSessionCookie(token, expiresAt);
-  redirect("/portal");
+  redirect(redirectPath);
 }
