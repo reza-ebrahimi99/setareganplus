@@ -587,19 +587,13 @@ export function buildAnalysisPresentationModel(
     checklist: { items: checklistItems },
     insights: {
       items: [],
-      empty: {
-        title: "بینش‌ها به‌زودی",
-        description:
-          "رتبه تخمینی، احتمال قبولی، توضیح هوشمند و تناسب رشته — بدون بازطراحی صفحه، اینجا قرار می‌گیرند. فعلاً خبری از داده مصنوعی نیست.",
+        empty: {
+          title: "بینش‌ها به‌زودی",
+          description:
+            "پس از بررسی مشاور، خلاصه قاعده‌محور پرونده اینجا نمایش داده می‌شود. فعلاً داده‌ای ثبت نشده است.",
+        },
+        futureSlots: [],
       },
-      futureSlots: [
-        "rank_estimation",
-        "probability",
-        "ai_explanation",
-        "quota_analysis",
-        "university_fit",
-      ],
-    },
     recommendations,
   };
 }

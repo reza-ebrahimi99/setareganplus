@@ -332,13 +332,7 @@ export function buildStudentProfilePresentationModel(input: {
       statusLabel: `${profileHealthLabel(health)} · ${toPersianDigits(completionPercent)}٪`,
     },
     returnHref: GUIDANCE_HOME,
-    futureAiSlots: [
-      "career_advisor",
-      "university_matching",
-      "scholarship_matching",
-      "counselor_insights",
-      "academic_risk",
-    ],
+    futureAiSlots: [],
   };
 }
 

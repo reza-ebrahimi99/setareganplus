@@ -343,7 +343,7 @@ export function InterestDiscoveryScreen({ model }: InterestDiscoveryScreenProps)
           <ul className="interest-panel__list">
             <li>بدون عجله و بدون صفحه شلوغ</li>
             <li>ذخیره خودکار پیش‌نویس</li>
-            <li>نتایج معماری‌شده — بدون هوش مصنوعی جعلی</li>
+            <li>نتایج پس از تکمیل، برای بررسی مشاور آماده می‌شود</li>
           </ul>
           <button
             type="button"
@@ -532,11 +532,6 @@ function InterestProfileArchitecture({
           </article>
         ))}
       </div>
-      <ul className="interest-frameworks" aria-label="چارچوب‌های آینده">
-        {model.futureFrameworks.map((fw) => (
-          <li key={fw}>{fw}</li>
-        ))}
-      </ul>
     </div>
   );
 }

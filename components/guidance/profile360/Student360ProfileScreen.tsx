@@ -394,19 +394,6 @@ export function Student360ProfileScreen({ model }: Student360ProfileScreenProps)
           <SectionEditor key={section.id} section={section} onSaved={refresh} />
         ))}
       </div>
-
-      <section className="profile360-ai" aria-labelledby="profile-ai">
-        <h2 id="profile-ai">نقاط درج آینده</h2>
-        <p>
-          مشاور شغلی، تطبیق دانشگاه، بورسیه، بینش مشاور و ریسک تحصیلی — بدون
-          پیاده‌سازی هوش مصنوعی در این فاز.
-        </p>
-        <ul className="profile360-ai__slots">
-          {model.futureAiSlots.map((slot) => (
-            <li key={slot}>{slot}</li>
-          ))}
-        </ul>
-      </section>
     </div>
   );
 }

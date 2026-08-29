@@ -66,14 +66,13 @@ export function buildInterestProfileArchitecture(
       emptyDescription: empty,
     },
     futureAiPlaceholder: {
-      id: "future-ai",
-      title: "مشاور هوشمند آینده",
-      description:
-        "جایگاه RIASEC، Holland، Big Five و تطبیق دانشگاه — بدون بازطراحی.",
+      id: "future-insights",
+      title: "بینش مشاور",
+      description: "پس از بررسی مشاور، نکات تخصصی اینجا می‌آید.",
       items: [],
-      emptyTitle: "بدون هوش مصنوعی جعلی",
+      emptyTitle: "در انتظار بررسی مشاور",
       emptyDescription:
-        "این کارت عمداً خالی است تا داده واقعی جایگزین شود؛ نه متن ساختگی.",
+        "این بخش پس از تکمیل پرونده و بررسی مشاور پر می‌شود — بدون داده ساختگی.",
     },
   };
 }
