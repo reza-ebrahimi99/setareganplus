@@ -192,8 +192,8 @@ export const StudentRecommendationEngine = {
         title: "آزمون رغبت را انجام بده",
         description: "این قدم مسیر علایق تحصیلی‌ات را روشن‌تر می‌کند.",
         action: {
-          href: "/portal/student/services/guidance",
-          label: "مشاهده قدم",
+          href: "/portal/student/services/guidance?view=interest",
+          label: "شروع آزمون رغبت",
         },
         status: "needs_attention",
         rank: 35,

@@ -24,14 +24,20 @@ export type GuidanceTimelineStep = GuidanceIntakeChecklistItem & {
   href: string | null;
 };
 
+export type GuidanceTimelineOptions = {
+  interestAssessmentStatus?: "not_started" | "in_progress" | "completed" | null;
+};
+
 export function buildGuidancePortalTimeline(
   plan: GuidancePortalPlanSummary,
+  options: GuidanceTimelineOptions = {},
 ): GuidanceTimelineStep[] {
   const checklist = deriveGuidanceIntakeChecklist({
     planStatus: plan.status,
     hasFinalGradesDocument: Boolean(plan.latestFinalGrades),
     finalGradesVerificationPending:
       plan.latestFinalGrades?.verificationStatus === "PENDING",
+    interestAssessmentStatus: options.interestAssessmentStatus,
   });
 
   return checklist.map((item) => ({
@@ -41,6 +47,11 @@ export function buildGuidancePortalTimeline(
       item.key === "FINAL_GRADES" &&
       (item.state === "active" || item.state === "pending_review")
         ? "/portal/student/services/guidance/grades"
-        : null,
+        : item.key === "INITIAL_ANALYSIS" && item.state === "complete"
+          ? "/portal/student/services/guidance"
+          : item.key === "INTEREST_ASSESSMENT" &&
+              (item.state === "active" || item.state === "complete")
+            ? "/portal/student/services/guidance?view=interest"
+            : null,
   }));
 }
