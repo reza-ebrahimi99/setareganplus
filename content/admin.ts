@@ -171,6 +171,13 @@ export const adminNavGroups: ReadonlyArray<{
     label: "آموزش",
     items: [
       { label: "دانش‌آموزان", icon: "students", enabled: false },
+      {
+        href: "/admin/guidance",
+        label: "بررسی هدایت تحصیلی",
+        icon: "students",
+        enabled: true,
+        permission: "guidance.view",
+      },
       { label: "کلاس‌ها و دوره‌ها", icon: "courses", enabled: false },
       { label: "آزمون‌ها", icon: "exams", enabled: false },
     ],
@@ -363,6 +370,10 @@ export const adminBreadcrumbs = {
   dashboard: [
     { label: "مدیریت", href: "/admin" },
     { label: "نمای کلی" },
+  ],
+  guidance: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "بررسی هدایت تحصیلی", href: "/admin/guidance" },
   ],
   admissions: [
     { label: "مدیریت", href: "/admin" },

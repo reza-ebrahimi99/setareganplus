@@ -52,7 +52,7 @@ const STEP_COPY: Record<
   },
   PROFILE_COMPLETION: {
     description: "هویت دیجیتال ۳۶۰ درجه را بخش‌به‌بخش کامل کن.",
-    outcome: "پرونده آماده مشاوره",
+    outcome: "پرونده آماده بررسی",
     icon: "book",
     accent: "teal",
   },

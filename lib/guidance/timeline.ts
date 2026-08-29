@@ -15,7 +15,7 @@ const TIMELINE_LABELS: Record<GuidanceIntakeChecklistKey, string> = {
   FINAL_GRADES: "بارگذاری کارنامه",
   INITIAL_ANALYSIS: "تحلیل اولیه",
   INTEREST_ASSESSMENT: "آزمون رغبت",
-  PROFILE_COMPLETION: "تکمیل پروفایل",
+  PROFILE_COMPLETION: "پرونده آماده بررسی",
   CONSULTATION_BOOKING: "رزرو جلسه",
 };
 

@@ -234,7 +234,7 @@ export function GuidanceAnalysisScreen({ model }: GuidanceAnalysisScreenProps) {
             بینش‌ها
           </h2>
           <p className="portal-section-support">
-            جایگاه آیندهٔ رتبه، احتمال، توضیح هوشمند و تناسب دانشگاه.
+            خلاصه قاعده‌محور پس از بررسی مشاور.
           </p>
         </div>
         {insights.items.length === 0 ? (
@@ -249,13 +249,6 @@ export function GuidanceAnalysisScreen({ model }: GuidanceAnalysisScreenProps) {
             ))}
           </div>
         )}
-        <ul className="guidance-analysis-slots" aria-label="نقاط درج آینده">
-          {insights.futureSlots.map((slot) => (
-            <li key={slot} className="guidance-analysis-slots__item">
-              {slot}
-            </li>
-          ))}
-        </ul>
       </section>
 
       {/* 7. Recommendations — rule-based */}
@@ -265,7 +258,7 @@ export function GuidanceAnalysisScreen({ model }: GuidanceAnalysisScreenProps) {
             پیشنهادها
           </h2>
           <p className="portal-section-support">
-            قاعده‌محور — بدون هوش مصنوعی.
+            قاعده‌محور — گام بعدی مسیر.
           </p>
         </div>
         {recommendations.primary ? (

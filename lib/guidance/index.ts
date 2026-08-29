@@ -70,6 +70,13 @@ export {
   type StudentProfilePresentationModel,
 } from "@/lib/guidance/profile360";
 
+export {
+  listCounselorQueue,
+  loadCounselorCasePresentation,
+  type CounselorCasePresentation,
+  type CounselorQueueItem,
+} from "@/lib/guidance/counselor";
+
 export { GUIDANCE_STUDENT_PORTAL_NAV } from "@/lib/guidance/portal-nav";
 
 export {

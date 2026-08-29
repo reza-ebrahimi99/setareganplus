@@ -354,14 +354,7 @@ export function buildInterestAssessmentPresentationModel(input: {
     returnHref: GUIDANCE_HOME,
     profile,
     widget,
-    futureFrameworks: [
-      "RIASEC",
-      "Holland Codes",
-      "Big Five",
-      "Multiple Intelligence",
-      "AI Career Advisor",
-      "University Matching",
-    ],
+    futureFrameworks: [],
   };
 }
 
