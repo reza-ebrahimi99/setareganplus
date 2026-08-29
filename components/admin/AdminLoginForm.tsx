@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, type FormEvent } from "react";
+import { OtpSubmitButton } from "@/components/auth/OtpSubmitButton";
 import {
   loginAdminAction,
   requestAdminOtpLoginAction,
@@ -34,11 +35,11 @@ export function AdminLoginForm({ nextPath }: { nextPath?: string }) {
     loginAdminAction,
     passwordInitial,
   );
-  const [otpRequestState, otpRequestAction, otpRequesting] = useActionState(
+  const [otpRequestState, otpRequestAction] = useActionState(
     requestAdminOtpLoginAction,
     otpInitial,
   );
-  const [otpVerifyState, otpVerifyAction, otpVerifying] = useActionState(
+  const [otpVerifyState, otpVerifyAction] = useActionState(
     verifyAdminOtpLoginAction,
     otpInitial,
   );
@@ -50,8 +51,37 @@ export function AdminLoginForm({ nextPath }: { nextPath?: string }) {
   );
   const [resetPasswordState, resetPasswordAction, resetPasswordPending] =
     useActionState(resetAdminPasswordAction, resetInitial);
+  const [otpClientError, setOtpClientError] = useState<string | null>(null);
 
   const otpState = otpVerifyState.error ? otpVerifyState : otpRequestState;
+
+  function validateOtpMobileSubmit(event: FormEvent<HTMLFormElement>) {
+    const form = event.currentTarget;
+    const input = form.elements.namedItem("mobile");
+    const value =
+      input && input instanceof HTMLInputElement ? input.value.trim() : "";
+    if (!value) {
+      event.preventDefault();
+      setOtpClientError("شماره موبایل را وارد کنید.");
+      if (input instanceof HTMLInputElement) input.focus();
+      return;
+    }
+    setOtpClientError(null);
+  }
+
+  function validateOtpCodeSubmit(event: FormEvent<HTMLFormElement>) {
+    const form = event.currentTarget;
+    const input = form.elements.namedItem("code");
+    const value =
+      input && input instanceof HTMLInputElement ? input.value.trim() : "";
+    if (!value) {
+      event.preventDefault();
+      setOtpClientError("کد یک‌بارمصرف را وارد کنید.");
+      if (input instanceof HTMLInputElement) input.focus();
+      return;
+    }
+    setOtpClientError(null);
+  }
 
   let resetState: AdminPasswordResetState = resetRequestState;
   if (resetVerifyState.phase === "reset" || resetVerifyState.error) {
@@ -67,8 +97,11 @@ export function AdminLoginForm({ nextPath }: { nextPath?: string }) {
       resetPasswordState.phase === "mobile" &&
       !resetPasswordState.error
     ) {
-      setResetSuccess(resetPasswordState.message);
-      setMode("password");
+      const id = window.requestAnimationFrame(() => {
+        setResetSuccess(resetPasswordState.message ?? null);
+        setMode("password");
+      });
+      return () => window.cancelAnimationFrame(id);
     }
   }, [resetPasswordState]);
 
@@ -170,14 +203,27 @@ export function AdminLoginForm({ nextPath }: { nextPath?: string }) {
 
       {mode === "otp" ? (
         otpRequestState.phase === "otp" ? (
-          <form action={otpVerifyAction} className="space-y-4">
+          <form
+            action={otpVerifyAction}
+            onSubmit={validateOtpCodeSubmit}
+            className="relative z-10 space-y-4"
+            noValidate
+          >
             <input type="hidden" name="mobile" value={otpRequestState.mobile} />
             {nextPath ? (
               <input type="hidden" name="next" value={nextPath} />
             ) : null}
             <p className="rounded-xl border border-border bg-background px-4 py-3 text-sm leading-7 text-muted">
-              {otpState.error ?? otpRequestState.message}
+              {otpRequestState.message}
             </p>
+            {otpClientError || otpVerifyState.error ? (
+              <p
+                role="alert"
+                className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+              >
+                {otpClientError ?? otpVerifyState.error}
+              </p>
+            ) : null}
             <div>
               <label
                 htmlFor="admin-otp-code"
@@ -188,20 +234,22 @@ export function AdminLoginForm({ nextPath }: { nextPath?: string }) {
               <input
                 id="admin-otp-code"
                 name="code"
-                required
+                type="text"
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 dir="ltr"
                 maxLength={6}
-                className="mt-1.5 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-center text-lg tracking-[0.4em]"
+                enterKeyHint="done"
+                className="mt-1.5 min-h-12 w-full touch-manipulation rounded-xl border border-border bg-white px-3 py-2.5 text-center text-lg tracking-[0.4em]"
+                onChange={() => {
+                  if (otpClientError) setOtpClientError(null);
+                }}
               />
             </div>
-            <button
-              disabled={otpVerifying}
-              className="inline-flex w-full justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-white disabled:opacity-60"
-            >
-              {otpVerifying ? "در حال بررسی…" : "ورود با کد"}
-            </button>
+            <OtpSubmitButton
+              idleLabel="ورود با کد"
+              pendingLabel="در حال بررسی…"
+            />
             <button
               type="button"
               className="w-full text-center text-sm text-muted"
@@ -211,13 +259,18 @@ export function AdminLoginForm({ nextPath }: { nextPath?: string }) {
             </button>
           </form>
         ) : (
-          <form action={otpRequestAction} className="space-y-4">
-            {otpState.error ? (
+          <form
+            action={otpRequestAction}
+            onSubmit={validateOtpMobileSubmit}
+            className="relative z-10 space-y-4"
+            noValidate
+          >
+            {otpClientError || otpState.error ? (
               <p
                 role="alert"
                 className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
               >
-                {otpState.error}
+                {otpClientError ?? otpState.error}
               </p>
             ) : (
               <p className="text-sm leading-7 text-muted">
@@ -235,20 +288,22 @@ export function AdminLoginForm({ nextPath }: { nextPath?: string }) {
               <input
                 id="admin-otp-mobile"
                 name="mobile"
-                required
+                type="tel"
                 inputMode="tel"
                 autoComplete="tel"
                 dir="ltr"
+                enterKeyHint="send"
                 placeholder="09xxxxxxxxx"
-                className="mt-1.5 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm"
+                className="mt-1.5 min-h-12 w-full touch-manipulation rounded-xl border border-border bg-white px-3 py-2.5 text-sm"
+                onChange={() => {
+                  if (otpClientError) setOtpClientError(null);
+                }}
               />
             </div>
-            <button
-              disabled={otpRequesting}
-              className="inline-flex w-full justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-white disabled:opacity-60"
-            >
-              {otpRequesting ? "در حال ارسال…" : "دریافت کد ورود"}
-            </button>
+            <OtpSubmitButton
+              idleLabel="دریافت کد ورود"
+              pendingLabel="در حال ارسال…"
+            />
           </form>
         )
       ) : null}
