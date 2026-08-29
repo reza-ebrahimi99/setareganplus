@@ -17,10 +17,12 @@ import {
   GUIDANCE_PRE_REG_CONSENT_TEXT,
   GUIDANCE_PRE_REG_CONSENT_VERSION,
 } from "@/lib/guidance/consent";
+import { provisionExternalGuidanceCandidate } from "@/lib/guidance/external-candidate";
 import {
-  EXTERNAL_CANDIDATE_PROVISIONAL_EXAM_GROUP,
-  provisionExternalGuidanceCandidate,
-} from "@/lib/guidance/external-candidate";
+  HIGH_SCHOOL_MAJOR_OPTIONS,
+  ONBOARDING_PROVISIONAL_EXAM_GROUP,
+  type HighSchoolMajorId,
+} from "@/lib/guidance/onboarding-options";
 import { toLatinDigits } from "@/lib/forms/latin-digits";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { validateIranianNationalId } from "@/lib/forms/validate-national-id";
@@ -37,37 +39,15 @@ import {
 } from "@/lib/website/student-slug";
 import { ensureDefaultStudentMajors } from "@/lib/website/student-majors";
 
+export {
+  HIGH_SCHOOL_MAJOR_OPTIONS,
+  type HighSchoolMajorId,
+} from "@/lib/guidance/onboarding-options";
+
 export const ONBOARDING_SESSION_CATEGORY =
   "guidance-candidate-onboarding" as const;
 export const ONBOARDING_SESSION_KIND =
   "guidance-candidate-onboarding" as const;
-
-export const HIGH_SCHOOL_MAJOR_OPTIONS = [
-  { id: "math", label: "ریاضی", examGroup: GuidanceExamGroup.MATHEMATICS },
-  {
-    id: "experimental",
-    label: "تجربی",
-    examGroup: GuidanceExamGroup.EXPERIMENTAL_SCIENCES,
-  },
-  {
-    id: "humanities",
-    label: "انسانی",
-    examGroup: GuidanceExamGroup.HUMANITIES,
-  },
-  {
-    id: "technical",
-    label: "فنی",
-    examGroup: GuidanceExamGroup.MATHEMATICS,
-  },
-  {
-    id: "other",
-    label: "سایر",
-    examGroup: EXTERNAL_CANDIDATE_PROVISIONAL_EXAM_GROUP,
-  },
-] as const;
-
-export type HighSchoolMajorId =
-  (typeof HIGH_SCHOOL_MAJOR_OPTIONS)[number]["id"];
 
 export type GuidanceOnboardingInput = {
   fullName: string;
@@ -402,10 +382,11 @@ export async function completeGuidanceCandidateOnboarding(params: {
 
   const { firstName, lastName } = splitFullName(validated.profile.fullName);
   const fullName = composeStudentFullName(firstName, lastName);
-  const examGroup =
+  const examGroupCode =
     HIGH_SCHOOL_MAJOR_OPTIONS.find(
       (row) => row.id === validated.profile.highSchoolMajor,
-    )?.examGroup ?? EXTERNAL_CANDIDATE_PROVISIONAL_EXAM_GROUP;
+    )?.examGroup ?? ONBOARDING_PROVISIONAL_EXAM_GROUP;
+  const examGroup = examGroupCode as GuidanceExamGroup;
 
   let plan = await prisma.guidancePlan.findFirst({
     where: {
