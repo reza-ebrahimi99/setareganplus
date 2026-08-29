@@ -19,6 +19,21 @@ export {
 export { assertGuidancePublicEnabledOrNotFound } from "@/lib/guidance/require-public";
 
 export {
+  GUIDANCE_PRE_REG_CONSENT_TEXT,
+  GUIDANCE_PRE_REG_CONSENT_VERSION,
+} from "@/lib/guidance/consent";
+
+export {
+  filterPublicNavForGuidance,
+  getDefaultPublicNavItems,
+} from "@/lib/guidance/nav";
+
+export {
+  parseGuidanceExamGroup,
+  provisionGuidancePreRegistration,
+} from "@/lib/guidance/pre-register";
+
+export {
   GUIDANCE_DOCUMENT_TYPE_FINAL_GRADES,
   GUIDANCE_DOCUMENT_VERIFICATION_STATUSES,
   GUIDANCE_EXAM_GROUPS,

@@ -4642,6 +4642,10 @@ model GuidancePlan {
   userId         String
   status         GuidancePlanStatus @default(PRE_REGISTERED)
   examGroup      GuidanceExamGroup
+  /// Snapshot of accepted pre-registration consent (not CRM ConsentRecord — that is Lead-scoped).
+  consentGrantedAt DateTime?
+  consentVersion   String?
+  consentText      String?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   deletedAt      DateTime?
