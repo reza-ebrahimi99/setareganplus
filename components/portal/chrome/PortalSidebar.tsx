@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { PortalIcon } from "@/components/portal/icons";
 import {
   isPortalNavActive,
@@ -13,6 +13,17 @@ type PortalSidebarProps = {
   organizationName: string;
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
+  /** Product eyebrow — defaults to Student Portal. */
+  brandEyebrow?: string;
+  /** Accessible name for the aside. */
+  ariaLabel?: string;
+  /** Bottom goal widget eyebrow. */
+  goalEyebrow?: string;
+  /** Bottom goal widget title. */
+  goalTitle?: string;
+  /** Optional exit link under the goal widget. */
+  exitHref?: string;
+  exitLabel?: string;
 };
 
 /**
@@ -23,8 +34,16 @@ export function PortalSidebar({
   organizationName,
   collapsed = false,
   onToggleCollapsed,
+  brandEyebrow = "پرتال دانش‌آموز",
+  ariaLabel = "ناوبری پرتال دانش‌آموز",
+  goalEyebrow = "ماموریت امروز",
+  goalTitle = "یک قدم کوچک، یک پیشرفت بزرگ",
+  exitHref,
+  exitLabel,
 }: PortalSidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams?.toString() ?? "";
 
   return (
     <aside
@@ -34,11 +53,11 @@ export function PortalSidebar({
       ]
         .filter(Boolean)
         .join(" ")}
-      aria-label="ناوبری پرتال دانش‌آموز"
+      aria-label={ariaLabel}
       data-collapsed={collapsed ? "true" : "false"}
     >
       <div className="portal-sidebar__brand">
-        <p className="portal-sidebar__eyebrow">پرتال دانش‌آموز</p>
+        <p className="portal-sidebar__eyebrow">{brandEyebrow}</p>
         {!collapsed ? (
           <p className="portal-sidebar__org" title={organizationName}>
             {organizationName}
@@ -65,7 +84,7 @@ export function PortalSidebar({
             ) : null}
             <ul className="portal-sidebar__list">
               {section.items.map((item) => {
-                const active = isPortalNavActive(pathname, item);
+                const active = isPortalNavActive(pathname, item, search);
                 return (
                   <li key={item.id}>
                     <Link
@@ -103,8 +122,8 @@ export function PortalSidebar({
 
       {!collapsed ? (
         <div className="portal-sidebar__goal">
-          <p className="portal-sidebar__goal-eyebrow">ماموریت امروز</p>
-          <p className="portal-sidebar__goal-title">یک قدم کوچک، یک پیشرفت بزرگ</p>
+          <p className="portal-sidebar__goal-eyebrow">{goalEyebrow}</p>
+          <p className="portal-sidebar__goal-title">{goalTitle}</p>
           <div
             className="portal-sidebar__goal-bar"
             role="presentation"
@@ -112,6 +131,11 @@ export function PortalSidebar({
           >
             <span />
           </div>
+          {exitHref && exitLabel ? (
+            <Link href={exitHref} className="portal-sidebar__exit">
+              {exitLabel}
+            </Link>
+          ) : null}
         </div>
       ) : null}
     </aside>

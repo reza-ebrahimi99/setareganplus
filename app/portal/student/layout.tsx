@@ -1,6 +1,9 @@
 import { StudentPortalShell } from "@/components/portal/StudentPortalShell";
 import { buildStudentPortalNavSections } from "@/components/portal/nav/types";
-import { GUIDANCE_STUDENT_PORTAL_NAV } from "@/lib/guidance/portal-nav";
+import {
+  GUIDANCE_PLATFORM_NAV_SECTIONS,
+  GUIDANCE_STUDENT_PORTAL_NAV,
+} from "@/lib/guidance/portal-nav";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
 import { isSxpEnabled } from "@/lib/sxp/flags";
@@ -27,6 +30,9 @@ export default async function StudentPortalLayout({
   return (
     <StudentPortalShell
       sections={sections}
+      guidanceSections={
+        guidanceEnabled ? GUIDANCE_PLATFORM_NAV_SECTIONS : null
+      }
       userDisplayName={context.user.displayName}
       organizationName={context.organization.name}
       showAccountSwitcher={context.links.length > 1}

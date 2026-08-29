@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { PortalIcon } from "@/components/portal/icons";
 import {
   isPortalNavActive,
@@ -10,23 +10,29 @@ import {
 
 type PortalMobileDockProps = {
   items: readonly PortalOsNavItem[];
+  ariaLabel?: string;
 };
 
 /**
  * Mobile bottom dock — data-driven from nav items with `dock: true`.
  */
-export function PortalMobileDock({ items }: PortalMobileDockProps) {
+export function PortalMobileDock({
+  items,
+  ariaLabel = "میانبرهای پرتال",
+}: PortalMobileDockProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams?.toString() ?? "";
 
   if (items.length === 0) {
     return null;
   }
 
   return (
-    <nav className="portal-dock" aria-label="میانبرهای پرتال">
+    <nav className="portal-dock" aria-label={ariaLabel}>
       <ul className="portal-dock__list">
         {items.map((item) => {
-          const active = isPortalNavActive(pathname, item);
+          const active = isPortalNavActive(pathname, item, search);
           return (
             <li key={item.id} className="portal-dock__item">
               <Link

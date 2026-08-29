@@ -1,17 +1,20 @@
 /**
- * Guidance ERP — portal student service home.
- * Pre-upload: Journey screen.
- * Post-upload: Initial Analysis Center.
- * ?view=interest: Interest Discovery Center.
- * ?view=profile: Student 360° Profile.
+ * Guidance Platform — Major Selection OS home.
+ * Presentation + view routing only. Reuses existing models / loaders / actions.
+ *
+ * Views (existing route + ?view=):
+ *   (default) dashboard | case | journey | analysis | interest | profile
+ *   counselor | sessions | documents | messages | settings
+ *   majors | universities | selection  (architecture placeholders)
  */
 
 import { notFound, redirect } from "next/navigation";
 import { GuidanceAnalysisScreen } from "@/components/guidance/analysis/GuidanceAnalysisScreen";
-import { InterestAssessmentWidget } from "@/components/guidance/interest/InterestAssessmentWidget";
 import { InterestDiscoveryScreen } from "@/components/guidance/interest/InterestDiscoveryScreen";
 import { Student360ProfileScreen } from "@/components/guidance/profile360/Student360ProfileScreen";
-import { StudentProfile360Widget } from "@/components/guidance/profile360/StudentProfile360Widget";
+import { GuidanceCaseScreen } from "@/components/guidance/platform/GuidanceCaseScreen";
+import { GuidancePlatformDashboard } from "@/components/guidance/platform/GuidancePlatformDashboard";
+import { GuidancePlatformPlaceholder } from "@/components/guidance/platform/GuidancePlatformPlaceholder";
 import { PortalJourneyHeroBanner } from "@/components/portal/journey/PortalJourneyHero";
 import { PortalJourneyScreen } from "@/components/portal/journey/PortalJourneyScreen";
 import { buildAnalysisPresentationModel } from "@/lib/guidance/analysis";
@@ -21,11 +24,9 @@ import {
 } from "@/lib/guidance/journey-presentation";
 import {
   buildInterestAssessmentPresentationModel,
-  buildInterestDashboardWidget,
   loadGuidanceInterestSession,
 } from "@/lib/guidance/interest";
 import {
-  buildStudentProfileDashboardWidget,
   buildStudentProfilePresentationModel,
   isProfile360JourneyComplete,
   loadGuidanceProfile360Session,
@@ -36,11 +37,98 @@ import {
   loadStudentIntelligenceSnapshot,
   StudentInsightEngine,
 } from "@/lib/portal/intelligence";
+import type { PortalIconName } from "@/components/portal/icons";
 
 export const dynamic = "force-dynamic";
 
 type GuidancePortalServicePageProps = {
   searchParams?: Promise<{ view?: string }>;
+};
+
+type PlaceholderView =
+  | "counselor"
+  | "sessions"
+  | "documents"
+  | "messages"
+  | "settings"
+  | "majors"
+  | "universities"
+  | "selection";
+
+const PLACEHOLDERS: Record<
+  PlaceholderView,
+  {
+    eyebrow: string;
+    title: string;
+    description: string;
+    icon: PortalIconName;
+    accent: string;
+  }
+> = {
+  counselor: {
+    eyebrow: "همراهی",
+    title: "مشاور من",
+    description:
+      "فضای اختصاصی مشاور آماده است. تخصیص مشاور و گفت‌وگو در فازهای بعدی فعال می‌شود — بدون تغییر منطق فعلی.",
+    icon: "users",
+    accent: "blue",
+  },
+  sessions: {
+    eyebrow: "جلسات",
+    title: "جلسات مشاوره",
+    description:
+      "رزرو و مدیریت جلسات به‌صورت معماری آماده شده. رزرو واقعی از مسیر سفر هدایت در زمان مناسب باز می‌شود.",
+    icon: "calendar",
+    accent: "orange",
+  },
+  documents: {
+    eyebrow: "مدارک",
+    title: "مدارک پرونده",
+    description:
+      "کارنامه، سهمیه، کارت ملی و سایر مدارک اینجا جمع می‌شوند. فعلاً بارگذاری کارنامه از مسیر سفر در دسترس است.",
+    icon: "book",
+    accent: "teal",
+  },
+  messages: {
+    eyebrow: "ارتباط",
+    title: "پیام‌های مشاور",
+    description:
+      "صندوق پیام مشاور به‌زودی فعال می‌شود. تا آن زمان وضعیت پرونده را از داشبورد و سفر هدایت پیگیری کن.",
+    icon: "message",
+    accent: "purple",
+  },
+  settings: {
+    eyebrow: "تنظیمات",
+    title: "تنظیمات سامانه انتخاب رشته",
+    description:
+      "ترجیحات اعلان و نمایش در این سامانه. برای بازگشت به پرتال دانش‌آموز از لینک زیر استفاده کن.",
+    icon: "panel",
+    accent: "purple",
+  },
+  majors: {
+    eyebrow: "به‌زودی",
+    title: "رشته‌های پیشنهادی",
+    description:
+      "پس از تکمیل تحلیل، رغبت و پروفایل ۳۶۰، پیشنهاد رشته‌ها اینجا ظاهر می‌شود. فعلاً فقط معماری.",
+    icon: "layers",
+    accent: "gold",
+  },
+  universities: {
+    eyebrow: "به‌زودی",
+    title: "دانشگاه‌های پیشنهادی",
+    description:
+      "لیست دانشگاه‌های هم‌راستا با پرونده‌ات در فازهای بعدی. بدون موتور پیشنهاد در این فاز.",
+    icon: "grid",
+    accent: "blue",
+  },
+  selection: {
+    eyebrow: "به‌زودی",
+    title: "انتخاب نهایی رشته",
+    description:
+      "جمع‌بندی و ثبت انتخاب نهایی پس از جلسه مشاوره. فعلاً جایگاه معماری در سامانه.",
+    icon: "medal",
+    accent: "emerald",
+  },
 };
 
 export default async function GuidancePortalServicePage({
@@ -53,8 +141,7 @@ export default async function GuidancePortalServicePage({
   }
 
   const params = searchParams ? await searchParams : {};
-  const viewInterest = params.view === "interest";
-  const viewProfile = params.view === "profile";
+  const view = params.view ?? "dashboard";
 
   const snapshot = await loadStudentIntelligenceSnapshot(context, studentId, {
     includeAssessments: false,
@@ -70,7 +157,7 @@ export default async function GuidancePortalServicePage({
   if (!plan) {
     const guidance = StudentInsightEngine.guidance(snapshot);
     return (
-      <div className="portal-journey portal-journey--empty">
+      <div className="portal-journey portal-journey--empty gp-dashboard">
         <PortalJourneyHeroBanner
           hero={
             guidance.emptyHero ??
@@ -120,7 +207,6 @@ export default async function GuidancePortalServicePage({
     session: interestSession,
     studentName: snapshot.profile.studentName,
   });
-  const interestWidget = buildInterestDashboardWidget(interestSession);
 
   const profileModel = buildStudentProfilePresentationModel({
     session: profileSession,
@@ -130,19 +216,15 @@ export default async function GuidancePortalServicePage({
     schoolYear: snapshot.profile.schoolYear,
     examGroup: plan.examGroup,
   });
-  const profileWidget = buildStudentProfileDashboardWidget(
-    profileSession,
-    profileSeed,
-  );
 
-  if (viewInterest) {
+  if (view === "interest") {
     if (!plan.latestFinalGrades) {
       redirect("/portal/student/services/guidance");
     }
     return <InterestDiscoveryScreen model={interestModel} />;
   }
 
-  if (viewProfile) {
+  if (view === "profile") {
     if (interestSession.status !== "completed") {
       redirect("/portal/student/services/guidance?view=interest");
     }
@@ -158,22 +240,76 @@ export default async function GuidancePortalServicePage({
     averageScore: snapshot.dashboard.averageScore,
   });
 
-  if (analysis.visible) {
-    return (
-      <div className="guidance-home-with-interest">
-        <InterestAssessmentWidget widget={interestWidget} />
-        {interestSession.status === "completed" ? (
-          <StudentProfile360Widget widget={profileWidget} />
-        ) : null}
-        <GuidanceAnalysisScreen model={analysis} />
-      </div>
-    );
-  }
-
   const journey = buildGuidanceJourneyModel({
     steps,
     publicId: plan.publicId,
   });
 
-  return <PortalJourneyScreen model={journey} />;
+  if (view === "journey") {
+    return <PortalJourneyScreen model={journey} />;
+  }
+
+  if (view === "analysis") {
+    if (!analysis.visible) {
+      return (
+        <GuidancePlatformPlaceholder
+          eyebrow="تحلیل اولیه"
+          title="تحلیل هنوز باز نشده"
+          description="پس از بارگذاری و بررسی کارنامه، مرکز تحلیل اولیه اینجا فعال می‌شود."
+          icon="chart"
+          accent="blue"
+          primaryHref="/portal/student/services/guidance?view=journey"
+          primaryLabel="رفتن به سفر هدایت"
+        />
+      );
+    }
+    return <GuidanceAnalysisScreen model={analysis} />;
+  }
+
+  if (view === "case") {
+    return (
+      <GuidanceCaseScreen
+        studentName={snapshot.profile.studentName}
+        journey={journey}
+        analysis={analysis.visible ? analysis : null}
+        planPublicId={plan.publicId}
+      />
+    );
+  }
+
+  if (view in PLACEHOLDERS) {
+    const copy = PLACEHOLDERS[view as PlaceholderView];
+    return (
+      <GuidancePlatformPlaceholder
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
+        icon={copy.icon}
+        accent={copy.accent}
+        secondaryHref={
+          view === "settings" ? "/portal/student" : undefined
+        }
+        secondaryLabel={
+          view === "settings" ? "بازگشت به پرتال دانش‌آموز" : undefined
+        }
+        primaryHref={
+          view === "documents"
+            ? "/portal/student/services/guidance/grades"
+            : "/portal/student/services/guidance"
+        }
+        primaryLabel={
+          view === "documents" ? "بارگذاری کارنامه" : "بازگشت به داشبورد"
+        }
+      />
+    );
+  }
+
+  // Default: Guidance Platform dashboard (Major Selection home)
+  return (
+    <GuidancePlatformDashboard
+      studentName={snapshot.profile.studentName}
+      journey={journey}
+      analysis={analysis.visible ? analysis : null}
+    />
+  );
 }
