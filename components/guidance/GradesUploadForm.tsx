@@ -91,7 +91,7 @@ export function GuidanceGradesUploadForm({
             href="/portal/student/services/guidance"
             className="portal-upload-success__cta"
           >
-            بازگشت به مسیر انتخاب رشته
+            مشاهده مرکز تحلیل اولیه
           </a>
         </div>
       </PortalSurface>
