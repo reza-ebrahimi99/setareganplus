@@ -4,7 +4,8 @@
  * Guidance ERP — public pre-registration multi-step form (collect → OTP → done).
  */
 
-import { useActionState } from "react";
+import { useActionState, useState, type FormEvent } from "react";
+import { OtpSubmitButton } from "@/components/auth/OtpSubmitButton";
 import {
   requestGuidancePreRegisterOtpAction,
   verifyGuidancePreRegisterOtpAction,
@@ -34,14 +35,15 @@ const fieldClass =
   "mt-1.5 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm";
 
 export function GuidancePreRegisterForm({ grades }: GuidancePreRegisterFormProps) {
-  const [requestState, requestAction, requesting] = useActionState(
+  const [requestState, requestAction] = useActionState(
     requestGuidancePreRegisterOtpAction,
     initial,
   );
-  const [verifyState, verifyAction, verifying] = useActionState(
+  const [verifyState, verifyAction] = useActionState(
     verifyGuidancePreRegisterOtpAction,
     initial,
   );
+  const [clientError, setClientError] = useState<string | null>(null);
 
   const state =
     verifyState.phase === "done"
@@ -49,6 +51,38 @@ export function GuidancePreRegisterForm({ grades }: GuidancePreRegisterFormProps
       : verifyState.error
         ? verifyState
         : requestState;
+
+  function validateRequestSubmit(event: FormEvent<HTMLFormElement>) {
+    const form = event.currentTarget;
+    const mobileInput = form.elements.namedItem("mobile");
+    const mobile =
+      mobileInput && mobileInput instanceof HTMLInputElement
+        ? mobileInput.value.trim()
+        : "";
+    if (!mobile) {
+      event.preventDefault();
+      setClientError("شماره موبایل را وارد کنید.");
+      if (mobileInput instanceof HTMLInputElement) mobileInput.focus();
+      return;
+    }
+    setClientError(null);
+  }
+
+  function validateOtpSubmit(event: FormEvent<HTMLFormElement>) {
+    const form = event.currentTarget;
+    const codeInput = form.elements.namedItem("code");
+    const code =
+      codeInput && codeInput instanceof HTMLInputElement
+        ? codeInput.value.trim()
+        : "";
+    if (!code) {
+      event.preventDefault();
+      setClientError("کد یک‌بارمصرف را وارد کنید.");
+      if (codeInput instanceof HTMLInputElement) codeInput.focus();
+      return;
+    }
+    setClientError(null);
+  }
 
   if (state.phase === "done") {
     return (
@@ -77,7 +111,12 @@ export function GuidancePreRegisterForm({ grades }: GuidancePreRegisterFormProps
 
   if (state.phase === "otp") {
     return (
-      <form action={verifyAction} className="space-y-4">
+      <form
+        action={verifyAction}
+        onSubmit={validateOtpSubmit}
+        className="relative z-10 space-y-4"
+        noValidate
+      >
         <input type="hidden" name="mobile" value={state.mobile ?? ""} />
         <input type="hidden" name="firstName" value={state.firstName ?? ""} />
         <input type="hidden" name="lastName" value={state.lastName ?? ""} />
@@ -86,8 +125,16 @@ export function GuidancePreRegisterForm({ grades }: GuidancePreRegisterFormProps
         <input type="hidden" name="consent" value="true" />
 
         <p className="rounded-xl border border-border bg-background px-4 py-3 text-sm leading-7 text-muted">
-          {state.error ?? state.message}
+          {state.message}
         </p>
+        {clientError || state.error ? (
+          <p
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          >
+            {clientError ?? state.error}
+          </p>
+        ) : null}
 
         <div>
           <label htmlFor="guidance-otp" className="text-sm font-medium text-primary">
@@ -96,34 +143,40 @@ export function GuidancePreRegisterForm({ grades }: GuidancePreRegisterFormProps
           <input
             id="guidance-otp"
             name="code"
-            required
+            type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
             dir="ltr"
             maxLength={6}
-            className={`${fieldClass} text-center text-lg tracking-[0.4em]`}
+            enterKeyHint="done"
+            className={`${fieldClass} min-h-12 touch-manipulation text-center text-lg tracking-[0.4em]`}
+            onChange={() => {
+              if (clientError) setClientError(null);
+            }}
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={verifying}
-          className="inline-flex w-full justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-white disabled:opacity-60"
-        >
-          {verifying ? "در حال تأیید…" : "تأیید و تشکیل پرونده"}
-        </button>
+        <OtpSubmitButton
+          idleLabel="تأیید و تشکیل پرونده"
+          pendingLabel="در حال تأیید…"
+        />
       </form>
     );
   }
 
   return (
-    <form action={requestAction} className="space-y-4">
-      {state.error ? (
+    <form
+      action={requestAction}
+      onSubmit={validateRequestSubmit}
+      className="relative z-10 space-y-4"
+      noValidate
+    >
+      {clientError || state.error ? (
         <p
           role="alert"
           className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
         >
-          {state.error}
+          {clientError ?? state.error}
         </p>
       ) : null}
 
@@ -161,13 +214,17 @@ export function GuidancePreRegisterForm({ grades }: GuidancePreRegisterFormProps
         <input
           id="guidance-mobile"
           name="mobile"
-          required
+          type="tel"
           inputMode="tel"
           autoComplete="tel"
           dir="ltr"
+          enterKeyHint="send"
           placeholder="09xxxxxxxxx"
           defaultValue={state.mobile}
-          className={fieldClass}
+          className={`${fieldClass} min-h-12 touch-manipulation`}
+          onChange={() => {
+            if (clientError) setClientError(null);
+          }}
         />
       </div>
 
@@ -226,13 +283,10 @@ export function GuidancePreRegisterForm({ grades }: GuidancePreRegisterFormProps
         <span>{GUIDANCE_PRE_REG_CONSENT_TEXT}</span>
       </label>
 
-      <button
-        type="submit"
-        disabled={requesting}
-        className="inline-flex w-full justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-white disabled:opacity-60"
-      >
-        {requesting ? "در حال ارسال کد…" : "دریافت کد تأیید"}
-      </button>
+      <OtpSubmitButton
+        idleLabel="دریافت کد تأیید"
+        pendingLabel="در حال ارسال کد…"
+      />
     </form>
   );
 }

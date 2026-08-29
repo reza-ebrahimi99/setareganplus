@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, type FormEvent } from "react";
+import { OtpSubmitButton } from "@/components/auth/OtpSubmitButton";
 import {
   requestStaffOtpAction,
   verifyStaffOtpAction,
@@ -10,36 +11,130 @@ import {
 const initial: StaffLoginState = { phase: "mobile" };
 
 export function StaffOtpLoginForm() {
-  const [requestState, requestAction, requesting] = useActionState(requestStaffOtpAction, initial);
-  const [verifyState, verifyAction, verifying] = useActionState(verifyStaffOtpAction, initial);
-  const state = verifyState.error ? verifyState : requestState;
+  const [requestState, requestAction] = useActionState(
+    requestStaffOtpAction,
+    initial,
+  );
+  const [verifyState, verifyAction] = useActionState(
+    verifyStaffOtpAction,
+    initial,
+  );
+  const [clientError, setClientError] = useState<string | null>(null);
+  const serverError = verifyState.error ? verifyState.error : requestState.error;
+
+  function validateMobileSubmit(event: FormEvent<HTMLFormElement>) {
+    const form = event.currentTarget;
+    const input = form.elements.namedItem("mobile");
+    const value =
+      input && input instanceof HTMLInputElement ? input.value.trim() : "";
+    if (!value) {
+      event.preventDefault();
+      setClientError("شماره موبایل را وارد کنید.");
+      if (input instanceof HTMLInputElement) input.focus();
+      return;
+    }
+    setClientError(null);
+  }
+
+  function validateCodeSubmit(event: FormEvent<HTMLFormElement>) {
+    const form = event.currentTarget;
+    const input = form.elements.namedItem("code");
+    const value =
+      input && input instanceof HTMLInputElement ? input.value.trim() : "";
+    if (!value) {
+      event.preventDefault();
+      setClientError("کد یک‌بارمصرف را وارد کنید.");
+      if (input instanceof HTMLInputElement) input.focus();
+      return;
+    }
+    setClientError(null);
+  }
 
   if (requestState.phase === "otp") {
     return (
-      <form action={verifyAction} className="space-y-4">
+      <form
+        action={verifyAction}
+        onSubmit={validateCodeSubmit}
+        className="relative z-10 space-y-4"
+        noValidate
+      >
         <input type="hidden" name="mobile" value={requestState.mobile} />
-        <p className="rounded-xl border border-border bg-background px-4 py-3 text-sm leading-7 text-muted">{state.error ?? requestState.message}</p>
+        <p className="rounded-xl border border-border bg-background px-4 py-3 text-sm leading-7 text-muted">
+          {requestState.message}
+        </p>
+        {clientError || verifyState.error ? (
+          <p
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          >
+            {clientError ?? verifyState.error}
+          </p>
+        ) : null}
         <div>
-          <label htmlFor="staff-code" className="text-sm font-medium text-primary">کد یک‌بارمصرف</label>
-          <input id="staff-code" name="code" required inputMode="numeric" autoComplete="one-time-code" dir="ltr" maxLength={6} className="mt-1.5 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-center text-lg tracking-[0.4em]" />
+          <label htmlFor="staff-code" className="text-sm font-medium text-primary">
+            کد یک‌بارمصرف
+          </label>
+          <input
+            id="staff-code"
+            name="code"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            dir="ltr"
+            maxLength={6}
+            enterKeyHint="done"
+            className="mt-1.5 min-h-12 w-full touch-manipulation rounded-xl border border-border bg-white px-3 py-2.5 text-center text-lg tracking-[0.4em]"
+            onChange={() => {
+              if (clientError) setClientError(null);
+            }}
+          />
         </div>
-        <button disabled={verifying} className="inline-flex w-full justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-white disabled:opacity-60">
-          {verifying ? "در حال بررسی…" : "ورود امن"}
-        </button>
+        <OtpSubmitButton idleLabel="ورود امن" pendingLabel="در حال بررسی…" />
       </form>
     );
   }
 
   return (
-    <form action={requestAction} className="space-y-4">
-      {state.error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{state.error}</p>}
+    <form
+      action={requestAction}
+      onSubmit={validateMobileSubmit}
+      className="relative z-10 space-y-4"
+      noValidate
+    >
+      {clientError || serverError ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+        >
+          {clientError ?? serverError}
+        </p>
+      ) : null}
       <div>
-        <label htmlFor="staff-mobile" className="text-sm font-medium text-primary">شماره موبایل سازمانی</label>
-        <input id="staff-mobile" name="mobile" required inputMode="tel" autoComplete="tel" dir="ltr" placeholder="09xxxxxxxxx" className="mt-1.5 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm" />
+        <label
+          htmlFor="staff-mobile"
+          className="text-sm font-medium text-primary"
+        >
+          شماره موبایل سازمانی
+        </label>
+        <input
+          id="staff-mobile"
+          name="mobile"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          dir="ltr"
+          enterKeyHint="send"
+          placeholder="09xxxxxxxxx"
+          className="mt-1.5 min-h-12 w-full touch-manipulation rounded-xl border border-border bg-white px-3 py-2.5 text-sm"
+          onChange={() => {
+            if (clientError) setClientError(null);
+          }}
+        />
       </div>
-      <button disabled={requesting} className="inline-flex w-full justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-white disabled:opacity-60">
-        {requesting ? "در حال ارسال…" : "دریافت کد ورود"}
-      </button>
+      <OtpSubmitButton
+        idleLabel="دریافت کد ورود"
+        pendingLabel="در حال ارسال…"
+      />
     </form>
   );
 }
