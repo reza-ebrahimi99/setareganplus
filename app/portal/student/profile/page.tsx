@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { IdentityProfileScreen } from "@/components/portal/apps/IdentityProfileScreen";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
-import { loadPortalStudentProfile } from "@/lib/portal/student/profile";
-import { isSxpEnabled } from "@/lib/sxp/flags";
+import {
+  loadStudentIntelligenceSnapshot,
+  StudentInsightEngine,
+} from "@/lib/portal/intelligence";
 import { loadExperienceProfileHub } from "@/lib/sxp/hub/load-profile";
 
 export const metadata: Metadata = {
@@ -14,17 +16,23 @@ export const dynamic = "force-dynamic";
 export default async function StudentPortalProfilePage() {
   const context = await requireStudentPortalAccess();
   const studentId = context.authorizedStudents[0]!.studentId;
-  const profile = loadPortalStudentProfile(context, studentId);
-  const sxpEnabled = await isSxpEnabled(context.organization.id);
-  const experience = sxpEnabled
+
+  const snapshot = await loadStudentIntelligenceSnapshot(context, studentId, {
+    includeAssessments: false,
+    includeAchievements: false,
+    includeExperience: false,
+  });
+
+  const profileModel = StudentInsightEngine.profile(snapshot);
+  const experience = snapshot.flags.sxpEnabled
     ? await loadExperienceProfileHub(context)
     : null;
 
   return (
     <IdentityProfileScreen
-      profile={profile}
-      organizationName={context.organization.name}
-      userDisplayName={context.user.displayName}
+      profile={profileModel.profile}
+      organizationName={profileModel.organizationName}
+      userDisplayName={profileModel.userDisplayName}
       experience={experience}
     />
   );

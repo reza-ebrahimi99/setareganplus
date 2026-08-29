@@ -9,56 +9,27 @@ import {
 import { PortalActivityWidget } from "@/components/portal/home/PortalActivityWidget";
 import { PortalNotificationsWidget } from "@/components/portal/home/PortalNotificationsWidget";
 import { PortalModulesWidget } from "@/components/portal/home/PortalModulesWidget";
-import type { GuidanceTimelineStep } from "@/lib/guidance/timeline";
-import type { PortalStudentDashboardDto } from "@/lib/portal/student/dashboard";
-import {
-  buildPortalHomeHero,
-  buildPortalHomeModules,
-  buildPortalHomeProgress,
-  buildPortalQuickActions,
-} from "@/lib/portal/student/home-presentation";
+import type { HomeDashboardModel } from "@/lib/portal/intelligence";
 
 type StudentHomeScreenProps = {
-  dashboard: PortalStudentDashboardDto;
-  guidanceEnabled: boolean;
-  sxpEnabled: boolean;
-  guidanceSteps: readonly GuidanceTimelineStep[] | null;
-  hasGuidancePlan: boolean;
+  model: HomeDashboardModel;
 };
 
 /**
  * Student OS Home Screen — composition only.
- * All widgets receive prepared view-models; no fetching here.
+ * Presentation models come from PortalDashboardEngine (Intelligence Layer).
  */
-export function StudentHomeScreen({
-  dashboard,
-  guidanceEnabled,
-  sxpEnabled,
-  guidanceSteps,
-  hasGuidancePlan,
-}: StudentHomeScreenProps) {
-  const progress = buildPortalHomeProgress(guidanceSteps);
-  const hero = buildPortalHomeHero({
-    studentName: dashboard.studentName,
+export function StudentHomeScreen({ model }: StudentHomeScreenProps) {
+  const {
+    dashboard,
     guidanceEnabled,
-    hasPlan: hasGuidancePlan,
-    steps: guidanceSteps,
-    assessmentCount: dashboard.assessmentCount,
-    achievementCount: dashboard.achievementCount,
-  });
-  const quickActions = buildPortalQuickActions({
-    guidanceEnabled,
-    hasPlan: hasGuidancePlan,
-    steps: guidanceSteps,
-  });
-  const modules = buildPortalHomeModules({
-    guidanceEnabled,
-    sxpEnabled,
-    hasPlan: hasGuidancePlan,
+    hero,
     progress,
-    assessmentCount: dashboard.assessmentCount,
-    achievementCount: dashboard.achievementCount,
-  });
+    quickActions,
+    modules,
+    guidanceSteps,
+    hasGuidancePlan,
+  } = model;
 
   const gradeLine = [dashboard.gradeName, dashboard.schoolYear]
     .filter(Boolean)

@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { PortalEmptyState } from "@/components/portal/PortalEmptyState";
 import { StudentHomeScreen } from "@/components/portal/home/StudentHomeScreen";
-import { buildGuidancePortalTimeline } from "@/lib/guidance/timeline";
-import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
-import { loadGuidancePlanForPortalUser } from "@/lib/guidance/portal";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
-import { loadStudentPortalDashboard } from "@/lib/portal/student/dashboard";
-import { isSxpEnabled } from "@/lib/sxp/flags";
+import {
+  loadStudentIntelligenceSnapshot,
+  PortalDashboardEngine,
+} from "@/lib/portal/intelligence";
 
 export const metadata: Metadata = {
   title: "خانه | پرتال دانش‌آموز",
@@ -26,34 +25,8 @@ export default async function StudentPortalHomePage() {
     );
   }
 
-  const [dashboard, guidanceEnabled, sxpEnabled] = await Promise.all([
-    loadStudentPortalDashboard(context, studentId),
-    isGuidanceEnabled(context.organization.id),
-    isSxpEnabled(context.organization.id),
-  ]);
+  const snapshot = await loadStudentIntelligenceSnapshot(context, studentId);
+  const model = PortalDashboardEngine.buildHome(snapshot);
 
-  let guidanceSteps = null;
-  let hasGuidancePlan = false;
-
-  if (guidanceEnabled) {
-    const plan = await loadGuidancePlanForPortalUser({
-      organizationId: context.organization.id,
-      userId: context.user.id,
-      studentId,
-    });
-    if (plan) {
-      hasGuidancePlan = true;
-      guidanceSteps = buildGuidancePortalTimeline(plan);
-    }
-  }
-
-  return (
-    <StudentHomeScreen
-      dashboard={dashboard}
-      guidanceEnabled={guidanceEnabled}
-      sxpEnabled={sxpEnabled}
-      guidanceSteps={guidanceSteps}
-      hasGuidancePlan={hasGuidancePlan}
-    />
-  );
+  return <StudentHomeScreen model={model} />;
 }

@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import { TrophyRoomScreen } from "@/components/portal/apps/TrophyRoomScreen";
 import { PortalEmptyState } from "@/components/portal/PortalEmptyState";
+import { requireStudentPortalAccess } from "@/lib/portal/auth";
 import {
-  isPortalError,
-  persianPortalError,
-  requireStudentPortalAccess,
-} from "@/lib/portal/auth";
-import { loadPortalStudentAchievements } from "@/lib/portal/student/achievements";
-import { buildTrophyRoomInsights } from "@/lib/portal/student/trophy-insights";
+  loadStudentIntelligenceSnapshot,
+  StudentInsightEngine,
+} from "@/lib/portal/intelligence";
 
 export const metadata: Metadata = {
   title: "اتاق افتخارات",
@@ -19,23 +17,25 @@ export default async function StudentPortalAchievementsPage() {
   const context = await requireStudentPortalAccess();
   const studentId = context.authorizedStudents[0]!.studentId;
 
-  let achievements;
-  try {
-    achievements = await loadPortalStudentAchievements(context, studentId);
-  } catch (error) {
-    if (isPortalError(error)) {
-      return (
-        <PortalEmptyState
-          title="دسترسی محدود"
-          description={persianPortalError(error)}
-        />
-      );
-    }
-    throw error;
+  const snapshot = await loadStudentIntelligenceSnapshot(context, studentId, {
+    includeAssessments: false,
+    includeExperience: false,
+  });
+
+  if (snapshot.errors.achievements || snapshot.achievements == null) {
+    return (
+      <PortalEmptyState
+        title="دسترسی محدود"
+        description="امکان بارگذاری افتخارات برای این حساب وجود ندارد."
+      />
+    );
   }
 
-  const insights = buildTrophyRoomInsights(achievements);
+  const model = StudentInsightEngine.achievements(snapshot);
   return (
-    <TrophyRoomScreen achievements={achievements} insights={insights} />
+    <TrophyRoomScreen
+      achievements={model.achievements}
+      insights={model.insights}
+    />
   );
 }
