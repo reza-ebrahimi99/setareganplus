@@ -4822,7 +4822,7 @@ body {
 .guidance-analysis {
   display: flex;
   flex-direction: column;
-  gap: var(--portal-space-7);
+  gap: var(--portal-space-8);
   padding-bottom: calc(var(--portal-space-8) + 2rem);
 }
 
