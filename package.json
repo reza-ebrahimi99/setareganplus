@@ -29,6 +29,7 @@
     "crm:scheduled-worker-once": "tsx --env-file=.env scripts/crm-scheduled-worker-once.ts",
     "sxp:experience-engine-once": "tsx --env-file=.env scripts/sxp-experience-engine-once.ts",
     "sxp:set-flag": "tsx --env-file=.env scripts/sxp-set-org-flag.ts",
+    "guidance:set-flag": "tsx --env-file=.env scripts/guidance-set-org-flag.ts",
     "test:sxp": "tsx scripts/sxp-unit-tests.ts",
     "test:crm-smoke": "prisma generate && tsx scripts/crm-smoke.ts",
     "test:crm": "tsx --env-file=.env scripts/crm-integration-tests.ts",
