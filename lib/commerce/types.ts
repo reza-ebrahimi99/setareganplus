@@ -6,6 +6,10 @@
 export const PAYMENT_PAYABLE_TYPES = [
   "REGISTRATION",
   "COMMERCE_ORDER",
+  // Guidance Journey Engine Step 3 — verified by its own dedicated flow
+  // (lib/guidance/journey/payment.ts), not by validatePayableTarget() /
+  // the shared startCheckout*/verifyPaymentCallback() below.
+  "GUIDANCE_PACKAGE",
   "BOOKING",
   "TUITION",
   "INSTALLMENT",

@@ -293,6 +293,14 @@ enum AuditAction {
   GUIDANCE_DOCUMENT_UPLOADED
   GUIDANCE_DOCUMENT_REPLACED
   GUIDANCE_STATUS_CHANGED
+  /// Journey Engine (Phase 1) — server-side step transitions + step-scoped actions.
+  GUIDANCE_STEP_ADVANCED
+  GUIDANCE_PAYMENT_STARTED
+  GUIDANCE_PAYMENT_COMPLETED
+  GUIDANCE_BOOKING_RESERVED
+  GUIDANCE_MAJOR_CHOICES_IMPORTED
+  GUIDANCE_MAJOR_CHOICES_APPROVED
+  GUIDANCE_JOURNEY_APPROVED
 }
 
 // ─── Form builder (Sprint 3.4A) ─────────────────────────────────────────────
@@ -604,7 +612,7 @@ model Organization {
 }
 
 model Branch {
-  id             String    @id @default(cuid())
+  id             String                    @id @default(cuid())
   organizationId String
   name           String
   slug           String
@@ -615,9 +623,9 @@ model Branch {
   accentColor    String?
   /// Canonical booklet ops identity (boys / girls / elementary). Null = not an ops branch.
   bookletOpsKey  CommerceBookletBranchKey?
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  isActive       Boolean                   @default(true)
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
   deletedAt      DateTime?
 
   // Restrict: hard-deleting an organization is blocked while branches exist.
@@ -639,7 +647,7 @@ model Branch {
   commerceCategories   CommerceCategory[]
   commerceItems        CommerceItem[]
   commerceOrders       CommerceOrder[]
-  commercePickupOrders CommerceOrder[]     @relation("CommerceOrderPickupBranch")
+  commercePickupOrders CommerceOrder[]       @relation("CommerceOrderPickupBranch")
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -666,36 +674,37 @@ model User {
   updatedAt        DateTime   @updatedAt
   deletedAt        DateTime?
 
-  memberships                 OrganizationMembership[]
-  auditLogs                   AuditLog[]               @relation("AuditLogActor")
-  adminSessions               AdminSession[]
-  mediaAssets                 MediaAsset[]             @relation("MediaAssetCreator")
-  bookingAdvisors             BookingAdvisor[]
-  bookingCheckIns             BookingCheckIn[]
-  ownedLeads                  Lead[]                   @relation("LeadOwner")
-  assignedCrmTasks            CrmTask[]                @relation("CrmTaskAssignee")
-  createdCrmTasks             CrmTask[]                @relation("CrmTaskCreator")
-  crmActivities               CrmActivity[]            @relation("CrmActivityActor")
-  crmLeadImportReports        CrmLeadImportReport[]    @relation("CrmLeadImportActor")
-  portalAccountLinks          PortalAccountLink[]
-  registrationDocumentReviews RegistrationDocument[]   @relation("RegistrationDocumentReviewer")
-  registrationNotes           RegistrationNote[]       @relation("RegistrationNoteActor")
-  registrationActivities      RegistrationActivity[]   @relation("RegistrationActivityActor")
-  commerceOrdersDelivered     CommerceOrder[]          @relation("CommerceOrderDeliveredBy")
-  commerceOrdersReadyForPickup CommerceOrder[]         @relation("CommerceOrderReadyForPickupBy")
-  commerceOrdersHandover      CommerceOrder[]          @relation("CommerceOrderHandoverStaff")
-  commerceOrderEvents         CommerceOrderEvent[]     @relation("CommerceOrderEventActor")
-  leadOwnershipHistoryAsOwner LeadOwnershipHistory[]   @relation("LeadOwnershipHistoryOwner")
-  leadOwnershipHistoryAsActor LeadOwnershipHistory[]   @relation("LeadOwnershipHistoryActor")
-  attributedSnapshots         AttributionSnapshot[]    @relation("AttributionSnapshotUser")
-  staffNotifications          StaffNotification[]
-  experienceProfiles          ExperienceProfile[]
-  experienceTimelineEvents    ExperienceTimelineEvent[]
-  experienceWidgetSnapshots   ExperienceWidgetSnapshot[]
-  bookSkuPricesCreated        BookSkuPrice[]           @relation("BookSkuPriceCreator")
-  bookImportJobsCreated       BookImportJob[]          @relation("BookImportJobCreator")
-  guidancePlans               GuidancePlan[]           @relation("GuidancePlanUser")
-  guidanceDocumentsVerified   GuidanceDocument[]       @relation("GuidanceDocumentVerifier")
+  memberships                  OrganizationMembership[]
+  auditLogs                    AuditLog[]                 @relation("AuditLogActor")
+  adminSessions                AdminSession[]
+  mediaAssets                  MediaAsset[]               @relation("MediaAssetCreator")
+  bookingAdvisors              BookingAdvisor[]
+  bookingCheckIns              BookingCheckIn[]
+  ownedLeads                   Lead[]                     @relation("LeadOwner")
+  assignedCrmTasks             CrmTask[]                  @relation("CrmTaskAssignee")
+  createdCrmTasks              CrmTask[]                  @relation("CrmTaskCreator")
+  crmActivities                CrmActivity[]              @relation("CrmActivityActor")
+  crmLeadImportReports         CrmLeadImportReport[]      @relation("CrmLeadImportActor")
+  portalAccountLinks           PortalAccountLink[]
+  registrationDocumentReviews  RegistrationDocument[]     @relation("RegistrationDocumentReviewer")
+  registrationNotes            RegistrationNote[]         @relation("RegistrationNoteActor")
+  registrationActivities       RegistrationActivity[]     @relation("RegistrationActivityActor")
+  commerceOrdersDelivered      CommerceOrder[]            @relation("CommerceOrderDeliveredBy")
+  commerceOrdersReadyForPickup CommerceOrder[]            @relation("CommerceOrderReadyForPickupBy")
+  commerceOrdersHandover       CommerceOrder[]            @relation("CommerceOrderHandoverStaff")
+  commerceOrderEvents          CommerceOrderEvent[]       @relation("CommerceOrderEventActor")
+  leadOwnershipHistoryAsOwner  LeadOwnershipHistory[]     @relation("LeadOwnershipHistoryOwner")
+  leadOwnershipHistoryAsActor  LeadOwnershipHistory[]     @relation("LeadOwnershipHistoryActor")
+  attributedSnapshots          AttributionSnapshot[]      @relation("AttributionSnapshotUser")
+  staffNotifications           StaffNotification[]
+  experienceProfiles           ExperienceProfile[]
+  experienceTimelineEvents     ExperienceTimelineEvent[]
+  experienceWidgetSnapshots    ExperienceWidgetSnapshot[]
+  bookSkuPricesCreated         BookSkuPrice[]             @relation("BookSkuPriceCreator")
+  bookImportJobsCreated        BookImportJob[]            @relation("BookImportJobCreator")
+  guidancePlans                GuidancePlan[]             @relation("GuidancePlanUser")
+  guidanceDocumentsVerified    GuidanceDocument[]         @relation("GuidanceDocumentVerifier")
+  guidancePlanChoicesApproved  GuidancePlan[]             @relation("GuidancePlanChoicesApprover")
 
   @@index([status])
   @@index([deletedAt])
@@ -851,23 +860,23 @@ model Lead {
   updatedAt                  DateTime        @updatedAt
   deletedAt                  DateTime?
 
-  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch              Branch               @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  duplicateOf         Lead?                @relation("LeadDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
-  duplicates          Lead[]               @relation("LeadDuplicates")
-  pipeline            CrmPipeline?         @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
-  stage               CrmPipelineStage?    @relation(fields: [organizationId, stageId], references: [organizationId, id], onDelete: Restrict)
-  owner               User?                @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
-  activities          LeadActivity[]
-  consents            ConsentRecord[]
-  formSubmissions     FormSubmission[]
-  crmTasks            CrmTask[]
-  crmActivities       CrmActivity[]
-  crmCallLogs         CrmCallLog[]
-  bookingReservations BookingReservation[]
-  registrations       Registration[]
-  commerceOrders      CommerceOrder[]
-  ownershipHistories  LeadOwnershipHistory[]
+  organization         Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch               Branch                 @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  duplicateOf          Lead?                  @relation("LeadDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates           Lead[]                 @relation("LeadDuplicates")
+  pipeline             CrmPipeline?           @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
+  stage                CrmPipelineStage?      @relation(fields: [organizationId, stageId], references: [organizationId, id], onDelete: Restrict)
+  owner                User?                  @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  activities           LeadActivity[]
+  consents             ConsentRecord[]
+  formSubmissions      FormSubmission[]
+  crmTasks             CrmTask[]
+  crmActivities        CrmActivity[]
+  crmCallLogs          CrmCallLog[]
+  bookingReservations  BookingReservation[]
+  registrations        Registration[]
+  commerceOrders       CommerceOrder[]
+  ownershipHistories   LeadOwnershipHistory[]
   attributionSnapshots AttributionSnapshot[]
 
   @@unique([organizationId, branchId, id])
@@ -900,15 +909,15 @@ enum LeadOwnershipHistorySource {
 
 /// Append-only ownership periods. effectiveTo = null means the current open period.
 model LeadOwnershipHistory {
-  id             String                      @id @default(cuid())
+  id             String                     @id @default(cuid())
   organizationId String
   leadId         String
   ownerUserId    String?
   effectiveFrom  DateTime
   effectiveTo    DateTime?
-  source         LeadOwnershipHistorySource  @default(SYSTEM)
+  source         LeadOwnershipHistorySource @default(SYSTEM)
   actorUserId    String?
-  createdAt      DateTime                    @default(now())
+  createdAt      DateTime                   @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   lead         Lead         @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
@@ -958,30 +967,30 @@ model AttributionPolicy {
 
 /// Revenue attribution freeze. ATTRIBUTED = immutable; PENDING may complete once.
 model AttributionSnapshot {
-  id                 String                     @id @default(cuid())
-  organizationId     String
+  id               String                    @id @default(cuid())
+  organizationId   String
   /// Idempotency key, e.g. PAYMENT_INTENT:{id} or REGISTRATION_WAIVED:{id}
-  revenueKey         String
-  status             AttributionSnapshotStatus  @default(ATTRIBUTED)
+  revenueKey       String
+  status           AttributionSnapshotStatus @default(ATTRIBUTED)
   /// Null only while status = PENDING_ATTRIBUTION (recoverable).
-  leadId             String?
-  registrationId     String?
-  paymentIntentId    String?
-  amountRials        Int
-  attributedUserId   String?
-  policyId           String
-  policyKey          String
-  policyVersion      Int
-  policyMode         AttributionPolicyMode
-  attributedAt       DateTime
-  createdAt          DateTime                   @default(now())
+  leadId           String?
+  registrationId   String?
+  paymentIntentId  String?
+  amountRials      Int
+  attributedUserId String?
+  policyId         String
+  policyKey        String
+  policyVersion    Int
+  policyMode       AttributionPolicyMode
+  attributedAt     DateTime
+  createdAt        DateTime                  @default(now())
 
-  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  lead           Lead?              @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
-  registration   Registration?      @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
-  paymentIntent  PaymentIntent?     @relation(fields: [organizationId, paymentIntentId], references: [organizationId, id], onDelete: Restrict)
-  attributedUser User?              @relation("AttributionSnapshotUser", fields: [attributedUserId], references: [id], onDelete: Restrict)
-  policy         AttributionPolicy  @relation(fields: [organizationId, policyId], references: [organizationId, id], onDelete: Restrict)
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lead           Lead?             @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  registration   Registration?     @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
+  paymentIntent  PaymentIntent?    @relation(fields: [organizationId, paymentIntentId], references: [organizationId, id], onDelete: Restrict)
+  attributedUser User?             @relation("AttributionSnapshotUser", fields: [attributedUserId], references: [id], onDelete: Restrict)
+  policy         AttributionPolicy @relation(fields: [organizationId, policyId], references: [organizationId, id], onDelete: Restrict)
 
   @@unique([organizationId, revenueKey])
   @@unique([organizationId, id])
@@ -1028,17 +1037,17 @@ enum OpsEntityType {
 
 /// Org SLA clocks (hours). Resolved at runtime — never hardcode in queue logic.
 model OpsSlaPolicy {
-  id                      String   @id @default(cuid())
-  organizationId          String
+  id                         String   @id @default(cuid())
+  organizationId             String
   /// Hours from lead.createdAt without lastContactAt
-  firstContactHours       Int      @default(24)
+  firstContactHours          Int      @default(24)
   /// Grace hours after nextFollowUpAt / task dueAt
-  followUpGraceHours      Int      @default(0)
+  followUpGraceHours         Int      @default(0)
   /// Hours in RegistrationStatus.NEEDS_CALL
-  registrationNeedsCallHours Int   @default(48)
-  isActive                Boolean  @default(true)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  registrationNeedsCallHours Int      @default(48)
+  isActive                   Boolean  @default(true)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
 
@@ -1047,16 +1056,16 @@ model OpsSlaPolicy {
 }
 
 model OpsCapacityPolicy {
-  id                 String              @id @default(cuid())
-  organizationId     String
-  dispatchStrategy   OpsDispatchStrategy @default(MANUAL)
-  softLimitOwnedLeads Int?
-  hardLimitOwnedLeads Int?
+  id                     String              @id @default(cuid())
+  organizationId         String
+  dispatchStrategy       OpsDispatchStrategy @default(MANUAL)
+  softLimitOwnedLeads    Int?
+  hardLimitOwnedLeads    Int?
   /// Last user id used for ROUND_ROBIN (org-scoped)
   roundRobinCursorUserId String?
-  isActive           Boolean             @default(true)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  isActive               Boolean             @default(true)
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
 
@@ -1068,19 +1077,19 @@ model OpsCapacityPolicy {
 /// One OPEN per org+entity enforced by partial unique index in SQL:
 /// ops_escalations_one_open_per_entity (Sprint 6.6).
 model OpsEscalation {
-  id               String               @id @default(cuid())
+  id               String              @id @default(cuid())
   organizationId   String
   entityType       OpsEntityType
   entityId         String
   leadId           String?
   queueId          OpsQueueId
   reason           String
-  status           OpsEscalationStatus  @default(OPEN)
-  openedAt         DateTime             @default(now())
+  status           OpsEscalationStatus @default(OPEN)
+  openedAt         DateTime            @default(now())
   resolvedAt       DateTime?
   resolvedByUserId String?
   metadata         Json?
-  createdAt        DateTime             @default(now())
+  createdAt        DateTime            @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
 
@@ -1092,18 +1101,18 @@ model OpsEscalation {
 
 /// Short-lived claim lock — one active claim per org+queue+entity.
 model OpsQueueClaim {
-  id             String      @id @default(cuid())
-  organizationId String
-  queueId        OpsQueueId
-  entityType     OpsEntityType
-  entityId       String
+  id              String        @id @default(cuid())
+  organizationId  String
+  queueId         OpsQueueId
+  entityType      OpsEntityType
+  entityId        String
   claimedByUserId String
-  claimedAt      DateTime   @default(now())
-  heartbeatAt    DateTime   @default(now())
-  expiresAt      DateTime
-  releasedAt     DateTime?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  claimedAt       DateTime      @default(now())
+  heartbeatAt     DateTime      @default(now())
+  expiresAt       DateTime
+  releasedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
 
@@ -2760,50 +2769,50 @@ model AchievementCategory {
 }
 
 model Achievement {
-  id                 String    @id @default(cuid())
-  organizationId     String
-  studentId          String
-  categoryId         String
-  title              String
-  slug               String
-  shortDescription   String    @default("")
-  description        String    @default("")
-  achievementDate    DateTime?
-  schoolYear         String?
-  issuer             String?
-  level              String?
-  place              String?
-  score              String?
-  certificateMediaId String?
-  coverMediaId       String?
-  isFeatured         Boolean   @default(false)
-  featuredPriority   Int       @default(0)
-  displayOrder       Int       @default(0)
+  id                       String    @id @default(cuid())
+  organizationId           String
+  studentId                String
+  categoryId               String
+  title                    String
+  slug                     String
+  shortDescription         String    @default("")
+  description              String    @default("")
+  achievementDate          DateTime?
+  schoolYear               String?
+  issuer                   String?
+  level                    String?
+  place                    String?
+  score                    String?
+  certificateMediaId       String?
+  coverMediaId             String?
+  isFeatured               Boolean   @default(false)
+  featuredPriority         Int       @default(0)
+  displayOrder             Int       @default(0)
   /// CMS hero placements (cinematic showcase)
-  showInHomepageHero         Boolean   @default(false)
-  showInHomepageSlider       Boolean   @default(false)
-  showInHomepageTicker       Boolean   @default(false)
-  showInAchievementHero      Boolean   @default(false)
-  showInAchievementGallery   Boolean   @default(false)
-  heroPublishFrom            DateTime?
-  heroPublishUntil           DateTime?
+  showInHomepageHero       Boolean   @default(false)
+  showInHomepageSlider     Boolean   @default(false)
+  showInHomepageTicker     Boolean   @default(false)
+  showInAchievementHero    Boolean   @default(false)
+  showInAchievementGallery Boolean   @default(false)
+  heroPublishFrom          DateTime?
+  heroPublishUntil         DateTime?
   /// Per-slide cinematic framing: object-position (0–100%) + zoom scale per breakpoint
-  desktopFocusX              Float     @default(50)
-  desktopFocusY              Float     @default(50)
-  tabletFocusX               Float     @default(50)
-  tabletFocusY               Float     @default(50)
-  mobileFocusX               Float     @default(50)
-  mobileFocusY               Float     @default(50)
-  desktopZoom                Float     @default(1)
-  tabletZoom                 Float     @default(1)
-  mobileZoom                 Float     @default(1)
-  seoTitle           String?
-  seoDescription     String?
-  isPublished        Boolean   @default(false)
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  archivedAt         DateTime?
-  deletedAt          DateTime?
+  desktopFocusX            Float     @default(50)
+  desktopFocusY            Float     @default(50)
+  tabletFocusX             Float     @default(50)
+  tabletFocusY             Float     @default(50)
+  mobileFocusX             Float     @default(50)
+  mobileFocusY             Float     @default(50)
+  desktopZoom              Float     @default(1)
+  tabletZoom               Float     @default(1)
+  mobileZoom               Float     @default(1)
+  seoTitle                 String?
+  seoDescription           String?
+  isPublished              Boolean   @default(false)
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  archivedAt               DateTime?
+  deletedAt                DateTime?
 
   organization     Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   student          Student             @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
@@ -3227,49 +3236,49 @@ enum RegistrationFlowVariantKind {
 /// Product & Service Flow — admin-configurable catalog entry for the Registration Engine.
 /// Public route remains /register/[slug]; admin remains /admin/registrations/flows.
 model RegistrationFlow {
-  id                 String                          @id @default(cuid())
-  organizationId     String
-  title              String
-  slug               String
-  description        String                          @default("")
-  coverMediaId       String?
-  lifecycle          RegistrationFlowLifecycle       @default(DRAFT)
-  productType        RegistrationProductType         @default(SCHOOL_REGISTRATION)
+  id                          String                          @id @default(cuid())
+  organizationId              String
+  title                       String
+  slug                        String
+  description                 String                          @default("")
+  coverMediaId                String?
+  lifecycle                   RegistrationFlowLifecycle       @default(DRAFT)
+  productType                 RegistrationProductType         @default(SCHOOL_REGISTRATION)
   /// Optional link to an existing Form Builder form (questions live there).
-  formId             String?
-  opensAt            DateTime?
-  closesAt           DateTime?
-  academicYear       String?
+  formId                      String?
+  opensAt                     DateTime?
+  closesAt                    DateTime?
+  academicYear                String?
   /// Comma-separated or free-text grade targeting (e.g. "پایه دهم,پایه یازدهم").
-  gradeTargets       String?
+  gradeTargets                String?
   /// Course / class / service label for targeting.
-  courseTarget       String?
-  capacity           Int?
+  courseTarget                String?
+  capacity                    Int?
   /// Settles only via existing Payment Foundation (PaymentIntent).
-  paymentMode        RegistrationFlowPaymentMode     @default(FIXED_PRICE)
+  paymentMode                 RegistrationFlowPaymentMode     @default(FIXED_PRICE)
   /// Configured amount in Rials (FIXED_PRICE / DEPOSIT / INSTALLMENT base).
-  paymentAmountRials Int                             @default(0)
+  paymentAmountRials          Int                             @default(0)
   /// Optional promotional / sale amount in Rials (UX pricing card + countdown).
-  saleAmountRials    Int?
-  pricingBadge       String?
-  discountStartsAt   DateTime?
-  discountEndsAt     DateTime?
-  showDiscountCountdown Boolean                      @default(true)
-  showRemainingCapacity Boolean                      @default(true)
-  paymentTitle       String?
-  paymentDeadlineAt  DateTime?
-  fulfillmentMode    RegistrationFlowFulfillmentMode @default(NONE)
+  saleAmountRials             Int?
+  pricingBadge                String?
+  discountStartsAt            DateTime?
+  discountEndsAt              DateTime?
+  showDiscountCountdown       Boolean                         @default(true)
+  showRemainingCapacity       Boolean                         @default(true)
+  paymentTitle                String?
+  paymentDeadlineAt           DateTime?
+  fulfillmentMode             RegistrationFlowFulfillmentMode @default(NONE)
   /// Registration confirmation SMS (SMS.ir pattern / SmsTemplate.code).
-  confirmationSmsEnabled      Boolean @default(false)
-  adminNotificationSmsEnabled Boolean @default(false)
+  confirmationSmsEnabled      Boolean                         @default(false)
+  adminNotificationSmsEnabled Boolean                         @default(false)
   smsTemplateCode             String?
   /// JSON string[] of normalized mobile numbers for admin alerts.
-  adminSmsRecipients          Json    @default("[]")
-  publishedAt        DateTime?
-  metadata           Json?
-  createdAt          DateTime                        @default(now())
-  updatedAt          DateTime                        @updatedAt
-  deletedAt          DateTime?
+  adminSmsRecipients          Json                            @default("[]")
+  publishedAt                 DateTime?
+  metadata                    Json?
+  createdAt                   DateTime                        @default(now())
+  updatedAt                   DateTime                        @updatedAt
+  deletedAt                   DateTime?
 
   organization         Organization                          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   coverMedia           MediaAsset?                           @relation("RegistrationFlowCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
@@ -3501,15 +3510,15 @@ model Registration {
   updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?
 
-  organization     Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch           Branch                 @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  lead             Lead?                  @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
-  registrationFlow RegistrationFlow?      @relation(fields: [organizationId, registrationFlowId], references: [organizationId, id], onDelete: Restrict)
-  paymentIntents         PaymentIntent[]
-  documents              RegistrationDocument[]
-  notes                  RegistrationNote[]
-  activities             RegistrationActivity[]
-  attributionSnapshots   AttributionSnapshot[]
+  organization         Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch               Branch                 @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  lead                 Lead?                  @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  registrationFlow     RegistrationFlow?      @relation(fields: [organizationId, registrationFlowId], references: [organizationId, id], onDelete: Restrict)
+  paymentIntents       PaymentIntent[]
+  documents            RegistrationDocument[]
+  notes                RegistrationNote[]
+  activities           RegistrationActivity[]
+  attributionSnapshots AttributionSnapshot[]
 
   @@unique([organizationId, registrationNumber])
   @@unique([organizationId, id])
@@ -3545,6 +3554,11 @@ enum PaymentStatus {
 enum PaymentPayableType {
   REGISTRATION
   COMMERCE_ORDER
+  /// Journey Engine Step 3 — Guidance package registration checkout.
+  /// Verified by its own dedicated lib/guidance/journey/payment.ts flow
+  /// (own callback route) — never routed through the shared
+  /// verifyPaymentCallback() used by Registration/Commerce.
+  GUIDANCE_PACKAGE
   /// Reserved for future domains — do not create intents with these until wired.
   BOOKING
   TUITION
@@ -3581,11 +3595,11 @@ model PaymentIntent {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
-  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  registration Registration?     @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
-  sessions     PaymentSession[]
-  eventLogs    PaymentEventLog[]
-   attributionSnapshots AttributionSnapshot[]
+  organization         Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  registration         Registration?         @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
+  sessions             PaymentSession[]
+  eventLogs            PaymentEventLog[]
+  attributionSnapshots AttributionSnapshot[]
 
   @@unique([organizationId, idempotencyKey])
   @@unique([organizationId, id])
@@ -3877,7 +3891,7 @@ model CommerceCategory {
   organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   branch       Branch?                @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
   parent       CommerceCategory?      @relation("CommerceCategoryTree", fields: [organizationId, parentId], references: [organizationId, id], onDelete: Restrict)
-  children     CommerceCategory[]      @relation("CommerceCategoryTree")
+  children     CommerceCategory[]     @relation("CommerceCategoryTree")
   imageAsset   MediaAsset?            @relation("CommerceCategoryImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
   itemLinks    CommerceItemCategory[]
 
@@ -3915,62 +3929,62 @@ model CommerceBusinessType {
 
 /// Universal sellable catalog entity (physical goods, digital, courses, events, services, …).
 model CommerceItem {
-  id                   String             @id @default(cuid())
-  organizationId       String
+  id                  String               @id @default(cuid())
+  organizationId      String
   /// Optional branch ownership; null = organization-wide catalog item.
-  branchId             String?
-  title                String
-  slug                 String
-  shortDescription     String             @default("")
-  description          String             @default("")
-  status               CommerceItemStatus @default(DRAFT)
-  systemKind           CommerceSystemKind @default(CUSTOM)
-  businessTypeId       String?
-  basePriceRials       Int                @default(0)
-  salePriceRials       Int?
-  currency             String             @default("IRR")
+  branchId            String?
+  title               String
+  slug                String
+  shortDescription    String               @default("")
+  description         String               @default("")
+  status              CommerceItemStatus   @default(DRAFT)
+  systemKind          CommerceSystemKind   @default(CUSTOM)
+  businessTypeId      String?
+  basePriceRials      Int                  @default(0)
+  salePriceRials      Int?
+  currency            String               @default("IRR")
   /// Pricing schedule readiness (null = always-on pricing).
-  priceStartsAt        DateTime?
-  priceEndsAt          DateTime?
-  primaryImageAssetId  String?
-  sku                  String?
-  barcode              String?
-  trackInventory       Boolean            @default(false)
-  stockQuantity        Int?
-  unlimitedStock       Boolean            @default(true)
+  priceStartsAt       DateTime?
+  priceEndsAt         DateTime?
+  primaryImageAssetId String?
+  sku                 String?
+  barcode             String?
+  trackInventory      Boolean              @default(false)
+  stockQuantity       Int?
+  unlimitedStock      Boolean              @default(true)
   /// Fulfillment hints (derived defaults from systemKind; overridable).
-  requiresShipping     Boolean            @default(false)
-  grantsDigitalAccess  Boolean            @default(false)
-  requiresScheduling   Boolean            @default(false)
-  requiresEnrollment   Boolean            @default(false)
+  requiresShipping    Boolean              @default(false)
+  grantsDigitalAccess Boolean              @default(false)
+  requiresScheduling  Boolean              @default(false)
+  requiresEnrollment  Boolean              @default(false)
   /// Soft visibility toggle (independent from lifecycle status).
-  isVisible            Boolean            @default(true)
+  isVisible           Boolean              @default(true)
   /// Booklet / physical catalog attributes (MVP).
-  authors              String             @default("")
-  subject              String?
-  gradeLabel           String?
-  pageCount            Int?
-  editionYear          Int?
-  printType            CommercePrintType?
-  bindingType          CommerceBindingType?
-  formatSize           CommerceFormatSize?
+  authors             String               @default("")
+  subject             String?
+  gradeLabel          String?
+  pageCount           Int?
+  editionYear         Int?
+  printType           CommercePrintType?
+  bindingType         CommerceBindingType?
+  formatSize          CommerceFormatSize?
   /// Managed feature / TOC list (JSON string array).
-  features             Json?
-  metaTitle            String?
-  metaDescription      String?
-  isFeatured           Boolean            @default(false)
-  sortOrder            Int                @default(0)
-  metadata             Json?
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  deletedAt            DateTime?
+  features            Json?
+  metaTitle           String?
+  metaDescription     String?
+  isFeatured          Boolean              @default(false)
+  sortOrder           Int                  @default(0)
+  metadata            Json?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  deletedAt           DateTime?
 
-  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch       Branch?                @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  businessType CommerceBusinessType?  @relation(fields: [organizationId, businessTypeId], references: [organizationId, id], onDelete: Restrict)
-  primaryImage MediaAsset?            @relation("CommerceItemPrimaryImage", fields: [primaryImageAssetId], references: [id], onDelete: SetNull)
+  organization  Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch        Branch?                @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  businessType  CommerceBusinessType?  @relation(fields: [organizationId, businessTypeId], references: [organizationId, id], onDelete: Restrict)
+  primaryImage  MediaAsset?            @relation("CommerceItemPrimaryImage", fields: [primaryImageAssetId], references: [id], onDelete: SetNull)
   categoryLinks CommerceItemCategory[]
-  orderItems   CommerceOrderItem[]
+  orderItems    CommerceOrderItem[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -4023,72 +4037,72 @@ model CommerceNotificationSettings {
 }
 
 model CommerceOrder {
-  id             String                     @id @default(cuid())
-  organizationId String
+  id                     String                        @id @default(cuid())
+  organizationId         String
   /// Catalog / production branch (the booklet belongs here).
-  branchId       String?
+  branchId               String?
   /// Student-chosen pickup location (محل دریافت جزوه).
-  pickupBranchId String?
-  orderNumber    String
-  status         CommerceOrderStatus        @default(DRAFT)
-  paymentStatus  CommerceOrderPaymentStatus @default(UNPAID)
+  pickupBranchId         String?
+  orderNumber            String
+  status                 CommerceOrderStatus           @default(DRAFT)
+  paymentStatus          CommerceOrderPaymentStatus    @default(UNPAID)
   /// Operational pipeline stage (staff workflow). Kept in sync with status/fulfillment.
-  opsStage       CommerceOpsStage           @default(REGISTERED)
-  buyerName      String?
-  buyerFirstName String?
-  buyerLastName  String?
-  parentName     String?
-  buyerMobile    String?
-  buyerEmail     String?
-  buyerNationalCode String?
-  studentGrade   CommerceStudentGrade?
-  studentMajor   CommerceStudentMajor?
-  acquisitionSource CommerceAcquisitionSource?
-  referredBy     String?
-  discountCode   String?
-  bookletPaymentMethod CommerceBookletPaymentMethod?
-  urgentDelivery Boolean                   @default(false)
-  preferredPickupAt DateTime?
-  specialNotes   String?
-  handoverStaffUserId String?
-  qrToken        String                    @unique @default(cuid())
+  opsStage               CommerceOpsStage              @default(REGISTERED)
+  buyerName              String?
+  buyerFirstName         String?
+  buyerLastName          String?
+  parentName             String?
+  buyerMobile            String?
+  buyerEmail             String?
+  buyerNationalCode      String?
+  studentGrade           CommerceStudentGrade?
+  studentMajor           CommerceStudentMajor?
+  acquisitionSource      CommerceAcquisitionSource?
+  referredBy             String?
+  discountCode           String?
+  bookletPaymentMethod   CommerceBookletPaymentMethod?
+  urgentDelivery         Boolean                       @default(false)
+  preferredPickupAt      DateTime?
+  specialNotes           String?
+  handoverStaffUserId    String?
+  qrToken                String                        @unique @default(cuid())
   /// Permanent public tracking payload (6-char code) — QR + SMS always use
   /// the short link built from this, never the long qrToken. Generated once
   /// at order creation and never reassigned.
-  shortCode      String                    @unique
-  inProductionAt DateTime?
-  opsVip         Boolean                   @default(false)
-  pickupSignedBy String?
-  pickupSignedAt DateTime?
-  leadId         String?
-  subtotalRials  Int                        @default(0)
-  discountRials  Int                        @default(0)
-  taxRials       Int                        @default(0)
-  shippingRials  Int                        @default(0)
-  grandTotalRials Int                       @default(0)
-  currency       String                     @default("IRR")
+  shortCode              String                        @unique
+  inProductionAt         DateTime?
+  opsVip                 Boolean                       @default(false)
+  pickupSignedBy         String?
+  pickupSignedAt         DateTime?
+  leadId                 String?
+  subtotalRials          Int                           @default(0)
+  discountRials          Int                           @default(0)
+  taxRials               Int                           @default(0)
+  shippingRials          Int                           @default(0)
+  grandTotalRials        Int                           @default(0)
+  currency               String                        @default("IRR")
   /// On-site handover at the selected branch (no postal shipping).
-  deliveryMethod    CommerceDeliveryMethod     @default(PICKUP_ONSITE)
-  fulfillmentStatus CommerceFulfillmentStatus?
+  deliveryMethod         CommerceDeliveryMethod        @default(PICKUP_ONSITE)
+  fulfillmentStatus      CommerceFulfillmentStatus?
   readyForPickupAt       DateTime?
   readyForPickupByUserId String?
-  deliveredAt       DateTime?
-  deliveredByUserId String?
-  deliveryNote      String?
-  notes          String?
-  metadata       Json?
-  createdAt      DateTime                   @default(now())
-  updatedAt      DateTime                   @updatedAt
+  deliveredAt            DateTime?
+  deliveredByUserId      String?
+  deliveryNote           String?
+  notes                  String?
+  metadata               Json?
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
 
-  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch       Branch?             @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  pickupBranch Branch?             @relation("CommerceOrderPickupBranch", fields: [organizationId, pickupBranchId], references: [organizationId, id], onDelete: Restrict)
-  lead         Lead?               @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
-  deliveredBy  User?               @relation("CommerceOrderDeliveredBy", fields: [deliveredByUserId], references: [id], onDelete: SetNull)
-  readyForPickupBy User?           @relation("CommerceOrderReadyForPickupBy", fields: [readyForPickupByUserId], references: [id], onDelete: SetNull)
-  handoverStaff User?              @relation("CommerceOrderHandoverStaff", fields: [handoverStaffUserId], references: [id], onDelete: SetNull)
-  items        CommerceOrderItem[]
-  events       CommerceOrderEvent[]
+  organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch           Branch?              @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  pickupBranch     Branch?              @relation("CommerceOrderPickupBranch", fields: [organizationId, pickupBranchId], references: [organizationId, id], onDelete: Restrict)
+  lead             Lead?                @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  deliveredBy      User?                @relation("CommerceOrderDeliveredBy", fields: [deliveredByUserId], references: [id], onDelete: SetNull)
+  readyForPickupBy User?                @relation("CommerceOrderReadyForPickupBy", fields: [readyForPickupByUserId], references: [id], onDelete: SetNull)
+  handoverStaff    User?                @relation("CommerceOrderHandoverStaff", fields: [handoverStaffUserId], references: [id], onDelete: SetNull)
+  items            CommerceOrderItem[]
+  events           CommerceOrderEvent[]
 
   @@unique([organizationId, orderNumber])
   @@unique([organizationId, id])
@@ -4111,7 +4125,7 @@ model CommerceOrder {
 
 /// Append-only operations timeline (stage changes, notes, edits).
 model CommerceOrderEvent {
-  id             String                  @id @default(cuid())
+  id             String                 @id @default(cuid())
   organizationId String
   orderId        String
   eventType      CommerceOrderEventType
@@ -4120,8 +4134,8 @@ model CommerceOrderEvent {
   note           String?
   actorUserId    String?
   metadata       Json?
-  occurredAt     DateTime                @default(now())
-  createdAt      DateTime                @default(now())
+  occurredAt     DateTime               @default(now())
+  createdAt      DateTime               @default(now())
 
   organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   order        CommerceOrder @relation(fields: [organizationId, orderId], references: [organizationId, id], onDelete: Restrict)
@@ -4134,21 +4148,21 @@ model CommerceOrderEvent {
 }
 
 model CommerceOrderItem {
-  id                    String            @id @default(cuid())
-  organizationId        String
-  orderId               String
-  itemId                String?
+  id                 String             @id @default(cuid())
+  organizationId     String
+  orderId            String
+  itemId             String?
   /// Immutable line snapshots (survive catalog edits / soft-delete).
-  titleSnapshot         String
-  skuSnapshot           String?
-  systemKindSnapshot    CommerceSystemKind
-  unitPriceRials        Int
-  quantity              Int               @default(1)
-  discountRials         Int               @default(0)
-  totalRials            Int
-  metadata              Json?
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
+  titleSnapshot      String
+  skuSnapshot        String?
+  systemKindSnapshot CommerceSystemKind
+  unitPriceRials     Int
+  quantity           Int                @default(1)
+  discountRials      Int                @default(0)
+  totalRials         Int
+  metadata           Json?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   order        CommerceOrder @relation(fields: [organizationId, orderId], references: [organizationId, id], onDelete: Restrict)
@@ -4159,7 +4173,6 @@ model CommerceOrderItem {
   @@index([organizationId, itemId])
   @@map("commerce_order_items")
 }
-
 
 // ─── Experience Engine (SXP Phase S1) ────────────────────────────────────────
 // Additive hub projector. Default-off via OrganizationFeatureFlag key "sxp".
@@ -4259,7 +4272,6 @@ model OrganizationFeatureFlag {
   @@index([organizationId, enabled])
   @@map("organization_feature_flags")
 }
-
 
 model ExperienceProfile {
   id             String    @id @default(cuid())
@@ -4494,8 +4506,8 @@ model BookSku {
   updatedAt      DateTime      @updatedAt
   deletedAt      DateTime?
 
-  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  title        BookTitle      @relation(fields: [organizationId, titleId], references: [organizationId, id], onDelete: Restrict)
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  title        BookTitle             @relation(fields: [organizationId, titleId], references: [organizationId, id], onDelete: Restrict)
   prices       BookSkuPrice[]
   tags         BookSkuTag[]
   importRows   BookImportRowResult[]
@@ -4552,24 +4564,24 @@ model BookSkuTag {
 /// Enterprise Excel import: upload → preview → validate → commit → report.
 /// Never evaluates formulas; values only. Committed in transactional chunks.
 model BookImportJob {
-  id                 String               @id @default(cuid())
+  id                 String              @id @default(cuid())
   organizationId     String
-  jobType            BookImportJobType    @default(CATALOG)
-  status             BookImportJobStatus  @default(UPLOADED)
+  jobType            BookImportJobType   @default(CATALOG)
+  status             BookImportJobStatus @default(UPLOADED)
   fileName           String
   checksum           String
-  totalRows          Int                  @default(0)
-  processedRows      Int                  @default(0)
-  insertedCount      Int                  @default(0)
-  updatedCount       Int                  @default(0)
-  skippedCount       Int                  @default(0)
-  duplicateCount     Int                  @default(0)
-  errorCount         Int                  @default(0)
-  priceChangeCount   Int                  @default(0)
+  totalRows          Int                 @default(0)
+  processedRows      Int                 @default(0)
+  insertedCount      Int                 @default(0)
+  updatedCount       Int                 @default(0)
+  skippedCount       Int                 @default(0)
+  duplicateCount     Int                 @default(0)
+  errorCount         Int                 @default(0)
+  priceChangeCount   Int                 @default(0)
   reportMediaAssetId String?
   createdByUserId    String?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
   completedAt        DateTime?
 
   organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
@@ -4612,6 +4624,20 @@ enum GuidancePlanStatus {
   PRE_REGISTERED
   INTAKE_INCOMPLETE
   FINAL_GRADES_UPLOADED
+  /// Journey Engine (Phase 1) — one value per completed step (1..12), append-only.
+  /// Legacy values above remain valid for historical rows and are never removed.
+  STEP1_COMPLETED
+  STEP2_COMPLETED
+  STEP3_COMPLETED
+  STEP4_COMPLETED
+  STEP5_COMPLETED
+  STEP6_COMPLETED
+  STEP7_COMPLETED
+  STEP8_COMPLETED
+  STEP9_COMPLETED
+  STEP10_COMPLETED
+  STEP11_COMPLETED
+  STEP12_COMPLETED
 }
 
 enum GuidanceExamGroup {
@@ -4624,6 +4650,8 @@ enum GuidanceExamGroup {
 
 enum GuidanceDocumentType {
   FINAL_GRADES
+  /// Journey Engine Step 5 — official Sanjesh exam result upload.
+  EXAM_RESULT
 }
 
 enum GuidanceDocumentVerificationStatus {
@@ -4632,29 +4660,62 @@ enum GuidanceDocumentVerificationStatus {
   REJECTED
 }
 
+/// Journey Engine Step 1 — Iranian university-entry admission quota categories.
+enum GuidanceQuota {
+  NORMAL
+  VETERAN_5
+  VETERAN_25
+  VETERAN_FAMILY
+  COMBATANT_FAMILY
+  DISABLED
+  REMOTE_REGION
+  OTHER
+}
+
 /// Guidance case (SoR). External surfaces must use publicId — never expose id.
 model GuidancePlan {
-  id             String             @id @default(cuid())
+  id               String             @id @default(cuid())
   /// Immutable public identifier for portal URLs, APIs, and integrations.
-  publicId       String             @default(cuid())
-  organizationId String
-  studentId      String
-  userId         String
-  status         GuidancePlanStatus @default(PRE_REGISTERED)
-  examGroup      GuidanceExamGroup
+  publicId         String             @default(cuid())
+  organizationId   String
+  studentId        String
+  userId           String
+  status           GuidancePlanStatus @default(PRE_REGISTERED)
+  examGroup        GuidanceExamGroup
   /// Snapshot of accepted pre-registration consent (not CRM ConsentRecord — that is Lead-scoped).
   consentGrantedAt DateTime?
   consentVersion   String?
   consentText      String?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  deletedAt      DateTime?
 
-  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  /// ── Journey Engine (Phase 1) — server-enforced 12-step wizard state ──────
+  /// SoR for step-lock enforcement. Never trust client-submitted step numbers.
+  currentStep             Int            @default(1)
+  /// Sorted array of completed step numbers, e.g. [1,2,3]. Json for portability.
+  completedSteps          Json           @default("[]")
+  completionPercentage    Int            @default(0)
+  /// Step 1 — fields not already covered by Student/User records.
+  quota                   GuidanceQuota?
+  highSchoolAverage       Float?
+  personalInfoConfirmedAt DateTime?
+  /// Step 3 — selected guidance package + payment completion snapshot.
+  guidancePackageCode     String?
+  packagePaidAt           DateTime?
+  /// Step 10 — counselor review/approval of the AI-arranged 150-choice list.
+  choicesApprovedAt       DateTime?
+  choicesApprovedByUserId String?
+  /// Step 12 — final student digital approval (journey completion).
+  finalApprovedAt         DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  organization          Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   // Composite FK: student must belong to the same organization.
-  student      Student             @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
-  user         User                @relation("GuidancePlanUser", fields: [userId], references: [id], onDelete: Restrict)
-  documents    GuidanceDocument[]
+  student               Student            @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  user                  User               @relation("GuidancePlanUser", fields: [userId], references: [id], onDelete: Restrict)
+  choicesApprovedByUser User?              @relation("GuidancePlanChoicesApprover", fields: [choicesApprovedByUserId], references: [id], onDelete: SetNull)
+  documents             GuidanceDocument[]
 
   @@unique([organizationId, publicId])
   @@unique([organizationId, id])
@@ -4662,6 +4723,7 @@ model GuidancePlan {
   @@index([organizationId, studentId, deletedAt])
   @@index([organizationId, userId, deletedAt])
   @@index([userId])
+  @@index([choicesApprovedByUserId])
   @@map("guidance_plans")
 }
 
