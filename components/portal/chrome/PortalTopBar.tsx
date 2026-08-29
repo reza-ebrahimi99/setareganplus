@@ -9,6 +9,10 @@ type PortalTopBarProps = {
   organizationName: string;
   showAccountSwitcher?: boolean;
   onToggleSidebar?: () => void;
+  /** Whether the mobile/tablet drawer is open (for aria). */
+  mobileNavOpen?: boolean;
+  /** Optional id of the overlay control for aria-controls. */
+  sidebarControlsId?: string;
   /** Optional product line under StarOS (e.g. Guidance Platform). */
   productTitle?: string;
 };
@@ -21,6 +25,8 @@ export function PortalTopBar({
   organizationName,
   showAccountSwitcher = false,
   onToggleSidebar,
+  mobileNavOpen = false,
+  sidebarControlsId,
   productTitle,
 }: PortalTopBarProps) {
   return (
@@ -31,7 +37,9 @@ export function PortalTopBar({
             type="button"
             className="portal-topbar__icon-btn portal-topbar__sidebar-toggle"
             onClick={onToggleSidebar}
-            aria-label="جمع‌وجور کردن منو"
+            aria-expanded={mobileNavOpen}
+            aria-controls={sidebarControlsId}
+            aria-label={mobileNavOpen ? "بستن منو" : "باز کردن منو"}
           >
             <PortalIcon name="panel" className="size-5" />
           </button>
