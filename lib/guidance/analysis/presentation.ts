@@ -230,6 +230,25 @@ function buildRecommendations(input: {
   }
 
   const meeting = input.steps.find((s) => s.key === "CONSULTATION_BOOKING");
+  const profileStep = input.steps.find((s) => s.key === "PROFILE_COMPLETION");
+  if (profileStep && profileStep.state === "active") {
+    pool.push({
+      id: "rec-complete-360-profile",
+      title: "پروفایل ۳۶۰ درجه را کامل کن",
+      description: "هویت دیجیتال بخش‌به‌بخش — گام بعدی پس از آزمون رغبت.",
+      status: "active",
+      statusLabel: cardStatusLabel("active"),
+      icon: "user",
+      cta: {
+        href:
+          profileStep.href ??
+          "/portal/student/services/guidance?view=profile",
+        label: "تکمیل پروفایل",
+      },
+      source: "rules",
+      rank: 28,
+    });
+  }
   if (meeting && meeting.state !== "complete") {
     pool.push({
       id: "rec-book-meeting",
@@ -349,15 +368,38 @@ export function buildAnalysisPresentationModel(
       : null);
 
   const profileComplete = Boolean(input.gradeName && studentName);
+  const profileStep = steps.find((s) => s.key === "PROFILE_COMPLETION");
+  const profile360Active =
+    profileStep?.state === "active" || profileStep?.state === "complete";
   const checklistItems: AnalysisChecklistItem[] = [
     {
       id: "check-profile",
       key: "PROFILE",
-      title: CHECKLIST_COPY.PROFILE.title,
-      status: profileComplete ? "complete" : "active",
-      statusLabel: cardStatusLabel(profileComplete ? "complete" : "active"),
-      description: CHECKLIST_COPY.PROFILE.description,
-      cta: { href: "/portal/student/profile", label: "پروفایل" },
+      title: profile360Active
+        ? "پروفایل ۳۶۰ درجه"
+        : CHECKLIST_COPY.PROFILE.title,
+      status: profileStep
+        ? mapStepCardStatus(profileStep.state)
+        : profileComplete
+          ? "complete"
+          : "active",
+      statusLabel: cardStatusLabel(
+        profileStep
+          ? mapStepCardStatus(profileStep.state)
+          : profileComplete
+            ? "complete"
+            : "active",
+      ),
+      description: profile360Active
+        ? "هویت دیجیتال هدایت تحصیلی — بخش‌به‌بخش."
+        : CHECKLIST_COPY.PROFILE.description,
+      cta: {
+        href: profile360Active
+          ? profileStep?.href ??
+            "/portal/student/services/guidance?view=profile"
+          : "/portal/student/profile",
+        label: profile360Active ? "تکمیل پروفایل" : "پروفایل",
+      },
       icon: CHECKLIST_COPY.PROFILE.icon,
     },
     {

@@ -15,7 +15,7 @@ const TIMELINE_LABELS: Record<GuidanceIntakeChecklistKey, string> = {
   FINAL_GRADES: "بارگذاری کارنامه",
   INITIAL_ANALYSIS: "تحلیل اولیه",
   INTEREST_ASSESSMENT: "آزمون رغبت",
-  PROFILE_COMPLETION: "تکمیل اطلاعات",
+  PROFILE_COMPLETION: "تکمیل پروفایل",
   CONSULTATION_BOOKING: "رزرو جلسه",
 };
 
@@ -26,6 +26,7 @@ export type GuidanceTimelineStep = GuidanceIntakeChecklistItem & {
 
 export type GuidanceTimelineOptions = {
   interestAssessmentStatus?: "not_started" | "in_progress" | "completed" | null;
+  profileCompletionStatus?: "not_started" | "in_progress" | "completed" | null;
 };
 
 export function buildGuidancePortalTimeline(
@@ -38,6 +39,7 @@ export function buildGuidancePortalTimeline(
     finalGradesVerificationPending:
       plan.latestFinalGrades?.verificationStatus === "PENDING",
     interestAssessmentStatus: options.interestAssessmentStatus,
+    profileCompletionStatus: options.profileCompletionStatus,
   });
 
   return checklist.map((item) => ({
@@ -52,6 +54,9 @@ export function buildGuidancePortalTimeline(
           : item.key === "INTEREST_ASSESSMENT" &&
               (item.state === "active" || item.state === "complete")
             ? "/portal/student/services/guidance?view=interest"
-            : null,
+            : item.key === "PROFILE_COMPLETION" &&
+                (item.state === "active" || item.state === "complete")
+              ? "/portal/student/services/guidance?view=profile"
+              : null,
   }));
 }

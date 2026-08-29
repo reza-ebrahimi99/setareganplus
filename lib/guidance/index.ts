@@ -63,6 +63,13 @@ export {
   type InterestProfileModel,
 } from "@/lib/guidance/interest";
 
+export {
+  buildStudentProfilePresentationModel,
+  buildStudentProfileDashboardWidget,
+  loadGuidanceProfile360Session,
+  type StudentProfilePresentationModel,
+} from "@/lib/guidance/profile360";
+
 export { GUIDANCE_STUDENT_PORTAL_NAV } from "@/lib/guidance/portal-nav";
 
 export {

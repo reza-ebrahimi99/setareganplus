@@ -44,6 +44,10 @@ export type GuidanceIntakeChecklistInput = {
    * Omit / null = not started.
    */
   interestAssessmentStatus?: "not_started" | "in_progress" | "completed" | null;
+  /**
+   * Student 360° Profile (Phase 7) — orthogonal to GuidancePlan.status.
+   */
+  profileCompletionStatus?: "not_started" | "in_progress" | "completed" | null;
 };
 
 /**
@@ -91,6 +95,16 @@ export function deriveGuidanceIntakeChecklist(
     }
   }
 
+  const profileRaw = input.profileCompletionStatus ?? "not_started";
+  let profileState: GuidanceIntakeChecklistItemState = "locked";
+  if (interestState === "complete") {
+    if (profileRaw === "completed") {
+      profileState = "complete";
+    } else {
+      profileState = "active";
+    }
+  }
+
   return [
     {
       key: "PRE_REGISTRATION",
@@ -102,7 +116,7 @@ export function deriveGuidanceIntakeChecklist(
     },
     { key: "INITIAL_ANALYSIS", state: analysisState },
     { key: "INTEREST_ASSESSMENT", state: interestState },
-    { key: "PROFILE_COMPLETION", state: "locked" },
+    { key: "PROFILE_COMPLETION", state: profileState },
     { key: "CONSULTATION_BOOKING", state: "locked" },
   ];
 }

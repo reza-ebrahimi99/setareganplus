@@ -51,10 +51,10 @@ const STEP_COPY: Record<
     accent: "purple",
   },
   PROFILE_COMPLETION: {
-    description: "اطلاعات تکمیلی پرونده را برای جلسه مشاوره کامل کن.",
+    description: "هویت دیجیتال ۳۶۰ درجه را بخش‌به‌بخش کامل کن.",
     outcome: "پرونده آماده مشاوره",
     icon: "book",
-    accent: "blue",
+    accent: "teal",
   },
   CONSULTATION_BOOKING: {
     description: "زمان جلسه با مشاور را رزرو کن و مسیر را جمع‌بندی کن.",
@@ -88,6 +88,7 @@ function actionForStep(
     let label = "ادامه این قدم";
     if (step.key === "FINAL_GRADES") label = "بارگذاری کارنامه";
     if (step.key === "INTEREST_ASSESSMENT") label = "شروع آزمون رغبت";
+    if (step.key === "PROFILE_COMPLETION") label = "تکمیل پروفایل";
     return { href: step.href, label };
   }
   if (step.state === "pending_review") {
@@ -98,6 +99,9 @@ function actionForStep(
   }
   if (step.state === "complete" && step.key === "INTEREST_ASSESSMENT") {
     return { href: step.href, label: "مشاهده نتایج رغبت" };
+  }
+  if (step.state === "complete" && step.key === "PROFILE_COMPLETION") {
+    return { href: step.href, label: "مشاهده پروفایل ۳۶۰" };
   }
   return undefined;
 }
