@@ -62,14 +62,14 @@ export function GuidancePreRegisterForm({ grades }: GuidancePreRegisterFormProps
           </p>
         ) : null}
         <p className="text-sm leading-7 text-muted">
-          گام بعدی (بارگذاری کارنامه و داشبورد مسیر) به‌زودی در پرتال دانش‌آموز فعال
-          می‌شود.
+          گام بعدی را از پرتال دانش‌آموز، بخش «انتخاب رشته» ادامه دهید: بارگذاری
+          کارنامه و پیگیری مسیر.
         </p>
         <a
-          href="/guidance"
+          href="/portal/student/services/guidance"
           className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-white"
         >
-          بازگشت به صفحه معرفی
+          ادامه در پرتال
         </a>
       </div>
     );

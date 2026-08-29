@@ -34,6 +34,22 @@ export {
 } from "@/lib/guidance/pre-register";
 
 export {
+  deriveGuidanceIntakeChecklist,
+  GUIDANCE_INTAKE_CHECKLIST_KEYS,
+  type GuidanceIntakeChecklistItem,
+  type GuidanceIntakeChecklistKey,
+  type GuidanceIntakeChecklistItemState,
+} from "@/lib/guidance/checklist";
+
+export { uploadGuidanceFinalGrades } from "@/lib/guidance/documents";
+
+export { loadGuidancePlanForPortalUser } from "@/lib/guidance/portal";
+
+export { buildGuidancePortalTimeline } from "@/lib/guidance/timeline";
+
+export { GUIDANCE_STUDENT_PORTAL_NAV } from "@/lib/guidance/portal-nav";
+
+export {
   GUIDANCE_DOCUMENT_TYPE_FINAL_GRADES,
   GUIDANCE_DOCUMENT_VERIFICATION_STATUSES,
   GUIDANCE_EXAM_GROUPS,

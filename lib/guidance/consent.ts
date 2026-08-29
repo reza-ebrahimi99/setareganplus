@@ -1,6 +1,16 @@
 /**
  * Guidance ERP — pre-registration consent copy (Phase 0).
- * Stored on GuidancePlan at grant time. Not CRM ConsentRecord (Lead-scoped).
+ *
+ * Phase 0 stores consent attestation on GuidancePlan (consentGrantedAt /
+ * consentVersion / consentText). CRM ConsentRecord is Lead-scoped and is not
+ * used here (no CRM Lead writes in P0).
+ *
+ * FUTURE MIGRATION PATH (do not implement yet):
+ * 1. Introduce party-scoped platform consent (User/Student/Guardian), or extend
+ *    ConsentRecord beyond Lead with a polymorphic subject.
+ * 2. Backfill GuidancePlan consent snapshots into the platform store.
+ * 3. Keep plan fields as immutable evidence OR replace with FK to consent rows.
+ * 4. Preserve AuditLog trails across the cutover.
  */
 
 export const GUIDANCE_PRE_REG_CONSENT_VERSION = "guidance-pre-reg-v1" as const;

@@ -3,6 +3,12 @@
  * Reuses OrganizationFeatureFlag (same contract as Books / SXP).
  * Isolated module on purpose — there is no shared flag helper to extend yet.
  * Child keys in constants are reserved; only the root key is resolved here.
+ *
+ * PERFORMANCE / CACHING (documented — no premature optimization):
+ * Books and SXP also resolve flags with a per-request Prisma findUnique and do
+ * not cache today. SiteShell likewise resolves Guidance once per public render.
+ * Future strategy (when measured): React `cache()` per request, or a short-TTL
+ * org-flag memo shared by Books/SXP/Guidance — without changing the flag contract.
  */
 
 import {
