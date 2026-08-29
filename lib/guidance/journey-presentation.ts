@@ -85,17 +85,19 @@ function actionForStep(
 ): PortalJourneyStep["action"] | undefined {
   if (!step.href) return undefined;
   if (step.state === "active") {
-    return {
-      href: step.href,
-      label:
-        step.key === "FINAL_GRADES" ? "بارگذاری کارنامه" : "ادامه این قدم",
-    };
+    let label = "ادامه این قدم";
+    if (step.key === "FINAL_GRADES") label = "بارگذاری کارنامه";
+    if (step.key === "INTEREST_ASSESSMENT") label = "شروع آزمون رغبت";
+    return { href: step.href, label };
   }
   if (step.state === "pending_review") {
     return {
       href: step.href,
       label: "مشاهده / جایگزینی کارنامه",
     };
+  }
+  if (step.state === "complete" && step.key === "INTEREST_ASSESSMENT") {
+    return { href: step.href, label: "مشاهده نتایج رغبت" };
   }
   return undefined;
 }

@@ -55,6 +55,14 @@ export {
   type AnalysisPipelineStatus,
 } from "@/lib/guidance/analysis";
 
+export {
+  buildInterestAssessmentPresentationModel,
+  buildInterestDashboardWidget,
+  loadGuidanceInterestSession,
+  type InterestAssessmentPresentationModel,
+  type InterestProfileModel,
+} from "@/lib/guidance/interest";
+
 export { GUIDANCE_STUDENT_PORTAL_NAV } from "@/lib/guidance/portal-nav";
 
 export {

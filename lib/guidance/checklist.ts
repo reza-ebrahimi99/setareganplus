@@ -39,6 +39,11 @@ export type GuidanceIntakeChecklistInput = {
   planStatus: GuidanceStatus;
   hasFinalGradesDocument: boolean;
   finalGradesVerificationPending: boolean;
+  /**
+   * Interest Discovery session (Phase 6) — orthogonal to GuidancePlan.status.
+   * Omit / null = not started.
+   */
+  interestAssessmentStatus?: "not_started" | "in_progress" | "completed" | null;
 };
 
 /**
@@ -71,6 +76,21 @@ export function deriveGuidanceIntakeChecklist(
     gradesState = "active";
   }
 
+  /** After grades land, Initial Analysis Center is available (Phase 5). */
+  const analysisState: GuidanceIntakeChecklistItemState = gradesComplete
+    ? "complete"
+    : "locked";
+
+  const interestRaw = input.interestAssessmentStatus ?? "not_started";
+  let interestState: GuidanceIntakeChecklistItemState = "locked";
+  if (gradesComplete) {
+    if (interestRaw === "completed") {
+      interestState = "complete";
+    } else {
+      interestState = "active";
+    }
+  }
+
   return [
     {
       key: "PRE_REGISTRATION",
@@ -80,8 +100,8 @@ export function deriveGuidanceIntakeChecklist(
       key: "FINAL_GRADES",
       state: gradesState,
     },
-    { key: "INITIAL_ANALYSIS", state: "locked" },
-    { key: "INTEREST_ASSESSMENT", state: "locked" },
+    { key: "INITIAL_ANALYSIS", state: analysisState },
+    { key: "INTEREST_ASSESSMENT", state: interestState },
     { key: "PROFILE_COMPLETION", state: "locked" },
     { key: "CONSULTATION_BOOKING", state: "locked" },
   ];

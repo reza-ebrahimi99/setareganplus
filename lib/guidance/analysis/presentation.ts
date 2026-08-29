@@ -207,13 +207,23 @@ function buildRecommendations(input: {
       id: "rec-interest-test",
       title: "آزمون رغبت را آماده کن",
       description:
-        "پس از آماده‌سازی تحلیل اولیه، آزمون رغبت گام بعدی مسیر است.",
+        interest.state === "active"
+          ? "گام بعدی مسیر — کشف علایق و سبک یادگیری."
+          : "پس از آماده‌سازی تحلیل اولیه، آزمون رغبت گام بعدی مسیر است.",
       status: interest.state === "locked" ? "locked" : "active",
       statusLabel: cardStatusLabel(
         interest.state === "locked" ? "locked" : "active",
       ),
       icon: "spark",
-      cta: null,
+      cta:
+        interest.state === "active" || interest.href
+          ? {
+              href:
+                interest.href ??
+                "/portal/student/services/guidance?view=interest",
+              label: "شروع آزمون رغبت",
+            }
+          : null,
       source: "rules",
       rank: 30,
     });
@@ -328,6 +338,16 @@ export function buildAnalysisPresentationModel(
     };
   });
 
+  const interestStep = steps.find((s) => s.key === "INTEREST_ASSESSMENT");
+  const interestStatus = mapStepCardStatus(
+    interestStep?.state ?? "locked",
+  );
+  const interestHref =
+    interestStep?.href ??
+    (interestStatus !== "locked"
+      ? "/portal/student/services/guidance?view=interest"
+      : null);
+
   const profileComplete = Boolean(input.gradeName && studentName);
   const checklistItems: AnalysisChecklistItem[] = [
     {
@@ -368,10 +388,23 @@ export function buildAnalysisPresentationModel(
       id: "check-interest",
       key: "INTEREST_ASSESSMENT",
       title: CHECKLIST_COPY.INTEREST_ASSESSMENT.title,
-      status: "locked",
-      statusLabel: cardStatusLabel("locked"),
-      description: CHECKLIST_COPY.INTEREST_ASSESSMENT.description,
-      cta: null,
+      status: interestStatus,
+      statusLabel: cardStatusLabel(interestStatus),
+      description:
+        interestStatus === "active"
+          ? "گام بعدی مسیر — آزمون رغبت را شروع یا ادامه بده."
+          : interestStatus === "complete"
+            ? "آزمون رغبت ثبت شده است."
+            : CHECKLIST_COPY.INTEREST_ASSESSMENT.description,
+      cta: interestHref
+        ? {
+            href: interestHref,
+            label:
+              interestStatus === "complete"
+                ? "مشاهده نتایج"
+                : "شروع آزمون رغبت",
+          }
+        : null,
       icon: CHECKLIST_COPY.INTEREST_ASSESSMENT.icon,
     },
     {
