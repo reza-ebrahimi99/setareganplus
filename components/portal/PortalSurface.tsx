@@ -10,6 +10,9 @@ type PortalSurfaceProps = {
   accent?: PortalAccentId;
   interactive?: boolean;
   className?: string;
+  id?: string;
+  /** Optional data-* attributes for widget taxonomy / testing. */
+  dataAttributes?: Record<string, string>;
 };
 
 const VARIANT_CLASS: Record<NonNullable<PortalSurfaceProps["variant"]>, string> =
@@ -40,6 +43,8 @@ export function PortalSurface({
   accent,
   interactive = false,
   className,
+  id,
+  dataAttributes,
 }: PortalSurfaceProps) {
   const classes = [
     "portal-surface",
@@ -53,8 +58,10 @@ export function PortalSurface({
 
   return (
     <Tag
+      id={id}
       className={classes}
       {...(accent ? { "data-portal-accent": accent } : {})}
+      {...dataAttributes}
     >
       {children}
     </Tag>

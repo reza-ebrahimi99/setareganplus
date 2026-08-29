@@ -1,3 +1,4 @@
+import { PortalThemeProvider } from "@/components/portal/theme/PortalThemeProvider";
 import {
   PORTAL_ACTIVE_THEME,
   type PortalThemeId,
@@ -6,17 +7,17 @@ import {
 type PortalThemeProps = {
   children: React.ReactNode;
   /**
-   * Theme id applied via data-portal-theme.
-   * Defaults to Classic — the only theme activated in product today.
-   * Dark / Student / Guidance / Competition / Night are architecture only.
+   * Initial preference before localStorage hydrates.
+   * Only enabled themes are applied (Classic today).
    */
   theme?: PortalThemeId;
   className?: string;
 };
 
 /**
- * Scopes portal design tokens under `.portal-os`.
- * Server Component — wrap portal chrome (Phase 1+) so Admin/Marketing stay untouched.
+ * Student Portal OS theme scope.
+ * Server-safe entry that mounts the client provider (localStorage persistence).
+ * Parent portal must NOT use this — keep legacy PortalShell only.
  */
 export function PortalTheme({
   children,
@@ -24,11 +25,8 @@ export function PortalTheme({
   className,
 }: PortalThemeProps) {
   return (
-    <div
-      className={["portal-os", className].filter(Boolean).join(" ")}
-      data-portal-theme={theme}
-    >
+    <PortalThemeProvider defaultTheme={theme} className={className}>
       {children}
-    </div>
+    </PortalThemeProvider>
   );
 }

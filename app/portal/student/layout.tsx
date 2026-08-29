@@ -1,5 +1,5 @@
-import { PortalAccountType } from "@/generated/prisma/enums";
-import { PortalShell } from "@/components/portal/PortalShell";
+import { StudentPortalShell } from "@/components/portal/StudentPortalShell";
+import { buildStudentPortalNavSections } from "@/components/portal/nav/types";
 import { GUIDANCE_STUDENT_PORTAL_NAV } from "@/lib/guidance/portal-nav";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
@@ -19,20 +19,19 @@ export default async function StudentPortalLayout({
     isGuidanceEnabled(context.organization.id),
   ]);
 
-  const extraNavItems = [
-    ...(sxpEnabled ? SXP_STUDENT_NAV : []),
-    ...(guidanceEnabled ? GUIDANCE_STUDENT_PORTAL_NAV : []),
-  ];
+  const sections = buildStudentPortalNavSections({
+    experienceItems: sxpEnabled ? SXP_STUDENT_NAV : undefined,
+    serviceItems: guidanceEnabled ? GUIDANCE_STUDENT_PORTAL_NAV : undefined,
+  });
 
   return (
-    <PortalShell
-      accountType={PortalAccountType.STUDENT}
+    <StudentPortalShell
+      sections={sections}
       userDisplayName={context.user.displayName}
       organizationName={context.organization.name}
       showAccountSwitcher={context.links.length > 1}
-      extraNavItems={extraNavItems}
     >
       {children}
-    </PortalShell>
+    </StudentPortalShell>
   );
 }
