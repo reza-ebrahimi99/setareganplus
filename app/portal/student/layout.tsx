@@ -1,5 +1,11 @@
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { StudentPortalShell } from "@/components/portal/StudentPortalShell";
 import { buildStudentPortalNavSections } from "@/components/portal/nav/types";
+import {
+  GUIDANCE_ONBOARDING_PATH,
+  candidateNeedsGuidanceOnboarding,
+} from "@/lib/guidance/external-candidate";
 import {
   GUIDANCE_PLATFORM_NAV_SECTIONS,
   GUIDANCE_STUDENT_PORTAL_NAV,
@@ -21,6 +27,22 @@ export default async function StudentPortalLayout({
     isSxpEnabled(context.organization.id),
     isGuidanceEnabled(context.organization.id),
   ]);
+
+  const headerStore = await headers();
+  const pathname = headerStore.get("x-pathname") ?? "";
+  const onOnboarding = pathname.startsWith(GUIDANCE_ONBOARDING_PATH);
+  const studentId = context.activeLink.studentId;
+
+  if (guidanceEnabled && studentId && pathname && !onOnboarding) {
+    const needsOnboarding = await candidateNeedsGuidanceOnboarding({
+      organizationId: context.organization.id,
+      userId: context.user.id,
+      studentId,
+    });
+    if (needsOnboarding) {
+      redirect(GUIDANCE_ONBOARDING_PATH);
+    }
+  }
 
   const sections = buildStudentPortalNavSections({
     experienceItems: sxpEnabled ? SXP_STUDENT_NAV : undefined,

@@ -32,7 +32,7 @@ export default async function PortalLoginPage() {
             پرتال دانش‌آموز و والدین
           </h1>
           <p className="mt-2 text-sm text-muted">
-            ورود با شماره موبایل و کد یک‌بارمصرف
+            ورود با شماره موبایل و کد یک‌بارمصرف — دانش‌آموزان فعلی و داوطلبان جدید
           </p>
         </div>
         <PortalLoginForm />

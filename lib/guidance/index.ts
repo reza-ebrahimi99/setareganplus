@@ -34,6 +34,18 @@ export {
 } from "@/lib/guidance/pre-register";
 
 export {
+  GUIDANCE_ONBOARDING_PATH,
+  candidateNeedsGuidanceOnboarding,
+  provisionExternalGuidanceCandidate,
+} from "@/lib/guidance/external-candidate";
+
+export {
+  HIGH_SCHOOL_MAJOR_OPTIONS,
+  completeGuidanceCandidateOnboarding,
+  validateGuidanceOnboardingInput,
+} from "@/lib/guidance/onboarding";
+
+export {
   deriveGuidanceIntakeChecklist,
   GUIDANCE_INTAKE_CHECKLIST_KEYS,
   type GuidanceIntakeChecklistItem,
