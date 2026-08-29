@@ -9,6 +9,8 @@ type PortalTopBarProps = {
   organizationName: string;
   showAccountSwitcher?: boolean;
   onToggleSidebar?: () => void;
+  /** Optional product line under StarOS (e.g. Guidance Platform). */
+  productTitle?: string;
 };
 
 /**
@@ -19,6 +21,7 @@ export function PortalTopBar({
   organizationName,
   showAccountSwitcher = false,
   onToggleSidebar,
+  productTitle,
 }: PortalTopBarProps) {
   return (
     <header className="portal-topbar">
@@ -34,7 +37,9 @@ export function PortalTopBar({
           </button>
         ) : null}
         <div className="min-w-0">
-          <p className="portal-topbar__eyebrow">ستارگان پلاس</p>
+          <p className="portal-topbar__eyebrow">
+            {productTitle ? productTitle : "ستارگان پلاس"}
+          </p>
           <p className="portal-topbar__org truncate" title={organizationName}>
             {organizationName}
           </p>

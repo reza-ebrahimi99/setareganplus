@@ -78,14 +78,55 @@ export const STUDENT_PORTAL_NAV_SECTIONS_BASE: PortalOsNavSection[] = [
   },
 ];
 
+/**
+ * Split an href that may include `?query` into pathname + search string.
+ */
+export function splitPortalHref(href: string): {
+  pathname: string;
+  search: string;
+} {
+  const q = href.indexOf("?");
+  if (q === -1) {
+    return { pathname: href, search: "" };
+  }
+  return { pathname: href.slice(0, q), search: href.slice(q + 1) };
+}
+
+function readViewParam(search: string): string | null {
+  if (!search) return null;
+  const params = new URLSearchParams(
+    search.startsWith("?") ? search.slice(1) : search,
+  );
+  const view = params.get("view");
+  return view && view.length > 0 ? view : null;
+}
+
+/**
+ * Active-state helper — pathname + optional `?view=` awareness.
+ * Pass `search` from `useSearchParams().toString()` on the client.
+ */
 export function isPortalNavActive(
   pathname: string,
   item: Pick<PortalOsNavItem, "href" | "match">,
+  search?: string | null,
 ): boolean {
+  const target = splitPortalHref(item.href);
+  const itemView = readViewParam(target.search);
+  const currentView = readViewParam(search ?? "");
+
   if (item.match === "exact") {
-    return pathname === item.href;
+    if (pathname !== target.pathname) return false;
+    // Dashboard-style items (no view in href): active only when no view param.
+    if (!itemView) return !currentView;
+    return currentView === itemView;
   }
-  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+
+  // Prefix match: ignore query on the item href for nested paths (e.g. /grades).
+  if (pathname === target.pathname || pathname.startsWith(`${target.pathname}/`)) {
+    if (!itemView) return true;
+    return currentView === itemView;
+  }
+  return false;
 }
 
 /**
