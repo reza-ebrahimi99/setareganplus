@@ -59,6 +59,12 @@ export default async function GuidanceGradesUploadPage() {
         <PortalSurface accent="orange" padding="md" className="portal-upload-waiting">
           <p className="portal-upload-waiting__title">کارنامه شما دریافت شد</p>
           <p className="portal-upload-waiting__support">در انتظار بررسی...</p>
+          <Link
+            href="/portal/student/services/guidance"
+            className="portal-upload-waiting__cta"
+          >
+            مشاهده مرکز تحلیل اولیه
+          </Link>
         </PortalSurface>
       ) : null}
 

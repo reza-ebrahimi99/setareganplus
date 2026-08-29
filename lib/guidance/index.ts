@@ -47,6 +47,14 @@ export { loadGuidancePlanForPortalUser } from "@/lib/guidance/portal";
 
 export { buildGuidancePortalTimeline } from "@/lib/guidance/timeline";
 
+export {
+  buildAnalysisPresentationModel,
+  ANALYSIS_PIPELINE_STATUSES,
+  type AnalysisPresentationModel,
+  type AnalysisCardModel,
+  type AnalysisPipelineStatus,
+} from "@/lib/guidance/analysis";
+
 export { GUIDANCE_STUDENT_PORTAL_NAV } from "@/lib/guidance/portal-nav";
 
 export {
