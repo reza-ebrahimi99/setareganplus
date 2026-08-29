@@ -1,18 +1,46 @@
+import type { AdminStatIcon } from "@/content/admin";
+import { AdminStatIconComponent } from "./AdminIcons";
+
 type AdminStatCardProps = {
   label: string;
+  icon?: AdminStatIcon;
+  compact?: boolean;
+  value?: string | number | null;
+  hint?: string | null;
 };
 
-export function AdminStatCard({ label }: AdminStatCardProps) {
+export function AdminStatCard({
+  label,
+  icon,
+  compact = false,
+  value,
+  hint,
+}: AdminStatCardProps) {
+  const hasValue = value !== undefined && value !== null && value !== "";
   return (
-    <article className="admin-card p-5">
-      <p className="text-sm font-medium text-muted">{label}</p>
+    <article className={`admin-card ${compact ? "p-4" : "p-5"}`}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm font-medium text-muted">{label}</p>
+        {icon ? (
+          <span
+            aria-hidden="true"
+            className="flex size-9 items-center justify-center rounded-lg border border-border bg-background text-primary"
+          >
+            <AdminStatIconComponent name={icon} />
+          </span>
+        ) : null}
+      </div>
       <p
-        className="mt-3 text-3xl font-bold tracking-tight text-primary"
-        aria-label={`${label}: داده‌ای موجود نیست`}
+        className={`font-bold tracking-tight text-primary ${compact ? "mt-2 text-2xl" : "mt-3 text-3xl"}`}
+        aria-label={
+          hasValue ? `${label}: ${value}` : `${label}: داده‌ای موجود نیست`
+        }
       >
-        —
+        {hasValue ? value : "—"}
       </p>
-      <p className="mt-2 text-xs text-muted">داده پس از اتصال سامانه نمایش داده می‌شود</p>
+      <p className="mt-2 text-xs text-muted">
+        {hint ?? (hasValue ? "\u00a0" : "پس از اتصال داده نمایش داده می‌شود")}
+      </p>
     </article>
   );
 }

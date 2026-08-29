@@ -28,6 +28,48 @@
 // - normalizedMobile and email are @unique in Prisma; PostgreSQL allows multiple NULLs.
 // - If stricter partial uniqueness is required later, add:
 //   CREATE UNIQUE INDEX ... ON users (normalized_mobile) WHERE normalized_mobile IS NOT NULL;
+//
+// Form builder (Sprint 3.4A):
+// - Form = stable parent identity + public slug (/forms/[slug]).
+// - FormVersion = versioned definition; edits after publish create a new draft version.
+// - FormField.fieldKey = stable machine key for reporting, CRM mapping, and conditions.
+// - FormSubmission always references the exact FormVersion used at submit time.
+// - Duplicate policy defaults to FLAG_AND_ACCEPT (same-form scope; CRM exposure only).
+// - DomainEventOutbox + AutomationRule = automation-ready foundation (no execution yet).
+// - FormAnalyticsEvent (raw) + FormAnalyticsDaily (rollups) — not stored in Form.settings.
+// - Tag / FormTag / FormSubmissionTag = normalized tagging (no CSV text fields).
+//
+// Communication (StarOS v0.6A):
+// - SmsTemplate / SmsMessage / OtpChallenge — provider-neutral SMS queue + hashed OTP.
+// - Never store plaintext OTP. Secrets stay in environment variables.
+// - Outbound SMS is processed by CLI worker (communication:worker-once), not Next.js.
+//
+// CRM Automation (StarOS v0.7):
+// - CrmPipeline / CrmPipelineStage — admissions pipeline (LeadStatus kept for compatibility).
+// - CrmTask / CrmActivity / AutomationExecution — tasks, timeline, rule run tracking.
+// - Lead extended with owner, score, pipeline/stage, source links.
+// - Domain events processed by crm:automation-worker-once; due items by crm:scheduled-worker-once.
+//
+// Experience Engine (SXP Phase S1):
+// - OrganizationFeatureFlag key "sxp" defaults OFF (no row = off). STAROS_SXP_HARD_OFF=true kills the flag.
+// - ExperienceEngineInbox is a private per-handler cursor. Do not mark DomainEventOutbox processed.
+// - Hub HTTP reads Experience* projections only. Worker may resolve User from booking/form/SMS.
+//
+// FormVersion lifecycle (enforced by application layer; documented here):
+// - DRAFT: editable fields/settings; not public; does not accept submissions.
+// - PUBLISHED: immutable definition; accepts new submissions; ONLY status eligible for
+//   Form.publishedVersionId. Public /forms/[slug] resolves exclusively to this pointer.
+// - PAUSED: immutable definition; does NOT accept new submissions; must NOT remain
+//   referenced by Form.publishedVersionId (clear pointer before or when pausing).
+// - SUPERSEDED: replaced by a newer published version; immutable; no submissions.
+// - ARCHIVED: retired; immutable; no submissions.
+//
+// Referential actions (Sprint 3.4A review):
+// - Composite FKs with a required tenant component (organizationId, branchId) never use
+//   onDelete: SetNull on the composite relation. Use Restrict and soft-delete via deletedAt.
+// - Form.publishedVersionId is cleared in application code before pausing/archiving/deleting.
+//
+// New enums added in Sprint 3.4A: 12 total (see enum block below; AuditAction extended in place).
 
 generator client {
   provider = "prisma-client"
@@ -71,6 +113,90 @@ enum ServiceInterest {
   UNDECIDED
 }
 
+/// Operational pipeline stage types (StarOS v0.7). LeadStatus remains for legacy compatibility.
+enum CrmStageType {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONSULTATION
+  ASSESSMENT
+  DECISION
+  WON
+  LOST
+}
+
+enum LeadScoreBand {
+  COLD
+  WARM
+  HOT
+  QUALIFIED
+}
+
+enum LeadSourceType {
+  FORM
+  BOOKING
+  MANUAL
+  IMPORT
+  REGISTRATION
+  OTHER
+}
+
+enum CrmTaskType {
+  CALL
+  MESSAGE
+  CONSULTATION
+  FOLLOW_UP
+  DOCUMENT
+  ASSESSMENT
+  CUSTOM
+}
+
+enum CrmTaskStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum CrmTaskPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum CrmActivityType {
+  LEAD_CREATED
+  STAGE_CHANGED
+  OWNER_ASSIGNED
+  TASK_CREATED
+  TASK_COMPLETED
+  FORM_SUBMITTED
+  BOOKING_CREATED
+  BOOKING_CANCELLED
+  BOOKING_RESCHEDULED
+  SMS_QUEUED
+  NOTE_ADDED
+  CALL_LOGGED
+  SCORE_CHANGED
+  CONVERTED
+  LOST
+  REGISTRATION_CREATED
+  PAYMENT_STARTED
+  PAYMENT_SUCCEEDED
+  PAYMENT_FAILED
+  PAYMENT_CANCELLED
+}
+
+enum AutomationExecutionStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  SKIPPED
+  DEAD_LETTER
+}
+
 enum Gender {
   MALE
   FEMALE
@@ -89,7 +215,11 @@ enum SystemRole {
   ORGANIZATION_OWNER
   ORGANIZATION_ADMIN
   BRANCH_MANAGER
+  ADMISSIONS_MANAGER
+  ADMISSIONS_AGENT
   ADVISOR
+  CALL_OPERATOR
+  REPORT_VIEWER
   TEACHER
   FINANCE
   REGISTRATION_STAFF
@@ -119,6 +249,239 @@ enum AuditAction {
   LEAD_UPDATED
   DATA_EXPORTED
   SECURITY_EVENT
+  FORM_CREATED
+  FORM_UPDATED
+  FORM_VERSION_PUBLISHED
+  FORM_VERSION_PAUSED
+  FORM_VERSION_ARCHIVED
+  FORM_SUBMISSION_RECEIVED
+  FORM_EXPORTED
+  FORM_TEMPLATE_INSTANTIATED
+  BOOKING_CREATED
+  BOOKING_UPDATED
+  BOOKING_CHECKED_IN
+  AI_ASSISTED_ACTION
+  SITE_PLACEMENT_UPDATED
+  SMS_ENQUEUED
+  SMS_SENT
+  SMS_FAILED
+  OTP_REQUESTED
+  OTP_VERIFIED
+  OTP_FAILED
+  CRM_LEAD_CREATED
+  CRM_LEAD_UPDATED
+  CRM_STAGE_CHANGED
+  CRM_TASK_CREATED
+  CRM_AUTOMATION_RAN
+  STAFF_CREATED
+  STAFF_UPDATED
+  STAFF_DEACTIVATED
+  STAFF_BRANCH_CHANGED
+  STAFF_SESSION_REVOKED
+  CRM_LEAD_ASSIGNED
+  CRM_TASK_ASSIGNED
+  CRM_BRANCH_ASSIGNED
+  CRM_CALL_LOGGED
+  CRM_TASK_COMPLETED
+  BOOKS_SETTINGS_UPDATED
+  BOOKS_CATALOG_TYPE_SAVED
+  BOOKS_CATALOG_SKU_CREATED
+  BOOKS_CATALOG_SKU_UPDATED
+  BOOKS_CATALOG_PRICE_CHANGED
+  BOOKS_CATALOG_IMPORTED
+  GUIDANCE_PLAN_CREATED
+  GUIDANCE_DOCUMENT_UPLOADED
+  GUIDANCE_DOCUMENT_REPLACED
+  GUIDANCE_STATUS_CHANGED
+}
+
+// ─── Form builder (Sprint 3.4A) ─────────────────────────────────────────────
+
+enum FormPurpose {
+  FREE_CLASS
+  EDUCATIONAL_EVENT
+  SEMINAR
+  GIFTED_EXAM
+  CONSULTATION
+  ADMISSION
+  SURVEY
+  EMPLOYMENT
+  FESTIVAL
+  PARENT_MEETING
+}
+
+/// Builder mode for a Form. STANDARD keeps current single-page behaviour.
+/// REGISTRATION unlocks multi-step registration settings in the admin editor.
+enum FormMode {
+  STANDARD
+  REGISTRATION
+}
+
+enum FormVersionStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+  SUPERSEDED
+}
+
+enum FormFieldType {
+  SHORT_TEXT
+  LONG_TEXT
+  MOBILE
+  EMAIL
+  NUMBER
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  DROPDOWN
+  DATE
+  GRADE
+  ACADEMIC_TRACK
+  SCHOOL_NAME
+  CONSENT
+  INFORMATIONAL
+  NATIONAL_ID
+  FILE_UPLOAD
+}
+
+enum FormFieldSemantic {
+  NONE
+  FIRST_NAME
+  LAST_NAME
+  FATHER_NAME
+  MOBILE
+  EMAIL
+  SCHOOL
+  GRADE
+  ACADEMIC_TRACK
+  BIRTH_DATE
+  GENDER
+  BRANCH
+  CONSENT
+  CUSTOM
+}
+
+enum DuplicatePolicy {
+  FLAG_AND_ACCEPT
+  BLOCK
+  ALLOW_SILENT
+}
+
+enum FormSubmissionStatus {
+  RECEIVED
+  DUPLICATE
+  WAITING_LIST
+  REJECTED
+}
+
+enum FormTemplateScope {
+  SYSTEM
+  ORGANIZATION
+}
+
+enum FormTemplateCategory {
+  FREE_CLASS
+  EXAM
+  CONSULTATION
+  SEMINAR
+  SURVEY
+  EMPLOYMENT
+  ELEMENTARY_ADMISSION
+  FESTIVAL
+  PARENT_MEETING
+}
+
+enum DomainEventType {
+  FORM_SUBMISSION_RECEIVED
+  FORM_DUPLICATE_DETECTED
+  FORM_LEAD_CREATED
+  FORM_CAPACITY_REACHED
+  BOOKING_CREATED
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  BOOKING_RESCHEDULED
+  BOOKING_WAITLISTED
+  BOOKING_CHECKED_IN
+  BOOKING_COMPLETED
+  BOOKING_NO_SHOW
+  REGISTRATION_COMPLETED
+  REGISTRATION_PAYMENT_SUCCESS
+  REGISTRATION_PAYMENT_PENDING
+  REGISTRATION_APPROVED
+  REGISTRATION_REJECTED
+  REGISTRATION_NEEDS_CORRECTION
+  DISCOUNT_EXPIRING
+  REGISTRATION_DEADLINE_REMINDER
+  /// Sprint 5 — Automation Engine catalog
+  LEAD_CREATED
+  LEAD_ASSIGNED
+  LEAD_REASSIGNED
+  FOLLOWUP_DUE
+  CALL_LOGGED
+  REGISTRATION_CREATED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  SLA_BREACHED
+  QUEUE_ITEM_ESCALATED
+}
+
+// ─── Smart Booking Engine (StarOS v0.5) ─────────────────────────────────────
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  WAITING_LIST
+  CANCELLED
+  RESCHEDULED
+  COMPLETED
+  NO_SHOW
+}
+
+enum BookingSlotStatus {
+  OPEN
+  FULL
+  CLOSED
+  CANCELLED
+}
+
+enum BookingMeetingType {
+  IN_PERSON
+  ONLINE
+  PHONE
+}
+
+enum BookingCheckInMethod {
+  QR
+  MANUAL
+  ADMIN
+}
+
+enum DomainEventStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+  DEAD_LETTER
+}
+
+enum FormAnalyticsEventType {
+  FORM_VIEW
+  FORM_START
+  FORM_SUBMIT_SUCCESS
+  FORM_SUBMIT_FAILURE
+}
+
+// Non-null rollup dimensions for FormAnalyticsDaily (avoids nullable unique constraints).
+// dimensionKey is always required. Encoding rules (application layer):
+//   FORM_TOTAL       → "_"
+//   VERSION          → "{formVersionId}"
+//   BRANCH           → "{branchId}"
+//   VERSION_BRANCH   → "{formVersionId}:{branchId}"
+enum FormAnalyticsDailyDimension {
+  FORM_TOTAL
+  VERSION
+  BRANCH
+  VERSION_BRANCH
 }
 
 model Organization {
@@ -131,10 +494,111 @@ model Organization {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  branches    Branch[]
-  leads       Lead[]
-  memberships OrganizationMembership[]
-  auditLogs   AuditLog[]
+  branches                             Branch[]
+  leads                                Lead[]
+  memberships                          OrganizationMembership[]
+  auditLogs                            AuditLog[]
+  forms                                Form[]
+  formVersions                         FormVersion[]
+  formSteps                            FormStep[]
+  formFields                           FormField[]
+  formSubmissions                      FormSubmission[]
+  formAnswers                          FormAnswer[]
+  formTemplates                        FormTemplate[]
+  formTemplateFields                   FormTemplateField[]
+  tags                                 Tag[]
+  formTags                             FormTag[]
+  formSubmissionTags                   FormSubmissionTag[]
+  automationRules                      AutomationRule[]
+  domainEvents                         DomainEventOutbox[]
+  formAnalyticsEvents                  FormAnalyticsEvent[]
+  formAnalyticsDaily                   FormAnalyticsDaily[]
+  mediaAssets                          MediaAsset[]
+  galleryAlbums                        GalleryAlbum[]
+  mediaPlacements                      MediaPlacement[]
+  websiteMarketingCards                WebsiteMarketingCard[]
+  websitePages                         WebsitePage[]
+  websitePageSections                  WebsitePageSection[]
+  websitePageSectionMedia              WebsitePageSectionMedia[]
+  bookingServices                      BookingService[]
+  bookingAdvisors                      BookingAdvisor[]
+  bookingSlots                         BookingSlot[]
+  bookingReservations                  BookingReservation[]
+  sitePlacements                       SitePlacement[]
+  smsTemplates                         SmsTemplate[]
+  smsMessages                          SmsMessage[]
+  otpChallenges                        OtpChallenge[]
+  crmPipelines                         CrmPipeline[]
+  crmPipelineStages                    CrmPipelineStage[]
+  crmTasks                             CrmTask[]
+  crmActivities                        CrmActivity[]
+  crmCallLogs                          CrmCallLog[]
+  crmLeadImportReports                 CrmLeadImportReport[]
+  automationExecutions                 AutomationExecution[]
+  teamDepartments                      TeamDepartment[]
+  teamMembers                          TeamMember[]
+  studentGrades                        StudentGrade[]
+  studentMajors                        StudentMajor[]
+  students                             Student[]
+  achievementCategories                AchievementCategory[]
+  achievements                         Achievement[]
+  assessmentProviders                  AssessmentProvider[]
+  subjects                             Subject[]
+  assessments                          Assessment[]
+  assessmentResults                    AssessmentResult[]
+  studentGuardians                     StudentGuardian[]
+  studentGuardianRelations             StudentGuardianRelation[]
+  portalAccountLinks                   PortalAccountLink[]
+  registrations                        Registration[]
+  registrationNumberCounters           RegistrationNumberCounter[]
+  paymentIntents                       PaymentIntent[]
+  paymentSessions                      PaymentSession[]
+  paymentEventLogs                     PaymentEventLog[]
+  registrationDocuments                RegistrationDocument[]
+  registrationNotes                    RegistrationNote[]
+  registrationActivities               RegistrationActivity[]
+  registrationFlows                    RegistrationFlow[]
+  registrationFlowSteps                RegistrationFlowStep[]
+  registrationFlowDocumentRequirements RegistrationFlowDocumentRequirement[]
+  registrationFlowGalleryItems         RegistrationFlowGalleryItem[]
+  registrationFlowItems                RegistrationFlowItem[]
+  registrationFlowItemVariants         RegistrationFlowItemVariant[]
+  commerceCategories                   CommerceCategory[]
+  commerceBusinessTypes                CommerceBusinessType[]
+  commerceItems                        CommerceItem[]
+  commerceItemCategories               CommerceItemCategory[]
+  commerceOrders                       CommerceOrder[]
+  commerceOrderItems                   CommerceOrderItem[]
+  commerceOrderEvents                  CommerceOrderEvent[]
+  commerceNotificationSettings         CommerceNotificationSettings?
+  leadOwnershipHistories               LeadOwnershipHistory[]
+  attributionPolicies                  AttributionPolicy[]
+  attributionSnapshots                 AttributionSnapshot[]
+  kpiComputationCaches                 KpiComputationCache[]
+  opsSlaPolicies                       OpsSlaPolicy[]
+  opsCapacityPolicies                  OpsCapacityPolicy[]
+  opsEscalations                       OpsEscalation[]
+  opsQueueClaims                       OpsQueueClaim[]
+  automationActionLogs                 AutomationActionLog[]
+  staffNotifications                   StaffNotification[]
+  dashboardWidgetCaches                DashboardWidgetCache[]
+  featureFlags                         OrganizationFeatureFlag[]
+  experienceProfiles                   ExperienceProfile[]
+  experienceEngineInbox                ExperienceEngineInbox[]
+  experienceTimelineEvents             ExperienceTimelineEvent[]
+  experienceWidgetSnapshots            ExperienceWidgetSnapshot[]
+  bookAgencyProfile                    BookAgencyProfile?
+  bookDocumentSequences                DocumentSequence[]
+  bookPublishers                       BookPublisher[]
+  bookTypes                            BookType[]
+  bookTitles                           BookTitle[]
+  bookSkus                             BookSku[]
+  bookSkuPrices                        BookSkuPrice[]
+  bookSkuTags                          BookSkuTag[]
+  bookImportJobs                       BookImportJob[]
+  bookImportRowResults                 BookImportRowResult[]
+  guidancePlans                        GuidancePlan[]
+  guidanceDocuments                    GuidanceDocument[]
 
   @@map("organizations")
 }
@@ -146,23 +610,42 @@ model Branch {
   slug           String
   city           String?
   province       String?
+  address        String?
+  /// Optional badge/accent hex (e.g. #7c3aed). Null = UI derives a stable color from slug.
+  accentColor    String?
+  /// Canonical booklet ops identity (boys / girls / elementary). Null = not an ops branch.
+  bookletOpsKey  CommerceBookletBranchKey?
   isActive       Boolean   @default(true)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
   // Restrict: hard-deleting an organization is blocked while branches exist.
-  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  leads             Lead[]
-  activities        LeadActivity[]
-  consents          ConsentRecord[]
-  branchMemberships BranchMembership[]
-  auditLogs         AuditLog[]
+  organization         Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  leads                Lead[]
+  activities           LeadActivity[]
+  consents             ConsentRecord[]
+  branchMemberships    BranchMembership[]
+  auditLogs            AuditLog[]
+  forms                Form[]
+  formSubmissions      FormSubmission[]
+  domainEvents         DomainEventOutbox[]
+  formAnalyticsEvents  FormAnalyticsEvent[]
+  bookingServices      BookingService[]
+  bookingAdvisors      BookingAdvisor[]
+  bookingSlots         BookingSlot[]
+  crmLeadImportReports CrmLeadImportReport[]
+  registrations        Registration[]
+  commerceCategories   CommerceCategory[]
+  commerceItems        CommerceItem[]
+  commerceOrders       CommerceOrder[]
+  commercePickupOrders CommerceOrder[]     @relation("CommerceOrderPickupBranch")
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
   @@index([organizationId, isActive])
   @@index([organizationId, deletedAt])
+  @@index([organizationId, bookletOpsKey])
   @@map("branches")
 }
 
@@ -183,13 +666,64 @@ model User {
   updatedAt        DateTime   @updatedAt
   deletedAt        DateTime?
 
-  memberships OrganizationMembership[]
-  auditLogs   AuditLog[]               @relation("AuditLogActor")
+  memberships                 OrganizationMembership[]
+  auditLogs                   AuditLog[]               @relation("AuditLogActor")
+  adminSessions               AdminSession[]
+  mediaAssets                 MediaAsset[]             @relation("MediaAssetCreator")
+  bookingAdvisors             BookingAdvisor[]
+  bookingCheckIns             BookingCheckIn[]
+  ownedLeads                  Lead[]                   @relation("LeadOwner")
+  assignedCrmTasks            CrmTask[]                @relation("CrmTaskAssignee")
+  createdCrmTasks             CrmTask[]                @relation("CrmTaskCreator")
+  crmActivities               CrmActivity[]            @relation("CrmActivityActor")
+  crmLeadImportReports        CrmLeadImportReport[]    @relation("CrmLeadImportActor")
+  portalAccountLinks          PortalAccountLink[]
+  registrationDocumentReviews RegistrationDocument[]   @relation("RegistrationDocumentReviewer")
+  registrationNotes           RegistrationNote[]       @relation("RegistrationNoteActor")
+  registrationActivities      RegistrationActivity[]   @relation("RegistrationActivityActor")
+  commerceOrdersDelivered     CommerceOrder[]          @relation("CommerceOrderDeliveredBy")
+  commerceOrdersReadyForPickup CommerceOrder[]         @relation("CommerceOrderReadyForPickupBy")
+  commerceOrdersHandover      CommerceOrder[]          @relation("CommerceOrderHandoverStaff")
+  commerceOrderEvents         CommerceOrderEvent[]     @relation("CommerceOrderEventActor")
+  leadOwnershipHistoryAsOwner LeadOwnershipHistory[]   @relation("LeadOwnershipHistoryOwner")
+  leadOwnershipHistoryAsActor LeadOwnershipHistory[]   @relation("LeadOwnershipHistoryActor")
+  attributedSnapshots         AttributionSnapshot[]    @relation("AttributionSnapshotUser")
+  staffNotifications          StaffNotification[]
+  experienceProfiles          ExperienceProfile[]
+  experienceTimelineEvents    ExperienceTimelineEvent[]
+  experienceWidgetSnapshots   ExperienceWidgetSnapshot[]
+  bookSkuPricesCreated        BookSkuPrice[]           @relation("BookSkuPriceCreator")
+  bookImportJobsCreated       BookImportJob[]          @relation("BookImportJobCreator")
+  guidancePlans               GuidancePlan[]           @relation("GuidancePlanUser")
+  guidanceDocumentsVerified   GuidanceDocument[]       @relation("GuidanceDocumentVerifier")
 
   @@index([status])
   @@index([deletedAt])
   @@index([isPlatformAdmin])
   @@map("users")
+}
+
+// Server-side admin sessions (v0.4.1a). Cookie stores opaque token; DB stores tokenHash only.
+model AdminSession {
+  id                       String    @id @default(cuid())
+  userId                   String
+  organizationMembershipId String?
+  tokenHash                String    @unique
+  expiresAt                DateTime
+  revokedAt                DateTime?
+  ipAddress                String?
+  userAgent                String?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  membership OrganizationMembership? @relation(fields: [organizationMembershipId], references: [id], onDelete: Restrict)
+
+  @@index([userId, expiresAt])
+  @@index([organizationMembershipId, expiresAt])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@map("admin_sessions")
 }
 
 model OrganizationMembership {
@@ -206,6 +740,8 @@ model OrganizationMembership {
   organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   user              User               @relation(fields: [userId], references: [id], onDelete: Restrict)
   branchMemberships BranchMembership[]
+  adminSessions     AdminSession[]
+  crmCallLogs       CrmCallLog[]
 
   // One membership row per user per organization. Reactivation after soft-delete must
   // UPDATE this row (clear deletedAt, adjust status) — not INSERT a duplicate.
@@ -268,49 +804,378 @@ model AuditLog {
 }
 
 model Lead {
-  id              String          @id @default(cuid())
-  organizationId  String
-  branchId        String
-  status          LeadStatus      @default(NEW)
-  firstName       String
-  lastName        String
-  fatherName      String?
-  mobile          String
-  mobileRaw       String
-  school          String?
-  gradeLevel      String?
-  studyField      String?
-  city            String?
-  province        String?
-  gender          Gender?
-  birthDate       DateTime?       @db.Date
-  nationalCode    String?
-  serviceInterest ServiceInterest @default(UNDECIDED)
-  description     String?
-  source          String          @default("WEB_PRE_REGISTRATION")
-  isDuplicate     Boolean         @default(false)
-  duplicateOfId   String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  deletedAt       DateTime?
+  id                         String          @id @default(cuid())
+  organizationId             String
+  branchId                   String
+  /// Legacy compatibility status. Pipeline stage (stageId) is the operational source of truth
+  /// when set; status is kept in sync via stageType → LeadStatus mapping.
+  status                     LeadStatus      @default(NEW)
+  firstName                  String
+  lastName                   String
+  fatherName                 String?
+  mobile                     String
+  mobileRaw                  String
+  /// Normalized Iranian mobile for dedupe (09xxxxxxxxx).
+  normalizedMobile           String?
+  school                     String?
+  gradeLevel                 String?
+  studyField                 String?
+  city                       String?
+  province                   String?
+  gender                     Gender?
+  birthDate                  DateTime?       @db.Date
+  nationalCode               String?
+  serviceInterest            ServiceInterest @default(UNDECIDED)
+  description                String?
+  source                     String          @default("WEB_PRE_REGISTRATION")
+  sourceType                 LeadSourceType  @default(OTHER)
+  sourceFormSubmissionId     String?
+  sourceBookingReservationId String?
+  pipelineId                 String?
+  stageId                    String?
+  /// Canonical Lead Owner: the sales advisor responsible for this lead.
+  /// Reused by assignment, queueing, reminders, automation, and reporting.
+  ownerUserId                String?
+  score                      Int             @default(0)
+  scoreBand                  LeadScoreBand   @default(COLD)
+  scoreBreakdown             Json?
+  nextFollowUpAt             DateTime?
+  lastContactAt              DateTime?
+  convertedAt                DateTime?
+  lostAt                     DateTime?
+  lostReason                 String?
+  metadata                   Json?
+  isDuplicate                Boolean         @default(false)
+  duplicateOfId              String?
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
+  deletedAt                  DateTime?
 
-  // Restrict: preserves historical leads when org/branch are soft-deleted (deletedAt).
-  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  // Composite FK: branchId must belong to the same organizationId.
-  branch       Branch          @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  // SetNull: removing the original lead does not delete duplicate records.
-  duplicateOf  Lead?           @relation("LeadDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
-  duplicates   Lead[]          @relation("LeadDuplicates")
-  activities   LeadActivity[]
-  consents     ConsentRecord[]
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch              Branch               @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  duplicateOf         Lead?                @relation("LeadDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates          Lead[]               @relation("LeadDuplicates")
+  pipeline            CrmPipeline?         @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
+  stage               CrmPipelineStage?    @relation(fields: [organizationId, stageId], references: [organizationId, id], onDelete: Restrict)
+  owner               User?                @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  activities          LeadActivity[]
+  consents            ConsentRecord[]
+  formSubmissions     FormSubmission[]
+  crmTasks            CrmTask[]
+  crmActivities       CrmActivity[]
+  crmCallLogs         CrmCallLog[]
+  bookingReservations BookingReservation[]
+  registrations       Registration[]
+  commerceOrders      CommerceOrder[]
+  ownershipHistories  LeadOwnershipHistory[]
+  attributionSnapshots AttributionSnapshot[]
 
   @@unique([organizationId, branchId, id])
+  @@unique([organizationId, id])
   @@index([organizationId, branchId])
   @@index([organizationId, status])
   @@index([organizationId, mobile])
+  @@index([organizationId, normalizedMobile])
+  @@index([organizationId, pipelineId, stageId])
+  @@index([organizationId, ownerUserId])
+  @@index([organizationId, branchId, ownerUserId, updatedAt])
+  @@index([organizationId, scoreBand])
+  @@index([organizationId, nextFollowUpAt])
+  @@index([organizationId, sourceFormSubmissionId])
+  @@index([organizationId, sourceBookingReservationId])
   @@index([organizationId, createdAt])
   @@index([organizationId, deletedAt])
   @@map("leads")
+}
+
+// ─── Admissions CRM v2 Sprint 2 — Attribution Engine ─────────────────────────
+
+enum LeadOwnershipHistorySource {
+  MANUAL
+  BULK
+  AUTOMATION
+  IMPORT
+  SYSTEM
+}
+
+/// Append-only ownership periods. effectiveTo = null means the current open period.
+model LeadOwnershipHistory {
+  id             String                      @id @default(cuid())
+  organizationId String
+  leadId         String
+  ownerUserId    String?
+  effectiveFrom  DateTime
+  effectiveTo    DateTime?
+  source         LeadOwnershipHistorySource  @default(SYSTEM)
+  actorUserId    String?
+  createdAt      DateTime                    @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lead         Lead         @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  owner        User?        @relation("LeadOwnershipHistoryOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  actor        User?        @relation("LeadOwnershipHistoryActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, leadId, effectiveFrom])
+  @@index([organizationId, leadId, effectiveTo])
+  @@index([organizationId, ownerUserId, effectiveFrom])
+  /// Partial unique (SQL): at most one open period per lead — see migration.
+  @@map("lead_ownership_histories")
+}
+
+enum AttributionPolicyMode {
+  /// Credit the lead's owner at the moment of the revenue event.
+  CURRENT_OWNER_AT_EVENT
+  /// Credit the earliest non-null owner in ownership history (else current).
+  FIRST_OWNER
+}
+
+/// ATTRIBUTED rows are immutable. PENDING_ATTRIBUTION may complete once when lead appears.
+enum AttributionSnapshotStatus {
+  PENDING_ATTRIBUTION
+  ATTRIBUTED
+}
+
+model AttributionPolicy {
+  id             String                @id @default(cuid())
+  organizationId String
+  policyKey      String
+  version        Int                   @default(1)
+  mode           AttributionPolicyMode @default(CURRENT_OWNER_AT_EVENT)
+  name           String
+  isDefault      Boolean               @default(false)
+  isActive       Boolean               @default(true)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  snapshots    AttributionSnapshot[]
+
+  @@unique([organizationId, policyKey, version])
+  @@unique([organizationId, id])
+  @@index([organizationId, isDefault, isActive])
+  @@map("attribution_policies")
+}
+
+/// Revenue attribution freeze. ATTRIBUTED = immutable; PENDING may complete once.
+model AttributionSnapshot {
+  id                 String                     @id @default(cuid())
+  organizationId     String
+  /// Idempotency key, e.g. PAYMENT_INTENT:{id} or REGISTRATION_WAIVED:{id}
+  revenueKey         String
+  status             AttributionSnapshotStatus  @default(ATTRIBUTED)
+  /// Null only while status = PENDING_ATTRIBUTION (recoverable).
+  leadId             String?
+  registrationId     String?
+  paymentIntentId    String?
+  amountRials        Int
+  attributedUserId   String?
+  policyId           String
+  policyKey          String
+  policyVersion      Int
+  policyMode         AttributionPolicyMode
+  attributedAt       DateTime
+  createdAt          DateTime                   @default(now())
+
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lead           Lead?              @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  registration   Registration?      @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
+  paymentIntent  PaymentIntent?     @relation(fields: [organizationId, paymentIntentId], references: [organizationId, id], onDelete: Restrict)
+  attributedUser User?              @relation("AttributionSnapshotUser", fields: [attributedUserId], references: [id], onDelete: Restrict)
+  policy         AttributionPolicy  @relation(fields: [organizationId, policyId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, revenueKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, leadId, attributedAt])
+  @@index([organizationId, attributedUserId, attributedAt])
+  @@index([organizationId, registrationId])
+  @@index([organizationId, paymentIntentId])
+  @@index([organizationId, status, createdAt])
+  @@map("attribution_snapshots")
+}
+
+// ─── Admissions CRM v2 Sprint 4 — Operational Queue Engine ───────────────────
+
+enum OpsDispatchStrategy {
+  MANUAL
+  ROUND_ROBIN
+  LEAST_LOAD
+  /// Reserved — not implemented in Sprint 4
+  WEIGHTED
+  /// Reserved — not implemented in Sprint 4
+  SKILL_BASED
+  /// Reserved — not implemented in Sprint 4
+  AI
+}
+
+enum OpsEscalationStatus {
+  OPEN
+  RESOLVED
+}
+
+enum OpsQueueId {
+  ASSIGNMENT
+  FOLLOW_UP
+  CALL
+  SLA
+  ESCALATION
+}
+
+enum OpsEntityType {
+  LEAD
+  CRM_TASK
+  REGISTRATION
+}
+
+/// Org SLA clocks (hours). Resolved at runtime — never hardcode in queue logic.
+model OpsSlaPolicy {
+  id                      String   @id @default(cuid())
+  organizationId          String
+  /// Hours from lead.createdAt without lastContactAt
+  firstContactHours       Int      @default(24)
+  /// Grace hours after nextFollowUpAt / task dueAt
+  followUpGraceHours      Int      @default(0)
+  /// Hours in RegistrationStatus.NEEDS_CALL
+  registrationNeedsCallHours Int   @default(48)
+  isActive                Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId])
+  @@map("ops_sla_policies")
+}
+
+model OpsCapacityPolicy {
+  id                 String              @id @default(cuid())
+  organizationId     String
+  dispatchStrategy   OpsDispatchStrategy @default(MANUAL)
+  softLimitOwnedLeads Int?
+  hardLimitOwnedLeads Int?
+  /// Last user id used for ROUND_ROBIN (org-scoped)
+  roundRobinCursorUserId String?
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId])
+  @@map("ops_capacity_policies")
+}
+
+/// Append-only escalation cases. Reassignment must call setLeadOwner.
+/// One OPEN per org+entity enforced by partial unique index in SQL:
+/// ops_escalations_one_open_per_entity (Sprint 6.6).
+model OpsEscalation {
+  id               String               @id @default(cuid())
+  organizationId   String
+  entityType       OpsEntityType
+  entityId         String
+  leadId           String?
+  queueId          OpsQueueId
+  reason           String
+  status           OpsEscalationStatus  @default(OPEN)
+  openedAt         DateTime             @default(now())
+  resolvedAt       DateTime?
+  resolvedByUserId String?
+  metadata         Json?
+  createdAt        DateTime             @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, status, openedAt])
+  @@index([organizationId, leadId, status])
+  @@index([organizationId, entityType, entityId])
+  @@map("ops_escalations")
+}
+
+/// Short-lived claim lock — one active claim per org+queue+entity.
+model OpsQueueClaim {
+  id             String      @id @default(cuid())
+  organizationId String
+  queueId        OpsQueueId
+  entityType     OpsEntityType
+  entityId       String
+  claimedByUserId String
+  claimedAt      DateTime   @default(now())
+  heartbeatAt    DateTime   @default(now())
+  expiresAt      DateTime
+  releasedAt     DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, queueId, entityType, entityId])
+  @@index([organizationId, expiresAt])
+  @@index([organizationId, claimedByUserId, releasedAt])
+  @@map("ops_queue_claims")
+}
+
+/// TTL cache for KPI Computation Engine (Sprint 3). Additive; not a ledger.
+model KpiComputationCache {
+  id             String   @id @default(cuid())
+  organizationId String
+  cacheKey       String
+  payload        Json
+  computedAt     DateTime @default(now())
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, cacheKey])
+  @@index([organizationId, expiresAt])
+  @@map("kpi_computation_caches")
+}
+
+/// TTL cache for Dashboard Platform widget payloads (Sprint 6). Presentation only.
+model DashboardWidgetCache {
+  id             String   @id @default(cuid())
+  organizationId String
+  cacheKey       String
+  widgetId       String
+  payload        Json
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, cacheKey])
+  @@index([organizationId, expiresAt])
+  @@index([organizationId, widgetId])
+  @@map("dashboard_widget_caches")
+}
+
+/// CRM-specific import outcome summary. Source files remain ephemeral; only the
+/// existing importer result is retained for dashboard reporting and CSV download.
+model CrmLeadImportReport {
+  id                String   @id @default(cuid())
+  organizationId    String
+  branchId          String
+  importedByUserId  String?
+  sourceFileName    String
+  totalRows         Int
+  createdCount      Int
+  updatedCount      Int
+  skippedCount      Int
+  invalidCount      Int
+  failedCount       Int
+  duplicateCount    Int
+  ownerDistribution Json     @default("[]")
+  resultCsv         String   @db.Text
+  createdAt         DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch       @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  importedBy   User?        @relation("CrmLeadImportActor", fields: [importedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, branchId, createdAt])
+  @@index([organizationId, importedByUserId, createdAt])
+  @@map("crm_lead_import_reports")
 }
 
 model LeadActivity {
@@ -353,4 +1218,3487 @@ model ConsentRecord {
   @@index([organizationId, branchId])
   @@index([organizationId, leadId])
   @@map("consent_records")
+}
+
+// ─── Form template library ───────────────────────────────────────────────────
+// System-owned templates have organizationId = null and scope = SYSTEM.
+// Instantiating a template creates an independent Form + draft FormVersion.
+
+model FormTemplate {
+  id              String               @id @default(cuid())
+  scope           FormTemplateScope
+  organizationId  String?
+  category        FormTemplateCategory
+  name            String
+  description     String?
+  purpose         FormPurpose
+  defaultSettings Json                 @default("{}")
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  deletedAt       DateTime?
+
+  organization Organization?       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  fields       FormTemplateField[]
+  versions     FormVersion[]
+
+  @@index([scope, category, isActive])
+  @@index([organizationId, category])
+  @@index([organizationId, deletedAt])
+  @@map("form_templates")
+}
+
+model FormTemplateField {
+  id                   String            @id @default(cuid())
+  organizationId       String?
+  templateId           String
+  fieldKey             String
+  sortOrder            Int
+  type                 FormFieldType
+  semantic             FormFieldSemantic @default(NONE)
+  label                String
+  helpText             String?
+  placeholder          String?
+  required             Boolean           @default(false)
+  config               Json              @default("{}")
+  visibilityConditions Json?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  template     FormTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, fieldKey])
+  @@unique([templateId, sortOrder])
+  @@index([templateId, sortOrder])
+  @@map("form_template_fields")
+}
+
+// ─── Persistent media assets (outside git / deploy tree) ─────────────────────
+
+enum MediaAssetStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model MediaAsset {
+  id              String           @id @default(cuid())
+  organizationId  String
+  storageKey      String           @unique
+  originalName    String
+  mimeType        String
+  byteSize        Int
+  checksum        String
+  width           Int?
+  height          Int?
+  altText         String?
+  /// Editorial title for library browsing and public captions.
+  title           String?
+  /// Editorial description (separate from technical metadata JSON).
+  description     String?
+  /// Optional free-text category label (normalized whitespace, max length enforced in app).
+  category        String?
+  status          MediaAssetStatus @default(ACTIVE)
+  /// Optional structured technical metadata (e.g. team portrait variant keys).
+  metadata        Json?
+  createdByUserId String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
+
+  organization                 Organization                  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdBy                    User?                         @relation("MediaAssetCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  formPosters                  FormVersion[]                 @relation("FormVersionPoster")
+  teamPortraits                TeamMember[]                  @relation("TeamMemberPortrait")
+  studentPortraits             Student[]                     @relation("StudentPortrait")
+  achievementCertificates      Achievement[]                 @relation("AchievementCertificate")
+  achievementCovers            Achievement[]                 @relation("AchievementCover")
+  galleryAlbumCovers           GalleryAlbum[]                @relation("GalleryAlbumCover")
+  galleryAlbumItems            GalleryAlbumItem[]
+  mediaPlacements              MediaPlacement[]
+  websiteMarketingCards        WebsiteMarketingCard[]        @relation("WebsiteMarketingCardImage")
+  websitePageSectionMedia      WebsitePageSectionMedia[]     @relation("WebsitePageSectionMediaAsset")
+  websitePageSeoImages         WebsitePage[]                 @relation("WebsitePageSeoImage")
+  registrationDocuments        RegistrationDocument[]
+  registrationFlowCovers       RegistrationFlow[]            @relation("RegistrationFlowCover")
+  registrationFlowGalleryItems RegistrationFlowGalleryItem[]
+  registrationFlowItemImages   RegistrationFlowItem[]        @relation("RegistrationFlowItemImage")
+  commerceCategoryImages       CommerceCategory[]            @relation("CommerceCategoryImage")
+  commerceItemPrimaryImages    CommerceItem[]                @relation("CommerceItemPrimaryImage")
+  bookAgencyProfileLogos       BookAgencyProfile[]           @relation("BookAgencyProfileLogo")
+  bookImportJobReports         BookImportJob[]               @relation("BookImportJobReport")
+  guidanceDocuments            GuidanceDocument[]
+
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, createdAt])
+  @@index([organizationId, status, deletedAt])
+  @@index([organizationId, category])
+  @@index([createdByUserId])
+  @@map("media_assets")
+}
+
+// ─── Media Library / Gallery CMS ─────────────────────────────────────────────
+
+model GalleryAlbum {
+  id             String    @id @default(cuid())
+  organizationId String
+  title          String
+  slug           String
+  description    String?
+  coverMediaId   String?
+  isActive       Boolean   @default(true)
+  sortOrder      Int       @default(0)
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  coverMedia   MediaAsset?        @relation("GalleryAlbumCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  items        GalleryAlbumItem[]
+  placements   MediaPlacement[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, deletedAt, isActive, sortOrder])
+  @@index([organizationId, publishedAt])
+  @@index([coverMediaId])
+  @@map("gallery_albums")
+}
+
+model GalleryAlbumItem {
+  id        String   @id @default(cuid())
+  albumId   String
+  mediaId   String
+  caption   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  album GalleryAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  media MediaAsset   @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@unique([albumId, mediaId])
+  @@index([albumId, sortOrder])
+  @@index([mediaId])
+  @@map("gallery_album_items")
+}
+
+model MediaPlacement {
+  id                  String    @id @default(cuid())
+  organizationId      String
+  placementKey        String
+  mediaId             String?
+  albumId             String?
+  titleOverride       String?
+  descriptionOverride String?
+  sortOrder           Int       @default(0)
+  isActive            Boolean   @default(true)
+  /// Optional schedule window. DB enforces media_placements_schedule_check:
+  /// both NULL, only startAt, only endAt, or both with endAt > startAt.
+  startAt             DateTime?
+  endAt               DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  media        MediaAsset?   @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  album        GalleryAlbum? @relation(fields: [albumId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, placementKey, deletedAt, isActive, sortOrder])
+  @@index([mediaId])
+  @@index([albumId])
+  @@map("media_placements")
+}
+
+// ─── Website marketing cards (homepage Qalamchi / future sections) ───────────
+
+model WebsiteMarketingCard {
+  id             String    @id @default(cuid())
+  organizationId String
+  /// Allowlisted section key, e.g. HOMEPAGE_QALAMCHI
+  sectionKey     String
+  title          String
+  description    String    @default("")
+  /// Optional badge under the image; empty → public UI default.
+  badge          String?
+  imageMediaId   String?
+  /// Optional alt override; public loader falls back to MediaAsset.altText then title.
+  imageAlt       String?
+  sortOrder      Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  imageMedia   MediaAsset?  @relation("WebsiteMarketingCardImage", fields: [imageMediaId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, sectionKey, deletedAt, isActive, sortOrder])
+  @@index([imageMediaId])
+  @@map("website_marketing_cards")
+}
+
+// ─── Visual Page Builder ─────────────────────────────────────────────────────
+
+enum WebsitePageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum WebsiteSectionStatus {
+  DRAFT
+  PUBLISHED
+  DISABLED
+}
+
+model WebsitePage {
+  id              String            @id @default(cuid())
+  organizationId  String
+  slug            String
+  title           String
+  seoTitle        String?
+  seoDescription  String?
+  /// Optional dedicated Open Graph / SEO image (Phase 2.1+; used in Phase 2.5).
+  seoImageMediaId String?
+  /// Audit-only template key from create factories (e.g. blank, about).
+  templateKey     String?
+  status          WebsitePageStatus @default(DRAFT)
+  publishedAt     DateTime?
+  archivedAt      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  deletedAt       DateTime?
+
+  organization  Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  seoImageMedia MediaAsset?          @relation("WebsitePageSeoImage", fields: [seoImageMediaId], references: [id], onDelete: SetNull)
+  sections      WebsitePageSection[]
+
+  /// Live-slug uniqueness is enforced by partial unique index in SQL:
+  /// website_pages_organizationId_slug_live_key (WHERE deletedAt IS NULL)
+  @@index([organizationId, status, deletedAt])
+  @@index([organizationId, status, archivedAt, deletedAt])
+  @@index([seoImageMediaId])
+  @@map("website_pages")
+}
+
+model WebsitePageSection {
+  id             String               @id @default(cuid())
+  organizationId String
+  pageId         String
+  /// Allowlisted section type (HERO, IMAGE, RICH_TEXT, CTA, SPACER, …)
+  type           String
+  status         WebsiteSectionStatus @default(DRAFT)
+  sortOrder      Int                  @default(0)
+  /// Typed JSON validated by Section Registry for `type`
+  config         Json                 @default("{}")
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  page         WebsitePage               @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  mediaLinks   WebsitePageSectionMedia[]
+
+  @@index([organizationId, pageId, deletedAt, status, sortOrder])
+  @@index([pageId, deletedAt, sortOrder])
+  @@map("website_page_sections")
+}
+
+model WebsitePageSectionMedia {
+  id             String @id @default(cuid())
+  organizationId String
+  sectionId      String
+  mediaId        String
+  /// Semantic role within section config (e.g. primary, mobile, background)
+  role           String
+  sortOrder      Int    @default(0)
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  section      WebsitePageSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  media        MediaAsset         @relation("WebsitePageSectionMediaAsset", fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@unique([sectionId, role, sortOrder])
+  @@index([mediaId])
+  @@index([organizationId, mediaId])
+  @@index([sectionId, sortOrder])
+  @@map("website_page_section_media")
+}
+
+// ─── Form parent identity (stable slug) ──────────────────────────────────────
+
+model Form {
+  id                 String      @id @default(cuid())
+  organizationId     String
+  branchId           String?
+  slug               String
+  purpose            FormPurpose
+  mode               FormMode    @default(STANDARD)
+  isAdmissionForm    Boolean     @default(false)
+  publishedVersionId String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  deletedAt          DateTime?
+
+  organization      Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch            Branch?              @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  versions          FormVersion[]        @relation("FormVersions")
+  publishedVersion  FormVersion?         @relation("FormPublishedVersion", fields: [organizationId, publishedVersionId], references: [organizationId, id], onDelete: Restrict)
+  submissions       FormSubmission[]
+  tags              FormTag[]
+  automationRules   AutomationRule[]
+  analyticsEvents   FormAnalyticsEvent[]
+  analyticsDaily    FormAnalyticsDaily[]
+  bookingServices   BookingService[]
+  sitePlacements    SitePlacement[]
+  registrationFlows RegistrationFlow[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, purpose])
+  @@index([organizationId, mode])
+  @@index([organizationId, isAdmissionForm])
+  @@index([organizationId, deletedAt])
+  @@map("forms")
+}
+
+// ─── Versioned form definition ───────────────────────────────────────────────
+//
+// Status rules:
+//   DRAFT      — editable; not linked from Form.publishedVersionId; no submissions.
+//   PUBLISHED  — frozen; accepts submissions; only status allowed on publishedVersionId.
+//   PAUSED     — frozen; rejects submissions; must not be on publishedVersionId.
+//   SUPERSEDED — frozen; replaced by a newer publish; no submissions.
+//   ARCHIVED   — frozen; retired; no submissions.
+//
+// Partial unique index (future raw SQL — Prisma cannot express):
+//   CREATE UNIQUE INDEX form_versions_one_published_per_form
+//     ON form_versions (organization_id, form_id) WHERE status = 'PUBLISHED';
+//   Enforces at most one PUBLISHED version per form at the database level.
+
+model FormVersion {
+  id                   String            @id @default(cuid())
+  organizationId       String
+  formId               String
+  versionNumber        Int
+  status               FormVersionStatus @default(DRAFT)
+  title                String
+  description          String?
+  opensAt              DateTime?
+  registrationDeadline DateTime?
+  capacity             Int?
+  confirmationMessage  String
+  duplicatePolicy      DuplicatePolicy   @default(FLAG_AND_ACCEPT)
+  createLeadOnSubmit   Boolean           @default(false)
+  leadSource           String?
+  showBranchPicker     Boolean           @default(false)
+  settings             Json              @default("{}")
+  sourceTemplateId     String?
+  posterMediaId        String?
+  publishedAt          DateTime?
+  pausedAt             DateTime?
+  archivedAt           DateTime?
+  createdByUserId      String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  form             Form                 @relation("FormVersions", fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
+  sourceTemplate   FormTemplate?        @relation(fields: [sourceTemplateId], references: [id], onDelete: Restrict)
+  posterMedia      MediaAsset?          @relation("FormVersionPoster", fields: [posterMediaId], references: [id], onDelete: SetNull)
+  steps            FormStep[]
+  fields           FormField[]
+  submissions      FormSubmission[]
+  formsAsPublished Form[]               @relation("FormPublishedVersion")
+  analyticsEvents  FormAnalyticsEvent[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, formId, versionNumber])
+  @@index([organizationId, formId, status])
+  @@index([organizationId, status])
+  @@index([posterMediaId])
+  @@map("form_versions")
+}
+
+// ─── Ordered wizard steps within a FormVersion ───────────────────────────────
+//
+// Fields may optionally belong to a step via FormField.formStepId.
+// Existing forms keep formStepId null and continue to render as a flat list.
+
+model FormStep {
+  id             String   @id @default(cuid())
+  organizationId String
+  formVersionId  String
+  stepKey        String
+  sortOrder      Int
+  title          String
+  description    String?
+  settings       Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  formVersion  FormVersion  @relation(fields: [organizationId, formVersionId], references: [organizationId, id], onDelete: Cascade)
+  fields       FormField[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, formVersionId, stepKey])
+  @@unique([organizationId, formVersionId, sortOrder])
+  @@index([organizationId, formVersionId, sortOrder])
+  @@map("form_steps")
+}
+
+model FormField {
+  id                   String            @id @default(cuid())
+  organizationId       String
+  formVersionId        String
+  formStepId           String?
+  fieldKey             String
+  sortOrder            Int
+  type                 FormFieldType
+  semantic             FormFieldSemantic @default(NONE)
+  label                String
+  helpText             String?
+  placeholder          String?
+  required             Boolean           @default(false)
+  config               Json              @default("{}")
+  visibilityConditions Json?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  formVersion  FormVersion  @relation(fields: [organizationId, formVersionId], references: [organizationId, id], onDelete: Cascade)
+  formStep     FormStep?    @relation(fields: [organizationId, formStepId], references: [organizationId, id], onDelete: Restrict)
+  answers      FormAnswer[]
+
+  @@unique([organizationId, formVersionId, fieldKey])
+  @@unique([organizationId, formVersionId, sortOrder])
+  @@unique([organizationId, id])
+  @@index([organizationId, formVersionId, sortOrder])
+  @@index([organizationId, formStepId, sortOrder])
+  @@map("form_fields")
+}
+
+// ─── Submissions (pinned to exact version) ───────────────────────────────────
+
+model FormSubmission {
+  id                      String               @id @default(cuid())
+  organizationId          String
+  branchId                String
+  formId                  String
+  formVersionId           String
+  status                  FormSubmissionStatus @default(RECEIVED)
+  submittedAt             DateTime             @default(now())
+  /// Public human-facing tracking code (ST-{jalaliYear}-{5}).
+  trackingCode            String?
+  mobile                  String?
+  mobileRaw               String?
+  normalizedMobile        String?
+  email                   String?
+  leadId                  String?
+  matchedCrmLeadId        String?
+  isDuplicateInForm       Boolean              @default(false)
+  existsInCrm             Boolean              @default(false)
+  duplicateOfSubmissionId String?
+  ipAddress               String?
+  userAgent               String?
+  metadata                Json?
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+  deletedAt               DateTime?
+
+  organization          Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch                Branch               @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  form                  Form                 @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
+  formVersion           FormVersion          @relation(fields: [organizationId, formVersionId], references: [organizationId, id], onDelete: Restrict)
+  lead                  Lead?                @relation(fields: [organizationId, branchId, leadId], references: [organizationId, branchId, id], onDelete: Restrict)
+  duplicateOfSubmission FormSubmission?      @relation("SubmissionDuplicates", fields: [duplicateOfSubmissionId], references: [id], onDelete: Restrict)
+  duplicates            FormSubmission[]     @relation("SubmissionDuplicates")
+  answers               FormAnswer[]
+  tags                  FormSubmissionTag[]
+  bookingReservations   BookingReservation[]
+
+  @@unique([organizationId, branchId, id])
+  @@unique([organizationId, id])
+  @@unique([organizationId, trackingCode])
+  @@index([organizationId, formId, submittedAt])
+  @@index([organizationId, formVersionId, submittedAt])
+  @@index([organizationId, formId, normalizedMobile])
+  @@index([organizationId, normalizedMobile])
+  @@index([organizationId, status])
+  @@index([organizationId, existsInCrm])
+  @@index([organizationId, isDuplicateInForm])
+  @@index([organizationId, leadId])
+  @@index([organizationId, trackingCode])
+  @@index([organizationId, deletedAt])
+  @@map("form_submissions")
+}
+
+model FormAnswer {
+  id             String    @id @default(cuid())
+  organizationId String
+  submissionId   String
+  fieldId        String
+  fieldKey       String
+  valueText      String?
+  valueLongText  String?
+  valueNumber    Decimal?  @db.Decimal(18, 4)
+  valueDate      DateTime? @db.Date
+  valueJson      Json?
+  createdAt      DateTime  @default(now())
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  submission   FormSubmission @relation(fields: [organizationId, submissionId], references: [organizationId, id], onDelete: Cascade)
+  field        FormField      @relation(fields: [organizationId, fieldId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, submissionId, fieldId])
+  @@index([organizationId, fieldId])
+  @@index([organizationId, fieldKey])
+  @@index([organizationId, submissionId])
+  @@map("form_answers")
+}
+
+// ─── Normalized tags ─────────────────────────────────────────────────────────
+
+model Tag {
+  id             String    @id @default(cuid())
+  organizationId String
+  slug           String
+  name           String
+  color          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  forms        FormTag[]
+  submissions  FormSubmissionTag[]
+  bookSkus     BookSkuTag[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, deletedAt])
+  @@map("tags")
+}
+
+model FormTag {
+  id             String   @id @default(cuid())
+  organizationId String
+  formId         String
+  tagId          String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  form         Form         @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Cascade)
+  tag          Tag          @relation(fields: [organizationId, tagId], references: [organizationId, id], onDelete: Cascade)
+
+  @@unique([organizationId, formId, tagId])
+  @@index([organizationId, tagId])
+  @@map("form_tags")
+}
+
+model FormSubmissionTag {
+  id             String   @id @default(cuid())
+  organizationId String
+  submissionId   String
+  tagId          String
+  createdAt      DateTime @default(now())
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  submission   FormSubmission @relation(fields: [organizationId, submissionId], references: [organizationId, id], onDelete: Cascade)
+  tag          Tag            @relation(fields: [organizationId, tagId], references: [organizationId, id], onDelete: Cascade)
+
+  @@unique([organizationId, submissionId, tagId])
+  @@index([organizationId, tagId])
+  @@map("form_submission_tags")
+}
+
+// ─── Automation-ready foundation (no execution in 3.4A) ────────────────────────
+
+model AutomationRule {
+  id               String          @id @default(cuid())
+  organizationId   String
+  formId           String?
+  bookingServiceId String?
+  pipelineId       String?
+  stageId          String?
+  name             String
+  description      String?
+  trigger          DomainEventType
+  isEnabled        Boolean         @default(false)
+  /// Lower runs first. Default 100.
+  priority         Int             @default(100)
+  /// When true, stop evaluating further rules after a successful match.
+  stopOnMatch      Boolean         @default(false)
+  /// Safe condition JSON — see lib/automation/rules/contract.ts
+  conditions       Json            @default("{}")
+  /// Safe action list JSON — see lib/automation/rules/contract.ts
+  actionConfig     Json            @default("{}")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  deletedAt        DateTime?
+
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  form           Form?                 @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Cascade)
+  bookingService BookingService?       @relation(fields: [organizationId, bookingServiceId], references: [organizationId, id], onDelete: Restrict)
+  pipeline       CrmPipeline?          @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
+  stage          CrmPipelineStage?     @relation(fields: [organizationId, stageId], references: [organizationId, id], onDelete: Restrict)
+  executions     AutomationExecution[]
+  crmTasks       CrmTask[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, trigger, isEnabled])
+  @@index([organizationId, formId])
+  @@index([organizationId, bookingServiceId])
+  @@index([organizationId, deletedAt])
+  @@map("automation_rules")
+}
+
+model DomainEventOutbox {
+  id             String            @id @default(cuid())
+  organizationId String
+  branchId       String?
+  eventType      DomainEventType
+  aggregateType  String
+  aggregateId    String
+  payload        Json
+  /// Optional clock/payment dedupe key (unique per org when set).
+  dedupeKey      String?
+  status         DomainEventStatus @default(PENDING)
+  attemptCount   Int               @default(0)
+  availableAt    DateTime          @default(now())
+  processedAt    DateTime?
+  lastError      String?
+  createdAt      DateTime          @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch?      @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, dedupeKey])
+  @@index([status, availableAt])
+  @@index([organizationId, eventType, createdAt])
+  @@index([organizationId, aggregateType, aggregateId])
+  @@map("domain_event_outbox")
+}
+
+// ─── Analytics (not stored in Form.settings) ─────────────────────────────────
+// FormAnalyticsEvent: raw events for funnels and conversion.
+// FormAnalyticsDaily: materialized daily rollups using non-null dimension + dimensionKey.
+
+model FormAnalyticsEvent {
+  id             String                 @id @default(cuid())
+  organizationId String
+  formId         String
+  formVersionId  String?
+  branchId       String?
+  eventType      FormAnalyticsEventType
+  sessionId      String?
+  occurredAt     DateTime               @default(now())
+  metadata       Json?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  form         Form         @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Cascade)
+  formVersion  FormVersion? @relation(fields: [organizationId, formVersionId], references: [organizationId, id], onDelete: Restrict)
+  branch       Branch?      @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([organizationId, formId, occurredAt])
+  @@index([organizationId, formVersionId, occurredAt])
+  @@index([organizationId, branchId, occurredAt])
+  @@index([organizationId, eventType, occurredAt])
+  @@map("form_analytics_events")
+}
+
+model FormAnalyticsDaily {
+  id                 String                      @id @default(cuid())
+  organizationId     String
+  formId             String
+  dimension          FormAnalyticsDailyDimension
+  dimensionKey       String
+  date               DateTime                    @db.Date
+  viewCount          Int                         @default(0)
+  startCount         Int                         @default(0)
+  submitSuccessCount Int                         @default(0)
+  submitFailureCount Int                         @default(0)
+  updatedAt          DateTime                    @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  form         Form         @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Cascade)
+
+  @@unique([organizationId, formId, dimension, dimensionKey, date])
+  @@index([organizationId, date])
+  @@index([organizationId, formId, date])
+  @@index([organizationId, formId, dimension, date])
+  @@map("form_analytics_daily")
+}
+
+// ─── Smart Booking Engine models (StarOS v0.5) ──────────────────────────────
+// Standalone transactional domain. Optionally linked to Form / FormSubmission.
+// Store all slot/reservation instants in UTC. Convert Asia/Tehran ↔ UTC at boundaries.
+// Never store Jalali strings as authoritative timestamps.
+
+model BookingService {
+  id                     String    @id @default(cuid())
+  organizationId         String
+  branchId               String?
+  formId                 String?
+  slug                   String
+  title                  String
+  description            String?
+  durationMinutes        Int
+  bufferBeforeMinutes    Int       @default(0)
+  bufferAfterMinutes     Int       @default(0)
+  minimumLeadTimeMinutes Int       @default(60)
+  maximumAdvanceDays     Int       @default(30)
+  meetingTypes           Json      @default("[\"IN_PERSON\"]")
+  isActive               Boolean   @default(true)
+  settings               Json      @default("{}")
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  deletedAt              DateTime?
+
+  organization      Organization                   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch            Branch?                        @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  form              Form?                          @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
+  advisorLinks      BookingAdvisorService[]
+  availabilityRules BookingAvailabilityRule[]
+  exceptions        BookingAvailabilityException[]
+  slots             BookingSlot[]
+  sitePlacements    SitePlacement[]
+  automationRules   AutomationRule[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, isActive])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, formId])
+  @@map("booking_services")
+}
+
+model BookingAdvisor {
+  id             String    @id @default(cuid())
+  organizationId String
+  branchId       String?
+  userId         String?
+  displayName    String
+  description    String?
+  colorKey       String?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization      Organization                   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch            Branch?                        @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  user              User?                          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  serviceLinks      BookingAdvisorService[]
+  availabilityRules BookingAvailabilityRule[]
+  exceptions        BookingAvailabilityException[]
+  slots             BookingSlot[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, isActive])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, userId])
+  @@map("booking_advisors")
+}
+
+model BookingAdvisorService {
+  id             String   @id @default(cuid())
+  organizationId String
+  advisorId      String
+  serviceId      String
+  createdAt      DateTime @default(now())
+
+  advisor BookingAdvisor @relation(fields: [organizationId, advisorId], references: [organizationId, id], onDelete: Cascade)
+  service BookingService @relation(fields: [organizationId, serviceId], references: [organizationId, id], onDelete: Cascade)
+
+  @@unique([organizationId, advisorId, serviceId])
+  @@index([organizationId, serviceId])
+  @@map("booking_advisor_services")
+}
+
+/// Weekday: 0 = Saturday … 6 = Friday (Persian week, Saturday-first).
+model BookingAvailabilityRule {
+  id             String    @id @default(cuid())
+  organizationId String
+  advisorId      String
+  serviceId      String?
+  weekday        Int
+  startLocalTime String
+  endLocalTime   String
+  slotCapacity   Int       @default(1)
+  validFrom      DateTime?
+  validUntil     DateTime?
+  timezone       String    @default("Asia/Tehran")
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  advisor BookingAdvisor  @relation(fields: [organizationId, advisorId], references: [organizationId, id], onDelete: Cascade)
+  service BookingService? @relation(fields: [organizationId, serviceId], references: [organizationId, id], onDelete: Cascade)
+
+  @@index([organizationId, advisorId, weekday, isActive])
+  @@index([organizationId, serviceId])
+  @@map("booking_availability_rules")
+}
+
+model BookingAvailabilityException {
+  id             String   @id @default(cuid())
+  organizationId String
+  advisorId      String
+  serviceId      String?
+  /// Local calendar day in Asia/Tehran (date-only UTC noon sentinel avoided — store as Date @db.Date).
+  localDate      DateTime @db.Date
+  isClosed       Boolean  @default(true)
+  startLocalTime String?
+  endLocalTime   String?
+  slotCapacity   Int?
+  reason         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  advisor BookingAdvisor  @relation(fields: [organizationId, advisorId], references: [organizationId, id], onDelete: Cascade)
+  service BookingService? @relation(fields: [organizationId, serviceId], references: [organizationId, id], onDelete: Cascade)
+
+  @@index([organizationId, advisorId, localDate])
+  @@index([organizationId, serviceId, localDate])
+  @@map("booking_availability_exceptions")
+}
+
+model BookingSlot {
+  id             String            @id @default(cuid())
+  organizationId String
+  serviceId      String
+  advisorId      String
+  branchId       String?
+  startsAt       DateTime
+  endsAt         DateTime
+  capacity       Int
+  bookedCount    Int               @default(0)
+  waitingCount   Int               @default(0)
+  status         BookingSlotStatus @default(OPEN)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  service      BookingService       @relation(fields: [organizationId, serviceId], references: [organizationId, id], onDelete: Restrict)
+  advisor      BookingAdvisor       @relation(fields: [organizationId, advisorId], references: [organizationId, id], onDelete: Restrict)
+  branch       Branch?              @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  reservations BookingReservation[]
+
+  @@unique([organizationId, serviceId, advisorId, startsAt])
+  @@unique([organizationId, id])
+  @@index([organizationId, serviceId, startsAt, status])
+  @@index([organizationId, advisorId, startsAt, status])
+  @@index([organizationId, branchId, startsAt])
+  @@index([organizationId, status, startsAt])
+  @@map("booking_slots")
+}
+
+model BookingReservation {
+  id                   String             @id @default(cuid())
+  organizationId       String
+  slotId               String
+  formSubmissionId     String?
+  leadId               String?
+  status               BookingStatus      @default(PENDING)
+  meetingType          BookingMeetingType @default(IN_PERSON)
+  firstName            String
+  lastName             String
+  normalizedMobile     String
+  normalizedEmail      String?
+  normalizedNationalId String?
+  trackingCode         String
+  cancelTokenHash      String?
+  checkInTokenHash     String?
+  rescheduledFromId    String?
+  notes                String?
+  checkedInAt          DateTime?
+  riskHint             String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  deletedAt            DateTime?
+
+  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  slot            BookingSlot          @relation(fields: [organizationId, slotId], references: [organizationId, id], onDelete: Restrict)
+  formSubmission  FormSubmission?      @relation(fields: [organizationId, formSubmissionId], references: [organizationId, id], onDelete: Restrict)
+  lead            Lead?                @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  rescheduledFrom BookingReservation?  @relation("BookingRescheduleChain", fields: [rescheduledFromId], references: [id], onDelete: Restrict)
+  rescheduledTo   BookingReservation[] @relation("BookingRescheduleChain")
+  checkIns        BookingCheckIn[]
+
+  @@unique([organizationId, trackingCode])
+  @@unique([organizationId, id])
+  @@index([organizationId, slotId, status])
+  @@index([organizationId, normalizedMobile, status])
+  @@index([organizationId, normalizedNationalId, status])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, formSubmissionId])
+  @@index([organizationId, leadId])
+  @@index([organizationId, deletedAt])
+  @@map("booking_reservations")
+}
+
+model BookingCheckIn {
+  id                String               @id @default(cuid())
+  organizationId    String
+  reservationId     String
+  checkedInByUserId String
+  method            BookingCheckInMethod @default(QR)
+  createdAt         DateTime             @default(now())
+
+  reservation     BookingReservation @relation(fields: [organizationId, reservationId], references: [organizationId, id], onDelete: Restrict)
+  checkedInByUser User               @relation(fields: [checkedInByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, reservationId])
+  @@index([organizationId, createdAt])
+  @@map("booking_check_ins")
+}
+
+// ─── Site placements (StarOS v0.5.2B) ────────────────────────────────────────
+// Admin-managed embeds for fixed public pages. Not a generic page builder.
+// Resolution priority: enabled DB placement → env slug fallback → none.
+// A disabled DB row suppresses env fallback (explicit admin disable).
+
+enum SitePlacementKey {
+  PRE_REGISTRATION_FORM
+  CONSULTATION_FORM
+  CONSULTATION_BOOKING
+}
+
+enum SitePlacementContentType {
+  FORM
+  BOOKING
+  NONE
+}
+
+enum SitePlacementDisplayMode {
+  FULL
+  EMBEDDED
+  COMPACT
+  CARD
+}
+
+// ─── Communication / SMS / OTP (StarOS v0.6A) ────────────────────────────────
+// Provider-neutral queue + hashed OTP challenges. Never store plaintext OTP.
+// Secrets (API keys) live only in environment variables.
+
+enum SmsMessageStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  DEAD_LETTER
+  CANCELLED
+}
+
+enum SmsTemplatePurpose {
+  BOOKING_CONFIRMATION
+  FORM_CONFIRMATION
+  REGISTRATION_CONFIRMATION
+  OTP
+  CUSTOM
+}
+
+enum OtpPurpose {
+  LOGIN
+  STAFF_LOGIN
+  VERIFY_MOBILE
+  BOOKING
+  FORM
+  GENERIC
+}
+
+enum OtpChallengeStatus {
+  PENDING
+  VERIFIED
+  CONSUMED
+  EXPIRED
+  LOCKED
+}
+
+enum CrmCallOutcome {
+  ANSWERED
+  NO_ANSWER
+  BUSY
+  OFF
+  WRONG_NUMBER
+  FOLLOW_UP_REQUIRED
+  CONSULTATION_BOOKED
+  NOT_INTERESTED
+  REGISTERED
+  OTHER
+}
+
+model SitePlacement {
+  id               String                   @id @default(cuid())
+  organizationId   String
+  placementKey     SitePlacementKey
+  contentType      SitePlacementContentType @default(NONE)
+  formId           String?
+  bookingServiceId String?
+  displayMode      SitePlacementDisplayMode @default(EMBEDDED)
+  showPoster       Boolean                  @default(false)
+  isEnabled        Boolean                  @default(true)
+  heading          String?
+  description      String?
+  ctaLabel         String?
+  sortOrder        Int                      @default(0)
+  settings         Json                     @default("{}")
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  deletedAt        DateTime?
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  form           Form?           @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
+  bookingService BookingService? @relation(fields: [organizationId, bookingServiceId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, placementKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, isEnabled])
+  @@index([organizationId, formId])
+  @@index([organizationId, bookingServiceId])
+  @@map("site_placements")
+}
+
+// ─── SMS templates, outbound queue, OTP challenges (StarOS v0.6A) ───────────
+
+model SmsTemplate {
+  id             String             @id @default(cuid())
+  organizationId String
+  code           String
+  name           String
+  purpose        SmsTemplatePurpose @default(CUSTOM)
+  body           String
+  /// Declared variable names for rendering (e.g. ["trackingCode","date","time"]).
+  variables      Json               @default("[]")
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  messages     SmsMessage[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, id])
+  @@index([organizationId, purpose, isActive])
+  @@index([organizationId, deletedAt])
+  @@map("sms_templates")
+}
+
+model SmsMessage {
+  id                String           @id @default(cuid())
+  organizationId    String
+  templateId        String?
+  /// Normalized Iranian mobile (09xxxxxxxxx).
+  toMobile          String
+  body              String
+  status            SmsMessageStatus @default(PENDING)
+  provider          String           @default("null")
+  providerMessageId String?
+  /// Semantic purpose key (e.g. booking_confirmation, form_confirmation, otp).
+  purpose           String
+  relatedType       String?
+  relatedId         String?
+  attemptCount      Int              @default(0)
+  maxAttempts       Int              @default(5)
+  availableAt       DateTime         @default(now())
+  sentAt            DateTime?
+  lastError         String?
+  /// Unique per organization — protects against duplicate enqueue.
+  idempotencyKey    String
+  metadata          Json?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  template     SmsTemplate? @relation(fields: [organizationId, templateId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, idempotencyKey])
+  @@unique([organizationId, id])
+  @@index([status, availableAt])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, purpose, createdAt])
+  @@index([organizationId, relatedType, relatedId])
+  @@index([organizationId, toMobile, createdAt])
+  @@map("sms_messages")
+}
+
+model OtpChallenge {
+  id                String             @id @default(cuid())
+  organizationId    String
+  normalizedMobile  String
+  purpose           OtpPurpose         @default(GENERIC)
+  /// sha256$saltHex$hashHex — never plaintext.
+  codeHash          String
+  status            OtpChallengeStatus @default(PENDING)
+  expiresAt         DateTime
+  attemptCount      Int                @default(0)
+  maxAttempts       Int                @default(5)
+  consumedAt        DateTime?
+  lastSentAt        DateTime?
+  resendAvailableAt DateTime?
+  idempotencyKey    String?
+  metadata          Json?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, normalizedMobile, purpose, status])
+  @@index([organizationId, status, expiresAt])
+  @@index([organizationId, idempotencyKey])
+  @@map("otp_challenges")
+}
+
+// ─── CRM Automation Engine (StarOS v0.7) ─────────────────────────────────────
+// LeadStatus remains for legacy compatibility. CrmPipelineStage is the operational
+// source of truth when stageId is set. Mapping: CrmStageType → LeadStatus in lib/crm.
+
+model CrmPipeline {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  code           String
+  isDefault      Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  stages          CrmPipelineStage[]
+  leads           Lead[]
+  automationRules AutomationRule[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, id])
+  @@index([organizationId, isDefault, isActive])
+  @@index([organizationId, deletedAt])
+  @@map("crm_pipelines")
+}
+
+model CrmPipelineStage {
+  id             String       @id @default(cuid())
+  organizationId String
+  pipelineId     String
+  name           String
+  code           String
+  colorKey       String?
+  position       Int
+  stageType      CrmStageType @default(NEW)
+  isTerminal     Boolean      @default(false)
+  isWon          Boolean      @default(false)
+  isLost         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  pipeline        CrmPipeline      @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
+  leads           Lead[]
+  automationRules AutomationRule[]
+
+  @@unique([organizationId, pipelineId, code])
+  @@unique([organizationId, pipelineId, position])
+  @@unique([organizationId, id])
+  @@index([organizationId, pipelineId, position])
+  @@index([organizationId, deletedAt])
+  @@map("crm_pipeline_stages")
+}
+
+model CrmTask {
+  id               String          @id @default(cuid())
+  organizationId   String
+  leadId           String
+  assignedToUserId String?
+  title            String
+  description      String?
+  taskType         CrmTaskType     @default(FOLLOW_UP)
+  priority         CrmTaskPriority @default(NORMAL)
+  status           CrmTaskStatus   @default(OPEN)
+  dueAt            DateTime?
+  completedAt      DateTime?
+  cancelledAt      DateTime?
+  createdByUserId  String?
+  automationRuleId String?
+  idempotencyKey   String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  deletedAt        DateTime?
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lead           Lead            @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  assignedTo     User?           @relation("CrmTaskAssignee", fields: [assignedToUserId], references: [id], onDelete: Restrict)
+  createdBy      User?           @relation("CrmTaskCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  automationRule AutomationRule? @relation(fields: [organizationId, automationRuleId], references: [organizationId, id], onDelete: Restrict)
+  activities     CrmActivity[]
+  callLogs       CrmCallLog[]
+
+  @@unique([organizationId, idempotencyKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, leadId, status])
+  @@index([organizationId, assignedToUserId, status])
+  @@index([organizationId, dueAt, status])
+  @@index([organizationId, deletedAt])
+  @@map("crm_tasks")
+}
+
+model CrmActivity {
+  id                          String          @id @default(cuid())
+  organizationId              String
+  leadId                      String
+  activityType                CrmActivityType
+  title                       String
+  summary                     String?
+  actorUserId                 String?
+  relatedTaskId               String?
+  relatedFormSubmissionId     String?
+  relatedBookingReservationId String?
+  metadata                    Json?
+  occurredAt                  DateTime        @default(now())
+  createdAt                   DateTime        @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lead         Lead         @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  actor        User?        @relation("CrmActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  relatedTask  CrmTask?     @relation(fields: [organizationId, relatedTaskId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([organizationId, leadId, occurredAt])
+  @@index([organizationId, activityType, occurredAt])
+  @@index([organizationId, relatedTaskId])
+  @@map("crm_activities")
+}
+
+model CrmCallLog {
+  id              String         @id @default(cuid())
+  organizationId  String
+  leadId          String
+  membershipId    String
+  outcome         CrmCallOutcome
+  note            String?
+  durationSeconds Int?
+  calledAt        DateTime       @default(now())
+  nextFollowUpAt  DateTime?
+  createdTaskId   String?
+  idempotencyKey  String
+  createdAt       DateTime       @default(now())
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lead         Lead                   @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  membership   OrganizationMembership @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Restrict)
+  createdTask  CrmTask?               @relation(fields: [organizationId, createdTaskId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, idempotencyKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, membershipId, calledAt])
+  @@index([organizationId, leadId, calledAt])
+  @@index([organizationId, outcome, calledAt])
+  @@map("crm_call_logs")
+}
+
+model AutomationExecution {
+  id               String                    @id @default(cuid())
+  organizationId   String
+  automationRuleId String
+  domainEventId    String
+  status           AutomationExecutionStatus @default(PENDING)
+  attempts         Int                       @default(0)
+  startedAt        DateTime?
+  completedAt      DateTime?
+  errorCode        String?
+  lastError        String?
+  idempotencyKey   String
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  automationRule AutomationRule        @relation(fields: [organizationId, automationRuleId], references: [organizationId, id], onDelete: Restrict)
+  actionLogs     AutomationActionLog[]
+
+  @@unique([organizationId, automationRuleId, domainEventId])
+  @@unique([organizationId, idempotencyKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, domainEventId])
+  @@map("automation_executions")
+}
+
+/// Append-only per-action history for AutomationExecution (Sprint 5).
+model AutomationActionLog {
+  id                    String                    @id @default(cuid())
+  organizationId        String
+  automationExecutionId String
+  actionIndex           Int
+  actionType            String
+  status                AutomationExecutionStatus
+  inputSummary          Json?
+  outputSummary         Json?
+  errorCode             String?
+  createdAt             DateTime                  @default(now())
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  execution    AutomationExecution @relation(fields: [automationExecutionId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, automationExecutionId])
+  @@index([organizationId, createdAt])
+  @@map("automation_action_logs")
+}
+
+/// Staff inbox rows written by automation NOTIFY_USER (no UI required in Sprint 5).
+model StaffNotification {
+  id                    String    @id @default(cuid())
+  organizationId        String
+  userId                String
+  title                 String
+  body                  String?
+  entityType            String?
+  entityId              String?
+  automationExecutionId String?
+  readAt                DateTime?
+  createdAt             DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, userId, readAt])
+  @@index([organizationId, createdAt])
+  @@map("staff_notifications")
+}
+
+// ─── Institute website team CMS (not school-specific; not staff login accounts) ─
+
+model TeamDepartment {
+  id             String    @id @default(cuid())
+  organizationId String
+  slug           String
+  name           String
+  sortOrder      Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  archivedAt     DateTime?
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  members      TeamMember[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, sortOrder])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("team_departments")
+}
+
+model TeamMember {
+  id               String    @id @default(cuid())
+  organizationId   String
+  departmentId     String
+  fullName         String
+  roleTitle        String
+  biography        String    @default("")
+  specialty        String?
+  email            String?
+  phone            String?
+  instagramUrl     String?
+  linkedinUrl      String?
+  websiteUrl       String?
+  portraitMediaId  String?
+  slug             String
+  seoTitle         String?
+  seoDescription   String?
+  displayOrder     Int       @default(0)
+  isActive         Boolean   @default(true)
+  isFeatured       Boolean   @default(false)
+  featuredPriority Int       @default(0)
+  /// Reserved for future institute unit scoping (e.g. primary-school, plus, ghalamchi). Null in v1.
+  unitKey          String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  archivedAt       DateTime?
+  deletedAt        DateTime?
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  department    TeamDepartment @relation(fields: [organizationId, departmentId], references: [organizationId, id], onDelete: Restrict)
+  portraitMedia MediaAsset?    @relation("TeamMemberPortrait", fields: [portraitMediaId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, departmentId, displayOrder])
+  @@index([organizationId, isFeatured, featuredPriority])
+  @@index([organizationId, isActive, deletedAt])
+  /// Public directory: active + non-archived ordering
+  @@index([organizationId, isActive, archivedAt, deletedAt, displayOrder])
+  @@index([organizationId, unitKey])
+  @@map("team_members")
+}
+
+// ─── Institute website Student CMS (org-scoped public profiles) ───────────────
+
+model StudentGrade {
+  id             String    @id @default(cuid())
+  organizationId String
+  slug           String
+  name           String
+  sortOrder      Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  archivedAt     DateTime?
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  students     Student[]
+  assessments  Assessment[]
+  bookTitles   BookTitle[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, sortOrder])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("student_grades")
+}
+
+model StudentMajor {
+  id             String    @id @default(cuid())
+  organizationId String
+  slug           String
+  name           String
+  sortOrder      Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  archivedAt     DateTime?
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  students     Student[]
+  bookTitles   BookTitle[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, sortOrder])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("student_majors")
+}
+
+model Student {
+  id               String    @id @default(cuid())
+  organizationId   String
+  gradeId          String
+  majorId          String?
+  firstName        String
+  lastName         String
+  fullName         String
+  slug             String
+  /// External Kanoon/Qalamchi counter (شناسه قلم‌چی). Digit string; leading zeros preserved.
+  kanoonStudentId  String?
+  biography        String    @default("")
+  parentName       String?
+  schoolYear       String?
+  portraitMediaId  String?
+  seoTitle         String?
+  seoDescription   String?
+  displayOrder     Int       @default(0)
+  isActive         Boolean   @default(true)
+  isFeatured       Boolean   @default(false)
+  featuredPriority Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  archivedAt       DateTime?
+  deletedAt        DateTime?
+
+  organization       Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  grade              StudentGrade              @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
+  major              StudentMajor?             @relation(fields: [organizationId, majorId], references: [organizationId, id], onDelete: Restrict)
+  portraitMedia      MediaAsset?               @relation("StudentPortrait", fields: [portraitMediaId], references: [id], onDelete: SetNull)
+  achievements       Achievement[]
+  assessmentResults  AssessmentResult[]
+  guardianRelations  StudentGuardianRelation[]
+  portalAccountLinks PortalAccountLink[]
+  guidancePlans      GuidancePlan[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, kanoonStudentId])
+  @@unique([organizationId, id])
+  @@index([organizationId, gradeId, displayOrder])
+  @@index([organizationId, majorId])
+  @@index([organizationId, isFeatured, featuredPriority])
+  @@index([organizationId, isActive, deletedAt])
+  @@index([organizationId, isActive, archivedAt, deletedAt, displayOrder])
+  @@map("students")
+}
+
+// ─── Institute website Achievement CMS (linked to Student profiles) ───────────
+
+model AchievementCategory {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  slug           String
+  icon           String?
+  color          String?
+  displayOrder   Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  archivedAt     DateTime?
+  deletedAt      DateTime?
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  achievements Achievement[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, displayOrder])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("achievement_categories")
+}
+
+model Achievement {
+  id                 String    @id @default(cuid())
+  organizationId     String
+  studentId          String
+  categoryId         String
+  title              String
+  slug               String
+  shortDescription   String    @default("")
+  description        String    @default("")
+  achievementDate    DateTime?
+  schoolYear         String?
+  issuer             String?
+  level              String?
+  place              String?
+  score              String?
+  certificateMediaId String?
+  coverMediaId       String?
+  isFeatured         Boolean   @default(false)
+  featuredPriority   Int       @default(0)
+  displayOrder       Int       @default(0)
+  /// CMS hero placements (cinematic showcase)
+  showInHomepageHero         Boolean   @default(false)
+  showInHomepageSlider       Boolean   @default(false)
+  showInHomepageTicker       Boolean   @default(false)
+  showInAchievementHero      Boolean   @default(false)
+  showInAchievementGallery   Boolean   @default(false)
+  heroPublishFrom            DateTime?
+  heroPublishUntil           DateTime?
+  /// Per-slide cinematic framing: object-position (0–100%) + zoom scale per breakpoint
+  desktopFocusX              Float     @default(50)
+  desktopFocusY              Float     @default(50)
+  tabletFocusX               Float     @default(50)
+  tabletFocusY               Float     @default(50)
+  mobileFocusX               Float     @default(50)
+  mobileFocusY               Float     @default(50)
+  desktopZoom                Float     @default(1)
+  tabletZoom                 Float     @default(1)
+  mobileZoom                 Float     @default(1)
+  seoTitle           String?
+  seoDescription     String?
+  isPublished        Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  archivedAt         DateTime?
+  deletedAt          DateTime?
+
+  organization     Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student          Student             @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  category         AchievementCategory @relation(fields: [organizationId, categoryId], references: [organizationId, id], onDelete: Restrict)
+  certificateMedia MediaAsset?         @relation("AchievementCertificate", fields: [certificateMediaId], references: [id], onDelete: SetNull)
+  coverMedia       MediaAsset?         @relation("AchievementCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, studentId, achievementDate])
+  @@index([organizationId, categoryId, displayOrder])
+  @@index([organizationId, isFeatured, featuredPriority])
+  @@index([organizationId, isPublished, deletedAt])
+  @@index([organizationId, schoolYear])
+  @@index([organizationId, isPublished, archivedAt, deletedAt, achievementDate])
+  @@index([organizationId, showInHomepageSlider, featuredPriority])
+  @@index([organizationId, showInHomepageTicker, featuredPriority])
+  @@index([organizationId, showInAchievementHero, featuredPriority])
+  @@index([organizationId, showInAchievementGallery, featuredPriority])
+  @@map("achievements")
+}
+
+// ─── Assessment Center (آزمون) — multi-provider exam results ─────────────────
+
+enum AssessmentType {
+  QALAMCHI
+  SCHOOL_EXAM
+  MIDTERM
+  FINAL
+  OLYMPIAD
+  ENTRANCE
+  OTHER
+}
+
+enum GuardianRelationshipType {
+  FATHER
+  MOTHER
+  GUARDIAN
+  OTHER
+}
+
+enum PortalAccountType {
+  STUDENT
+  GUARDIAN
+}
+
+/// Parent / legal guardian / authorized family member (portal identity, not public CMS).
+model StudentGuardian {
+  id               String                   @id @default(cuid())
+  organizationId   String
+  firstName        String
+  lastName         String
+  fullName         String
+  nationalId       String?
+  mobile           String
+  normalizedMobile String
+  relationshipType GuardianRelationshipType @default(GUARDIAN)
+  isPrimary        Boolean                  @default(false)
+  isActive         Boolean                  @default(true)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  archivedAt       DateTime?
+  deletedAt        DateTime?
+
+  organization Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  relations    StudentGuardianRelation[]
+  portalLinks  PortalAccountLink[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, normalizedMobile])
+  @@index([organizationId, fullName])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("student_guardians")
+}
+
+model StudentGuardianRelation {
+  id                      String                   @id @default(cuid())
+  organizationId          String
+  studentId               String
+  guardianId              String
+  relationshipType        GuardianRelationshipType @default(GUARDIAN)
+  isPrimary               Boolean                  @default(false)
+  canViewAcademicData     Boolean                  @default(true)
+  canViewAchievements     Boolean                  @default(true)
+  canViewCertificates     Boolean                  @default(true)
+  canReceiveNotifications Boolean                  @default(true)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  deletedAt               DateTime?
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student      Student         @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  guardian     StudentGuardian @relation(fields: [organizationId, guardianId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, studentId, guardianId])
+  @@unique([organizationId, id])
+  @@index([organizationId, guardianId, deletedAt])
+  @@index([organizationId, studentId, deletedAt])
+  @@map("student_guardian_relations")
+}
+
+/// Links an authenticated User to exactly one Student OR one StudentGuardian (XOR enforced in SQL + services).
+model PortalAccountLink {
+  id             String            @id @default(cuid())
+  organizationId String
+  userId         String
+  studentId      String?
+  guardianId     String?
+  accountType    PortalAccountType
+  isActive       Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  /// Single-field FKs: Prisma optional composite FKs require all-or-nothing nulls.
+  /// Organization match is enforced in portal/admin services.
+  student      Student?         @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  guardian     StudentGuardian? @relation(fields: [guardianId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, userId, deletedAt, isActive])
+  @@index([userId, deletedAt, isActive])
+  @@index([studentId])
+  @@index([guardianId])
+  @@map("portal_account_links")
+}
+
+model AssessmentProvider {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  slug           String
+  displayOrder   Int       @default(0)
+  color          String?
+  icon           String?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  archivedAt     DateTime?
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  assessments  Assessment[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, displayOrder])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("assessment_providers")
+}
+
+model Subject {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  slug           String
+  shortName      String?
+  displayOrder   Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization   Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  subjectResults AssessmentSubjectResult[]
+  bookTitles     BookTitle[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, displayOrder])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("subjects")
+}
+
+model Assessment {
+  id                     String         @id @default(cuid())
+  organizationId         String
+  providerId             String
+  gradeId                String
+  title                  String
+  slug                   String
+  assessmentType         AssessmentType @default(OTHER)
+  assessmentDate         DateTime?
+  schoolYear             String?
+  participants           Int?
+  maxScore               Float?
+  description            String         @default("")
+  isPublished            Boolean        @default(false)
+  /// When true (and isPublished), featured results may appear on the public site.
+  publishFeaturedResults Boolean        @default(false)
+  /// Max results to auto-select as featured for this assessment (1–20).
+  featuredResultsLimit   Int            @default(3)
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  archivedAt             DateTime?
+  deletedAt              DateTime?
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  provider     AssessmentProvider @relation(fields: [organizationId, providerId], references: [organizationId, id], onDelete: Restrict)
+  grade        StudentGrade       @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
+  results      AssessmentResult[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, providerId, assessmentDate])
+  @@index([organizationId, gradeId, assessmentDate])
+  @@index([organizationId, assessmentType])
+  @@index([organizationId, schoolYear])
+  @@index([organizationId, isPublished, deletedAt])
+  @@index([organizationId, isPublished, publishFeaturedResults, archivedAt, deletedAt])
+  @@index([organizationId, isPublished, archivedAt, deletedAt, assessmentDate])
+  @@map("assessments")
+}
+
+model AssessmentResult {
+  id             String    @id @default(cuid())
+  organizationId String
+  studentId      String
+  assessmentId   String
+  score          Float?
+  scaledScore    Float?
+  rankSchool     Int?
+  rankCity       Int?
+  rankProvince   Int?
+  rankCountry    Int?
+  percentile     Float?
+  growth         Float?
+  averageClass   Float?
+  averageGrade   Float?
+  notes          String?
+  isFeatured     Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization   Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student        Student                   @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  assessment     Assessment                @relation(fields: [organizationId, assessmentId], references: [organizationId, id], onDelete: Restrict)
+  subjectResults AssessmentSubjectResult[]
+
+  @@unique([organizationId, studentId, assessmentId])
+  @@unique([organizationId, id])
+  @@index([organizationId, assessmentId, score])
+  @@index([organizationId, studentId, createdAt])
+  @@index([organizationId, isFeatured, deletedAt])
+  @@map("assessment_results")
+}
+
+model AssessmentSubjectResult {
+  id                 String @id @default(cuid())
+  assessmentResultId String
+  subjectId          String
+  percentage         Float?
+  correctAnswers     Int?
+  wrongAnswers       Int?
+  blankAnswers       Int?
+  timeSpent          Int?
+
+  assessmentResult AssessmentResult @relation(fields: [assessmentResultId], references: [id], onDelete: Cascade)
+  subject          Subject          @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+
+  @@unique([assessmentResultId, subjectId])
+  @@index([subjectId])
+  @@map("assessment_subject_results")
+}
+
+// ─── Registration Engine v1 (reusable multi-product enrollment) ───────────────
+
+/// Operational status for Registration Management Center (admin + wizard lifecycle).
+enum RegistrationStatus {
+  NEW
+  INCOMPLETE
+  NEEDS_CALL
+  WAITING_PAYMENT
+  WAITING_DOCUMENTS
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum RegistrationPaymentStatus {
+  UNPAID
+  AWAITING
+  PAID
+  FAILED
+  WAIVED
+}
+
+/// Product / service family for Product & Service Flows (Registration Engine).
+enum RegistrationProductType {
+  EXAM
+  CLASS
+  CAMP
+  WORKSHOP
+  EVENT
+  SCHOOL_ADMISSION
+  SCHOOL_REGISTRATION
+  BOOK
+  WORKBOOK
+  SCHOOL_UNIFORM
+  SCHOOL_SUPPLIES
+  TRANSPORT
+  MEAL_PLAN
+  SUMMER_CAMP
+  COURSE
+  TUITION_PAYMENT
+  CERTIFICATE
+  CONSULTATION
+  DIGITAL_PRODUCT
+  OTHER
+}
+
+enum RegistrationParentRelationship {
+  FATHER
+  MOTHER
+  GUARDIAN
+  OTHER
+}
+
+enum RegistrationDocumentType {
+  STUDENT_PHOTO
+  NATIONAL_CARD
+  BIRTH_CERTIFICATE
+  PARENT_CONSENT
+  OTHER
+}
+
+enum RegistrationDocumentReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RegistrationActivityType {
+  CREATED
+  PROGRESS_SAVED
+  STATUS_CHANGED
+  DOCUMENT_UPLOADED
+  DOCUMENT_REVIEWED
+  NOTE_ADDED
+  CALL_LOGGED
+  SMS_QUEUED
+  PAYMENT_STARTED
+  RESUMED
+  SYSTEM
+}
+
+/// Per-org Jalali-year sequence for REG-{year}-{seq}.
+model RegistrationNumberCounter {
+  id             String   @id @default(cuid())
+  organizationId String
+  jalaliYear     Int
+  lastSequence   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, jalaliYear])
+  @@index([organizationId])
+  @@map("registration_number_counters")
+}
+
+/// Admin-configurable registration flow (orchestration). Does NOT replace Form Builder.
+enum RegistrationFlowLifecycle {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum RegistrationFlowStepKey {
+  APPLICANT
+  STUDENT
+  FORM
+  DOCUMENTS
+  PAYMENT
+  REVIEW
+  CONFIRMATION
+}
+
+/// How a flow charges applicants — amounts still settle via Payment Foundation.
+enum RegistrationFlowPaymentMode {
+  FREE
+  /// @deprecated Prefer FIXED_PRICE for new flows.
+  FIXED_AMOUNT
+  /// @deprecated Prefer OPTIONAL for new flows.
+  OPTIONAL_PAYMENT
+  DEPOSIT
+  FIXED_PRICE
+  OPTIONAL
+  VARIABLE_PRICE
+  INSTALLMENT
+}
+
+enum RegistrationFlowFulfillmentMode {
+  NONE
+  PICKUP_AT_SCHOOL
+  COURIER
+  CLASSROOM_DELIVERY
+  DIGITAL_DOWNLOAD
+}
+
+enum RegistrationFlowInventoryMode {
+  UNLIMITED
+  TRACKED
+}
+
+enum RegistrationFlowVariantKind {
+  SIZE
+  COLOR
+  GRADE
+  PACKAGE
+  EDITION
+  GENDER
+  CUSTOM
+}
+
+/// Product & Service Flow — admin-configurable catalog entry for the Registration Engine.
+/// Public route remains /register/[slug]; admin remains /admin/registrations/flows.
+model RegistrationFlow {
+  id                 String                          @id @default(cuid())
+  organizationId     String
+  title              String
+  slug               String
+  description        String                          @default("")
+  coverMediaId       String?
+  lifecycle          RegistrationFlowLifecycle       @default(DRAFT)
+  productType        RegistrationProductType         @default(SCHOOL_REGISTRATION)
+  /// Optional link to an existing Form Builder form (questions live there).
+  formId             String?
+  opensAt            DateTime?
+  closesAt           DateTime?
+  academicYear       String?
+  /// Comma-separated or free-text grade targeting (e.g. "پایه دهم,پایه یازدهم").
+  gradeTargets       String?
+  /// Course / class / service label for targeting.
+  courseTarget       String?
+  capacity           Int?
+  /// Settles only via existing Payment Foundation (PaymentIntent).
+  paymentMode        RegistrationFlowPaymentMode     @default(FIXED_PRICE)
+  /// Configured amount in Rials (FIXED_PRICE / DEPOSIT / INSTALLMENT base).
+  paymentAmountRials Int                             @default(0)
+  /// Optional promotional / sale amount in Rials (UX pricing card + countdown).
+  saleAmountRials    Int?
+  pricingBadge       String?
+  discountStartsAt   DateTime?
+  discountEndsAt     DateTime?
+  showDiscountCountdown Boolean                      @default(true)
+  showRemainingCapacity Boolean                      @default(true)
+  paymentTitle       String?
+  paymentDeadlineAt  DateTime?
+  fulfillmentMode    RegistrationFlowFulfillmentMode @default(NONE)
+  /// Registration confirmation SMS (SMS.ir pattern / SmsTemplate.code).
+  confirmationSmsEnabled      Boolean @default(false)
+  adminNotificationSmsEnabled Boolean @default(false)
+  smsTemplateCode             String?
+  /// JSON string[] of normalized mobile numbers for admin alerts.
+  adminSmsRecipients          Json    @default("[]")
+  publishedAt        DateTime?
+  metadata           Json?
+  createdAt          DateTime                        @default(now())
+  updatedAt          DateTime                        @updatedAt
+  deletedAt          DateTime?
+
+  organization         Organization                          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  coverMedia           MediaAsset?                           @relation("RegistrationFlowCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  form                 Form?                                 @relation(fields: [organizationId, formId], references: [organizationId, id], onDelete: Restrict)
+  steps                RegistrationFlowStep[]
+  documentRequirements RegistrationFlowDocumentRequirement[]
+  galleryItems         RegistrationFlowGalleryItem[]
+  items                RegistrationFlowItem[]
+  registrations        Registration[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, lifecycle, deletedAt])
+  @@index([organizationId, productType, deletedAt])
+  @@index([organizationId, formId])
+  @@index([coverMediaId])
+  @@map("registration_flows")
+}
+
+model RegistrationFlowStep {
+  id             String                  @id @default(cuid())
+  organizationId String
+  flowId         String
+  stepKey        RegistrationFlowStepKey
+  label          String
+  enabled        Boolean                 @default(true)
+  sortOrder      Int                     @default(0)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  flow         RegistrationFlow @relation(fields: [organizationId, flowId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([flowId, stepKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, flowId, sortOrder])
+  @@map("registration_flow_steps")
+}
+
+model RegistrationFlowDocumentRequirement {
+  id                String                   @id @default(cuid())
+  organizationId    String
+  flowId            String
+  /// Stable machine key within the flow.
+  requirementKey    String
+  title             String
+  helpText          String                   @default("")
+  documentType      RegistrationDocumentType @default(OTHER)
+  required          Boolean                  @default(true)
+  /// Comma-separated MIME allowlist, e.g. "image/jpeg,image/png,application/pdf,application/zip"
+  acceptedMimeTypes String                   @default("image/jpeg,image/png,image/webp,application/pdf")
+  maxSizeBytes      Int                      @default(5242880)
+  maxFiles          Int                      @default(1)
+  sortOrder         Int                      @default(0)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  deletedAt         DateTime?
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  flow         RegistrationFlow @relation(fields: [organizationId, flowId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([flowId, requirementKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, flowId, sortOrder])
+  @@index([organizationId, deletedAt])
+  @@map("registration_flow_document_requirements")
+}
+
+model RegistrationFlowGalleryItem {
+  id             String   @id @default(cuid())
+  organizationId String
+  flowId         String
+  mediaId        String
+  sortOrder      Int      @default(0)
+  caption        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  flow         RegistrationFlow @relation(fields: [organizationId, flowId], references: [organizationId, id], onDelete: Restrict)
+  media        MediaAsset       @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, flowId, sortOrder])
+  @@index([mediaId])
+  @@map("registration_flow_gallery_items")
+}
+
+/// Optional sellable line items attached to a Product & Service Flow (books, uniforms, …).
+model RegistrationFlowItem {
+  id               String                        @id @default(cuid())
+  organizationId   String
+  flowId           String
+  title            String
+  description      String                        @default("")
+  imageMediaId     String?
+  sku              String?
+  barcode          String?
+  isActive         Boolean                       @default(true)
+  isHidden         Boolean                       @default(false)
+  basePriceRials   Int                           @default(0)
+  discountRials    Int                           @default(0)
+  taxRials         Int                           @default(0)
+  depositRials     Int                           @default(0)
+  inventoryMode    RegistrationFlowInventoryMode @default(UNLIMITED)
+  stockQuantity    Int                           @default(0)
+  reservedQuantity Int                           @default(0)
+  soldQuantity     Int                           @default(0)
+  sortOrder        Int                           @default(0)
+  metadata         Json?
+  createdAt        DateTime                      @default(now())
+  updatedAt        DateTime                      @updatedAt
+  deletedAt        DateTime?
+
+  organization Organization                  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  flow         RegistrationFlow              @relation(fields: [organizationId, flowId], references: [organizationId, id], onDelete: Restrict)
+  imageMedia   MediaAsset?                   @relation("RegistrationFlowItemImage", fields: [imageMediaId], references: [id], onDelete: SetNull)
+  variants     RegistrationFlowItemVariant[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, flowId, sortOrder])
+  @@index([organizationId, flowId, isActive, deletedAt])
+  @@index([organizationId, sku])
+  @@index([imageMediaId])
+  @@map("registration_flow_items")
+}
+
+model RegistrationFlowItemVariant {
+  id               String                        @id @default(cuid())
+  organizationId   String
+  itemId           String
+  kind             RegistrationFlowVariantKind   @default(CUSTOM)
+  label            String
+  valueKey         String
+  sku              String?
+  priceDeltaRials  Int                           @default(0)
+  inventoryMode    RegistrationFlowInventoryMode @default(UNLIMITED)
+  stockQuantity    Int                           @default(0)
+  reservedQuantity Int                           @default(0)
+  soldQuantity     Int                           @default(0)
+  isActive         Boolean                       @default(true)
+  sortOrder        Int                           @default(0)
+  createdAt        DateTime                      @default(now())
+  updatedAt        DateTime                      @updatedAt
+  deletedAt        DateTime?
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  item         RegistrationFlowItem @relation(fields: [organizationId, itemId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([itemId, kind, valueKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, itemId, sortOrder])
+  @@index([organizationId, deletedAt])
+  @@map("registration_flow_item_variants")
+}
+
+/// Durable registration application (wizard → payment → CRM → admin ops).
+model Registration {
+  id                 String                    @id @default(cuid())
+  organizationId     String
+  branchId           String
+  registrationNumber String
+  status             RegistrationStatus        @default(NEW)
+  paymentStatus      RegistrationPaymentStatus @default(UNPAID)
+  productType        RegistrationProductType
+  /// Stable flow key, e.g. "qalamchi-exam". Drives catalog resolution.
+  flowKey            String
+  /// Optional FK to admin-configured RegistrationFlow (nullable for legacy rows).
+  registrationFlowId String?
+  leadId             String?
+
+  /// Wizard progress (1-based step index).
+  currentStep       Int      @default(1)
+  lastCompletedStep Int      @default(0)
+  completionPercent Int      @default(0)
+  totalSteps        Int      @default(6)
+  lastActivityAt    DateTime @default(now())
+  /// Opaque token for public resume links.
+  resumeToken       String?
+  abandonedReason   String?
+  /// Full wizard draft JSON for autosave / resume.
+  wizardDraft       Json?
+
+  studentFirstName String?
+  studentLastName  String?
+  nationalCode     String?
+  birthDate        DateTime? @db.Date
+  gender           Gender?
+  gradeLabel       String?
+  majorLabel       String?
+  schoolName       String?
+  province         String?
+  city             String?
+
+  parentName             String?
+  parentRelationship     RegistrationParentRelationship?
+  parentMobile           String?
+  parentMobileNormalized String?
+  parentSecondaryMobile  String?
+  parentEmail            String?
+  parentAddress          String?
+
+  /// Selected product option keys + display titles (catalog-driven).
+  productKey       String?
+  productTitle     String?
+  sessionKey       String?
+  sessionTitle     String?
+  packageKey       String?
+  packageTitle     String?
+  venueBranchKey   String?
+  venueBranchTitle String?
+  discountCode     String?
+
+  amountRials      Int    @default(0)
+  discountRials    Int    @default(0)
+  finalAmountRials Int    @default(0)
+  currency         String @default("IRR")
+
+  /// Public human-facing tracking code (ST-{jalaliYear}-{5}).
+  publicTrackingCode String?
+  /// Payment / PSP tracking (filled by PaymentService).
+  trackingCode       String?
+  paymentProvider    String?
+  paymentRef         String?
+
+  adminNotesSummary String?
+  metadata          Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  organization     Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch           Branch                 @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  lead             Lead?                  @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  registrationFlow RegistrationFlow?      @relation(fields: [organizationId, registrationFlowId], references: [organizationId, id], onDelete: Restrict)
+  paymentIntents         PaymentIntent[]
+  documents              RegistrationDocument[]
+  notes                  RegistrationNote[]
+  activities             RegistrationActivity[]
+  attributionSnapshots   AttributionSnapshot[]
+
+  @@unique([organizationId, registrationNumber])
+  @@unique([organizationId, id])
+  @@unique([resumeToken])
+  @@unique([organizationId, publicTrackingCode])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, paymentStatus, createdAt])
+  @@index([organizationId, flowKey, createdAt])
+  @@index([organizationId, registrationFlowId])
+  @@index([organizationId, nationalCode])
+  @@index([organizationId, parentMobileNormalized])
+  @@index([organizationId, leadId])
+  @@index([organizationId, lastActivityAt])
+  @@index([organizationId, completionPercent])
+  @@index([organizationId, publicTrackingCode])
+  @@index([organizationId, deletedAt])
+  @@map("registrations")
+}
+
+// ─── Payment Foundation (Sprint 4A) ───────────────────────────────────────────
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+  EXPIRED
+  REFUNDED
+}
+
+/// Polymorphic payment target discriminator (additive; extend with ADD VALUE).
+enum PaymentPayableType {
+  REGISTRATION
+  COMMERCE_ORDER
+  /// Reserved for future domains — do not create intents with these until wired.
+  BOOKING
+  TUITION
+  INSTALLMENT
+}
+
+/// Payable unit for checkout (amounts snapshotted at create).
+/// Target is polymorphic via payableType + payableId.
+/// registrationId is retained for backward-compatible Registration payments (nullable for other domains).
+model PaymentIntent {
+  id               String             @id @default(cuid())
+  organizationId   String
+  /// Legacy / Registration shortcut FK. Required when payableType = REGISTRATION; otherwise null.
+  registrationId   String?
+  /// Domain of the payable entity (REGISTRATION, COMMERCE_ORDER, …).
+  payableType      PaymentPayableType
+  /// Id of the payable entity (registrationId or commerceOrderId, etc.).
+  payableId        String
+  idempotencyKey   String
+  status           PaymentStatus      @default(PENDING)
+  provider         String
+  amountRials      Int
+  discountRials    Int                @default(0)
+  finalAmountRials Int
+  currency         String             @default("IRR")
+  description      String?
+  trackingCode     String?
+  receiptNumber    String?
+  expiresAt        DateTime?
+  paidAt           DateTime?
+  failedAt         DateTime?
+  cancelledAt      DateTime?
+  metadata         Json?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  registration Registration?     @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
+  sessions     PaymentSession[]
+  eventLogs    PaymentEventLog[]
+   attributionSnapshots AttributionSnapshot[]
+
+  @@unique([organizationId, idempotencyKey])
+  @@unique([organizationId, id])
+  @@index([organizationId, registrationId, status])
+  @@index([organizationId, payableType, payableId, status])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, trackingCode])
+  @@index([organizationId, receiptNumber])
+  @@map("payment_intents")
+}
+
+/// One provider checkout attempt under a PaymentIntent.
+model PaymentSession {
+  id                String        @id @default(cuid())
+  organizationId    String
+  paymentIntentId   String
+  provider          String
+  providerSessionId String
+  status            PaymentStatus @default(PROCESSING)
+  checkoutUrl       String?
+  callbackToken     String
+  rawRequestJson    Json?
+  rawCallbackJson   Json?
+  expiresAt         DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  paymentIntent PaymentIntent @relation(fields: [organizationId, paymentIntentId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, callbackToken])
+  @@unique([organizationId, provider, providerSessionId])
+  @@unique([organizationId, id])
+  @@index([organizationId, paymentIntentId, createdAt])
+  @@index([organizationId, status])
+  @@map("payment_sessions")
+}
+
+/// Append-only payment transition log.
+model PaymentEventLog {
+  id              String         @id @default(cuid())
+  organizationId  String
+  paymentIntentId String
+  fromStatus      PaymentStatus?
+  toStatus        PaymentStatus
+  event           String
+  message         String?
+  metadata        Json?
+  createdAt       DateTime       @default(now())
+
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  paymentIntent PaymentIntent @relation(fields: [organizationId, paymentIntentId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([organizationId, paymentIntentId, createdAt])
+  @@map("payment_event_logs")
+}
+
+model RegistrationDocument {
+  id               String                           @id @default(cuid())
+  organizationId   String
+  registrationId   String
+  mediaAssetId     String
+  documentType     RegistrationDocumentType
+  reviewStatus     RegistrationDocumentReviewStatus @default(PENDING)
+  reviewNote       String?
+  reviewedAt       DateTime?
+  reviewedByUserId String?
+  sortOrder        Int                              @default(0)
+  createdAt        DateTime                         @default(now())
+  updatedAt        DateTime                         @updatedAt
+  deletedAt        DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  registration Registration @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+  reviewedBy   User?        @relation("RegistrationDocumentReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, registrationId, documentType])
+  @@index([organizationId, reviewStatus])
+  @@index([mediaAssetId])
+  @@index([organizationId, deletedAt])
+  @@map("registration_documents")
+}
+
+model RegistrationNote {
+  id             String   @id @default(cuid())
+  organizationId String
+  registrationId String
+  body           String
+  actorUserId    String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  registration Registration @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
+  actor        User?        @relation("RegistrationNoteActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, registrationId, createdAt])
+  @@map("registration_notes")
+}
+
+model RegistrationActivity {
+  id             String                   @id @default(cuid())
+  organizationId String
+  registrationId String
+  activityType   RegistrationActivityType
+  title          String
+  summary        String?
+  actorUserId    String?
+  metadata       Json?
+  occurredAt     DateTime                 @default(now())
+  createdAt      DateTime                 @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  registration Registration @relation(fields: [organizationId, registrationId], references: [organizationId, id], onDelete: Restrict)
+  actor        User?        @relation("RegistrationActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, registrationId, occurredAt])
+  @@index([organizationId, activityType, occurredAt])
+  @@map("registration_activities")
+}
+
+// ─── Commerce Foundation ──────────────────────────────────────────────────────
+// Sellable catalog entity is CommerceItem (goods + services + events + ظخ).
+// Admin UX label remains ┬س┘à╪ص╪╡┘ê┘╪د╪ز┬╗; do not confuse with RegistrationProductType.
+// Variants are deferred ظ¤ extend later with CommerceVariant + OrderItem.variantId.
+
+/// Technical fulfillment kind (stable; extend with ADD VALUE when needed).
+enum CommerceSystemKind {
+  PHYSICAL
+  DIGITAL
+  COURSE
+  EVENT
+  EXAM
+  CONSULTING
+  SERVICE
+  CUSTOM
+}
+
+enum CommerceItemStatus {
+  DRAFT
+  ACTIVE
+  OUT_OF_STOCK
+  ARCHIVED
+}
+
+enum CommerceOrderStatus {
+  DRAFT
+  AWAITING_PAYMENT
+  PAID
+  FULFILLING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum CommerceOrderPaymentStatus {
+  UNPAID
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIAL
+}
+
+/// Physical booklet print style (MVP catalog attribute).
+enum CommercePrintType {
+  COLOR
+  BLACK_AND_WHITE
+}
+
+/// Physical booklet binding style.
+enum CommerceBindingType {
+  STAPLED
+  SPIRAL
+  PERFECT
+  OTHER
+}
+
+/// Physical booklet trim / format size.
+enum CommerceFormatSize {
+  A4
+  A5
+  RAHLI
+  OTHER
+}
+
+/// On-site pickup fulfillment (no postal shipping in MVP).
+enum CommerceDeliveryMethod {
+  PICKUP_ONSITE
+}
+
+enum CommerceFulfillmentStatus {
+  AWAITING_PICKUP
+  DELIVERED
+  CANCELLED
+}
+
+/// Internal booklet operations pipeline (one active stage per order).
+enum CommerceOpsStage {
+  REGISTERED
+  PAID
+  IN_PRODUCTION
+  READY_FOR_PICKUP
+  DELIVERED_TO_STUDENT
+}
+
+enum CommerceOrderEventType {
+  STAGE_CHANGED
+  NOTE_ADDED
+  BRANCH_ASSIGNED
+  ROLLBACK
+  EDITED
+  SYSTEM
+}
+
+enum CommerceBookletBranchKey {
+  BOYS
+  GIRLS
+  ELEMENTARY
+}
+
+enum CommerceStudentGrade {
+  GRADE_1
+  GRADE_2
+  GRADE_3
+  GRADE_4
+  GRADE_5
+  GRADE_6
+  GRADE_7
+  GRADE_8
+  GRADE_9
+  GRADE_10
+  GRADE_11
+  GRADE_12
+}
+
+enum CommerceStudentMajor {
+  MATH
+  EMPIRICAL
+  HUMANITIES
+  TECHNICAL
+  KAR_DANESH
+}
+
+enum CommerceAcquisitionSource {
+  INSTAGRAM
+  TELEGRAM
+  FRIEND
+  TEACHER
+  PARENT
+  OTHER
+}
+
+enum CommerceBookletPaymentMethod {
+  ONLINE
+  CASH
+  CARD
+  TRANSFER
+  OTHER
+}
+
+/// Nested, admin-managed store categories (seeded, fully editable).
+model CommerceCategory {
+  id              String    @id @default(cuid())
+  organizationId  String
+  /// Optional branch scope; null = organization-wide.
+  branchId        String?
+  parentId        String?
+  /// Stable seed key for idempotent seeds (null for admin-created rows).
+  seedKey         String?
+  title           String
+  slug            String
+  description     String    @default("")
+  icon            String?
+  color           String?
+  imageAssetId    String?
+  sortOrder       Int       @default(0)
+  isActive        Boolean   @default(true)
+  isVisible       Boolean   @default(true)
+  isFeatured      Boolean   @default(false)
+  metaTitle       String?
+  metaDescription String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch?                @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  parent       CommerceCategory?      @relation("CommerceCategoryTree", fields: [organizationId, parentId], references: [organizationId, id], onDelete: Restrict)
+  children     CommerceCategory[]      @relation("CommerceCategoryTree")
+  imageAsset   MediaAsset?            @relation("CommerceCategoryImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
+  itemLinks    CommerceItemCategory[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@unique([organizationId, seedKey])
+  @@index([organizationId, parentId, sortOrder])
+  @@index([organizationId, isActive, isVisible, deletedAt])
+  @@index([organizationId, branchId])
+  @@index([imageAssetId])
+  @@map("commerce_categories")
+}
+
+/// Editable business-facing type labels (╪ش╪▓┘ê┘ç╪î ┘ê╪ذ█î┘╪د╪▒╪î ظخ) ظ¤ no Prisma migration to rename.
+model CommerceBusinessType {
+  id             String    @id @default(cuid())
+  organizationId String
+  title          String
+  slug           String
+  description    String    @default("")
+  sortOrder      Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  items        CommerceItem[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, isActive, deletedAt, sortOrder])
+  @@map("commerce_business_types")
+}
+
+/// Universal sellable catalog entity (physical goods, digital, courses, events, services, …).
+model CommerceItem {
+  id                   String             @id @default(cuid())
+  organizationId       String
+  /// Optional branch ownership; null = organization-wide catalog item.
+  branchId             String?
+  title                String
+  slug                 String
+  shortDescription     String             @default("")
+  description          String             @default("")
+  status               CommerceItemStatus @default(DRAFT)
+  systemKind           CommerceSystemKind @default(CUSTOM)
+  businessTypeId       String?
+  basePriceRials       Int                @default(0)
+  salePriceRials       Int?
+  currency             String             @default("IRR")
+  /// Pricing schedule readiness (null = always-on pricing).
+  priceStartsAt        DateTime?
+  priceEndsAt          DateTime?
+  primaryImageAssetId  String?
+  sku                  String?
+  barcode              String?
+  trackInventory       Boolean            @default(false)
+  stockQuantity        Int?
+  unlimitedStock       Boolean            @default(true)
+  /// Fulfillment hints (derived defaults from systemKind; overridable).
+  requiresShipping     Boolean            @default(false)
+  grantsDigitalAccess  Boolean            @default(false)
+  requiresScheduling   Boolean            @default(false)
+  requiresEnrollment   Boolean            @default(false)
+  /// Soft visibility toggle (independent from lifecycle status).
+  isVisible            Boolean            @default(true)
+  /// Booklet / physical catalog attributes (MVP).
+  authors              String             @default("")
+  subject              String?
+  gradeLabel           String?
+  pageCount            Int?
+  editionYear          Int?
+  printType            CommercePrintType?
+  bindingType          CommerceBindingType?
+  formatSize           CommerceFormatSize?
+  /// Managed feature / TOC list (JSON string array).
+  features             Json?
+  metaTitle            String?
+  metaDescription      String?
+  isFeatured           Boolean            @default(false)
+  sortOrder            Int                @default(0)
+  metadata             Json?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  deletedAt            DateTime?
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch?                @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  businessType CommerceBusinessType?  @relation(fields: [organizationId, businessTypeId], references: [organizationId, id], onDelete: Restrict)
+  primaryImage MediaAsset?            @relation("CommerceItemPrimaryImage", fields: [primaryImageAssetId], references: [id], onDelete: SetNull)
+  categoryLinks CommerceItemCategory[]
+  orderItems   CommerceOrderItem[]
+
+  @@unique([organizationId, slug])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, deletedAt])
+  @@index([organizationId, systemKind, deletedAt])
+  @@index([organizationId, businessTypeId])
+  @@index([organizationId, branchId])
+  @@index([organizationId, isFeatured, sortOrder])
+  @@index([organizationId, isVisible, status, deletedAt])
+  @@index([organizationId, sku])
+  @@index([primaryImageAssetId])
+  @@map("commerce_items")
+}
+
+/// Explicit M2M join for catalog merchandising.
+model CommerceItemCategory {
+  id             String   @id @default(cuid())
+  organizationId String
+  itemId         String
+  categoryId     String
+  sortOrder      Int      @default(0)
+  isFeatured     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  item         CommerceItem     @relation(fields: [organizationId, itemId], references: [organizationId, id], onDelete: Restrict)
+  category     CommerceCategory @relation(fields: [organizationId, categoryId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([itemId, categoryId])
+  @@unique([organizationId, id])
+  @@index([organizationId, categoryId, sortOrder])
+  @@index([organizationId, itemId])
+  @@map("commerce_item_categories")
+}
+
+/// Org-level SMS recipients for paid commerce order alerts (additive; not breaking).
+model CommerceNotificationSettings {
+  id                          String   @id @default(cuid())
+  organizationId              String   @unique
+  adminNotificationSmsEnabled Boolean  @default(true)
+  /// JSON: [{ "id": string, "mobile": "09…", "enabled": boolean }]
+  adminSmsRecipients          Json     @default("[]")
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@map("commerce_notification_settings")
+}
+
+model CommerceOrder {
+  id             String                     @id @default(cuid())
+  organizationId String
+  /// Catalog / production branch (the booklet belongs here).
+  branchId       String?
+  /// Student-chosen pickup location (محل دریافت جزوه).
+  pickupBranchId String?
+  orderNumber    String
+  status         CommerceOrderStatus        @default(DRAFT)
+  paymentStatus  CommerceOrderPaymentStatus @default(UNPAID)
+  /// Operational pipeline stage (staff workflow). Kept in sync with status/fulfillment.
+  opsStage       CommerceOpsStage           @default(REGISTERED)
+  buyerName      String?
+  buyerFirstName String?
+  buyerLastName  String?
+  parentName     String?
+  buyerMobile    String?
+  buyerEmail     String?
+  buyerNationalCode String?
+  studentGrade   CommerceStudentGrade?
+  studentMajor   CommerceStudentMajor?
+  acquisitionSource CommerceAcquisitionSource?
+  referredBy     String?
+  discountCode   String?
+  bookletPaymentMethod CommerceBookletPaymentMethod?
+  urgentDelivery Boolean                   @default(false)
+  preferredPickupAt DateTime?
+  specialNotes   String?
+  handoverStaffUserId String?
+  qrToken        String                    @unique @default(cuid())
+  /// Permanent public tracking payload (6-char code) — QR + SMS always use
+  /// the short link built from this, never the long qrToken. Generated once
+  /// at order creation and never reassigned.
+  shortCode      String                    @unique
+  inProductionAt DateTime?
+  opsVip         Boolean                   @default(false)
+  pickupSignedBy String?
+  pickupSignedAt DateTime?
+  leadId         String?
+  subtotalRials  Int                        @default(0)
+  discountRials  Int                        @default(0)
+  taxRials       Int                        @default(0)
+  shippingRials  Int                        @default(0)
+  grandTotalRials Int                       @default(0)
+  currency       String                     @default("IRR")
+  /// On-site handover at the selected branch (no postal shipping).
+  deliveryMethod    CommerceDeliveryMethod     @default(PICKUP_ONSITE)
+  fulfillmentStatus CommerceFulfillmentStatus?
+  readyForPickupAt       DateTime?
+  readyForPickupByUserId String?
+  deliveredAt       DateTime?
+  deliveredByUserId String?
+  deliveryNote      String?
+  notes          String?
+  metadata       Json?
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch?             @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  pickupBranch Branch?             @relation("CommerceOrderPickupBranch", fields: [organizationId, pickupBranchId], references: [organizationId, id], onDelete: Restrict)
+  lead         Lead?               @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  deliveredBy  User?               @relation("CommerceOrderDeliveredBy", fields: [deliveredByUserId], references: [id], onDelete: SetNull)
+  readyForPickupBy User?           @relation("CommerceOrderReadyForPickupBy", fields: [readyForPickupByUserId], references: [id], onDelete: SetNull)
+  handoverStaff User?              @relation("CommerceOrderHandoverStaff", fields: [handoverStaffUserId], references: [id], onDelete: SetNull)
+  items        CommerceOrderItem[]
+  events       CommerceOrderEvent[]
+
+  @@unique([organizationId, orderNumber])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, paymentStatus, createdAt])
+  @@index([organizationId, fulfillmentStatus, createdAt])
+  @@index([organizationId, opsStage, createdAt])
+  @@index([organizationId, branchId])
+  @@index([organizationId, pickupBranchId])
+  @@index([organizationId, leadId])
+  @@index([organizationId, buyerMobile])
+  @@index([organizationId, studentGrade])
+  @@index([organizationId, inProductionAt])
+  @@index([organizationId, readyForPickupAt])
+  @@index([deliveredByUserId])
+  @@index([readyForPickupByUserId])
+  @@index([handoverStaffUserId])
+  @@map("commerce_orders")
+}
+
+/// Append-only operations timeline (stage changes, notes, edits).
+model CommerceOrderEvent {
+  id             String                  @id @default(cuid())
+  organizationId String
+  orderId        String
+  eventType      CommerceOrderEventType
+  stage          CommerceOpsStage?
+  title          String
+  note           String?
+  actorUserId    String?
+  metadata       Json?
+  occurredAt     DateTime                @default(now())
+  createdAt      DateTime                @default(now())
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  order        CommerceOrder @relation(fields: [organizationId, orderId], references: [organizationId, id], onDelete: Restrict)
+  actor        User?         @relation("CommerceOrderEventActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, orderId, occurredAt])
+  @@index([organizationId, eventType, occurredAt])
+  @@index([actorUserId])
+  @@map("commerce_order_events")
+}
+
+model CommerceOrderItem {
+  id                    String            @id @default(cuid())
+  organizationId        String
+  orderId               String
+  itemId                String?
+  /// Immutable line snapshots (survive catalog edits / soft-delete).
+  titleSnapshot         String
+  skuSnapshot           String?
+  systemKindSnapshot    CommerceSystemKind
+  unitPriceRials        Int
+  quantity              Int               @default(1)
+  discountRials         Int               @default(0)
+  totalRials            Int
+  metadata              Json?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  order        CommerceOrder @relation(fields: [organizationId, orderId], references: [organizationId, id], onDelete: Restrict)
+  item         CommerceItem? @relation(fields: [organizationId, itemId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, orderId])
+  @@index([organizationId, itemId])
+  @@map("commerce_order_items")
+}
+
+
+// ─── Experience Engine (SXP Phase S1) ────────────────────────────────────────
+// Additive hub projector. Default-off via OrganizationFeatureFlag key "sxp".
+// Inbox is private to the engine; CRM/SMS workers keep their DomainEventOutbox semantics.
+// Timeline is append-only. Widget snapshots are the only Home data source.
+// Do not add SMS_SENT to DomainEventType; SMS uses synthetic inbox keys.
+
+enum ExperienceEngineHandlerName {
+  TIMELINE_APPENDER
+  FEED_CURATOR
+  WIDGET_SNAPSHOTTER
+}
+
+enum ExperienceEngineInboxStatus {
+  PENDING
+  PROCESSED
+  SKIPPED
+  FAILED
+  DEAD_LETTER
+}
+
+enum ExperienceTimelineVisibility {
+  SELF
+  GUARDIANS
+  STAFF
+  SYSTEM_HIDDEN
+}
+
+enum ExperienceWidgetKey {
+  NEXT_ACTION
+  UPCOMING_RESERVATION
+  OPEN_BALANCE
+  LOYALTY_CHIP
+  READY_PICKUP
+  RECENT_FEED
+}
+
+// ─── Book Commerce ERP — Pen Book Agency (Phase A: Foundation, Phase B: Catalog) ──
+// Additive-only StarOS module. Never rewrites booking, CRM, SMS, auth, or RBAC.
+// Flag: OrganizationFeatureFlag key "bookCommerce". No row = OFF. Hard-off env
+// STAROS_BOOKS_ERP_HARD_OFF wins over an enabled per-org flag.
+// See docs/architecture/book-commerce-erp/ for the full contract (v2 pack).
+// This slice ships Foundation (flag table, AgencyProfile, DocumentSequence) and
+// Catalog (publisher/type/title/SKU, temporal price history, tag reuse, Excel
+// import). Warehouse ledger, sales/reservations, procurement, treasury,
+// marketing, commission, partner portals, and reporting are later approved
+// phases — do not add those tables in this section without a new approval.
+// No scalar stock column exists anywhere in this section on purpose.
+
+enum BookSkuStatus {
+  ACTIVE
+  INACTIVE
+  DISCONTINUED
+}
+
+enum BookPriceKind {
+  LIST
+  SALE
+}
+
+enum BookImportJobType {
+  CATALOG
+}
+
+enum BookImportJobStatus {
+  UPLOADED
+  PREVIEWED
+  VALIDATED
+  COMMITTING
+  DONE
+  FAILED
+  CANCELLED
+}
+
+enum BookImportRowAction {
+  INSERT
+  UPDATE
+  SKIP
+  DUPLICATE_FLAG
+  ERROR
+}
+
+/// Generic organization-scoped feature flag store. First consumer: "bookCommerce".
+/// Reused verbatim by any future module that needs a per-org on/off switch.
+model OrganizationFeatureFlag {
+  id             String   @id @default(cuid())
+  organizationId String
+  key            String
+  enabled        Boolean  @default(false)
+  payload        Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, key])
+  @@index([organizationId, enabled])
+  @@map("organization_feature_flags")
+}
+
+
+model ExperienceProfile {
+  id             String    @id @default(cuid())
+  organizationId String
+  userId         String
+  displayName    String?
+  interests      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, userId])
+  @@unique([organizationId, id])
+  @@index([organizationId, deletedAt])
+  @@index([userId])
+  @@map("experience_profiles")
+}
+
+model ExperienceEngineInbox {
+  id             String                      @id @default(cuid())
+  organizationId String
+  /// DomainEventOutbox.id, or synthetic "sms-message:{SmsMessage.id}".
+  outboxEventId  String
+  handlerName    ExperienceEngineHandlerName
+  status         ExperienceEngineInboxStatus @default(PENDING)
+  attemptCount   Int                         @default(0)
+  lastError      String?
+  processedAt    DateTime?
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, outboxEventId, handlerName])
+  @@index([organizationId, status, createdAt])
+  @@index([handlerName, status, createdAt])
+  @@map("experience_engine_inbox")
+}
+
+model ExperienceTimelineEvent {
+  id             String                       @id @default(cuid())
+  organizationId String
+  userId         String
+  inboxId        String
+  sourceType     String
+  sourceEventId  String
+  eventType      String
+  aggregateType  String
+  aggregateId    String
+  occurredAt     DateTime
+  title          String
+  summary        String?
+  href           String?
+  visibility     ExperienceTimelineVisibility @default(SELF)
+  feedEligible   Boolean                      @default(false)
+  feedRank       Int                          @default(0)
+  payload        Json?
+  createdAt      DateTime                     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, userId, sourceEventId])
+  @@unique([organizationId, id])
+  @@index([organizationId, userId, occurredAt])
+  @@index([organizationId, userId, feedEligible, feedRank, occurredAt])
+  @@index([organizationId, userId, visibility, occurredAt])
+  @@index([organizationId, sourceEventId])
+  @@index([userId, occurredAt])
+  @@map("experience_timeline_events")
+}
+
+model ExperienceWidgetSnapshot {
+  id             String              @id @default(cuid())
+  organizationId String
+  userId         String
+  widgetKey      ExperienceWidgetKey
+  payload        Json
+  refreshedAt    DateTime            @default(now())
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, userId, widgetKey])
+  @@index([organizationId, userId])
+  @@map("experience_widget_snapshots")
+}
+
+/// 1:1 Organization. Book Agency settings — never a second Organization row.
+model BookAgencyProfile {
+  id                          String    @id @default(cuid())
+  organizationId              String    @unique
+  legalName                   String?
+  logoMediaAssetId            String?
+  defaultDepositPercent       Int       @default(30)
+  defaultReservationTtlHours  Int       @default(168)
+  allowIssueUnpaid            Boolean   @default(false)
+  installmentEnabled          Boolean   @default(true)
+  countGiftsInGmv             Boolean   @default(false)
+  showStudentNamesToTeachers  Boolean   @default(false)
+  centralVisibleToAllCashiers Boolean   @default(true)
+  instantInternalTransfer     Boolean   @default(true)
+  invoiceAtFulfillment        Boolean   @default(true)
+  barcodeSymbologyDefault     String    @default("CODE128")
+  numberFormatPrefix          String    @default("BA")
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+  deletedAt                   DateTime?
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  logoMediaAsset MediaAsset?  @relation("BookAgencyProfileLogo", fields: [logoMediaAssetId], references: [id], onDelete: SetNull)
+
+  @@map("book_agency_profiles")
+}
+
+/// (organizationId, documentType, periodKey) → next integer, incremented under a row lock.
+/// No documents exist yet in this slice; sales/procurement phases will consume it.
+model DocumentSequence {
+  id             String   @id @default(cuid())
+  organizationId String
+  documentType   String
+  periodKey      String
+  currentValue   Int      @default(0)
+  prefix         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, documentType, periodKey])
+  @@map("book_document_sequences")
+}
+
+model BookPublisher {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  titles       BookTitle[]
+
+  @@unique([organizationId, name])
+  @@unique([organizationId, id])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("book_publishers")
+}
+
+/// Future-proof, admin-manageable book type taxonomy (Normal/Blue/Green/Purple/
+/// Orange/Summer/Gift/Collection/Magazine/Exam/Booklet/EducationalPackage/
+/// SchoolPackage/SpecialEdition, ...). Never a hardcoded enum — new types are
+/// data, not migrations. `isSystem` marks the seeded starter set.
+model BookType {
+  id             String    @id @default(cuid())
+  organizationId String
+  code           String
+  label          String
+  sortOrder      Int       @default(0)
+  isSystem       Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  titles       BookTitle[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, id])
+  @@index([organizationId, sortOrder])
+  @@index([organizationId, isActive, deletedAt])
+  @@map("book_types")
+}
+
+/// Master title. Grade/subject/major reuse the existing school taxonomies —
+/// never a duplicate "book grade" or "book field" table.
+model BookTitle {
+  id             String    @id @default(cuid())
+  organizationId String
+  publisherId    String?
+  bookTypeId     String?
+  gradeId        String?
+  subjectId      String?
+  majorId        String?
+  title          String
+  description    String?
+  keywords       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  publisher    BookPublisher? @relation(fields: [organizationId, publisherId], references: [organizationId, id], onDelete: Restrict)
+  bookType     BookType?      @relation(fields: [organizationId, bookTypeId], references: [organizationId, id], onDelete: Restrict)
+  grade        StudentGrade?  @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
+  subject      Subject?       @relation(fields: [organizationId, subjectId], references: [organizationId, id], onDelete: Restrict)
+  major        StudentMajor?  @relation(fields: [organizationId, majorId], references: [organizationId, id], onDelete: Restrict)
+  skus         BookSku[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, publisherId])
+  @@index([organizationId, bookTypeId])
+  @@index([organizationId, gradeId])
+  @@index([organizationId, subjectId])
+  @@index([organizationId, majorId])
+  @@index([organizationId, deletedAt])
+  @@map("book_titles")
+}
+
+/// Sellable edition. No scalar stock column — quantity lives only in the
+/// warehouse ledger of a later phase. `searchText` is a denormalized lowercase
+/// projection (title + internalCode + barcode + keywords) for staff search.
+model BookSku {
+  id             String        @id @default(cuid())
+  organizationId String
+  titleId        String
+  internalCode   String
+  barcode        String?
+  editionLabel   String?
+  editionYear    String?
+  status         BookSkuStatus @default(ACTIVE)
+  searchText     String        @default("")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  title        BookTitle      @relation(fields: [organizationId, titleId], references: [organizationId, id], onDelete: Restrict)
+  prices       BookSkuPrice[]
+  tags         BookSkuTag[]
+  importRows   BookImportRowResult[]
+
+  @@unique([organizationId, internalCode])
+  @@unique([organizationId, id])
+  @@index([organizationId, titleId])
+  @@index([organizationId, status, deletedAt])
+  @@index([organizationId, barcode])
+  @@map("book_skus")
+}
+
+/// Temporal price history. Never UPDATE amountRials in place — close the
+/// covering row (`effectiveTo = now`) and insert a new one.
+model BookSkuPrice {
+  id              String        @id @default(cuid())
+  organizationId  String
+  skuId           String
+  kind            BookPriceKind @default(LIST)
+  amountRials     Int
+  effectiveFrom   DateTime      @default(now())
+  effectiveTo     DateTime?
+  source          String        @default("MANUAL")
+  reason          String?
+  createdByUserId String?
+  createdAt       DateTime      @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  sku          BookSku      @relation(fields: [organizationId, skuId], references: [organizationId, id], onDelete: Restrict)
+  createdBy    User?        @relation("BookSkuPriceCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, skuId, kind, effectiveFrom])
+  @@index([organizationId, skuId, effectiveTo])
+  @@map("book_sku_prices")
+}
+
+/// Reuses the existing generic Tag model — never a duplicate "BookTag" master.
+model BookSkuTag {
+  id             String   @id @default(cuid())
+  organizationId String
+  skuId          String
+  tagId          String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  sku          BookSku      @relation(fields: [organizationId, skuId], references: [organizationId, id], onDelete: Cascade)
+  tag          Tag          @relation(fields: [organizationId, tagId], references: [organizationId, id], onDelete: Cascade)
+
+  @@unique([organizationId, skuId, tagId])
+  @@index([organizationId, tagId])
+  @@map("book_sku_tags")
+}
+
+/// Enterprise Excel import: upload → preview → validate → commit → report.
+/// Never evaluates formulas; values only. Committed in transactional chunks.
+model BookImportJob {
+  id                 String               @id @default(cuid())
+  organizationId     String
+  jobType            BookImportJobType    @default(CATALOG)
+  status             BookImportJobStatus  @default(UPLOADED)
+  fileName           String
+  checksum           String
+  totalRows          Int                  @default(0)
+  processedRows      Int                  @default(0)
+  insertedCount      Int                  @default(0)
+  updatedCount       Int                  @default(0)
+  skippedCount       Int                  @default(0)
+  duplicateCount     Int                  @default(0)
+  errorCount         Int                  @default(0)
+  priceChangeCount   Int                  @default(0)
+  reportMediaAssetId String?
+  createdByUserId    String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  completedAt        DateTime?
+
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  reportMedia  MediaAsset?           @relation("BookImportJobReport", fields: [reportMediaAssetId], references: [id], onDelete: SetNull)
+  createdBy    User?                 @relation("BookImportJobCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  rows         BookImportRowResult[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, createdAt])
+  @@index([organizationId, status])
+  @@map("book_import_jobs")
+}
+
+/// Per-row outcome, survives for the downloadable Import Report.
+model BookImportRowResult {
+  id             String              @id @default(cuid())
+  organizationId String
+  jobId          String
+  rowNumber      Int
+  action         BookImportRowAction
+  internalCode   String?
+  skuId          String?
+  message        String?
+  createdAt      DateTime            @default(now())
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  job          BookImportJob @relation(fields: [organizationId, jobId], references: [organizationId, id], onDelete: Cascade)
+  sku          BookSku?      @relation(fields: [organizationId, skuId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, jobId, rowNumber])
+  @@index([organizationId, jobId, action])
+  @@map("book_import_row_results")
+}
+
+// ─── Guidance ERP (Phase 0) ───────────────────────────────────────────────────
+// سامانه جامع انتخاب رشته — minimal case + versioned documents only.
+// Reuses Organization, User, Student, MediaAsset, AuditLog. No rank/prefs/AI/pay.
+
+enum GuidancePlanStatus {
+  PRE_REGISTERED
+  INTAKE_INCOMPLETE
+  FINAL_GRADES_UPLOADED
+}
+
+enum GuidanceExamGroup {
+  MATHEMATICS
+  EXPERIMENTAL_SCIENCES
+  HUMANITIES
+  ARTS
+  LANGUAGES
+}
+
+enum GuidanceDocumentType {
+  FINAL_GRADES
+}
+
+enum GuidanceDocumentVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+/// Guidance case (SoR). External surfaces must use publicId — never expose id.
+model GuidancePlan {
+  id             String             @id @default(cuid())
+  /// Immutable public identifier for portal URLs, APIs, and integrations.
+  publicId       String             @default(cuid())
+  organizationId String
+  studentId      String
+  userId         String
+  status         GuidancePlanStatus @default(PRE_REGISTERED)
+  examGroup      GuidanceExamGroup
+  /// Snapshot of accepted pre-registration consent (not CRM ConsentRecord — that is Lead-scoped).
+  consentGrantedAt DateTime?
+  consentVersion   String?
+  consentText      String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  // Composite FK: student must belong to the same organization.
+  student      Student             @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  user         User                @relation("GuidancePlanUser", fields: [userId], references: [id], onDelete: Restrict)
+  documents    GuidanceDocument[]
+
+  @@unique([organizationId, publicId])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, deletedAt])
+  @@index([organizationId, studentId, deletedAt])
+  @@index([organizationId, userId, deletedAt])
+  @@index([userId])
+  @@map("guidance_plans")
+}
+
+/// Versioned guidance uploads. Blob lives on MediaAsset; row holds type, version, verification.
+model GuidanceDocument {
+  id                 String                             @id @default(cuid())
+  organizationId     String
+  planId             String
+  mediaAssetId       String
+  documentType       GuidanceDocumentType
+  /// Monotonic per plan + documentType (1, 2, …). Replacements append a new version.
+  versionNumber      Int
+  /// Student UX reads the latest active version only; history remains for audit.
+  isLatest           Boolean                            @default(true)
+  /// Snapshot at upload (also on MediaAsset) for stable audit even if asset metadata changes.
+  originalFilename   String
+  mimeType           String
+  fileSizeBytes      Int
+  checksum           String
+  verificationStatus GuidanceDocumentVerificationStatus @default(PENDING)
+  verifiedByUserId   String?
+  verifiedAt         DateTime?
+  createdAt          DateTime                           @default(now())
+  updatedAt          DateTime                           @updatedAt
+  deletedAt          DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  plan         GuidancePlan @relation(fields: [organizationId, planId], references: [organizationId, id], onDelete: Restrict)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+  verifiedBy   User?        @relation("GuidanceDocumentVerifier", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, planId, documentType, versionNumber])
+  @@unique([organizationId, id])
+  @@index([organizationId, planId, documentType, isLatest])
+  @@index([organizationId, verificationStatus])
+  @@index([mediaAssetId])
+  @@index([organizationId, deletedAt])
+  @@index([verifiedByUserId])
+  @@map("guidance_documents")
 }

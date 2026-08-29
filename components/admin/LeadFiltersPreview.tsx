@@ -3,26 +3,31 @@ import { LeadStatusBadge } from "./LeadStatusBadge";
 
 export function LeadFiltersPreview() {
   return (
-    <div className="admin-card space-y-4 p-4 sm:p-5">
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+    <div className="admin-card space-y-5 p-4 sm:p-5">
+      <div>
+        <h2 className="text-sm font-semibold text-primary">فیلترها</h2>
+        <p className="mt-1 text-xs text-muted">
+          فیلترها پس از اتصال پایگاه داده فعال می‌شوند. این بخش صرفاً پیش‌نمایش رابط
+          است.
+        </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="md:col-span-2 xl:col-span-2">
           <label
             htmlFor="lead-search-preview"
             className="mb-2 block text-sm font-medium text-primary"
           >
-            جستجو
+            جستجو — پیش‌نمایش
           </label>
           <input
             id="lead-search-preview"
             type="search"
             disabled
             aria-disabled="true"
-            placeholder="جستجو بر اساس نام یا موبایل — پیش‌نمایش"
+            placeholder="جستجو بر اساس نام یا موبایل"
             className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-muted"
           />
-          <p className="mt-2 text-xs text-muted">
-            جستجو پس از اتصال پایگاه داده فعال می‌شود.
-          </p>
         </div>
 
         <div>
@@ -30,7 +35,7 @@ export function LeadFiltersPreview() {
             htmlFor="branch-filter-preview"
             className="mb-2 block text-sm font-medium text-primary"
           >
-            شعبه
+            شعبه — پیش‌نمایش
           </label>
           <select
             id="branch-filter-preview"
@@ -38,13 +43,13 @@ export function LeadFiltersPreview() {
             aria-disabled="true"
             className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-muted"
           >
-            <option>همه شعب — پیش‌نمایش</option>
+            <option>همه شعب</option>
           </select>
         </div>
       </div>
 
       <div>
-        <p className="mb-3 text-sm font-medium text-primary">فیلتر وضعیت</p>
+        <p className="mb-3 text-sm font-medium text-primary">وضعیت — پیش‌نمایش</p>
         <div className="flex flex-wrap gap-2">
           {leadStatusFilterPreview.map((status) => (
             <button
@@ -58,14 +63,13 @@ export function LeadFiltersPreview() {
             </button>
           ))}
         </div>
-        <p className="mt-3 text-xs text-muted">
-          نمونه برچسب‌های وضعیت برای پیش‌نمایش رابط — بدون داده واقعی.
-        </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <LeadStatusBadge label="پیش‌نمایش فیلتر" tone="info" />
-        <LeadStatusBadge label="بدون داده" tone="neutral" />
+      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
+        <LeadStatusBadge label="فیلترها غیرفعال" tone="neutral" />
+        <span className="text-xs text-muted">
+          خروجی، اختصاص و تغییر وضعیت گروهی — در نقشه توسعه
+        </span>
       </div>
     </div>
   );

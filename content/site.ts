@@ -8,6 +8,9 @@ export const siteConfig = {
 
 export const navLinks = [
   { href: "/", label: "صفحه اصلی" },
+  { href: "/team", label: "تیم ما" },
+  { href: "/achievements", label: "افتخارات" },
+  { href: "/assessments", label: "آزمون" },
   { href: "/courses", label: "دوره‌ها" },
   { href: "/classes", label: "کلاس‌ها" },
   { href: "/exams", label: "آزمون‌ها" },
@@ -28,8 +31,8 @@ export const registrationNotice = {
 
 export const footerContent = {
   description:
-    "ستارگان پلاس بستر دیجیتال مرکز آموزشی نسیم‌شهر برای ارائه و مدیریت خدمات آموزشی است.",
-  note: "این سکو در حال توسعه است و به‌تدریج قابلیت‌های جدید اضافه خواهد شد.",
+    "ستارگان پلاس؛ چهره دیجیتال اکوسیستم آموزشی ستارگان — از دبستان تا کنکور، مشاوره، افتخارات و آترین.",
+  note: "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر.",
 } as const;
 
 export const aboutContent = {
