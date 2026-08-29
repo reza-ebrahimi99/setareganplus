@@ -1,95 +1,228 @@
 "use client";
 
 /**
- * Guidance ERP — final grades upload form (portal).
+ * Guidance ERP — premium final grades upload (presentation only).
+ * Same server action / validation contract — UI only.
  */
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 import {
   uploadGuidanceFinalGradesAction,
   type GuidanceGradesUploadState,
 } from "@/app/portal/student/services/guidance/grades/actions";
+import { PortalIcon } from "@/components/portal/icons";
+import { PortalSurface } from "@/components/portal/PortalSurface";
+import { toPersianDigits } from "@/lib/persian";
 
 const initial: GuidanceGradesUploadState = {};
 
 type GuidanceGradesUploadFormProps = {
   hasExisting: boolean;
+  existingFileName?: string | null;
+  existingVersion?: number | null;
 };
+
+function formatBytes(size: number): string {
+  if (size < 1024) return `${toPersianDigits(size)} B`;
+  if (size < 1024 * 1024) {
+    return `${toPersianDigits(Math.round(size / 1024))} KB`;
+  }
+  return `${toPersianDigits((size / (1024 * 1024)).toFixed(1))} MB`;
+}
 
 export function GuidanceGradesUploadForm({
   hasExisting,
+  existingFileName = null,
+  existingVersion = null,
 }: GuidanceGradesUploadFormProps) {
+  const inputId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [state, action, pending] = useActionState(
     uploadGuidanceFinalGradesAction,
     initial,
   );
 
+  useEffect(() => {
+    if (!file || !file.type.startsWith("image/")) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  function assignFile(next: File | null) {
+    setFile(next);
+    if (inputRef.current) {
+      if (!next) {
+        inputRef.current.value = "";
+        return;
+      }
+      const transfer = new DataTransfer();
+      transfer.items.add(next);
+      inputRef.current.files = transfer.files;
+    }
+  }
+
   if (state.ok) {
     return (
-      <div className="space-y-3 rounded-2xl border border-success/20 bg-success/5 p-5">
-        <p className="text-base font-semibold text-primary">
-          کارنامه شما دریافت شد.
-        </p>
-        <p className="text-sm leading-7 text-muted">در انتظار بررسی...</p>
-        {state.versionNumber ? (
-          <p className="text-xs text-muted">
-            نسخه {state.versionNumber}
-            {state.replaced ? " (جایگزین نسخه قبلی)" : ""}
-          </p>
-        ) : null}
-        <a
-          href="/portal/student/services/guidance"
-          className="inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white"
-        >
-          بازگشت به مسیر انتخاب رشته
-        </a>
-      </div>
+      <PortalSurface
+        accent="emerald"
+        padding="lg"
+        className="portal-upload-success"
+      >
+        <div role="status">
+          <span className="portal-upload-success__badge" aria-hidden="true">
+            <PortalIcon name="medal" className="size-7" />
+          </span>
+          <p className="portal-upload-success__title">کارنامه شما دریافت شد</p>
+          <p className="portal-upload-success__support">در انتظار بررسی...</p>
+          {state.versionNumber ? (
+            <p className="portal-upload-success__meta">
+              نسخه {toPersianDigits(state.versionNumber)}
+              {state.replaced ? " (جایگزین نسخه قبلی)" : ""}
+            </p>
+          ) : null}
+          <a
+            href="/portal/student/services/guidance"
+            className="portal-upload-success__cta"
+          >
+            بازگشت به مسیر انتخاب رشته
+          </a>
+        </div>
+      </PortalSurface>
     );
   }
 
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="portal-upload">
       {state.error ? (
-        <p
-          role="alert"
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-        >
+        <p role="alert" className="portal-upload__error">
           {state.error}
         </p>
       ) : null}
 
-      <p className="text-sm leading-7 text-muted">
-        فایل کارنامه نهایی یا سوابق تحصیلی را بارگذاری کنید (PDF یا تصویر، حداکثر
-        ۵ مگابایت).
-        {hasExisting
-          ? " بارگذاری جدید به‌عنوان نسخه تازه ثبت می‌شود و نسخه قبلی در سوابق می‌ماند."
-          : null}
-      </p>
+      {hasExisting ? (
+        <PortalSurface accent="orange" padding="md" className="portal-upload-history">
+          <p className="portal-upload-history__title">نسخه فعلی در پرونده</p>
+          <p className="portal-upload-history__file">
+            {existingFileName ?? "کارنامه بارگذاری‌شده"}
+            {existingVersion != null
+              ? ` · نسخه ${toPersianDigits(existingVersion)}`
+              : ""}
+          </p>
+          <p className="portal-upload-history__hint">
+            بارگذاری جدید به‌عنوان نسخه تازه ثبت می‌شود؛ نسخه قبلی در سوابق
+            می‌ماند.
+          </p>
+        </PortalSurface>
+      ) : null}
 
-      <div>
-        <label
-          htmlFor="guidance-grades-file"
-          className="text-sm font-medium text-primary"
-        >
-          فایل کارنامه
-        </label>
+      <div
+        className={[
+          "portal-upload-dropzone",
+          dragging ? "portal-upload-dropzone--dragging" : "",
+          file ? "portal-upload-dropzone--ready" : "",
+          pending ? "portal-upload-dropzone--pending" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        data-portal-accent="teal"
+        onDragEnter={(event) => {
+          event.preventDefault();
+          setDragging(true);
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={(event) => {
+          event.preventDefault();
+          setDragging(false);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          setDragging(false);
+          const dropped = event.dataTransfer.files?.[0];
+          if (dropped) assignFile(dropped);
+        }}
+      >
         <input
-          id="guidance-grades-file"
+          ref={inputRef}
+          id={inputId}
           name="file"
           type="file"
           required
           accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp"
-          className="mt-1.5 block w-full text-sm text-muted file:me-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
+          className="portal-upload-dropzone__input"
+          onChange={(event) => assignFile(event.target.files?.[0] ?? null)}
         />
+
+        <span className="portal-upload-dropzone__icon" aria-hidden="true">
+          <PortalIcon name="clipboard" className="size-8" />
+        </span>
+        <p className="portal-upload-dropzone__title">
+          فایل را بکش و رها کن، یا انتخاب کن
+        </p>
+        <p className="portal-upload-dropzone__hint">
+          PDF یا تصویر · حداکثر ۵ مگابایت
+        </p>
+        <label htmlFor={inputId} className="portal-upload-dropzone__pick">
+          انتخاب فایل
+        </label>
+
+        {pending ? (
+          <div className="portal-upload-progress" aria-live="polite">
+            <span className="portal-upload-progress__bar" />
+            <p>در حال بارگذاری امن فایل…</p>
+          </div>
+        ) : null}
       </div>
+
+      {file ? (
+        <PortalSurface accent="teal" padding="md" className="portal-upload-preview">
+          <div className="portal-upload-preview__row">
+            {previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={previewUrl}
+                alt=""
+                className="portal-upload-preview__thumb"
+              />
+            ) : (
+              <span className="portal-upload-preview__file-icon" aria-hidden="true">
+                <PortalIcon name="book" className="size-6" />
+              </span>
+            )}
+            <div className="min-w-0">
+              <p className="portal-upload-preview__name">{file.name}</p>
+              <p className="portal-upload-preview__meta">{formatBytes(file.size)}</p>
+            </div>
+            <button
+              type="button"
+              className="portal-upload-preview__replace"
+              onClick={() => {
+                assignFile(null);
+                inputRef.current?.click();
+              }}
+            >
+              تعویض
+            </button>
+          </div>
+        </PortalSurface>
+      ) : null}
 
       <button
         type="submit"
-        disabled={pending}
-        className="inline-flex w-full justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-white disabled:opacity-60"
+        disabled={pending || !file}
+        className="portal-upload__submit"
       >
         {pending
-          ? "در حال بارگذاری…"
+          ? "در حال ارسال…"
           : hasExisting
             ? "جایگزینی کارنامه"
             : "ارسال کارنامه"}

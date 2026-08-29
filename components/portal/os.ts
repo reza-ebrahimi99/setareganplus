@@ -28,3 +28,9 @@ export {
   type PortalOsNavItem,
   type PortalOsNavSection,
 } from "@/components/portal/nav/types";
+export { PortalJourneyScreen } from "@/components/portal/journey/PortalJourneyScreen";
+export type {
+  PortalJourneyModel,
+  PortalJourneyStep,
+  PortalJourneyState,
+} from "@/components/portal/journey/types";
