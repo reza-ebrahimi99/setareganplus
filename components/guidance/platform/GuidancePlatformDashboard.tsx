@@ -46,10 +46,56 @@ function buildTodayTasks(steps: readonly PortalJourneyStep[]): TaskCard[] {
   return tasks.slice(0, 6);
 }
 
+function GuidanceHeroRing({ percent }: { percent: number }) {
+  const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+  const size = 132;
+  const strokeWidth = 11;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (clamped / 100) * circumference;
+
+  return (
+    <div
+      className="gp-hero-ring"
+      role="img"
+      aria-label={`تکمیل مسیر ${toPersianDigits(clamped)} درصد`}
+    >
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle
+          className="gp-hero-ring__track"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
+        <circle
+          className="gp-hero-ring__value"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </svg>
+      <div className="gp-hero-ring__center">
+        <span className="gp-hero-ring__percent">
+          {toPersianDigits(clamped)}٪
+        </span>
+        <span className="gp-hero-ring__caption">تکمیل</span>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Guidance Platform home — Major Selection dashboard.
- * Presentation only: composes existing journey / analysis models.
- * No school widgets (achievements, exams, XP, homework).
+ * Phase 1 polish: hero hierarchy, completion ring, CTAs, summary cards.
+ * Presentation only — no school widgets / no logic changes.
  */
 export function GuidancePlatformDashboard({
   studentName,
@@ -59,16 +105,43 @@ export function GuidancePlatformDashboard({
   const { progress, hero, steps } = journey;
   const tasks = buildTodayTasks(steps);
   const primaryCta = hero.cta;
+  const primaryHref =
+    primaryCta?.href ?? "/portal/student/services/guidance?view=journey";
+  const primaryLabel = primaryCta
+    ? primaryCta.label === "ادامه مسیر"
+      ? "ادامه سفر هدایت"
+      : primaryCta.label
+    : "ادامه سفر هدایت";
+
+  const currentStep =
+    steps.find((s) => s.state === "active" || s.state === "waiting") ??
+    steps.find((s) => s.state === "completed");
+
+  const nextAction =
+    currentStep?.action ??
+    (primaryCta
+      ? { href: primaryCta.href, label: primaryLabel }
+      : {
+          href: "/portal/student/services/guidance?view=journey",
+          label: "مشاهده سفر",
+        });
+
   const caseStatus =
     analysis?.analysisStatus.title ??
-    JOURNEY_STATE_LABEL[
-      steps.find((s) => s.state === "active" || s.state === "waiting")?.state ??
-        "locked"
-    ];
+    JOURNEY_STATE_LABEL[currentStep?.state ?? "locked"];
+
+  const caseHealth =
+    currentStep?.state === "waiting"
+      ? "در انتظار بررسی"
+      : currentStep?.state === "active"
+        ? "نیاز به اقدام"
+        : progress.percent >= 100
+          ? "تکمیل‌شده"
+          : "رو به جلو";
 
   return (
     <div className="gp-dashboard">
-      {/* Hero */}
+      {/* Hero — compact, ring-forward */}
       <section
         className="gp-hero"
         data-portal-accent={hero.accent}
@@ -77,84 +150,110 @@ export function GuidancePlatformDashboard({
         <div className="gp-hero__glow" aria-hidden="true" />
         <div className="gp-hero__orb gp-hero__orb--a" aria-hidden="true" />
         <div className="gp-hero__orb gp-hero__orb--b" aria-hidden="true" />
-        <div className="gp-hero__art" aria-hidden="true">
-          <PortalIcon name={hero.icon} className="size-14" />
-        </div>
-        <div className="gp-hero__content">
-          <p className="gp-hero__eyebrow">{hero.eyebrow}</p>
-          <p className="gp-hero__greeting">
-            سلام {studentName} — آماده‌ای برای ادامه انتخاب رشته؟
-          </p>
-          <h1 id="gp-hero-title" className="gp-hero__headline">
-            {hero.headline}
-          </h1>
-          <p className="gp-hero__support">{hero.support}</p>
-          <div className="gp-hero__meta">
-            <span className="gp-hero__chip">
-              وضعیت: {progress.currentStageLabel}
-            </span>
-            <span className="gp-hero__chip">
-              تکمیل {toPersianDigits(progress.percent)}٪
-            </span>
-            <span className="gp-hero__chip">مشاور: به‌زودی اختصاص می‌یابد</span>
+
+        <div className="gp-hero__layout">
+          <div className="gp-hero__content">
+            <p className="gp-hero__eyebrow">{hero.eyebrow}</p>
+            <p className="gp-hero__greeting">سلام {studentName}</p>
+            <h1 id="gp-hero-title" className="gp-hero__headline">
+              {hero.headline}
+            </h1>
+            <p className="gp-hero__support">{hero.support}</p>
+
+            <dl className="gp-hero__facts">
+              <div>
+                <dt>وضعیت</dt>
+                <dd>{progress.currentStageLabel}</dd>
+              </div>
+              <div>
+                <dt>قدم فعلی</dt>
+                <dd>{currentStep?.title ?? progress.currentStageLabel}</dd>
+              </div>
+              <div>
+                <dt>مشاور</dt>
+                <dd>به‌زودی اختصاص می‌یابد</dd>
+              </div>
+            </dl>
+
+            <div className="gp-hero__actions">
+              <Link href={primaryHref} className="gp-hero__cta gp-hero__cta--primary">
+                {primaryLabel}
+              </Link>
+              <Link
+                href="/portal/student/services/guidance?view=case"
+                className="gp-hero__cta gp-hero__cta--secondary"
+              >
+                مشاهده پرونده
+              </Link>
+            </div>
           </div>
-          {primaryCta ? (
-            <Link href={primaryCta.href} className="gp-hero__cta">
-              {primaryCta.label === "ادامه مسیر"
-                ? "ادامه سفر هدایت"
-                : primaryCta.label}
-            </Link>
-          ) : (
-            <Link
-              href="/portal/student/services/guidance?view=journey"
-              className="gp-hero__cta"
-            >
-              مشاهده سفر هدایت
-            </Link>
-          )}
+
+          <div className="gp-hero__focus">
+            <GuidanceHeroRing percent={progress.percent} />
+            <ul className="gp-hero__ring-meta">
+              <li>
+                <span>مرحله</span>
+                <strong>{progress.currentStageLabel}</strong>
+              </li>
+              <li>
+                <span>سلامت پرونده</span>
+                <strong>{caseHealth}</strong>
+              </li>
+              <li>
+                <span>پیشرفت</span>
+                <strong>
+                  {toPersianDigits(progress.completedSteps)}/
+                  {toPersianDigits(progress.totalSteps)}
+                </strong>
+              </li>
+            </ul>
+            <div className="gp-hero__art" aria-hidden="true">
+              <PortalIcon name={hero.icon} className="size-10" />
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Summary cards */}
-      <section className="gp-summary" aria-label="خلاصه پرونده">
+      {/* Summary — one idea per card, no duplicates */}
+      <section className="gp-summary" aria-label="خلاصه اقدام">
         <article className="gp-summary__card" data-portal-accent="gold">
-          <p className="gp-summary__label">وضعیت پرونده</p>
-          <p className="gp-summary__value">{caseStatus}</p>
-          <p className="gp-summary__hint">{progress.currentStageLabel}</p>
+          <p className="gp-summary__label">قدم فعلی</p>
+          <p className="gp-summary__value gp-summary__value--sm">
+            {currentStep?.title ?? progress.currentStageLabel}
+          </p>
+          <p className="gp-summary__hint">
+            {JOURNEY_STATE_LABEL[currentStep?.state ?? "locked"]}
+          </p>
         </article>
-        <article className="gp-summary__card" data-portal-accent="blue">
-          <p className="gp-summary__label">مشاور اختصاصی</p>
-          <p className="gp-summary__value gp-summary__value--sm">در صف تخصیص</p>
-          <p className="gp-summary__hint">پس از آماده‌سازی پرونده</p>
+
+        <article className="gp-summary__card" data-portal-accent="purple">
+          <p className="gp-summary__label">اقدام بعدی</p>
+          <p className="gp-summary__value gp-summary__value--sm">
+            {nextAction.label}
+          </p>
+          <p className="gp-summary__hint">
+            <Link href={nextAction.href}>شروع اقدام</Link>
+          </p>
         </article>
+
         <article className="gp-summary__card" data-portal-accent="orange">
           <p className="gp-summary__label">جلسه آینده</p>
-          <p className="gp-summary__value gp-summary__value--sm">هنوز رزرو نشده</p>
+          <p className="gp-summary__value gp-summary__value--sm">رزرو نشده</p>
           <p className="gp-summary__hint">
             <Link href="/portal/student/services/guidance?view=sessions">
-              مشاهده جلسات
+              مدیریت جلسات
             </Link>
           </p>
         </article>
-        <article className="gp-summary__card" data-portal-accent="purple">
-          <p className="gp-summary__label">درصد تکمیل</p>
-          <p className="gp-summary__value">
-            {toPersianDigits(progress.percent)}٪
-          </p>
-          <div
-            className="gp-summary__bar"
-            role="progressbar"
-            aria-valuenow={progress.percent}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="پیشرفت مسیر انتخاب رشته"
-          >
-            <span style={{ width: `${progress.percent}%` }} />
-          </div>
+
+        <article className="gp-summary__card" data-portal-accent="blue">
+          <p className="gp-summary__label">وضعیت پرونده</p>
+          <p className="gp-summary__value gp-summary__value--sm">{caseStatus}</p>
+          <p className="gp-summary__hint">{caseHealth}</p>
         </article>
       </section>
 
-      {/* Journey centerpiece */}
+      {/* Journey centerpiece — unchanged structure (next phase) */}
       <section className="gp-journey" aria-labelledby="gp-journey-title">
         <div className="gp-section-head">
           <div>
@@ -162,14 +261,14 @@ export function GuidancePlatformDashboard({
               سفر هدایت
             </h2>
             <p className="portal-section-support">
-              از ثبت‌نام تا انتخاب نهایی رشته — مرکز داشبورد شما
+              از ثبت‌نام تا انتخاب نهایی رشته
             </p>
           </div>
           <Link
             href="/portal/student/services/guidance?view=journey"
             className="gp-section-link"
           >
-            نمای کامل سفر
+            نمای کامل
           </Link>
         </div>
         <PortalJourneyTrack steps={steps} />
@@ -194,8 +293,7 @@ export function GuidancePlatformDashboard({
             </div>
             <p className="gp-empty__title">فعلاً کار فوری نداری</p>
             <p className="gp-empty__desc">
-              وقتی قدم بعدی باز شود، اینجا ظاهر می‌شود. می‌توانی سفر یا تحلیل را
-              مرور کنی.
+              وقتی قدم بعدی باز شود، اینجا ظاهر می‌شود.
             </p>
             <Link
               href="/portal/student/services/guidance?view=journey"
@@ -228,7 +326,7 @@ export function GuidancePlatformDashboard({
         )}
       </section>
 
-      {/* Counselor + Documents + Messages */}
+      {/* Secondary rail — de-emphasized */}
       <section className="gp-rail" aria-label="همراهی و مدارک">
         <article className="gp-card gp-counselor">
           <div className="gp-card__head">
@@ -329,16 +427,13 @@ export function GuidancePlatformDashboard({
         </article>
       </section>
 
-      {/* Future placeholders */}
       <section className="gp-future" aria-labelledby="gp-future-title">
         <div className="gp-section-head">
           <div>
             <h2 id="gp-future-title" className="portal-section-title">
               افق آینده
             </h2>
-            <p className="portal-section-support">
-              معماری آماده — پیاده‌سازی در فازهای بعدی
-            </p>
+            <p className="portal-section-support">معماری آماده — فازهای بعدی</p>
           </div>
         </div>
         <div className="gp-future__grid">
@@ -373,13 +468,11 @@ export function GuidancePlatformDashboard({
         </div>
       </section>
 
-      {primaryCta ? (
-        <div className="gp-sticky-cta">
-          <Link href={primaryCta.href} className="gp-sticky-cta__btn">
-            ادامه سفر هدایت
-          </Link>
-        </div>
-      ) : null}
+      <div className="gp-sticky-cta">
+        <Link href={primaryHref} className="gp-sticky-cta__btn">
+          {primaryLabel}
+        </Link>
+      </div>
     </div>
   );
 }
