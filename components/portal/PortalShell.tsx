@@ -3,6 +3,11 @@ import { PortalAccountType } from "@/generated/prisma/enums";
 import { Container } from "@/components/ui/Container";
 import { PortalNav, type PortalNavItem } from "@/components/portal/PortalNav";
 
+/**
+ * Legacy portal shell — Parent portal (and any non-OS surfaces).
+ * Intentionally does NOT mount `.portal-os` tokens / sidebar / dock.
+ */
+
 const studentNav = [
   { href: "/portal/student", label: "خانه", match: "exact" as const },
   { href: "/portal/student/profile", label: "پروفایل" },

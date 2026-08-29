@@ -1,10 +1,12 @@
 /**
- * Guidance ERP — portal final grades upload page.
+ * Guidance ERP — portal final grades upload page (premium presentation).
  */
 
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { GuidanceGradesUploadForm } from "@/components/guidance/GradesUploadForm";
+import { PortalIcon } from "@/components/portal/icons";
+import { PortalSurface } from "@/components/portal/PortalSurface";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
 import { loadGuidancePlanForPortalUser } from "@/lib/guidance/portal";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
@@ -33,31 +35,38 @@ export default async function GuidanceGradesUploadPage() {
     redirect("/guidance/pre-register");
   }
 
+  const pendingReview =
+    plan.latestFinalGrades?.verificationStatus === "PENDING";
+
   return (
-    <div className="mx-auto max-w-xl space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-xl font-semibold text-primary">بارگذاری کارنامه</h1>
-        <p className="text-sm leading-7 text-muted">
-          کارنامه نهایی را به‌صورت خصوصی بارگذاری کنید. پس از ارسال، وضعیت «در
-          انتظار بررسی» نمایش داده می‌شود.
-        </p>
+    <div className="portal-upload-page">
+      <header className="portal-upload-page__header" data-portal-accent="teal">
         <Link
           href="/portal/student/services/guidance"
-          className="inline-flex text-sm font-medium text-primary underline-offset-4 hover:underline"
+          className="portal-upload-page__back"
         >
+          <PortalIcon name="route" className="size-4" />
           بازگشت به مسیر
         </Link>
+        <h1 className="portal-upload-page__title">بارگذاری کارنامه</h1>
+        <p className="portal-upload-page__support">
+          کارنامه نهایی را خصوصی بارگذاری کن. پس از ارسال، وضعیت «در انتظار
+          بررسی» نمایش داده می‌شود.
+        </p>
       </header>
 
-      {plan.latestFinalGrades?.verificationStatus === "PENDING" ? (
-        <div className="rounded-2xl border border-secondary/30 bg-secondary/10 px-4 py-3 text-sm leading-7 text-primary">
-          کارنامه شما دریافت شد.
-          <br />
-          در انتظار بررسی...
-        </div>
+      {pendingReview ? (
+        <PortalSurface accent="orange" padding="md" className="portal-upload-waiting">
+          <p className="portal-upload-waiting__title">کارنامه شما دریافت شد</p>
+          <p className="portal-upload-waiting__support">در انتظار بررسی...</p>
+        </PortalSurface>
       ) : null}
 
-      <GuidanceGradesUploadForm hasExisting={Boolean(plan.latestFinalGrades)} />
+      <GuidanceGradesUploadForm
+        hasExisting={Boolean(plan.latestFinalGrades)}
+        existingFileName={plan.latestFinalGrades?.originalFilename ?? null}
+        existingVersion={plan.latestFinalGrades?.versionNumber ?? null}
+      />
     </div>
   );
 }

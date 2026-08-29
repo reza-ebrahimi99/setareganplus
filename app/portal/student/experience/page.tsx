@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
-import { ExperienceHomeView } from "@/components/sxp/ExperienceHomeView";
+import { ExperienceJourneyScreen } from "@/components/portal/apps/ExperienceJourneyScreen";
+import { notFound } from "next/navigation";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
-import { loadExperienceHome } from "@/lib/sxp/hub/load-home";
-import { assertSxpEnabledOrNotFound } from "@/lib/sxp/hub/require";
+import {
+  loadStudentIntelligenceSnapshot,
+  StudentInsightEngine,
+} from "@/lib/portal/intelligence";
 
 export const metadata: Metadata = {
   title: "خانه تجربه",
@@ -12,10 +15,25 @@ export const dynamic = "force-dynamic";
 
 export default async function StudentExperienceHomePage() {
   const context = await requireStudentPortalAccess();
-  await assertSxpEnabledOrNotFound(context.organization.id);
-  const home = await loadExperienceHome({
-    context,
-    timelineHref: "/portal/student/timeline",
+  const studentId = context.authorizedStudents[0]?.studentId;
+  if (!studentId) {
+    notFound();
+  }
+
+  const snapshot = await loadStudentIntelligenceSnapshot(context, studentId, {
+    includeAssessments: false,
+    includeAchievements: false,
+    includeExperience: true,
   });
-  return <ExperienceHomeView home={home} />;
+
+  if (!snapshot.flags.sxpEnabled) {
+    notFound();
+  }
+
+  const experience = StudentInsightEngine.experience(snapshot);
+  if (!experience.home) {
+    notFound();
+  }
+
+  return <ExperienceJourneyScreen home={experience.home} />;
 }
