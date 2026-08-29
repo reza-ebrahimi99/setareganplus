@@ -23,6 +23,11 @@ export function PortalHomeHero({
       data-hero-tone={hero.tone}
     >
       <div className="portal-home-hero__glow" aria-hidden="true" />
+      <div className="portal-home-hero__orb portal-home-hero__orb--a" aria-hidden="true" />
+      <div className="portal-home-hero__orb portal-home-hero__orb--b" aria-hidden="true" />
+      <div className="portal-home-hero__art" aria-hidden="true">
+        <PortalIcon name={hero.icon} className="size-16" />
+      </div>
       <div className="portal-home-hero__content">
         <div className="portal-home-hero__identity">
           <div className="portal-home-hero__avatar">
@@ -32,7 +37,7 @@ export function PortalHomeHero({
                 alt={studentName}
                 fill
                 unoptimized
-                sizes="88px"
+                sizes="96px"
                 className="object-cover"
               />
             ) : (

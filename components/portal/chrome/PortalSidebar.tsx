@@ -100,6 +100,20 @@ export function PortalSidebar({
           </div>
         ))}
       </nav>
+
+      {!collapsed ? (
+        <div className="portal-sidebar__goal">
+          <p className="portal-sidebar__goal-eyebrow">ماموریت امروز</p>
+          <p className="portal-sidebar__goal-title">یک قدم کوچک، یک پیشرفت بزرگ</p>
+          <div
+            className="portal-sidebar__goal-bar"
+            role="presentation"
+            aria-hidden="true"
+          >
+            <span />
+          </div>
+        </div>
+      ) : null}
     </aside>
   );
 }
