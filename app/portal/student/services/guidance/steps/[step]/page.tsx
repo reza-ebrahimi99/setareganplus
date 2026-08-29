@@ -7,6 +7,7 @@
 import { notFound } from "next/navigation";
 import { GuidanceStepPlaceholder } from "@/components/guidance/steps/GuidanceStepPlaceholder";
 import { PersonalInfoStep } from "@/components/guidance/steps/step1/PersonalInfoStep";
+import { InterestAssessmentStep } from "@/components/guidance/steps/step2/InterestAssessmentStep";
 import { requireGuidanceJourneyStepAccess } from "@/lib/guidance/journey/guard";
 import { buildGuidanceJourneySidebar } from "@/lib/guidance/journey/state";
 import {
@@ -14,6 +15,7 @@ import {
   parseGuidanceJourneyStepParam,
 } from "@/lib/guidance/journey/steps";
 import { loadStep1Prefill } from "@/lib/guidance/journey/steps/step1-personal-info";
+import { loadGuidanceStep2Session } from "@/lib/guidance/journey/steps/step2-interest-assessment";
 import { IRAN_PROVINCES } from "@/lib/registration/iran-locations";
 import { prisma } from "@/lib/prisma";
 
@@ -70,6 +72,21 @@ export default async function GuidanceJourneyStepPage({ params }: PageProps) {
           birthDate: prefill.birthDate ?? "",
           province: prefill.province ?? "",
         }}
+      />
+    );
+  }
+
+  if (stepId === 2) {
+    const session = await loadGuidanceStep2Session({
+      organizationId: context.organization.id,
+      planPublicId: plan.publicId,
+    });
+
+    return (
+      <InterestAssessmentStep
+        sidebarSteps={sidebarSteps}
+        completionPercentage={plan.completionPercentage}
+        initialAnswers={session.answers}
       />
     );
   }
