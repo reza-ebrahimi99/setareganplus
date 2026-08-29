@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ExperienceHomeView } from "@/components/sxp/ExperienceHomeView";
+import { ExperienceJourneyScreen } from "@/components/portal/apps/ExperienceJourneyScreen";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
 import { loadExperienceHome } from "@/lib/sxp/hub/load-home";
 import { assertSxpEnabledOrNotFound } from "@/lib/sxp/hub/require";
@@ -17,5 +17,5 @@ export default async function StudentExperienceHomePage() {
     context,
     timelineHref: "/portal/student/timeline",
   });
-  return <ExperienceHomeView home={home} />;
+  return <ExperienceJourneyScreen home={home} />;
 }

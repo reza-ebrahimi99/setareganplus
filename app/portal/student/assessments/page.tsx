@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { PortalAssessmentCard } from "@/components/portal/PortalAssessmentCard";
+import { AssessmentCenterScreen } from "@/components/portal/apps/AssessmentCenterScreen";
 import { PortalEmptyState } from "@/components/portal/PortalEmptyState";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
+import { buildAssessmentCenterInsights } from "@/lib/portal/student/assessment-insights";
 import { loadPortalStudentAssessments } from "@/lib/portal/student/assessments";
 import { persianPortalError, isPortalError } from "@/lib/portal/auth";
 
 export const metadata: Metadata = {
-  title: "آزمون‌ها",
+  title: "مرکز آزمون",
   robots: { index: false, follow: false },
 };
 export const dynamic = "force-dynamic";
@@ -30,25 +31,6 @@ export default async function StudentPortalAssessmentsPage() {
     throw error;
   }
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-primary sm:text-2xl">آزمون‌ها</h1>
-        <p className="mt-1 text-sm text-muted">سوابق و نتایج آزمون‌های شما</p>
-      </div>
-
-      {results.length === 0 ? (
-        <PortalEmptyState
-          title="هنوز نتیجه‌ای ثبت نشده"
-          description="پس از برگزاری آزمون و ثبت نتایج توسط مدرسه، سوابق اینجا نمایش داده می‌شود."
-        />
-      ) : (
-        <div className="space-y-4">
-          {results.map((result) => (
-            <PortalAssessmentCard key={result.id} result={result} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  const insights = buildAssessmentCenterInsights(results);
+  return <AssessmentCenterScreen results={results} insights={insights} />;
 }

@@ -4124,6 +4124,665 @@ body {
   }
 }
 
+
+/* ─── Phase 4: Student Apps (Assessments / Achievements / Profile / Experience) */
+
+.portal-module-app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-space-6);
+  padding-bottom: calc(var(--portal-space-8) + 4rem);
+}
+
+.portal-module-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--portal-radius-2xl);
+  border: 1px solid var(--portal-accent-border);
+  background:
+    radial-gradient(ellipse 75% 70% at 100% 0%, var(--portal-accent-soft), transparent 55%),
+    linear-gradient(155deg, var(--portal-surface), var(--portal-accent-softer));
+  box-shadow: var(--portal-shadow-soft);
+  padding: var(--portal-space-6);
+}
+
+.portal-module-hero__glow {
+  pointer-events: none;
+  position: absolute;
+  inset-inline-start: -12%;
+  bottom: -35%;
+  width: 48%;
+  height: 75%;
+  background: radial-gradient(circle, var(--portal-accent-soft), transparent 70%);
+}
+
+.portal-module-hero__inner {
+  position: relative;
+  max-width: 42rem;
+}
+
+.portal-module-hero__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--portal-space-3);
+  margin-bottom: var(--portal-space-3);
+}
+
+.portal-module-hero__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--portal-radius-md);
+  background: var(--portal-accent-soft);
+  color: var(--portal-accent);
+}
+
+.portal-module-hero__status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--portal-radius-full);
+  border: 1px solid var(--portal-accent-border);
+  background: var(--portal-accent-softer);
+  color: var(--portal-accent);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.portal-module-hero__eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--portal-muted);
+}
+
+.portal-module-hero__title {
+  margin-top: var(--portal-space-2);
+  font-size: clamp(1.4rem, 2.4vw, 1.95rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+  color: var(--portal-foreground);
+}
+
+.portal-module-hero__subtitle {
+  margin-top: var(--portal-space-3);
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: var(--portal-muted);
+}
+
+.portal-module-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--portal-space-3);
+  margin-top: var(--portal-space-5);
+}
+
+.portal-module-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.85rem;
+  padding: 0.65rem 1.2rem;
+  border-radius: var(--portal-radius-full);
+  background: var(--portal-primary);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: var(--portal-shadow-soft);
+  transition: transform var(--portal-duration-fast) var(--portal-ease);
+}
+
+.portal-module-hero__cta:hover {
+  transform: translateY(-1px);
+}
+
+.portal-module-hero__cta--ghost {
+  background: var(--portal-surface);
+  color: var(--portal-foreground);
+  border: 1px solid var(--portal-border);
+  box-shadow: none;
+}
+
+.portal-module-actions__header {
+  margin-bottom: var(--portal-space-4);
+}
+
+.portal-module-actions__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--portal-space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.portal-module-app__layout {
+  display: grid;
+  gap: var(--portal-space-5);
+}
+
+.portal-module-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-space-4);
+}
+
+.portal-module-duo {
+  display: grid;
+  gap: var(--portal-space-4);
+}
+
+.portal-module-sticky-cta {
+  display: none;
+}
+
+.portal-stat-xl {
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--portal-accent);
+}
+
+.portal-sidebar-stack__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--portal-foreground);
+}
+
+.portal-sidebar-stack__meta {
+  margin-top: var(--portal-space-1);
+  font-size: 0.8rem;
+  color: var(--portal-muted);
+}
+
+.portal-trend-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--portal-space-2);
+  min-height: 8rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.portal-trend-bars__item {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--portal-space-2);
+  min-width: 0;
+  height: 8rem;
+}
+
+.portal-trend-bars__bar {
+  width: 100%;
+  max-width: 2rem;
+  border-radius: var(--portal-radius-sm) var(--portal-radius-sm) 0.35rem 0.35rem;
+  background: linear-gradient(180deg, var(--portal-accent), var(--portal-accent-soft));
+}
+
+.portal-trend-bars__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--portal-muted);
+}
+
+.portal-subject-highlight__name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--portal-foreground);
+}
+
+.portal-subject-highlight__value {
+  margin-top: var(--portal-space-2);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--portal-accent);
+}
+
+.portal-subject-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--portal-space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.portal-subject-card {
+  display: grid;
+  gap: var(--portal-space-2);
+  padding: var(--portal-space-4);
+  border-radius: var(--portal-radius-lg);
+  border: 1px solid var(--portal-accent-border);
+  background: var(--portal-accent-softer);
+}
+
+.portal-subject-card strong {
+  font-size: 1.15rem;
+  color: var(--portal-accent);
+}
+
+.portal-subject-card__meter {
+  display: block;
+  height: 0.4rem;
+  overflow: hidden;
+  border-radius: var(--portal-radius-full);
+  background: var(--portal-surface);
+}
+
+.portal-subject-card__meter > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--portal-accent);
+}
+
+.portal-history-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-space-3);
+}
+
+.portal-assessment-card__title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--portal-foreground);
+}
+
+.portal-assessment-card__meta,
+.portal-assessment-card__ranks {
+  margin-top: var(--portal-space-1);
+  font-size: 0.8rem;
+  color: var(--portal-muted);
+}
+
+.portal-assessment-card__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--portal-space-3);
+  margin-top: var(--portal-space-4);
+}
+
+.portal-assessment-card__stats dt {
+  font-size: 0.7rem;
+  color: var(--portal-muted);
+}
+
+.portal-assessment-card__stats dd {
+  margin: 0.15rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--portal-foreground);
+}
+
+.portal-assessment-card__subjects {
+  margin-top: var(--portal-space-4);
+  padding-top: var(--portal-space-3);
+  border-top: 1px solid var(--portal-border);
+}
+
+.portal-assessment-card__subjects-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--portal-muted);
+}
+
+.portal-assessment-card__subjects ul {
+  list-style: none;
+  margin: var(--portal-space-2) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--portal-space-2);
+}
+
+.portal-assessment-card__subjects li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--portal-space-3);
+  font-size: 0.875rem;
+}
+
+.portal-trophy-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--portal-space-4);
+}
+
+.portal-achievement-card {
+  overflow: hidden;
+  padding: 0;
+}
+
+.portal-achievement-card__media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: linear-gradient(135deg, var(--portal-accent-soft), var(--portal-surface));
+}
+
+.portal-achievement-card__fallback {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: var(--portal-space-4);
+  text-align: center;
+  color: var(--portal-muted);
+  font-weight: 700;
+}
+
+.portal-achievement-card__chip {
+  position: absolute;
+  inset-inline-start: 0.75rem;
+  top: 0.75rem;
+  border-radius: var(--portal-radius-full);
+  background: color-mix(in srgb, var(--portal-primary) 90%, transparent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+}
+
+.portal-achievement-card__body {
+  padding: var(--portal-space-4);
+}
+
+.portal-achievement-card__title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--portal-foreground);
+}
+
+.portal-achievement-card__year,
+.portal-achievement-card__date {
+  margin-top: var(--portal-space-1);
+  font-size: 0.8rem;
+  color: var(--portal-accent);
+}
+
+.portal-achievement-card__desc {
+  margin-top: var(--portal-space-2);
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--portal-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.portal-achievement-card__link {
+  display: inline-flex;
+  margin-top: var(--portal-space-3);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--portal-accent);
+}
+
+.portal-achievement-card--featured {
+  box-shadow: var(--portal-shadow-lift);
+}
+
+.portal-milestone-list,
+.portal-trophy-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--portal-space-3);
+}
+
+.portal-milestone-list__item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--portal-space-3);
+  padding: var(--portal-space-3) var(--portal-space-4);
+  border-radius: var(--portal-radius-md);
+  background: var(--portal-accent-softer);
+  border: 1px solid var(--portal-border);
+  font-size: 0.9rem;
+}
+
+.portal-trophy-timeline li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--portal-space-3);
+  align-items: start;
+}
+
+.portal-trophy-timeline__dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  margin-top: 0.35rem;
+  border-radius: 999px;
+  background: var(--portal-accent);
+  box-shadow: 0 0 0 4px var(--portal-accent-softer);
+}
+
+.portal-trophy-timeline__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--portal-foreground);
+}
+
+.portal-trophy-timeline__meta {
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  color: var(--portal-muted);
+}
+
+.portal-identity-card {
+  display: flex;
+  align-items: center;
+  gap: var(--portal-space-4);
+}
+
+.portal-identity-card__avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 5.5rem;
+  height: 5.5rem;
+  overflow: hidden;
+  border-radius: var(--portal-radius-xl);
+  border: 2px solid var(--portal-accent-border);
+  background: var(--portal-accent-soft);
+  color: var(--portal-accent);
+  font-size: 1.6rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.portal-identity-card__name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--portal-foreground);
+}
+
+.portal-identity-card__meta {
+  margin-top: var(--portal-space-1);
+  font-size: 0.85rem;
+  color: var(--portal-muted);
+}
+
+.portal-info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--portal-space-3);
+  margin: 0;
+}
+
+.portal-info-grid > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--portal-space-3);
+  padding: var(--portal-space-3) var(--portal-space-4);
+  border-radius: var(--portal-radius-md);
+  background: var(--portal-accent-softer);
+  border: 1px solid var(--portal-border);
+}
+
+.portal-info-grid dt {
+  font-size: 0.8rem;
+  color: var(--portal-muted);
+}
+
+.portal-info-grid dd {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--portal-foreground);
+  text-align: end;
+}
+
+.portal-experience-widget-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--portal-space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.portal-experience-widget-card {
+  padding: var(--portal-space-4);
+  border-radius: var(--portal-radius-lg);
+  border: 1px solid var(--portal-accent-border);
+  background: linear-gradient(160deg, var(--portal-accent-softer), var(--portal-surface));
+}
+
+.portal-experience-widget-card__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--portal-muted);
+}
+
+.portal-experience-widget-card__value {
+  margin-top: var(--portal-space-2);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--portal-foreground);
+}
+
+.portal-reward-card {
+  padding: var(--portal-space-5);
+  border-radius: var(--portal-radius-xl);
+  border: 1px solid var(--portal-accent-border);
+  background: radial-gradient(circle at 100% 0%, var(--portal-accent-soft), transparent 50%),
+    var(--portal-surface);
+}
+
+.portal-reward-card__title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--portal-foreground);
+}
+
+.portal-reward-card__support {
+  margin-top: var(--portal-space-2);
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--portal-muted);
+}
+
+.portal-reward-card__cta {
+  display: inline-flex;
+  margin-top: var(--portal-space-4);
+  min-height: 2.5rem;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: var(--portal-radius-full);
+  background: var(--portal-primary);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+@media (min-width: 640px) {
+  .portal-module-actions__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .portal-module-duo,
+  .portal-subject-grid,
+  .portal-trophy-grid,
+  .portal-experience-widget-grid,
+  .portal-info-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .portal-assessment-card__stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .portal-module-hero {
+    padding: var(--portal-space-8);
+  }
+}
+
+@media (min-width: 1024px) {
+  .portal-module-app {
+    padding-bottom: var(--portal-space-8);
+  }
+
+  .portal-module-app__layout--with-aside {
+    grid-template-columns: minmax(0, 1fr) 18.5rem;
+    align-items: start;
+  }
+
+  .portal-module-app__aside {
+    position: sticky;
+    top: calc(var(--portal-topbar-height) + 1rem);
+    display: flex;
+    flex-direction: column;
+    gap: var(--portal-space-4);
+  }
+
+  .portal-module-actions__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .portal-module-sticky-cta {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  .portal-module-sticky-cta {
+    position: fixed;
+    inset-inline: 0;
+    bottom: calc(var(--portal-dock-height) + env(safe-area-inset-bottom, 0px));
+    z-index: 35;
+    display: block;
+    padding: var(--portal-space-3) var(--portal-space-4);
+    background: linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in srgb, var(--portal-bg) 92%, transparent) 40%
+    );
+  }
+
+  .portal-module-sticky-cta__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 3rem;
+    border-radius: var(--portal-radius-full);
+    background: var(--portal-primary);
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 800;
+    box-shadow: var(--portal-shadow-lift);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .portal-os,
   .portal-os *,
@@ -4149,7 +4808,8 @@ body {
   .portal-journey-step__cta,
   .portal-journey-step--active,
   .portal-upload-dropzone,
-  .portal-upload-success {
+  .portal-upload-success,
+  .portal-module-hero__cta {
     transition: none !important;
     transform: none !important;
     animation: none !important;

@@ -18,6 +18,7 @@ import {
   MoreIcon,
   PanelLeftIcon,
   RouteIcon,
+  ShieldIcon,
   SparkIcon,
   TrophyIcon,
   UserIcon,
@@ -41,6 +42,7 @@ export const PORTAL_ICON_NAMES = [
   "more",
   "panel",
   "route",
+  "shield",
   "spark",
   "trophy",
 ] as const;
@@ -71,6 +73,7 @@ const PORTAL_ICON_MAP: Record<
   more: MoreIcon,
   panel: PanelLeftIcon,
   route: RouteIcon,
+  shield: ShieldIcon,
   spark: SparkIcon,
   trophy: TrophyIcon,
 };
