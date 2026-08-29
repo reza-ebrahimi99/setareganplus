@@ -8,6 +8,7 @@ import { notFound } from "next/navigation";
 import { GuidanceStepPlaceholder } from "@/components/guidance/steps/GuidanceStepPlaceholder";
 import { PersonalInfoStep } from "@/components/guidance/steps/step1/PersonalInfoStep";
 import { InterestAssessmentStep } from "@/components/guidance/steps/step2/InterestAssessmentStep";
+import { RegistrationPaymentStep } from "@/components/guidance/steps/step3/RegistrationPaymentStep";
 import { requireGuidanceJourneyStepAccess } from "@/lib/guidance/journey/guard";
 import { buildGuidanceJourneySidebar } from "@/lib/guidance/journey/state";
 import {
@@ -23,9 +24,13 @@ export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ step: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function GuidanceJourneyStepPage({ params }: PageProps) {
+export default async function GuidanceJourneyStepPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { step: rawStep } = await params;
   const stepId = parseGuidanceJourneyStepParam(rawStep);
   if (!stepId) {
@@ -87,6 +92,20 @@ export default async function GuidanceJourneyStepPage({ params }: PageProps) {
         sidebarSteps={sidebarSteps}
         completionPercentage={plan.completionPercentage}
         initialAnswers={session.answers}
+      />
+    );
+  }
+
+  if (stepId === 3) {
+    const query = await searchParams;
+    const paymentError = query.paymentError;
+    return (
+      <RegistrationPaymentStep
+        sidebarSteps={sidebarSteps}
+        completionPercentage={plan.completionPercentage}
+        paymentError={
+          Array.isArray(paymentError) ? paymentError[0] ?? null : paymentError ?? null
+        }
       />
     );
   }
