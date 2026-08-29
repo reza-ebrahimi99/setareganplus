@@ -16,6 +16,8 @@ export {
   resolveGuidanceFlag,
 } from "@/lib/guidance/feature-flags";
 
+export { assertGuidancePublicEnabledOrNotFound } from "@/lib/guidance/require-public";
+
 export {
   GUIDANCE_DOCUMENT_TYPE_FINAL_GRADES,
   GUIDANCE_DOCUMENT_VERIFICATION_STATUSES,

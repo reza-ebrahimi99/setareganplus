@@ -115,16 +115,16 @@ export const publicNavItems: readonly PublicNavItem[] = [
         description: "منابع آموزشی و فروشگاه",
       },
       {
-        href: "/consultation",
-        label: "انتخاب رشته",
-        description: "تصمیم آگاهانه برای آینده",
-      },
-      {
         href: "/contact",
         label: "پانسیون",
         description: "فضای مطالعه و همراهی",
       },
     ],
+  },
+  {
+    href: "/guidance",
+    label: "سامانه جامع انتخاب رشته",
+    description: "مسیر یکپارچه انتخاب رشته تا پذیرش دانشگاه",
   },
   { href: "/gallery", label: "گالری" },
   { href: "/contact", label: "تماس" },
