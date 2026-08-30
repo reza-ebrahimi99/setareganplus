@@ -37,15 +37,13 @@ export function ExamResultsStep({
 }: ExamResultsStepProps) {
   const router = useRouter();
   const [state, action] = useActionState(submitGuidanceStep5Action, initial);
-  const [celebrating, setCelebrating] = useState(false);
+  const celebrating = Boolean(state.ok);
   const [clientError, setClientError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (state.ok) {
-      setCelebrating(true);
-      const timer = setTimeout(() => router.push(guidanceJourneyStepPath(6)), 1400);
-      return () => clearTimeout(timer);
-    }
+    if (!state.ok) return;
+    const timer = setTimeout(() => router.push(guidanceJourneyStepPath(6)), 1400);
+    return () => clearTimeout(timer);
   }, [state.ok, router]);
 
   const fieldErrors = state.fieldErrors ?? {};

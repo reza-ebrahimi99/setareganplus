@@ -9365,3 +9365,22 @@ body {
     display: none;
   }
 }
+
+/* ── Step 12: printable consent ──────────────────────────────────────── */
+
+@media print {
+  .gpj-shell__header,
+  .gpj-shell__sidebar-wrap,
+  .gpj-print-hide {
+    display: none !important;
+  }
+
+  .gpj-shell__body {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gpj-print-area .gpj-card {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+}

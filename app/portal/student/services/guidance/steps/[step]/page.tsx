@@ -5,7 +5,6 @@
  */
 
 import { notFound } from "next/navigation";
-import { GuidanceStepPlaceholder } from "@/components/guidance/steps/GuidanceStepPlaceholder";
 import { PersonalInfoStep } from "@/components/guidance/steps/step1/PersonalInfoStep";
 import { InterestAssessmentStep } from "@/components/guidance/steps/step2/InterestAssessmentStep";
 import { RegistrationPaymentStep } from "@/components/guidance/steps/step3/RegistrationPaymentStep";
@@ -19,12 +18,14 @@ import { CityPreferencesStep } from "@/components/guidance/steps/step7/CityPrefe
 import { MajorPreferencesStep } from "@/components/guidance/steps/step8/MajorPreferencesStep";
 import { PriorityWeightsStep } from "@/components/guidance/steps/step9/PriorityWeightsStep";
 import { AiArrangementStep } from "@/components/guidance/steps/step10/AiArrangementStep";
+import {
+  SecondSessionStep,
+  type SecondSessionSlotView,
+} from "@/components/guidance/steps/step11/SecondSessionStep";
+import { FinalApprovalStep } from "@/components/guidance/steps/step12/FinalApprovalStep";
 import { requireGuidanceJourneyStepAccess } from "@/lib/guidance/journey/guard";
 import { buildGuidanceJourneySidebar } from "@/lib/guidance/journey/state";
-import {
-  getGuidanceJourneyStepDefinition,
-  parseGuidanceJourneyStepParam,
-} from "@/lib/guidance/journey/steps";
+import { parseGuidanceJourneyStepParam } from "@/lib/guidance/journey/steps";
 import { loadStep1Prefill } from "@/lib/guidance/journey/steps/step1-personal-info";
 import { loadGuidanceStep2Session } from "@/lib/guidance/journey/steps/step2-interest-assessment";
 import { loadStep5Prefill } from "@/lib/guidance/journey/steps/step5-exam-results";
@@ -271,12 +272,43 @@ export default async function GuidanceJourneyStepPage({
     );
   }
 
-  const definition = getGuidanceJourneyStepDefinition(stepId);
+  if (stepId === 11) {
+    const view = await loadGuidanceBookableSlots({
+      organizationId: context.organization.id,
+      sessionNumber: 2,
+    });
+    const slots: SecondSessionSlotView[] = view.slots.map((slot) => ({
+      id: slot.id,
+      label: formatJalaliDateTimeShort(new Date(slot.startsAtIso)),
+      advisorName: slot.advisorName,
+      remainingCapacity: slot.remainingCapacity,
+    }));
+
+    return (
+      <SecondSessionStep
+        sidebarSteps={sidebarSteps}
+        completionPercentage={plan.completionPercentage}
+        configured={view.configured}
+        slots={slots}
+      />
+    );
+  }
+
+  // stepId === 12 (exhaustive: parseGuidanceJourneyStepParam only returns 1-12)
+  const student = await prisma.student.findFirst({
+    where: { id: plan.studentId, organizationId: context.organization.id },
+    select: { fullName: true },
+  });
+
   return (
-    <GuidanceStepPlaceholder
-      step={definition}
+    <FinalApprovalStep
       sidebarSteps={sidebarSteps}
       completionPercentage={plan.completionPercentage}
+      fullName={student?.fullName ?? ""}
+      planPublicId={plan.publicId}
+      examGroupLabel={GUIDANCE_EXAM_GROUP_LABELS[plan.examGroup]}
+      alreadyApproved={Boolean(plan.finalApprovedAtIso)}
+      approvedAtIso={plan.finalApprovedAtIso}
     />
   );
 }

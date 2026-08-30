@@ -55,19 +55,16 @@ export function PersonalInfoStep({
   const [state, action] = useActionState(submitGuidanceStep1Action, initial);
   const [clientError, setClientError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [celebrating, setCelebrating] = useState(false);
+  const celebrating = Boolean(state.ok);
 
   useGuidanceUnsavedWarning(dirty && !celebrating);
 
   useEffect(() => {
-    if (state.ok) {
-      setCelebrating(true);
-      setDirty(false);
-      const timer = setTimeout(() => {
-        router.push(guidanceJourneyStepPath(2));
-      }, 1400);
-      return () => clearTimeout(timer);
-    }
+    if (!state.ok) return;
+    const timer = setTimeout(() => {
+      router.push(guidanceJourneyStepPath(2));
+    }, 1400);
+    return () => clearTimeout(timer);
   }, [state.ok, router]);
 
   const fieldErrors = state.fieldErrors ?? {};
