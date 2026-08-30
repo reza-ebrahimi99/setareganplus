@@ -9,12 +9,14 @@ import {
 } from "@/app/admin/(dashboard)/guidance/actions";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { CounselorCaseActions } from "@/components/admin/guidance/CounselorCaseActions";
+import { GuidanceInterestResultsView } from "@/components/guidance/steps/step2/GuidanceInterestResultsView";
 import { adminBreadcrumbs } from "@/content/admin";
 import { hasPermission } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-admin";
 import { formatJalaliDateShort, formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
 import { loadCounselorCasePresentation } from "@/lib/guidance/counselor";
+import { loadGuidanceStep2ResultForCounselor } from "@/lib/guidance/journey/steps/step2-interest-assessment";
 import { toPersianDigits } from "@/lib/persian";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +43,11 @@ export default async function AdminGuidanceCasePage({ params }: PageProps) {
     canReview,
   });
   if (!model) notFound();
+
+  const journeyInterestResult = await loadGuidanceStep2ResultForCounselor({
+    organizationId: session.organization.id,
+    planPublicId: publicId,
+  });
 
   return (
     <div className="counselor-case">
@@ -124,6 +131,13 @@ export default async function AdminGuidanceCasePage({ params }: PageProps) {
           </p>
         </section>
 
+        {journeyInterestResult ? (
+          <section className="admin-card counselor-case__panel counselor-case__panel--wide">
+            <h2>نتیجه سنجش رغبت (موتور سفر هدایت)</h2>
+            <GuidanceInterestResultsView result={journeyInterestResult} />
+          </section>
+        ) : null}
+
         <section className="admin-card counselor-case__panel counselor-case__panel--wide">
           <h2>خط زمان داخلی</h2>
           <ol className="counselor-case__timeline">
@@ -191,6 +205,10 @@ export default async function AdminGuidanceCasePage({ params }: PageProps) {
       ) : null}
 
       <p className="counselor-case__back">
+        <Link href={`/admin/guidance/${model.publicId}/choices`}>
+          چیدمان هوشمند (موتور سفر)
+        </Link>
+        {" · "}
         <Link href="/admin/guidance">بازگشت به صف بررسی</Link>
       </p>
     </div>
