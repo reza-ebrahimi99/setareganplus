@@ -14,6 +14,10 @@ import {
   type FirstSessionSlotView,
 } from "@/components/guidance/steps/step4/FirstSessionStep";
 import { ExamResultsStep } from "@/components/guidance/steps/step5/ExamResultsStep";
+import { EducationPreferencesStep } from "@/components/guidance/steps/step6/EducationPreferencesStep";
+import { CityPreferencesStep } from "@/components/guidance/steps/step7/CityPreferencesStep";
+import { MajorPreferencesStep } from "@/components/guidance/steps/step8/MajorPreferencesStep";
+import { PriorityWeightsStep } from "@/components/guidance/steps/step9/PriorityWeightsStep";
 import { requireGuidanceJourneyStepAccess } from "@/lib/guidance/journey/guard";
 import { buildGuidanceJourneySidebar } from "@/lib/guidance/journey/state";
 import {
@@ -23,7 +27,15 @@ import {
 import { loadStep1Prefill } from "@/lib/guidance/journey/steps/step1-personal-info";
 import { loadGuidanceStep2Session } from "@/lib/guidance/journey/steps/step2-interest-assessment";
 import { loadStep5Prefill } from "@/lib/guidance/journey/steps/step5-exam-results";
+import { loadStep6Data } from "@/lib/guidance/journey/steps/step6-education-preferences";
+import { loadStep7Data } from "@/lib/guidance/journey/steps/step7-city-preferences";
+import { loadStep8Data } from "@/lib/guidance/journey/steps/step8-major-preferences";
+import { loadStep9Data } from "@/lib/guidance/journey/steps/step9-priority-weights";
 import { loadGuidanceBookableSlots } from "@/lib/guidance/journey/booking";
+import {
+  GUIDANCE_EXAM_GROUP_LABELS,
+  getMajorsForExamGroup,
+} from "@/lib/guidance/journey/reference-data/majors";
 import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import { IRAN_PROVINCES } from "@/lib/registration/iran-locations";
 import { prisma } from "@/lib/prisma";
@@ -170,6 +182,74 @@ export default async function GuidanceJourneyStepPage({
           quotaRank: prefill?.quotaRank ? String(prefill.quotaRank) : "",
           score: prefill?.score ? String(prefill.score) : "",
         }}
+      />
+    );
+  }
+
+  if (stepId === 6) {
+    const step6 = await loadStep6Data({
+      organizationId: context.organization.id,
+      planPublicId: plan.publicId,
+    });
+    return (
+      <EducationPreferencesStep
+        sidebarSteps={sidebarSteps}
+        completionPercentage={plan.completionPercentage}
+        initialItems={step6.items}
+      />
+    );
+  }
+
+  if (stepId === 7) {
+    const step1 = await loadStep1Prefill({
+      organizationId: context.organization.id,
+      planPublicId: plan.publicId,
+    });
+    const step7 = await loadStep7Data({
+      organizationId: context.organization.id,
+      planPublicId: plan.publicId,
+      homeProvince: step1.province ?? null,
+    });
+    return (
+      <CityPreferencesStep
+        sidebarSteps={sidebarSteps}
+        completionPercentage={plan.completionPercentage}
+        allProvinces={IRAN_PROVINCES}
+        initialItems={step7.items}
+      />
+    );
+  }
+
+  if (stepId === 8) {
+    const step8 = await loadStep8Data({
+      organizationId: context.organization.id,
+      planPublicId: plan.publicId,
+      examGroup: plan.examGroup,
+    });
+    const majorLabels = Object.fromEntries(
+      getMajorsForExamGroup(plan.examGroup).map((m) => [m.code, m.label]),
+    );
+    return (
+      <MajorPreferencesStep
+        sidebarSteps={sidebarSteps}
+        completionPercentage={plan.completionPercentage}
+        initialItems={step8.items}
+        majorLabels={majorLabels}
+        examGroupLabel={GUIDANCE_EXAM_GROUP_LABELS[plan.examGroup]}
+      />
+    );
+  }
+
+  if (stepId === 9) {
+    const step9 = await loadStep9Data({
+      organizationId: context.organization.id,
+      planPublicId: plan.publicId,
+    });
+    return (
+      <PriorityWeightsStep
+        sidebarSteps={sidebarSteps}
+        completionPercentage={plan.completionPercentage}
+        initialOrderedCodes={step9.orderedCodes}
       />
     );
   }
