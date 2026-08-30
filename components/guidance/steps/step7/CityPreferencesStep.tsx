@@ -21,6 +21,13 @@ type CityPreferencesStepProps = {
   completionPercentage: number;
   allProvinces: readonly string[];
   initialItems: ProvincePreferenceItem[];
+  embed?: boolean;
+  stayOnSuccess?: boolean;
+  continueLabel?: string;
+  counselorSubmit?: (
+    items: ProvincePreferenceItem[],
+    reason: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
 };
 
 export function CityPreferencesStep({
@@ -28,12 +35,17 @@ export function CityPreferencesStep({
   completionPercentage,
   allProvinces,
   initialItems,
+  embed = false,
+  stayOnSuccess = false,
+  continueLabel,
+  counselorSubmit,
 }: CityPreferencesStepProps) {
   const router = useRouter();
   const [items, setItems] = useState<ProvincePreferenceItem[]>(initialItems);
   const [error, setError] = useState<string | null>(null);
   const [celebrating, setCelebrating] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [reason, setReason] = useState("");
 
   const selectedProvinceNames = useMemo(
     () => new Set(items.map((item) => item.province)),
@@ -78,12 +90,19 @@ export function CityPreferencesStep({
   function handleSubmit() {
     setError(null);
     startTransition(async () => {
-      const result = await submitGuidanceStep7Action(items.map((i) => ({ ...i, enabled: true })));
+      if (counselorSubmit && !reason.trim()) {
+        setError("دلیل ویرایش مشاور الزامی است.");
+        return;
+      }
+      const result = counselorSubmit
+        ? await counselorSubmit(items.map((i) => ({ ...i, enabled: true })), reason.trim())
+        : await submitGuidanceStep7Action(items.map((i) => ({ ...i, enabled: true })));
       if (!result.ok) {
         setError(result.error);
         return;
       }
       setCelebrating(true);
+      if (stayOnSuccess) return;
       setTimeout(() => router.push(guidanceJourneyStepPath(8)), 1400);
     });
   }
@@ -97,12 +116,27 @@ export function CityPreferencesStep({
       sidebarSteps={sidebarSteps}
       completionPercentage={completionPercentage}
       celebrate={celebrating}
+      embed={embed}
     >
       {error && (
         <p className="gpj-banner gpj-banner--error" role="alert">
           {error}
         </p>
       )}
+
+      {embed ? (
+        <div className="gpj-card" style={{ marginBottom: "0.75rem" }}>
+          <label className="gpj-field__label" htmlFor="editReason7">
+            دلیل ویرایش مشاور
+          </label>
+          <input
+            id="editReason7"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className="gpj-input"
+          />
+        </div>
+      ) : null}
 
       <div className="gpj-card">
         <h2 className="gpj-card__title">همه استان‌ها</h2>
@@ -192,7 +226,7 @@ export function CityPreferencesStep({
       <div className="gpj-actions">
         <span />
         <button type="button" className="gpj-actions__continue" disabled={pending} onClick={handleSubmit}>
-          {pending ? "در حال ثبت…" : "ادامه"}
+          {pending ? "در حال ثبت…" : continueLabel ?? "ادامه"}
         </button>
       </div>
     </GuidanceStepShell>

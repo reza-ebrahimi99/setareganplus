@@ -16,12 +16,16 @@ import {
   type GuidanceStep2FormState,
 } from "@/app/portal/student/services/guidance/steps/actions/step2";
 import { GuidanceStepShell } from "@/components/guidance/steps/GuidanceStepShell";
+import type { GuidanceStepEmbedProps } from "@/components/guidance/steps/embed";
 import { GuidanceInterestResultsView } from "@/components/guidance/steps/step2/GuidanceInterestResultsView";
 import { guidanceJourneyStepPath } from "@/lib/guidance/journey/steps";
 import { ASSESSMENT_CATEGORIES } from "@/lib/guidance/journey/assessment/categories";
 import { getQuestionsForCategory } from "@/lib/guidance/journey/assessment/question-bank";
 import { toPersianDigits } from "@/lib/persian";
-import type { AssessmentAnswers } from "@/lib/guidance/journey/assessment/scoring";
+import type {
+  AssessmentAnswers,
+  AssessmentResult,
+} from "@/lib/guidance/journey/assessment/scoring";
 import type { GuidanceJourneySidebarStep } from "@/lib/guidance/journey/types";
 
 const SCALE_LABELS = ["کاملاً مخالفم", "مخالفم", "نظری ندارم", "موافقم", "کاملاً موافقم"];
@@ -30,7 +34,7 @@ type InterestAssessmentStepProps = {
   sidebarSteps: readonly GuidanceJourneySidebarStep[];
   completionPercentage: number;
   initialAnswers: AssessmentAnswers;
-};
+} & GuidanceStepEmbedProps;
 
 const initial: GuidanceStep2FormState = {};
 
@@ -38,10 +42,14 @@ export function InterestAssessmentStep({
   sidebarSteps,
   completionPercentage,
   initialAnswers,
+  embed = false,
+  stayOnSuccess = false,
+  formAction,
+  hiddenFields,
 }: InterestAssessmentStepProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
-  const [state, action] = useActionState(submitGuidanceStep2Action, initial);
+  const [state, action] = useActionState(formAction ?? submitGuidanceStep2Action, initial);
   const [activeIndex, setActiveIndex] = useState(0);
   const [sectionError, setSectionError] = useState<string | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
@@ -78,7 +86,7 @@ export function InterestAssessmentStep({
       return;
     }
     setSectionError(null);
-    void saveGuidanceStep2DraftAction(JSON.stringify(answers));
+    if (!embed) void saveGuidanceStep2DraftAction(JSON.stringify(answers));
     setActiveIndex((i) => Math.min(sections.length - 1, i + 1));
   }
 
@@ -89,11 +97,18 @@ export function InterestAssessmentStep({
 
   async function handleSaveDraft() {
     setSavingDraft(true);
-    await saveGuidanceStep2DraftAction(JSON.stringify(currentAnswers()));
+    if (!embed) await saveGuidanceStep2DraftAction(JSON.stringify(currentAnswers()));
     setSavingDraft(false);
   }
 
-  const result = state.result;
+  const result: AssessmentResult | undefined =
+    state.ok &&
+    "result" in state &&
+    state.result &&
+    typeof state.result === "object" &&
+    "personality" in (state.result as object)
+      ? (state.result as AssessmentResult)
+      : undefined;
 
   if (state.ok && result) {
     return (
@@ -105,18 +120,21 @@ export function InterestAssessmentStep({
         sidebarSteps={sidebarSteps}
         completionPercentage={completionPercentage}
         celebrate
+        embed={embed}
       >
         <GuidanceInterestResultsView result={result} />
-        <div className="gpj-actions" style={{ position: "static", marginTop: "1rem" }}>
-          <span />
-          <button
-            type="button"
-            className="gpj-actions__continue"
-            onClick={() => router.push(guidanceJourneyStepPath(3))}
-          >
-            ادامه به ثبت‌نام و پرداخت
-          </button>
-        </div>
+        {stayOnSuccess ? null : (
+          <div className="gpj-actions" style={{ position: "static", marginTop: "1rem" }}>
+            <span />
+            <button
+              type="button"
+              className="gpj-actions__continue"
+              onClick={() => router.push(guidanceJourneyStepPath(3))}
+            >
+              ادامه به ثبت‌نام و پرداخت
+            </button>
+          </div>
+        )}
       </GuidanceStepShell>
     );
   }
@@ -129,6 +147,7 @@ export function InterestAssessmentStep({
       description="۱۱ بخش کوتاه، حدود ۵۰ سؤال. صادقانه و بر اساس اولین برداشتت پاسخ بده."
       sidebarSteps={sidebarSteps}
       completionPercentage={completionPercentage}
+      embed={embed}
     >
       <div className="gpj-card" style={{ marginBottom: "0.75rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -155,6 +174,19 @@ export function InterestAssessmentStep({
       )}
 
       <form ref={formRef} action={action} className="gpj-card">
+        {hiddenFields
+          ? Object.entries(hiddenFields).map(([name, value]) => (
+              <input key={name} type="hidden" name={name} value={value} />
+            ))
+          : null}
+        {embed ? (
+          <div className="gpj-field" style={{ marginBottom: "1rem" }}>
+            <label className="gpj-field__label" htmlFor="editReason">
+              دلیل ویرایش مشاور
+            </label>
+            <input id="editReason" name="editReason" type="text" required className="gpj-input" />
+          </div>
+        ) : null}
         {sections.map((section, index) => (
           <div
             key={section.category.id}

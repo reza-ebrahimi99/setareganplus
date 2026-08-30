@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { submitGuidanceStep5Action } from "@/app/portal/student/services/guidance/steps/actions/step5";
 import { GuidanceStepActions } from "@/components/guidance/steps/GuidanceStepActions";
 import { GuidanceStepShell } from "@/components/guidance/steps/GuidanceStepShell";
+import type { GuidanceStepEmbedProps } from "@/components/guidance/steps/embed";
 import { guidanceJourneyStepPath } from "@/lib/guidance/journey/steps";
 import type { GuidanceJourneySidebarStep } from "@/lib/guidance/journey/types";
 import type { GuidanceStepFormState } from "@/lib/guidance/journey/types";
@@ -24,7 +25,7 @@ type ExamResultsStepProps = {
     quotaRank: string;
     score: string;
   };
-};
+} & GuidanceStepEmbedProps;
 
 const initial: GuidanceStepFormState = {};
 
@@ -34,17 +35,23 @@ export function ExamResultsStep({
   hasDocument,
   existingFileName,
   prefill,
+  embed = false,
+  stayOnSuccess = false,
+  continueLabel,
+  formAction,
+  hiddenFields,
 }: ExamResultsStepProps) {
   const router = useRouter();
-  const [state, action] = useActionState(submitGuidanceStep5Action, initial);
+  const [state, action] = useActionState(formAction ?? submitGuidanceStep5Action, initial);
   const celebrating = Boolean(state.ok);
   const [clientError, setClientError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!state.ok) return;
+    if (stayOnSuccess) return;
     const timer = setTimeout(() => router.push(guidanceJourneyStepPath(6)), 1400);
     return () => clearTimeout(timer);
-  }, [state.ok, router]);
+  }, [state.ok, router, stayOnSuccess]);
 
   const fieldErrors = state.fieldErrors ?? {};
 
@@ -86,8 +93,22 @@ export function ExamResultsStep({
       sidebarSteps={sidebarSteps}
       completionPercentage={completionPercentage}
       celebrate={celebrating}
+      embed={embed}
     >
       <form action={action} onSubmit={validate} encType="multipart/form-data" className="gpj-card">
+        {hiddenFields
+          ? Object.entries(hiddenFields).map(([name, value]) => (
+              <input key={name} type="hidden" name={name} value={value} />
+            ))
+          : null}
+        {embed ? (
+          <div className="gpj-field" style={{ marginBottom: "1rem" }}>
+            <label className="gpj-field__label" htmlFor="editReason">
+              دلیل ویرایش مشاور
+            </label>
+            <input id="editReason" name="editReason" type="text" required className="gpj-input" />
+          </div>
+        ) : null}
         <h2 className="gpj-card__title">اطلاعات نتیجه آزمون</h2>
         <p className="gpj-banner gpj-banner--warning" style={{ marginBottom: "1rem" }}>
           مسئولیت صحت این اطلاعات با شماست. مشاور می‌تواند بعداً فایل بارگذاری‌شده را
@@ -196,7 +217,7 @@ export function ExamResultsStep({
         {fieldErrors.acknowledged && <p className="gpj-field__error">{fieldErrors.acknowledged}</p>}
 
         <div style={{ marginTop: "1.5rem" }}>
-          <GuidanceStepActions continueLabel="ثبت و ادامه" showSaveDraft={false} />
+          <GuidanceStepActions continueLabel={continueLabel ?? "ثبت و ادامه"} showSaveDraft={false} />
         </div>
       </form>
     </GuidanceStepShell>

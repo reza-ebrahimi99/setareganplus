@@ -9,6 +9,7 @@ import {
 } from "@/app/admin/(dashboard)/guidance/actions";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { CounselorCaseActions } from "@/components/admin/guidance/CounselorCaseActions";
+import { WorkspaceJourneyRail } from "@/components/admin/guidance/WorkspaceJourneyRail";
 import { GuidanceInterestResultsView } from "@/components/guidance/steps/step2/GuidanceInterestResultsView";
 import { adminBreadcrumbs } from "@/content/admin";
 import { hasPermission } from "@/lib/auth/permissions";
@@ -16,6 +17,7 @@ import { requirePermission } from "@/lib/auth/require-admin";
 import { formatJalaliDateShort, formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
 import { loadCounselorCasePresentation } from "@/lib/guidance/counselor";
+import { loadWorkspaceDossier } from "@/lib/guidance/workspace";
 import { loadGuidanceStep2ResultForCounselor } from "@/lib/guidance/journey/steps/step2-interest-assessment";
 import { toPersianDigits } from "@/lib/persian";
 
@@ -37,12 +39,19 @@ export default async function AdminGuidanceCasePage({ params }: PageProps) {
 
   const { publicId } = await params;
   const canReview = hasPermission(session, "guidance.review");
-  const model = await loadCounselorCasePresentation({
-    organizationId: session.organization.id,
-    publicId,
-    canReview,
-  });
-  if (!model) notFound();
+  const [model, dossier] = await Promise.all([
+    loadCounselorCasePresentation({
+      organizationId: session.organization.id,
+      publicId,
+      canReview,
+    }),
+    loadWorkspaceDossier({
+      organizationId: session.organization.id,
+      publicId,
+      canReview,
+    }),
+  ]);
+  if (!model || !dossier) notFound();
 
   const journeyInterestResult = await loadGuidanceStep2ResultForCounselor({
     organizationId: session.organization.id,
@@ -50,7 +59,7 @@ export default async function AdminGuidanceCasePage({ params }: PageProps) {
   });
 
   return (
-    <div className="counselor-case">
+    <div className="counselor-workspace counselor-case">
       <AdminPageHeader
         title={model.studentName}
         description={`پرونده ${model.publicId} · ${model.examGroupLabel} · ${model.reviewStatusLabel}`}
@@ -59,6 +68,67 @@ export default async function AdminGuidanceCasePage({ params }: PageProps) {
           { label: model.studentName },
         ]}
       />
+
+      <p className="counselor-workspace__phase-note">
+        میز کار عملیاتی: مشاهده، ویرایش، تأیید/رد هر مرحله، مدارک و خط زمان.
+      </p>
+      <p className="counselor-ops__toolbar">
+        <Link href={`/admin/guidance/${model.publicId}/export/summary`}>خلاصه PDF</Link>
+        <Link href={`/admin/guidance/${model.publicId}/export/journey`}>گزارش سفر</Link>
+        <Link href={`/admin/guidance/${model.publicId}/export/notes`}>یادداشت‌ها</Link>
+        <Link href={`/admin/guidance/${model.publicId}/export.xlsx`}>خروجی Excel</Link>
+      </p>
+
+      <section className="admin-card counselor-workspace__strip">
+        <dl>
+          <div>
+            <dt>مرحله فعال</dt>
+            <dd>
+              {toPersianDigits(dossier.currentStep)} — {dossier.currentStepTitle}
+            </dd>
+          </div>
+          <div>
+            <dt>تکمیل سفر</dt>
+            <dd>{toPersianDigits(dossier.completionPercentage)}٪</dd>
+          </div>
+          <div>
+            <dt>بسته</dt>
+            <dd>
+              {dossier.packageTitle ?? "—"}
+              {dossier.paidAtIso ? " · پرداخت شده" : ""}
+            </dd>
+          </div>
+          <div>
+            <dt>سهمیه / معدل</dt>
+            <dd>
+              {dossier.quotaLabel ?? "—"}
+              {dossier.highSchoolAverage != null
+                ? ` · ${toPersianDigits(dossier.highSchoolAverage)}`
+                : ""}
+            </dd>
+          </div>
+        </dl>
+        <div
+          className="counselor-workspace__bar"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={dossier.completionPercentage}
+        >
+          <span style={{ width: `${dossier.completionPercentage}%` }} />
+        </div>
+      </section>
+
+      <section className="admin-card counselor-workspace__rail-panel">
+        <h2>سفر ۱۲ مرحله‌ای</h2>
+        <p className="counselor-workspace__muted">
+          روی هر مرحله بزن تا اطلاعات ثبت‌شده را ببینی. قفل بودن مرحله فقط برای دانش‌آموز است.
+        </p>
+        <WorkspaceJourneyRail
+          steps={dossier.steps}
+          activeStepId={dossier.currentStep}
+        />
+      </section>
 
       <div className="counselor-case__grid">
         <section className="admin-card counselor-case__panel">
@@ -190,6 +260,52 @@ export default async function AdminGuidanceCasePage({ params }: PageProps) {
             </ul>
           )}
         </section>
+
+        <section className="admin-card counselor-case__panel counselor-case__panel--wide">
+          <h2>مدارک بارگذاری‌شده</h2>
+          {dossier.documents.length === 0 ? (
+            <p className="counselor-case__muted">مدرکی بارگذاری نشده.</p>
+          ) : (
+            <ul className="counselor-workspace__docs">
+              {dossier.documents.map((doc) => (
+                <li key={doc.id}>
+                  <a href={doc.downloadHref} className="counselor-case__link">
+                    {doc.documentTypeLabel} · {doc.filename}
+                  </a>
+                  <span>
+                    نسخه {toPersianDigits(doc.versionNumber)} · {doc.verificationLabel}
+                    {doc.createdAtIso
+                      ? ` · ${formatJalaliDateTimeShort(new Date(doc.createdAtIso))}`
+                      : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section
+          id="timeline"
+          className="admin-card counselor-case__panel counselor-case__panel--wide"
+        >
+          <h2>خط زمان تغییرات (AuditLog)</h2>
+          {dossier.audit.length === 0 ? (
+            <p className="counselor-case__muted">رویدادی در دفتر ثبت نیست.</p>
+          ) : (
+            <ol className="counselor-workspace__audit">
+              {dossier.audit.map((item) => (
+                <li key={item.id}>
+                  <strong>{item.actionLabel}</strong>
+                  <span>
+                    {item.actorName} ·{" "}
+                    {formatJalaliDateTimeShort(new Date(item.atIso))}
+                  </span>
+                  <p>{item.summary}</p>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
       </div>
 
       {canReview ? (
@@ -209,7 +325,7 @@ export default async function AdminGuidanceCasePage({ params }: PageProps) {
           چیدمان هوشمند (موتور سفر)
         </Link>
         {" · "}
-        <Link href="/admin/guidance">بازگشت به صف بررسی</Link>
+        <Link href="/admin/guidance">میز کار مشاور</Link>
       </p>
     </div>
   );
