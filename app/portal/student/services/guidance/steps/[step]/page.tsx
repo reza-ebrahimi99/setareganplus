@@ -9,6 +9,10 @@ import { GuidanceStepPlaceholder } from "@/components/guidance/steps/GuidanceSte
 import { PersonalInfoStep } from "@/components/guidance/steps/step1/PersonalInfoStep";
 import { InterestAssessmentStep } from "@/components/guidance/steps/step2/InterestAssessmentStep";
 import { RegistrationPaymentStep } from "@/components/guidance/steps/step3/RegistrationPaymentStep";
+import {
+  FirstSessionStep,
+  type FirstSessionSlotView,
+} from "@/components/guidance/steps/step4/FirstSessionStep";
 import { requireGuidanceJourneyStepAccess } from "@/lib/guidance/journey/guard";
 import { buildGuidanceJourneySidebar } from "@/lib/guidance/journey/state";
 import {
@@ -17,6 +21,8 @@ import {
 } from "@/lib/guidance/journey/steps";
 import { loadStep1Prefill } from "@/lib/guidance/journey/steps/step1-personal-info";
 import { loadGuidanceStep2Session } from "@/lib/guidance/journey/steps/step2-interest-assessment";
+import { loadGuidanceBookableSlots } from "@/lib/guidance/journey/booking";
+import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import { IRAN_PROVINCES } from "@/lib/registration/iran-locations";
 import { prisma } from "@/lib/prisma";
 
@@ -106,6 +112,28 @@ export default async function GuidanceJourneyStepPage({
         paymentError={
           Array.isArray(paymentError) ? paymentError[0] ?? null : paymentError ?? null
         }
+      />
+    );
+  }
+
+  if (stepId === 4) {
+    const view = await loadGuidanceBookableSlots({
+      organizationId: context.organization.id,
+      sessionNumber: 1,
+    });
+    const slots: FirstSessionSlotView[] = view.slots.map((slot) => ({
+      id: slot.id,
+      label: formatJalaliDateTimeShort(new Date(slot.startsAtIso)),
+      advisorName: slot.advisorName,
+      remainingCapacity: slot.remainingCapacity,
+    }));
+
+    return (
+      <FirstSessionStep
+        sidebarSteps={sidebarSteps}
+        completionPercentage={plan.completionPercentage}
+        configured={view.configured}
+        slots={slots}
       />
     );
   }
