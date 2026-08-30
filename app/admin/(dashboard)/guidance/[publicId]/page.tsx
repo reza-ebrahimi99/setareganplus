@@ -205,6 +205,10 @@ export default async function AdminGuidanceCasePage({ params }: PageProps) {
       ) : null}
 
       <p className="counselor-case__back">
+        <Link href={`/admin/guidance/${model.publicId}/choices`}>
+          چیدمان هوشمند (موتور سفر)
+        </Link>
+        {" · "}
         <Link href="/admin/guidance">بازگشت به صف بررسی</Link>
       </p>
     </div>

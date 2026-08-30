@@ -18,6 +18,7 @@ import { EducationPreferencesStep } from "@/components/guidance/steps/step6/Educ
 import { CityPreferencesStep } from "@/components/guidance/steps/step7/CityPreferencesStep";
 import { MajorPreferencesStep } from "@/components/guidance/steps/step8/MajorPreferencesStep";
 import { PriorityWeightsStep } from "@/components/guidance/steps/step9/PriorityWeightsStep";
+import { AiArrangementStep } from "@/components/guidance/steps/step10/AiArrangementStep";
 import { requireGuidanceJourneyStepAccess } from "@/lib/guidance/journey/guard";
 import { buildGuidanceJourneySidebar } from "@/lib/guidance/journey/state";
 import {
@@ -31,6 +32,7 @@ import { loadStep6Data } from "@/lib/guidance/journey/steps/step6-education-pref
 import { loadStep7Data } from "@/lib/guidance/journey/steps/step7-city-preferences";
 import { loadStep8Data } from "@/lib/guidance/journey/steps/step8-major-preferences";
 import { loadStep9Data } from "@/lib/guidance/journey/steps/step9-priority-weights";
+import { loadGuidanceStep10Data } from "@/lib/guidance/journey/steps/step10-ai-arrangement";
 import { loadGuidanceBookableSlots } from "@/lib/guidance/journey/booking";
 import {
   GUIDANCE_EXAM_GROUP_LABELS,
@@ -250,6 +252,21 @@ export default async function GuidanceJourneyStepPage({
         sidebarSteps={sidebarSteps}
         completionPercentage={plan.completionPercentage}
         initialOrderedCodes={step9.orderedCodes}
+      />
+    );
+  }
+
+  if (stepId === 10) {
+    const step10 = await loadGuidanceStep10Data({
+      organizationId: context.organization.id,
+      planPublicId: plan.publicId,
+    });
+    return (
+      <AiArrangementStep
+        sidebarSteps={sidebarSteps}
+        completionPercentage={plan.completionPercentage}
+        approved={Boolean(plan.choicesApprovedAtIso)}
+        choices={step10.choices}
       />
     );
   }
