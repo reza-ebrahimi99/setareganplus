@@ -1,13 +1,15 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { AtrinAssistant } from "@/components/atrin";
+import { AtrinAssistant } from "@/components/atrin/AtrinAssistant";
 import { AiErrorBoundary } from "@/components/ai/AiErrorBoundary";
 
 const HIDDEN_PREFIXES = ["/admin", "/portal", "/staff", "/atrin"] as const;
 
 function shouldHideAssistant(pathname: string | null): boolean {
-  if (!pathname) return true;
+  // Only hide on known private/embed routes. Never hide when pathname is
+  // temporarily unavailable (SSR/hydration) — that would unmount Atrin.
+  if (!pathname) return false;
   return HIDDEN_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );

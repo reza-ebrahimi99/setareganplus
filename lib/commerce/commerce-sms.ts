@@ -3,7 +3,8 @@
  * Admin recipients keep the existing form verify template.
  * Payment / stage mutations must never fail because of SMS.
  *
- * Buyer booklet SMS is sendText-only. Never fall back to a template.
+ * Buyer booklet SMS uses sendText. PAID temporarily falls back to the
+ * commerce verify template if sendText fails (SMS.ir /v1/send 401 hotfix).
  */
 
 import { SmsMessageStatus } from "@/generated/prisma/enums";
@@ -346,17 +347,82 @@ async function sendCommerceBuyerExclusive(params: {
     return;
   }
 
+  if (params.stage !== "PAID") {
+    await prisma.smsMessage.update({
+      where: { id: messageId },
+      data: {
+        status: SmsMessageStatus.FAILED,
+        lastError: textResult.safeMessage,
+        attemptCount: 1,
+      },
+    });
+    console.error("[commerce-sms] channel=premium result=failed", {
+      stage: params.stage,
+      reason: textResult.errorCode,
+    });
+    return;
+  }
+
+  const fullName = truncateSmsParam(params.ctx.fullName);
+  const product = truncateSmsParam(params.ctx.booklet);
+  const amount = truncateSmsParam(params.ctx.amount);
+  if (!fullName || !product || !amount) {
+    await prisma.smsMessage.update({
+      where: { id: messageId },
+      data: {
+        status: SmsMessageStatus.FAILED,
+        lastError: textResult.safeMessage,
+        attemptCount: 1,
+      },
+    });
+    console.error("[commerce-sms] channel=premium result=failed", {
+      stage: params.stage,
+      reason: "missing_template_params",
+    });
+    return;
+  }
+
+  const fallback = await sendTemplateMessage({
+    kind: "commerce",
+    toMobile: mobile.normalized,
+    variables: { fullName, product, amount },
+    correlationId: messageId,
+  });
+
   await prisma.smsMessage.update({
     where: { id: messageId },
-    data: {
-      status: SmsMessageStatus.FAILED,
-      lastError: textResult.safeMessage,
-      attemptCount: 1,
-    },
+    data: fallback.ok
+      ? {
+          status: SmsMessageStatus.SENT,
+          sentAt: new Date(),
+          providerMessageId: fallback.providerMessageId,
+          lastError: null,
+          attemptCount: 2,
+          metadata: {
+            ...(params.metadata ?? {}),
+            channel: "premium",
+            stage: params.stage,
+            bookletUrl: params.ctx.bookletUrl,
+            templateKind: "commerce",
+            fallbackReason: textResult.errorCode,
+          },
+        }
+      : {
+          status: SmsMessageStatus.FAILED,
+          lastError: fallback.safeMessage ?? textResult.safeMessage,
+          attemptCount: 2,
+        },
   });
+
+  if (fallback.ok) {
+    console.info("[commerce-sms] premium failed");
+    console.info("[commerce-sms] fallback commerce template sent");
+    return;
+  }
+
   console.error("[commerce-sms] channel=premium result=failed", {
     stage: params.stage,
-    reason: textResult.errorCode,
+    reason: fallback.errorCode ?? textResult.errorCode,
   });
 }
 
