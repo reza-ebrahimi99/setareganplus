@@ -7,6 +7,7 @@
 import { AuditAction } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { advanceGuidanceJourneyStep } from "@/lib/guidance/journey/advance";
+import { loadGuidanceJourneyPlan } from "@/lib/guidance/journey/plan";
 
 export type CompleteStep12Result =
   | { ok: true }
@@ -40,6 +41,17 @@ export async function completeGuidanceStep12(params: {
 
   if (Object.keys(fieldErrors).length > 0) {
     return { ok: false, error: "لطفاً موارد مشخص‌شده را اصلاح کنید.", fieldErrors };
+  }
+
+  // Defense in depth (mirrors the check in advanceGuidanceJourneyStep):
+  // never persist finalApprovedAt for a plan that isn't actually on step 12.
+  const plan = await loadGuidanceJourneyPlan({
+    organizationId: params.organizationId,
+    userId: params.actorUserId,
+    studentId: params.studentId,
+  });
+  if (!plan || plan.currentStep !== 12) {
+    return { ok: false, error: "این مرحله در حال حاضر مرحله فعال پرونده شما نیست." };
   }
 
   await prisma.$transaction([

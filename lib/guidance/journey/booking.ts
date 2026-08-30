@@ -16,6 +16,7 @@ import { AuditAction, BookingStatus } from "@/generated/prisma/enums";
 import { createReservation } from "@/lib/booking/reserve";
 import { prisma } from "@/lib/prisma";
 import { advanceGuidanceJourneyStep } from "@/lib/guidance/journey/advance";
+import { loadGuidanceJourneyPlan } from "@/lib/guidance/journey/plan";
 import {
   loadGuidanceStepData,
   saveGuidanceStepData,
@@ -190,6 +191,21 @@ export async function reserveGuidanceCounselingSlot(params: {
   lastName: string;
   mobile: string;
 }): Promise<ReserveGuidanceSessionResult> {
+  // Defense in depth: the page-level guard (requireGuidanceJourneyStepAccess)
+  // already enforces this before a caller can even reach this action, but a
+  // real BookingReservation is a side effect with no automatic rollback, so
+  // re-check here too rather than relying solely on the later advance-step
+  // guard (which would otherwise reject the step transition *after* the
+  // slot was already consumed).
+  const plan = await loadGuidanceJourneyPlan({
+    organizationId: params.organizationId,
+    userId: params.actorUserId,
+    studentId: params.studentId,
+  });
+  if (!plan || plan.currentStep !== stepIdFor(params.sessionNumber)) {
+    return { ok: false, error: "این مرحله در حال حاضر مرحله فعال پرونده شما نیست." };
+  }
+
   const existing = await loadGuidanceCounselingSessionState({
     organizationId: params.organizationId,
     planPublicId: params.planPublicId,
