@@ -17,7 +17,7 @@ export function AdminHeader({
   const { title } = getAdminPageContext(pathname);
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur-sm print:hidden">
       <div className="flex flex-col gap-3 px-4 py-3 sm:px-6 sm:py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">

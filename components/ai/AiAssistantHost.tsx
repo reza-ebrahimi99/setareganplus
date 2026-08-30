@@ -4,7 +4,13 @@ import { usePathname } from "next/navigation";
 import { AtrinAssistant } from "@/components/atrin/AtrinAssistant";
 import { AiErrorBoundary } from "@/components/ai/AiErrorBoundary";
 
-const HIDDEN_PREFIXES = ["/admin", "/portal", "/staff", "/atrin"] as const;
+const HIDDEN_PREFIXES = [
+  "/admin",
+  "/portal",
+  "/staff",
+  "/atrin",
+  "/guidance/pre-register",
+] as const;
 
 function shouldHideAssistant(pathname: string | null): boolean {
   // Only hide on known private/embed routes. Never hide when pathname is

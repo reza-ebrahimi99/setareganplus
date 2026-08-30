@@ -31,7 +31,8 @@ import {
   type CommerceOpsHealthLevel,
   type CommerceOpsPriority,
 } from "@/lib/commerce/orders/intelligence";
-import { listCommerceOrderSmsHistory } from "@/lib/commerce/commerce-sms";
+import { listBookletSmsHistory } from "@/lib/commerce/booklet-sms/service";
+import type { BookletSmsHistoryItem } from "@/lib/commerce/booklet-sms/types";
 import { notifyCommerceOpsStaff } from "@/lib/commerce/orders/notify";
 import {
   COMMERCE_OPS_ACTIVITY_TITLES,
@@ -39,6 +40,7 @@ import {
   type CommerceOpsStageValue,
 } from "@/lib/commerce/orders/ops-stage";
 import { parseCommerceOrderQrInput } from "@/lib/commerce/orders/qr";
+import { generateCommerceOrderShortCode } from "@/lib/commerce/orders/short-code";
 import { parseBookletOrderProfile } from "@/lib/commerce/orders/profile";
 import { recordCommerceOrderEvent } from "@/lib/commerce/orders/timeline";
 import { resolveCommercePrice } from "@/lib/commerce/pricing";
@@ -202,92 +204,116 @@ export async function createSingleItemCommerceOrder(
     };
   }
 
+  const MAX_SHORT_CODE_ATTEMPTS = 5;
   try {
-    const created = await prisma.$transaction(async (tx) => {
-      const dayStart = new Date();
-      dayStart.setUTCHours(0, 0, 0, 0);
-      const countToday = await tx.commerceOrder.count({
-        where: {
-          organizationId: input.organizationId,
-          createdAt: { gte: dayStart },
-        },
-      });
+    let created: { id: string; orderNumber: string; grandTotalRials: number } | null = null;
+    for (let attempt = 0; attempt < MAX_SHORT_CODE_ATTEMPTS && !created; attempt += 1) {
+      const shortCode = generateCommerceOrderShortCode();
+      try {
+        created = await prisma.$transaction(async (tx) => {
+          const dayStart = new Date();
+          dayStart.setUTCHours(0, 0, 0, 0);
+          const countToday = await tx.commerceOrder.count({
+            where: {
+              organizationId: input.organizationId,
+              createdAt: { gte: dayStart },
+            },
+          });
 
-      const orderNumber = buildCommerceOrderNumber({
-        sequence: countToday + 1,
-      });
+          const orderNumber = buildCommerceOrderNumber({
+            sequence: countToday + 1,
+          });
 
-      // Nested item create under Order must NOT pass organizationId —
-      // Prisma UncheckedCreateWithoutOrderInput omits it (inherited from parent).
-      // Create order + lines in two steps so compound FKs stay explicit and safe.
-      const order = await tx.commerceOrder.create({
-        data: {
-          organizationId: input.organizationId,
-          branchId: orderBranch.id,
-          pickupBranchId: pickup.id,
-          orderNumber,
-          status: CommerceOrderStatus.AWAITING_PAYMENT,
-          paymentStatus: CommerceOrderPaymentStatus.PENDING,
-          opsStage: CommerceOpsStage.REGISTERED,
-          buyerName: profile.buyerName,
-          buyerFirstName: profile.buyerFirstName,
-          buyerLastName: profile.buyerLastName,
-          parentName: profile.parentName,
-          buyerMobile: profile.buyerMobile,
-          buyerNationalCode: profile.buyerNationalCode,
-          studentGrade: profile.studentGrade as CommerceStudentGrade,
-          studentMajor: profile.studentMajor
-            ? (profile.studentMajor as CommerceStudentMajor)
-            : null,
-          acquisitionSource: profile.acquisitionSource
-            ? (profile.acquisitionSource as CommerceAcquisitionSource)
-            : null,
-          referredBy: profile.referredBy,
-          discountCode: profile.discountCode,
-          bookletPaymentMethod: profile.bookletPaymentMethod
-            ? (profile.bookletPaymentMethod as CommerceBookletPaymentMethod)
-            : null,
-          urgentDelivery: profile.urgentDelivery,
-          preferredPickupAt: profile.preferredPickupAt,
-          notes: profile.notes,
-          specialNotes: profile.specialNotes,
-          subtotalRials: totals.subtotalRials,
-          discountRials: totals.discountRials,
-          taxRials: totals.taxRials,
-          shippingRials: 0,
-          grandTotalRials: totals.grandTotalRials,
-          deliveryMethod: CommerceDeliveryMethod.PICKUP_ONSITE,
-          fulfillmentStatus: null,
-          currency: "IRR",
-        },
-        select: { id: true, orderNumber: true, grandTotalRials: true },
-      });
+          // Nested item create under Order must NOT pass organizationId —
+          // Prisma UncheckedCreateWithoutOrderInput omits it (inherited from parent).
+          // Create order + lines in two steps so compound FKs stay explicit and safe.
+          const order = await tx.commerceOrder.create({
+            data: {
+              organizationId: input.organizationId,
+              branchId: orderBranch.id,
+              pickupBranchId: pickup.id,
+              orderNumber,
+              shortCode,
+              status: CommerceOrderStatus.AWAITING_PAYMENT,
+              paymentStatus: CommerceOrderPaymentStatus.PENDING,
+              opsStage: CommerceOpsStage.REGISTERED,
+              buyerName: profile.buyerName,
+              buyerFirstName: profile.buyerFirstName,
+              buyerLastName: profile.buyerLastName,
+              parentName: profile.parentName,
+              buyerMobile: profile.buyerMobile,
+              buyerNationalCode: profile.buyerNationalCode,
+              studentGrade: profile.studentGrade as CommerceStudentGrade,
+              studentMajor: profile.studentMajor
+                ? (profile.studentMajor as CommerceStudentMajor)
+                : null,
+              acquisitionSource: profile.acquisitionSource
+                ? (profile.acquisitionSource as CommerceAcquisitionSource)
+                : null,
+              referredBy: profile.referredBy,
+              discountCode: profile.discountCode,
+              bookletPaymentMethod: profile.bookletPaymentMethod
+                ? (profile.bookletPaymentMethod as CommerceBookletPaymentMethod)
+                : null,
+              urgentDelivery: profile.urgentDelivery,
+              preferredPickupAt: profile.preferredPickupAt,
+              notes: profile.notes,
+              specialNotes: profile.specialNotes,
+              subtotalRials: totals.subtotalRials,
+              discountRials: totals.discountRials,
+              taxRials: totals.taxRials,
+              shippingRials: 0,
+              grandTotalRials: totals.grandTotalRials,
+              deliveryMethod: CommerceDeliveryMethod.PICKUP_ONSITE,
+              fulfillmentStatus: null,
+              currency: "IRR",
+            },
+            select: { id: true, orderNumber: true, grandTotalRials: true },
+          });
 
-      await tx.commerceOrderItem.createMany({
-        data: totals.lines.map((line) => ({
-          organizationId: input.organizationId,
-          orderId: order.id,
-          itemId: line.itemId,
-          titleSnapshot: line.titleSnapshot,
-          skuSnapshot: line.skuSnapshot,
-          systemKindSnapshot: line.systemKindSnapshot as CommerceSystemKind,
-          unitPriceRials: line.unitPriceRials,
-          quantity: line.quantity,
-          discountRials: line.discountRials,
-          totalRials: line.totalRials,
-        })),
-      });
+          await tx.commerceOrderItem.createMany({
+            data: totals.lines.map((line) => ({
+              organizationId: input.organizationId,
+              orderId: order.id,
+              itemId: line.itemId,
+              titleSnapshot: line.titleSnapshot,
+              skuSnapshot: line.skuSnapshot,
+              systemKindSnapshot: line.systemKindSnapshot as CommerceSystemKind,
+              unitPriceRials: line.unitPriceRials,
+              quantity: line.quantity,
+              discountRials: line.discountRials,
+              totalRials: line.totalRials,
+            })),
+          });
 
-      await recordCommerceOrderEvent(tx, {
-        organizationId: input.organizationId,
-        orderId: order.id,
-        eventType: CommerceOrderEventType.STAGE_CHANGED,
-        stage: "REGISTERED",
-        title: COMMERCE_OPS_ACTIVITY_TITLES.REGISTERED,
-      });
+          await recordCommerceOrderEvent(tx, {
+            organizationId: input.organizationId,
+            orderId: order.id,
+            eventType: CommerceOrderEventType.STAGE_CHANGED,
+            stage: "REGISTERED",
+            title: COMMERCE_OPS_ACTIVITY_TITLES.REGISTERED,
+          });
 
-      return order;
-    });
+          return order;
+        });
+      } catch (txError) {
+        // Astronomically rare shortCode collision — regenerate and retry.
+        // Any other failure (e.g. orderNumber race) should bubble up as-is.
+        const isShortCodeConflict =
+          typeof txError === "object" &&
+          txError !== null &&
+          "code" in txError &&
+          (txError as { code: unknown }).code === "P2002" &&
+          "meta" in txError &&
+          JSON.stringify((txError as { meta?: unknown }).meta ?? "").includes("shortCode");
+        if (!isShortCodeConflict || attempt === MAX_SHORT_CODE_ATTEMPTS - 1) {
+          throw txError;
+        }
+      }
+    }
+    if (!created) {
+      return { ok: false, error: "ثبت سفارش ناموفق بود." };
+    }
 
     void notifyCommerceOpsStaff({
       organizationId: input.organizationId,
@@ -946,7 +972,7 @@ export type AdminCommerceOrderDetail = AdminCommerceOrderRow & {
     totalRials: number;
   }>;
   events: AdminCommerceOrderEventRow[];
-  smsHistory: import("@/lib/commerce/commerce-sms").CommerceOrderSmsHistoryItem[];
+  smsHistory: BookletSmsHistoryItem[];
 };
 
 function actorName(actor: { firstName: string; lastName: string } | null): string | null {
@@ -1007,10 +1033,10 @@ export async function getAdminCommerceOrderDetail(params: {
       orderBy: { updatedAt: "desc" },
       select: { trackingCode: true, provider: true },
     }),
-    listCommerceOrderSmsHistory({
+    listBookletSmsHistory({
       organizationId: params.organizationId,
       orderId: order.id,
-    }),
+    }).then((result) => result.items),
   ]);
 
   const lastEvent = order.events[order.events.length - 1];

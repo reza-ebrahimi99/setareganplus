@@ -179,6 +179,22 @@ export function canAdvanceCommerceOpsStage(params: {
   return { ok: true, next };
 }
 
+/**
+ * Shipping/fulfillment status copy for the public tracking page.
+ * Today there is only one delivery method (on-site pickup); branch on
+ * `deliveryMethod` here first when courier / shipping-company delivery is
+ * added so every caller of this function keeps working unchanged.
+ */
+export function commerceShippingStatusLabel(params: {
+  opsStage: CommerceOpsStageValue;
+  deliveryMethod?: string | null;
+}): string {
+  if (params.opsStage === "DELIVERED_TO_STUDENT") return "تحویل داده شد";
+  if (params.opsStage === "READY_FOR_PICKUP") return "آماده تحویل حضوری";
+  if (params.opsStage === "IN_PRODUCTION") return "در حال آماده‌سازی";
+  return "در انتظار آماده‌سازی";
+}
+
 export function canRollbackCommerceOpsStage(params: {
   current: CommerceOpsStageValue;
   paymentPaid: boolean;

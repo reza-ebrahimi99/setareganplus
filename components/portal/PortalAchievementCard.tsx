@@ -5,15 +5,25 @@ import { formatJalaliDateShort } from "@/lib/datetime/jalali";
 type PortalAchievementCardProps = {
   achievement: PortalAchievementDto;
   priority?: boolean;
+  featured?: boolean;
 };
 
 export function PortalAchievementCard({
   achievement,
   priority = false,
+  featured = false,
 }: PortalAchievementCardProps) {
   return (
-    <article className="admin-card overflow-hidden">
-      <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/10 via-surface to-secondary/15">
+    <article
+      className={[
+        "portal-surface portal-achievement-card",
+        featured ? "portal-achievement-card--featured" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      data-portal-accent="orange"
+    >
+      <div className="portal-achievement-card__media">
         {achievement.coverUrl ? (
           <Image
             src={achievement.coverUrl}
@@ -25,26 +35,26 @@ export function PortalAchievementCard({
             className="object-cover"
           />
         ) : (
-          <div className="flex h-full items-center justify-center px-4 text-center text-sm font-medium text-primary/50">
+          <div className="portal-achievement-card__fallback">
             {achievement.categoryName}
           </div>
         )}
-        <span className="absolute start-3 top-3 rounded-full bg-primary/90 px-2.5 py-1 text-xs font-medium text-white">
+        <span className="portal-achievement-card__chip">
           {achievement.categoryName}
         </span>
       </div>
-      <div className="space-y-2 p-4 sm:p-5">
-        <h3 className="text-lg font-bold text-primary">{achievement.title}</h3>
+      <div className="portal-achievement-card__body">
+        <h3 className="portal-achievement-card__title">{achievement.title}</h3>
         {achievement.schoolYear ? (
-          <p className="text-sm text-secondary">{achievement.schoolYear}</p>
+          <p className="portal-achievement-card__year">{achievement.schoolYear}</p>
         ) : null}
         {achievement.shortDescription ? (
-          <p className="line-clamp-2 text-sm leading-7 text-muted">
+          <p className="portal-achievement-card__desc">
             {achievement.shortDescription}
           </p>
         ) : null}
         {achievement.achievementDate ? (
-          <p className="text-xs text-muted">
+          <p className="portal-achievement-card__date">
             {formatJalaliDateShort(achievement.achievementDate)}
           </p>
         ) : null}
@@ -53,7 +63,7 @@ export function PortalAchievementCard({
             href={achievement.certificateUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex text-sm font-medium text-secondary underline-offset-2 hover:underline"
+            className="portal-achievement-card__link"
           >
             مشاهده گواهی
           </a>

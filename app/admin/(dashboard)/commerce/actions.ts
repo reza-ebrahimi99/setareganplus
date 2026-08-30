@@ -14,7 +14,12 @@ import {
   bulkAssignCommerceOrders,
 } from "@/lib/commerce/orders/bulk";
 import { markCommerceOpsNotificationsRead } from "@/lib/commerce/orders/notify";
-import { resendCommerceOrderBuyerSms, retryCommerceOrderSms } from "@/lib/commerce/commerce-sms";
+import {
+  previewBookletSms,
+  resendBookletSms,
+  retryBookletSms,
+  sendTestBookletSms,
+} from "@/lib/commerce/booklet-sms/service";
 import { isCommerceOpsStage } from "@/lib/commerce/orders/ops-stage";
 import { createSingleItemCommerceOrder } from "@/lib/commerce/orders/service";
 import {
@@ -30,6 +35,16 @@ export type CommerceProductActionState = {
 export type CommerceOrderActionState = {
   formError?: string;
   successMessage?: string;
+};
+
+export type CommerceSmsPreviewActionState = {
+  formError?: string;
+  successMessage?: string;
+  previewBody?: string;
+  previewStage?: string;
+  /** Present only when this stage actually dispatches via SMS.ir Verify. */
+  previewVerifyTemplateCode?: string;
+  previewVerifyParameters?: Record<string, string>;
 };
 
 function allowedBranchIds(session: AdminSessionContext): readonly string[] | null {
@@ -262,12 +277,12 @@ export async function resendOrderSmsAction(
   const stageRaw = String(formData.get("stage") ?? "").trim();
   if (!orderId) return { formError: "سفارش نامعتبر است." };
   const stage = isCommerceOpsStage(stageRaw) ? stageRaw : undefined;
-  const result = await resendCommerceOrderBuyerSms({
+  const result = await resendBookletSms({
     organizationId: session.organization.id,
     orderId,
     stage,
   });
-  if (!result.ok) return { formError: result.error };
+  if (!result.ok) return { formError: result.error.message };
   revalidateCommerceOps(formData);
   return { successMessage: "پیامک دوباره ارسال شد." };
 }
@@ -279,13 +294,60 @@ export async function retryOrderSmsAction(
   const session = await requirePermission("commerce.orders.manage");
   const messageId = String(formData.get("messageId") ?? "").trim();
   if (!messageId) return { formError: "پیامک نامعتبر است." };
-  const result = await retryCommerceOrderSms({
+  const result = await retryBookletSms({
     organizationId: session.organization.id,
     messageId,
   });
-  if (!result.ok) return { formError: result.error };
+  if (!result.ok) return { formError: result.error.message };
   revalidateCommerceOps(formData);
   return { successMessage: "ارسال مجدد انجام شد." };
+}
+
+export async function previewOrderSmsAction(
+  _prev: CommerceSmsPreviewActionState,
+  formData: FormData,
+): Promise<CommerceSmsPreviewActionState> {
+  const session = await requirePermission("commerce.orders.view");
+  const orderId = String(formData.get("orderId") ?? "").trim();
+  const stageRaw = String(formData.get("stage") ?? "").trim();
+  if (!orderId) return { formError: "سفارش نامعتبر است." };
+  const stage = isCommerceOpsStage(stageRaw) ? stageRaw : undefined;
+
+  const result = await previewBookletSms({
+    organizationId: session.organization.id,
+    orderId,
+    stage,
+  });
+  if (!result.ok) return { formError: result.error.message };
+  return {
+    successMessage: "پیش‌نمایش ساخته شد.",
+    previewBody: result.body,
+    previewStage: result.event,
+    previewVerifyTemplateCode: result.verify?.templateCode,
+    previewVerifyParameters: result.verify?.parameters,
+  };
+}
+
+export async function sendTestOrderSmsAction(
+  _prev: CommerceSmsPreviewActionState,
+  formData: FormData,
+): Promise<CommerceSmsPreviewActionState> {
+  const session = await requirePermission("commerce.orders.manage");
+  const orderId = String(formData.get("orderId") ?? "").trim();
+  const stageRaw = String(formData.get("stage") ?? "").trim();
+  const testMobile = String(formData.get("testMobile") ?? "").trim();
+  if (!orderId) return { formError: "سفارش نامعتبر است." };
+  if (!testMobile) return { formError: "شماره موبایل آزمایشی را وارد کنید." };
+  const stage = isCommerceOpsStage(stageRaw) ? stageRaw : undefined;
+
+  const result = await sendTestBookletSms({
+    organizationId: session.organization.id,
+    orderId,
+    stage,
+    testMobile,
+  });
+  if (!result.ok) return { formError: result.error.message };
+  return { successMessage: "پیامک آزمایشی ارسال شد." };
 }
 
 export async function markCommerceOpsNotificationsReadAction(): Promise<CommerceOrderActionState> {

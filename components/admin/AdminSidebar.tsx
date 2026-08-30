@@ -6,7 +6,7 @@ export function AdminSidebar({ permissions }: { permissions: readonly string[] }
   return (
     <>
       <aside
-        className="admin-sidebar hidden w-64 shrink-0 xl:w-72 lg:flex lg:flex-col"
+        className="admin-sidebar hidden w-64 shrink-0 print:hidden xl:w-72 lg:flex lg:flex-col"
         aria-label="ناوبری مدیریت"
       >
         <div className="border-b border-white/10 px-4 py-5">
@@ -35,7 +35,7 @@ export function AdminSidebar({ permissions }: { permissions: readonly string[] }
         </div>
       </aside>
 
-      <details className="admin-mobile-nav border-b border-white/10 bg-primary lg:hidden">
+      <details className="admin-mobile-nav border-b border-white/10 bg-primary print:hidden lg:hidden">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary [&::-webkit-details-marker]:hidden">
           <span>منوی پنل مدیریت</span>
           <span aria-hidden="true" className="text-slate-400">

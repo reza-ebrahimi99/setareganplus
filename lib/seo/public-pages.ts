@@ -22,6 +22,7 @@ type PublicPageKey =
   | "classes"
   | "exams"
   | "consultation"
+  | "guidance"
   | "preRegistration"
   | "assessments"
   | "team"
@@ -140,6 +141,19 @@ const PUBLIC_PAGE_SEO: Record<PublicPageKey, CreatePageMetadataInput> = {
     description:
       "خدمات مشاوره تحصیلی ستارگان پلاس در نسیم‌شهر؛ راهنمایی مسیر تحصیلی، هماهنگی با برنامه‌های آموزشی و رزرو نوبت مشاوره.",
     keywords: ["مشاوره تحصیلی نسیم شهر", "ستارگان پلاس", "رزرو مشاوره"],
+  },
+  guidance: {
+    path: "/guidance",
+    title: "سامانه جامع انتخاب رشته | ستارگان پلاس",
+    description:
+      "همه گام‌های مهم را قبل از اعلام نتایج کنکور کامل کنید تا در بازه محدود انتخاب رشته فقط روی بهترین دانشگاه و رشته تمرکز کنید.",
+    keywords: [
+      "انتخاب رشته",
+      "سامانه جامع انتخاب رشته",
+      "ستارگان پلاس",
+      "کنکور",
+      "مشاوره انتخاب رشته",
+    ],
   },
   preRegistration: {
     path: "/pre-registration",

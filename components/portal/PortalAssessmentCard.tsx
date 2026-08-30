@@ -21,10 +21,13 @@ export function PortalAssessmentCard({ result }: PortalAssessmentCardProps) {
   ].filter(Boolean);
 
   return (
-    <article className="admin-card p-4 sm:p-5">
+    <article
+      className="portal-surface portal-assessment-card portal-surface--pad-md"
+      data-portal-accent="blue"
+    >
       <div>
-        <h3 className="text-base font-bold text-primary">{result.assessmentTitle}</h3>
-        <p className="mt-1 text-sm text-muted">
+        <h3 className="portal-assessment-card__title">{result.assessmentTitle}</h3>
+        <p className="portal-assessment-card__meta">
           {[
             result.providerName,
             result.assessmentTypeLabel,
@@ -38,52 +41,45 @@ export function PortalAssessmentCard({ result }: PortalAssessmentCardProps) {
         </p>
       </div>
 
-      <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+      <dl className="portal-assessment-card__stats">
         <div>
-          <dt className="text-xs text-muted">نمره</dt>
-          <dd className="font-semibold text-primary">
-            {result.score != null ? toPersianDigits(result.score) : "—"}
-          </dd>
+          <dt>نمره</dt>
+          <dd>{result.score != null ? toPersianDigits(result.score) : "—"}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted">تراز</dt>
-          <dd className="font-semibold text-primary">
+          <dt>تراز</dt>
+          <dd>
             {result.scaledScore != null
               ? toPersianDigits(result.scaledScore)
               : "—"}
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-muted">صدک</dt>
-          <dd className="font-semibold text-primary">
+          <dt>صدک</dt>
+          <dd>
             {result.percentile != null
               ? toPersianDigits(result.percentile)
               : "—"}
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-muted">رشد</dt>
-          <dd className="font-semibold text-primary">
-            {result.growth != null ? toPersianDigits(result.growth) : "—"}
-          </dd>
+          <dt>رشد</dt>
+          <dd>{result.growth != null ? toPersianDigits(result.growth) : "—"}</dd>
         </div>
       </dl>
 
       {result.subjects.length > 0 ? (
-        <div className="mt-4 border-t border-border pt-4">
-          <p className="text-xs font-medium text-muted">درس‌ها</p>
-          <ul className="mt-2 space-y-1.5">
+        <div className="portal-assessment-card__subjects">
+          <p className="portal-assessment-card__subjects-label">درس‌ها</p>
+          <ul>
             {result.subjects.map((subject) => (
-              <li
-                key={subject.name}
-                className="flex items-center justify-between gap-3 text-sm"
-              >
-                <span className="text-primary">{subject.name}</span>
-                <span className="font-medium text-secondary">
+              <li key={subject.name}>
+                <span>{subject.name}</span>
+                <strong>
                   {subject.percentage != null
                     ? `${toPersianDigits(subject.percentage)}٪`
                     : "—"}
-                </span>
+                </strong>
               </li>
             ))}
           </ul>
@@ -91,7 +87,7 @@ export function PortalAssessmentCard({ result }: PortalAssessmentCardProps) {
       ) : null}
 
       {ranks.length > 0 ? (
-        <p className="mt-3 text-xs text-muted">رتبه: {ranks.join(" · ")}</p>
+        <p className="portal-assessment-card__ranks">رتبه: {ranks.join(" · ")}</p>
       ) : null}
     </article>
   );

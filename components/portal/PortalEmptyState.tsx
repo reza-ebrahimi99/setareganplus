@@ -1,19 +1,33 @@
 type PortalEmptyStateProps = {
   title: string;
   description: string;
+  actionHref?: string;
+  actionLabel?: string;
 };
 
-export function PortalEmptyState({ title, description }: PortalEmptyStateProps) {
+/**
+ * Premium empty state — motivational, never "No Data".
+ * Presentational only.
+ */
+export function PortalEmptyState({
+  title,
+  description,
+  actionHref,
+  actionLabel,
+}: PortalEmptyStateProps) {
   return (
-    <div className="admin-card flex flex-col items-center px-6 py-12 text-center">
-      <div
-        aria-hidden="true"
-        className="mb-4 flex size-14 items-center justify-center rounded-full border border-border bg-background text-primary"
-      >
-        <span className="text-2xl font-light">—</span>
+    <div className="portal-empty">
+      <div className="portal-empty__orb" aria-hidden="true" />
+      <div className="portal-empty__icon" aria-hidden="true">
+        <span>✦</span>
       </div>
-      <h2 className="text-lg font-semibold text-primary">{title}</h2>
-      <p className="mt-3 max-w-xl text-sm leading-7 text-muted">{description}</p>
+      <h2 className="portal-empty__title">{title}</h2>
+      <p className="portal-empty__desc">{description}</p>
+      {actionHref && actionLabel ? (
+        <a href={actionHref} className="portal-empty__cta">
+          {actionLabel}
+        </a>
+      ) : null}
     </div>
   );
 }

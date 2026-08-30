@@ -13,6 +13,8 @@ type MainNavProps = {
   mobileExtra?: ReactNode;
   /** Light-on-dark links when header overlays the hero */
   overHero?: boolean;
+  /** Optional filtered nav (e.g. feature-flagged modules). Defaults to full public nav. */
+  items?: readonly PublicNavItem[];
 };
 
 function isActivePath(href: string, activePath?: string) {
@@ -238,8 +240,9 @@ export function MainNav({
   activePath,
   mobileExtra,
   overHero = false,
+  items = publicNavItems,
 }: MainNavProps) {
-  const desktopItems = publicNavItems.filter((item) => item.href !== "/");
+  const desktopItems = items.filter((item) => item.href !== "/");
 
   return (
     <>
@@ -285,7 +288,7 @@ export function MainNav({
           aria-label="ناوبری موبایل"
         >
           <ul className="flex flex-col gap-1">
-            {publicNavItems.map((item) => (
+            {items.map((item) => (
               <MobileNavGroup
                 key={item.label}
                 item={item}

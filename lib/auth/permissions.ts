@@ -39,6 +39,13 @@ export const PERMISSIONS = [
   "commerce.reports.view",
   "portal.student.access",
   "portal.guardian.access",
+  "books.view",
+  "books.settings.manage",
+  "books.catalog.manage",
+  "books.import",
+  "books.export",
+  "guidance.view",
+  "guidance.review",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -65,6 +72,8 @@ const CRM_MANAGER = new Set<Permission>([
   "registrations.manage",
   "registration_flows.view",
   "registration_flows.manage",
+  "guidance.view",
+  "guidance.review",
 ]);
 
 const BRANCH_COMMERCE_OPS = new Set<Permission>([
@@ -86,6 +95,8 @@ const CRM_AGENT = new Set<Permission>([
   "booking.view_assigned",
   "registrations.view",
   "registration_flows.view",
+  "guidance.view",
+  "guidance.review",
 ]);
 
 export const ROLE_LABELS: Readonly<Record<SystemRoleValue, string>> = {
@@ -138,6 +149,8 @@ const ROLE_PERMISSIONS: Readonly<Partial<Record<SystemRoleValue, ReadonlySet<Per
     "crm.call",
     "crm.send_sms",
     "booking.view_assigned",
+    "guidance.view",
+    "guidance.review",
   ]),
   CALL_OPERATOR: new Set([
     "crm.view_assigned",

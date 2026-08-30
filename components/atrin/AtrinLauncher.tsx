@@ -39,12 +39,20 @@ export function AtrinLauncher({ open, onOpen }: AtrinLauncherProps) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try {
-      const seen = window.localStorage.getItem(AI_ASSISTANT_FAB_SEEN_KEY);
-      if (!seen) setPulse(true);
-    } catch {
-      setPulse(true);
-    }
+    let cancelled = false;
+    const id = window.requestAnimationFrame(() => {
+      if (cancelled) return;
+      try {
+        const seen = window.localStorage.getItem(AI_ASSISTANT_FAB_SEEN_KEY);
+        if (!seen) setPulse(true);
+      } catch {
+        setPulse(true);
+      }
+    });
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(id);
+    };
   }, []);
 
   function handlePointerMove(event: MouseEvent<HTMLButtonElement>) {
@@ -111,13 +119,14 @@ export function AtrinLauncher({ open, onOpen }: AtrinLauncherProps) {
       whileHover={reduce ? undefined : { scale: 1.035 }}
       whileTap={reduce ? undefined : { scale: 0.98 }}
       style={{
-        width: "min(270px, calc(100vw - 2rem))",
-        height: 74,
+        width: "auto",
+        maxWidth: "min(270px, calc(100vw - 2rem))",
+        height: 56,
         borderRadius: 9999,
         bottom: "max(1.25rem, env(safe-area-inset-bottom))",
         insetInlineStart: "max(1.25rem, env(safe-area-inset-left))",
       }}
-      className={`atrin-launcher-capsule atrin-root fixed z-[70] inline-flex items-center gap-3 overflow-hidden px-3.5 text-start ${
+      className={`atrin-launcher-capsule atrin-root fixed z-[70] inline-flex max-w-[min(270px,calc(100vw-2rem))] items-center gap-3 overflow-hidden px-3.5 text-start sm:h-[74px] ${
         pulse ? "atrin-launcher-capsule--pulse" : ""
       }`}
     >

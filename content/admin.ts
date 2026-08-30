@@ -14,7 +14,8 @@ export type AdminNavIcon =
   | "exams"
   | "finance"
   | "reports"
-  | "settings";
+  | "settings"
+  | "books";
 
 type AdminNavChildItem = {
   href: string;
@@ -170,6 +171,13 @@ export const adminNavGroups: ReadonlyArray<{
     label: "آموزش",
     items: [
       { label: "دانش‌آموزان", icon: "students", enabled: false },
+      {
+        href: "/admin/guidance",
+        label: "بررسی هدایت تحصیلی",
+        icon: "students",
+        enabled: true,
+        permission: "guidance.view",
+      },
       { label: "کلاس‌ها و دوره‌ها", icon: "courses", enabled: false },
       { label: "آزمون‌ها", icon: "exams", enabled: false },
     ],
@@ -185,6 +193,55 @@ export const adminNavGroups: ReadonlyArray<{
         enabled: true,
         permission: "reports.view",
       },
+    ],
+  },
+  {
+    // Hidden entirely unless the organization's bookCommerce flag is on —
+    // see app/admin/(dashboard)/layout.tsx. Additive Pen Book Agency ERP.
+    label: "بازرگانی کتاب",
+    items: [
+      {
+        href: "/admin/books",
+        label: "نمای کلی اجرایی",
+        icon: "books",
+        enabled: true,
+        permission: "books.view",
+      },
+      {
+        href: "/admin/books/catalog",
+        label: "کاتالوگ کتاب",
+        icon: "books",
+        enabled: true,
+        permission: "books.catalog.manage",
+      },
+      {
+        href: "/admin/books/catalog/types",
+        label: "انواع کتاب",
+        icon: "books",
+        enabled: true,
+        permission: "books.catalog.manage",
+      },
+      {
+        href: "/admin/books/catalog/import",
+        label: "ورود اکسل",
+        icon: "books",
+        enabled: true,
+        permission: "books.import",
+      },
+      {
+        href: "/admin/books/settings",
+        label: "تنظیمات آژانس",
+        icon: "books",
+        enabled: true,
+        permission: "books.settings.manage",
+      },
+      { label: "انبارها و موجودی", icon: "books", enabled: false },
+      { label: "رزروها و کمبود/تأمین", icon: "books", enabled: false },
+      { label: "سفارش‌های فروش", icon: "books", enabled: false },
+      { label: "خزانه (بیعانه/اقساط)", icon: "books", enabled: false },
+      { label: "بازاریابی و مدارس", icon: "books", enabled: false },
+      { label: "پورسانت معلمان/مشاوران", icon: "books", enabled: false },
+      { label: "گزارش‌های اجرایی", icon: "books", enabled: false },
     ],
   },
   {
@@ -313,6 +370,10 @@ export const adminBreadcrumbs = {
   dashboard: [
     { label: "مدیریت", href: "/admin" },
     { label: "نمای کلی" },
+  ],
+  guidance: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "بررسی هدایت تحصیلی", href: "/admin/guidance" },
   ],
   admissions: [
     { label: "مدیریت", href: "/admin" },
@@ -450,6 +511,11 @@ export const adminBreadcrumbs = {
     { label: "رزرو نوبت", href: "/admin/bookings" },
     { label: "جزئیات رزرو" },
   ],
+  bookingExport: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "رزرو نوبت", href: "/admin/bookings" },
+    { label: "خروجی اکسل رزروها" },
+  ],
   sitePlacements: [
     { label: "مدیریت", href: "/admin" },
     { label: "جایگاه‌های سایت" },
@@ -465,6 +531,32 @@ export const adminBreadcrumbs = {
   automations: [
     { label: "مدیریت", href: "/admin" },
     { label: "اتوماسیون CRM" },
+  ],
+  books: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "بازرگانی کتاب" },
+  ],
+  booksCatalog: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "بازرگانی کتاب", href: "/admin/books" },
+    { label: "کاتالوگ کتاب" },
+  ],
+  booksCatalogTypes: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "بازرگانی کتاب", href: "/admin/books" },
+    { label: "کاتالوگ کتاب", href: "/admin/books/catalog" },
+    { label: "انواع کتاب" },
+  ],
+  booksCatalogImport: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "بازرگانی کتاب", href: "/admin/books" },
+    { label: "کاتالوگ کتاب", href: "/admin/books/catalog" },
+    { label: "ورود اکسل" },
+  ],
+  booksSettings: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "بازرگانی کتاب", href: "/admin/books" },
+    { label: "تنظیمات آژانس" },
   ],
 } as const satisfies Record<string, readonly AdminBreadcrumbItem[]>;
 
