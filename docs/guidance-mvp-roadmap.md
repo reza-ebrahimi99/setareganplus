@@ -28,8 +28,9 @@ student-facing UI.
 | 5 | Initial Analysis Center (rule-based) | Done |
 | 6 | Interest Discovery Center | Done |
 | 7 | Student 360° Profile | Done |
-| **8** | **Counselor Review Center** | **This phase** |
-| 9+ | Session booking, counselor session, final package | Later |
+| **8** | **Counselor Review Center** | Done |
+| **8.1** | **Professional Counselor Workspace Phase 1** (read-only 12-step dossier) | **This phase** |
+| 9+ | Workspace edit / per-step approve / PDF compare / reports | Later |
 
 ## Phase 8 focus
 

@@ -173,7 +173,7 @@ export const adminNavGroups: ReadonlyArray<{
       { label: "دانش‌آموزان", icon: "students", enabled: false },
       {
         href: "/admin/guidance",
-        label: "بررسی هدایت تحصیلی",
+        label: "میز کار مشاور",
         icon: "students",
         enabled: true,
         permission: "guidance.view",
@@ -373,7 +373,7 @@ export const adminBreadcrumbs = {
   ],
   guidance: [
     { label: "مدیریت", href: "/admin" },
-    { label: "بررسی هدایت تحصیلی", href: "/admin/guidance" },
+    { label: "میز کار مشاور", href: "/admin/guidance" },
   ],
   admissions: [
     { label: "مدیریت", href: "/admin" },

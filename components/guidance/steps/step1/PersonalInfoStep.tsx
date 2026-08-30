@@ -10,6 +10,7 @@ import { submitGuidanceStep1Action } from "@/app/portal/student/services/guidanc
 import { GuidanceStepActions } from "@/components/guidance/steps/GuidanceStepActions";
 import { GuidanceStepShell } from "@/components/guidance/steps/GuidanceStepShell";
 import { useGuidanceUnsavedWarning } from "@/components/guidance/steps/useGuidanceUnsavedWarning";
+import type { GuidanceStepEmbedProps } from "@/components/guidance/steps/embed";
 import { guidanceJourneyStepPath } from "@/lib/guidance/journey/steps";
 import { GUIDANCE_QUOTA_OPTIONS } from "@/lib/guidance/journey/reference-data/quota";
 import type { GuidanceJourneySidebarStep } from "@/lib/guidance/journey/types";
@@ -37,7 +38,7 @@ type PersonalInfoStepProps = {
     birthDate: string;
     province: string;
   };
-};
+} & GuidanceStepEmbedProps;
 
 const initial: GuidanceStepFormState = {};
 
@@ -50,9 +51,14 @@ export function PersonalInfoStep({
   existingTranscriptName,
   provinces,
   prefill,
+  embed = false,
+  stayOnSuccess = false,
+  continueLabel,
+  formAction,
+  hiddenFields,
 }: PersonalInfoStepProps) {
   const router = useRouter();
-  const [state, action] = useActionState(submitGuidanceStep1Action, initial);
+  const [state, action] = useActionState(formAction ?? submitGuidanceStep1Action, initial);
   const [clientError, setClientError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const celebrating = Boolean(state.ok);
@@ -61,11 +67,12 @@ export function PersonalInfoStep({
 
   useEffect(() => {
     if (!state.ok) return;
+    if (stayOnSuccess) return;
     const timer = setTimeout(() => {
       router.push(guidanceJourneyStepPath(2));
     }, 1400);
     return () => clearTimeout(timer);
-  }, [state.ok, router]);
+  }, [state.ok, router, stayOnSuccess]);
 
   const fieldErrors = state.fieldErrors ?? {};
   const examGroupLabel = useMemo(
@@ -121,6 +128,7 @@ export function PersonalInfoStep({
       sidebarSteps={sidebarSteps}
       completionPercentage={completionPercentage}
       celebrate={celebrating}
+      embed={embed}
     >
       <form
         action={action}
@@ -130,6 +138,26 @@ export function PersonalInfoStep({
         encType="multipart/form-data"
         className="gpj-card"
       >
+        {hiddenFields
+          ? Object.entries(hiddenFields).map(([name, value]) => (
+              <input key={name} type="hidden" name={name} value={value} />
+            ))
+          : null}
+        {embed ? (
+          <div className="gpj-field" style={{ marginBottom: "1rem" }}>
+            <label className="gpj-field__label" htmlFor="editReason">
+              دلیل ویرایش مشاور
+            </label>
+            <input
+              id="editReason"
+              name="editReason"
+              type="text"
+              required
+              className="gpj-input"
+              placeholder="مثال: اصلاح معدل طبق کارنامه"
+            />
+          </div>
+        ) : null}
         <h2 className="gpj-card__title">مشخصات هویتی</h2>
         <p className="gpj-card__desc">
           این اطلاعات پایه پرونده هدایت تحصیلی توست. دقت کن که با کارنامه و کارت
@@ -324,7 +352,7 @@ export function PersonalInfoStep({
 
         <div style={{ marginTop: "1.5rem" }}>
           <GuidanceStepActions
-            continueLabel="ثبت و ادامه به آزمون رغبت"
+            continueLabel={continueLabel ?? "ثبت و ادامه به آزمون رغبت"}
             showSaveDraft={false}
           />
         </div>

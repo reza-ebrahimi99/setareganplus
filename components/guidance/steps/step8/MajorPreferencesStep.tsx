@@ -21,6 +21,13 @@ type MajorPreferencesStepProps = {
   initialItems: MajorPreferenceItem[];
   majorLabels: Record<string, string>;
   examGroupLabel: string;
+  embed?: boolean;
+  stayOnSuccess?: boolean;
+  continueLabel?: string;
+  counselorSubmit?: (
+    items: MajorPreferenceItem[],
+    reason: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
 };
 
 export function MajorPreferencesStep({
@@ -29,12 +36,17 @@ export function MajorPreferencesStep({
   initialItems,
   majorLabels,
   examGroupLabel,
+  embed = false,
+  stayOnSuccess = false,
+  continueLabel,
+  counselorSubmit,
 }: MajorPreferencesStepProps) {
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
   const [error, setError] = useState<string | null>(null);
   const [celebrating, setCelebrating] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [reason, setReason] = useState("");
 
   function toggle(code: string) {
     setItems((prev) => prev.map((item) => (item.code === code ? { ...item, enabled: !item.enabled } : item)));
@@ -51,12 +63,19 @@ export function MajorPreferencesStep({
   function handleSubmit() {
     setError(null);
     startTransition(async () => {
-      const result = await submitGuidanceStep8Action(items);
+      if (counselorSubmit && !reason.trim()) {
+        setError("دلیل ویرایش مشاور الزامی است.");
+        return;
+      }
+      const result = counselorSubmit
+        ? await counselorSubmit(items, reason.trim())
+        : await submitGuidanceStep8Action(items);
       if (!result.ok) {
         setError(result.error);
         return;
       }
       setCelebrating(true);
+      if (stayOnSuccess) return;
       setTimeout(() => router.push(guidanceJourneyStepPath(9)), 1400);
     });
   }
@@ -70,12 +89,26 @@ export function MajorPreferencesStep({
       sidebarSteps={sidebarSteps}
       completionPercentage={completionPercentage}
       celebrate={celebrating}
+      embed={embed}
     >
       {error && (
         <p className="gpj-banner gpj-banner--error" role="alert">
           {error}
         </p>
       )}
+      {embed ? (
+        <div className="gpj-card" style={{ marginBottom: "0.75rem" }}>
+          <label className="gpj-field__label" htmlFor="editReason8">
+            دلیل ویرایش مشاور
+          </label>
+          <input
+            id="editReason8"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className="gpj-input"
+          />
+        </div>
+      ) : null}
 
       <div className="gpj-card">
         <h2 className="gpj-card__title">رشته‌های موجود برای گروه آزمایشی تو</h2>
@@ -147,7 +180,7 @@ export function MajorPreferencesStep({
       <div className="gpj-actions">
         <span />
         <button type="button" className="gpj-actions__continue" disabled={pending} onClick={handleSubmit}>
-          {pending ? "در حال ثبت…" : "ادامه"}
+          {pending ? "در حال ثبت…" : continueLabel ?? "ادامه"}
         </button>
       </div>
     </GuidanceStepShell>
