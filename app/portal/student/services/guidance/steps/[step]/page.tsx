@@ -13,6 +13,7 @@ import {
   FirstSessionStep,
   type FirstSessionSlotView,
 } from "@/components/guidance/steps/step4/FirstSessionStep";
+import { ExamResultsStep } from "@/components/guidance/steps/step5/ExamResultsStep";
 import { requireGuidanceJourneyStepAccess } from "@/lib/guidance/journey/guard";
 import { buildGuidanceJourneySidebar } from "@/lib/guidance/journey/state";
 import {
@@ -21,6 +22,7 @@ import {
 } from "@/lib/guidance/journey/steps";
 import { loadStep1Prefill } from "@/lib/guidance/journey/steps/step1-personal-info";
 import { loadGuidanceStep2Session } from "@/lib/guidance/journey/steps/step2-interest-assessment";
+import { loadStep5Prefill } from "@/lib/guidance/journey/steps/step5-exam-results";
 import { loadGuidanceBookableSlots } from "@/lib/guidance/journey/booking";
 import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import { IRAN_PROVINCES } from "@/lib/registration/iran-locations";
@@ -134,6 +136,40 @@ export default async function GuidanceJourneyStepPage({
         completionPercentage={plan.completionPercentage}
         configured={view.configured}
         slots={slots}
+      />
+    );
+  }
+
+  if (stepId === 5) {
+    const [prefill, examDoc] = await Promise.all([
+      loadStep5Prefill({
+        organizationId: context.organization.id,
+        planPublicId: plan.publicId,
+      }),
+      prisma.guidanceDocument.findFirst({
+        where: {
+          organizationId: context.organization.id,
+          planId: plan.id,
+          documentType: "EXAM_RESULT",
+          isLatest: true,
+          deletedAt: null,
+        },
+        select: { originalFilename: true },
+      }),
+    ]);
+
+    return (
+      <ExamResultsStep
+        sidebarSteps={sidebarSteps}
+        completionPercentage={plan.completionPercentage}
+        hasDocument={Boolean(examDoc)}
+        existingFileName={examDoc?.originalFilename ?? null}
+        prefill={{
+          nationalRank: prefill?.nationalRank ? String(prefill.nationalRank) : "",
+          regionalRank: prefill?.regionalRank ? String(prefill.regionalRank) : "",
+          quotaRank: prefill?.quotaRank ? String(prefill.quotaRank) : "",
+          score: prefill?.score ? String(prefill.score) : "",
+        }}
       />
     );
   }
