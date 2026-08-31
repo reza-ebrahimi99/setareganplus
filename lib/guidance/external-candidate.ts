@@ -186,42 +186,67 @@ export async function provisionExternalGuidanceCandidate(params: {
   if (!membership) {
     return { ok: false, error: "عضویت پرتال ایجاد نشد. دوباره تلاش کنید." };
   }
+  if (!studentId) {
+    return { ok: false, error: "پرونده دانش‌آموز ایجاد نشد." };
+  }
 
+  const ensured = await ensureGuidanceCase({
+    organizationId: params.organizationId,
+    userId: portal.userId,
+    studentId,
+    ipAddress: params.ipAddress,
+    userAgent: params.userAgent,
+    flow: "external-candidate",
+  });
+  if (!ensured.ok) return ensured;
+
+  return {
+    ok: true,
+    planPublicId: ensured.publicId,
+    userId: portal.userId,
+    studentId,
+    membershipId: membership.id,
+    createdPlan: ensured.createdPlan,
+    createdStudent,
+  };
+}
+
+/**
+ * Ensures a GuidancePlan (Student Case) exists for this portal student.
+ * Does not rewrite identity, consent, or journey progress on existing cases.
+ */
+export async function ensureGuidanceCase(params: {
+  organizationId: string;
+  userId: string;
+  studentId: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  flow?: string;
+}): Promise<
+  | { ok: true; publicId: string; createdPlan: boolean }
+  | { ok: false; error: string }
+> {
   const existingPlan = await prisma.guidancePlan.findFirst({
     where: {
       organizationId: params.organizationId,
-      userId: portal.userId,
+      userId: params.userId,
+      studentId: params.studentId,
       deletedAt: null,
     },
     orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      publicId: true,
-      consentGrantedAt: true,
-      status: true,
-    },
+    select: { publicId: true },
   });
-
   if (existingPlan) {
-    return {
-      ok: true,
-      planPublicId: existingPlan.publicId,
-      userId: portal.userId,
-      studentId,
-      membershipId: membership.id,
-      createdPlan: false,
-      createdStudent,
-    };
+    return { ok: true, publicId: existingPlan.publicId, createdPlan: false };
   }
 
   const plan = await prisma.guidancePlan.create({
     data: {
       organizationId: params.organizationId,
-      studentId,
-      userId: portal.userId,
+      studentId: params.studentId,
+      userId: params.userId,
       status: GuidancePlanStatus.PRE_REGISTERED,
       examGroup: EXTERNAL_CANDIDATE_PROVISIONAL_EXAM_GROUP,
-      // Consent + identity filled during Guidance onboarding.
       consentGrantedAt: null,
       consentVersion: null,
       consentText: null,
@@ -232,13 +257,13 @@ export async function provisionExternalGuidanceCandidate(params: {
   await prisma.auditLog.create({
     data: {
       organizationId: params.organizationId,
-      actorUserId: portal.userId,
+      actorUserId: params.userId,
       action: AuditAction.GUIDANCE_PLAN_CREATED,
       entityType: "GuidancePlan",
       entityId: plan.id,
       metadata: {
         publicId: plan.publicId,
-        flow: "external-candidate",
+        flow: params.flow ?? "ensure-guidance-case",
         examGroup: EXTERNAL_CANDIDATE_PROVISIONAL_EXAM_GROUP,
         status: GuidancePlanStatus.PRE_REGISTERED,
       },
@@ -247,13 +272,5 @@ export async function provisionExternalGuidanceCandidate(params: {
     },
   });
 
-  return {
-    ok: true,
-    planPublicId: plan.publicId,
-    userId: portal.userId,
-    studentId,
-    membershipId: membership.id,
-    createdPlan: true,
-    createdStudent,
-  };
+  return { ok: true, publicId: plan.publicId, createdPlan: true };
 }

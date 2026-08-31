@@ -9,8 +9,10 @@ import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
 import {
   GUIDANCE_ONBOARDING_PATH,
   candidateNeedsGuidanceOnboarding,
+  ensureGuidanceCase,
   provisionExternalGuidanceCandidate,
 } from "@/lib/guidance/external-candidate";
+import { GUIDANCE_PLATFORM_HOME } from "@/lib/guidance/portal-nav";
 import { getPublicOrganizationBySlug } from "@/lib/organizations/get-current-organization";
 import { prisma } from "@/lib/prisma";
 import { PORTAL_NO_ACCESS_MESSAGE } from "@/lib/portal/auth";
@@ -87,6 +89,8 @@ export async function requestPortalOtpAction(
 async function resolvePostLoginRedirect(params: {
   organizationId: string;
   userId: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
 }): Promise<string> {
   const link = await prisma.portalAccountLink.findFirst({
     where: {
@@ -103,12 +107,25 @@ async function resolvePostLoginRedirect(params: {
     return "/portal";
   }
 
+  const guidanceOn = await isGuidanceEnabled(params.organizationId);
+  if (guidanceOn) {
+    await ensureGuidanceCase({
+      organizationId: params.organizationId,
+      userId: params.userId,
+      studentId: link.studentId,
+      ipAddress: params.ipAddress,
+      userAgent: params.userAgent,
+      flow: "portal-login-ensure-case",
+    });
+  }
+
   const needs = await candidateNeedsGuidanceOnboarding({
     organizationId: params.organizationId,
     userId: params.userId,
     studentId: link.studentId,
   });
-  return needs ? GUIDANCE_ONBOARDING_PATH : "/portal";
+  if (needs) return GUIDANCE_ONBOARDING_PATH;
+  return guidanceOn ? GUIDANCE_PLATFORM_HOME : "/portal";
 }
 
 /**
@@ -174,6 +191,8 @@ export async function verifyPortalOtpAction(
     redirectPath = await resolvePostLoginRedirect({
       organizationId: access.organizationId,
       userId: access.userId,
+      ipAddress: requestMetadata.ipAddress,
+      userAgent: requestMetadata.userAgent,
     });
   } else {
     const provisioned = await provisionExternalGuidanceCandidate({

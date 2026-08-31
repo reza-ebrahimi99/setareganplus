@@ -50,7 +50,7 @@ export function GuidanceEntryAuth({
             {copy.counselor.continue}
           </Link>
         ) : role === "counselor" ? (
-          <StaffOtpLoginForm />
+          <StaffOtpLoginForm nextPath="/admin/guidance" />
         ) : (
           <p className="guidance-entry__card-cta">احراز هویت همکاران</p>
         )}

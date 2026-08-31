@@ -40,10 +40,20 @@ export function GuidanceEntryExperience({
 
         <div className="guidance-entry__grid">
           <section className="guidance-entry__hero">
-            <p className="guidance-entry__kicker">Major Selection OS</p>
+            <p className="guidance-entry__kicker">دپارتمان انتخاب رشته</p>
             <h1>{copy.title}</h1>
             <p className="guidance-entry__subtitle">{copy.subtitle}</p>
             <p className="guidance-entry__lead">{copy.description}</p>
+            <p className="guidance-entry__trust-line">{copy.trustLine}</p>
+            <section className="guidance-entry__philosophy" aria-labelledby="guidance-philosophy">
+              <h2 id="guidance-philosophy">{copy.philosophy.title}</h2>
+              <p>{copy.philosophy.body}</p>
+              <ol>
+                {copy.philosophy.chapters.map((chapter) => (
+                  <li key={chapter}>{chapter}</li>
+                ))}
+              </ol>
+            </section>
             <GuidanceEntryHeroArt />
           </section>
 

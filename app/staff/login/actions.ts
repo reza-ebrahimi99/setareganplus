@@ -134,6 +134,16 @@ export async function verifyStaffOtpAction(
   await setAdminSessionCookie(token, expiresAt);
 
   const permissions = permissionsForRole(membership.role);
+  const next = field(formData, "next");
+  const counselorDesk =
+    next.startsWith("/admin/guidance") &&
+    !next.startsWith("//") &&
+    !next.includes("://") &&
+    permissions.has("guidance.review");
+  if (counselorDesk) {
+    redirect(next);
+  }
+
   redirect(permissions.has("reports.view") && !permissions.has("crm.view_assigned") && !permissions.has("crm.view_all")
     ? "/admin/reports/staff-performance"
     : permissions.has("crm.view_assigned")

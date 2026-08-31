@@ -46,13 +46,15 @@ export default async function GuidanceOnboardingPage() {
   return (
     <main className="mx-auto w-full max-w-xl px-4 py-8 sm:py-10" dir="rtl">
       <header className="mb-8">
-        <p className="text-sm font-medium text-primary">سامانه جامع انتخاب رشته</p>
+        <p className="text-sm font-medium text-primary">
+          دپارتمان انتخاب رشته قلم‌چی نسیم‌شهر
+        </p>
         <h1 className="mt-2 text-2xl font-bold tracking-tight text-foreground">
-          تکمیل اطلاعات داوطلب
+          خوش آمدید — تشکیل پرونده
         </h1>
         <p className="mt-2 text-sm leading-7 text-muted">
-          حساب شما ایجاد شد. این اطلاعات برای تشکیل پرونده هدایت تحصیلی لازم است
-          و بدون دخالت ادمین ذخیره می‌شود.
+          پرونده انتخاب رشته شما ایجاد شد. این چند اطلاعات هویت، پرونده را برای
+          همراهی مهندس رضا ابراهیمی آماده می‌کند.
         </p>
       </header>
       <div className="rounded-2xl border border-border bg-surface p-5 shadow-[0_8px_24px_rgb(15_23_42_/_0.04)] sm:p-7">

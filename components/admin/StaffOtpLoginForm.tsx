@@ -10,7 +10,7 @@ import {
 
 const initial: StaffLoginState = { phase: "mobile" };
 
-export function StaffOtpLoginForm() {
+export function StaffOtpLoginForm({ nextPath }: { nextPath?: string }) {
   const [requestState, requestAction] = useActionState(
     requestStaffOtpAction,
     initial,
@@ -59,6 +59,7 @@ export function StaffOtpLoginForm() {
         noValidate
       >
         <input type="hidden" name="mobile" value={requestState.mobile} />
+        {nextPath ? <input type="hidden" name="next" value={nextPath} /> : null}
         <p className="rounded-xl border border-border bg-background px-4 py-3 text-sm leading-7 text-muted">
           {requestState.message}
         </p>

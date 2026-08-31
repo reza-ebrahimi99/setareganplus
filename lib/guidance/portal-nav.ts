@@ -10,6 +10,9 @@ import type {
 
 const GP = "/portal/student/services/guidance";
 
+/** Post-login home for a Guidance student case (until Major OS shell ships). */
+export const GUIDANCE_PLATFORM_HOME = GP;
+
 /** Legacy Student Portal sidebar entry into Guidance (services section). */
 export const GUIDANCE_STUDENT_PORTAL_NAV: PortalOsNavItem[] = [
   {
