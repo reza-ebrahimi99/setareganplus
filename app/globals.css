@@ -11292,3 +11292,264 @@ body {
     width: auto;
   }
 }
+
+.office-report {
+  margin-top: 0.35rem;
+  padding: 1.15rem 1.05rem 1.4rem;
+  border-radius: 1.35rem;
+  border: 1px solid rgb(212 175 55 / 0.45);
+  background: rgb(255 255 255 / 0.94);
+  color: #1e1b4b;
+}
+
+.office-report__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+  font-weight: 700;
+}
+
+.office-report__print,
+.office-consult__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.85rem;
+  padding: 0.5rem 1.2rem;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c9a227, #e4c36a);
+  color: #3a2a00;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.office-report__letterhead {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  border-bottom: 3px solid #d4af37;
+  padding-bottom: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.office-report__brand {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #5b21b6;
+}
+
+.office-report h1 {
+  margin: 0.85rem 0 0.35rem;
+  font-size: 1.45rem;
+}
+
+.office-report__meta,
+.office-report__note,
+.office-report__footer {
+  color: #64748b;
+  line-height: 1.75;
+}
+
+.office-report__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.85rem 0 1.15rem;
+}
+
+.office-report__table th,
+.office-report__table td {
+  border: 1px solid #ddd6fe;
+  padding: 0.45rem 0.6rem;
+  text-align: right;
+}
+
+.office-report__table th {
+  width: 32%;
+  background: #ede9fe;
+  font-weight: 800;
+}
+
+.office-report__block,
+.office-report__split section {
+  break-inside: avoid;
+  margin-top: 1rem;
+}
+
+.office-report__split {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.office-report ul {
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.office-report li {
+  margin-bottom: 0.55rem;
+  line-height: 1.7;
+}
+
+.office-report li span {
+  display: block;
+  color: #475569;
+}
+
+.office-report__disclaimer {
+  margin-top: 1.15rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgb(212 175 55 / 0.55);
+  background: linear-gradient(165deg, #fff, rgb(248 239 208 / 0.7));
+  font-weight: 700;
+  line-height: 1.9;
+}
+
+.office-report__footer {
+  margin-top: 1.35rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #d4af37;
+  font-size: 0.82rem;
+}
+
+.office-matches,
+.office-consult {
+  margin-top: 1.25rem;
+  padding: 1.1rem 1.15rem 1.25rem;
+  border-radius: 1.35rem;
+  border: 1px solid var(--portal-border);
+  background: rgb(255 255 255 / 0.86);
+}
+
+.office-matches h2,
+.office-consult h2 {
+  margin: 0.2rem 0 0.45rem;
+  font-size: 1.15rem;
+}
+
+.office-matches ol {
+  list-style: none;
+  margin: 0.85rem 0 0;
+  padding: 0;
+}
+
+.office-matches li {
+  margin-bottom: 0.85rem;
+}
+
+.office-matches__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-weight: 800;
+}
+
+.office-matches__confidence {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--portal-border);
+  line-height: 1.75;
+}
+
+.office-consult {
+  border-color: rgb(212 175 55 / 0.45);
+  background: linear-gradient(165deg, rgb(255 255 255 / 0.95), rgb(248 239 208 / 0.42));
+}
+
+.office-consult__kicker {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #8a6a12;
+}
+
+.office-consult__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.office-consult__meta dt {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--portal-muted);
+}
+
+.office-consult__meta dd {
+  margin: 0.15rem 0 0;
+  font-weight: 800;
+}
+
+.office-consult ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.office-consult li {
+  margin-bottom: 0.7rem;
+}
+
+.office-consult li strong {
+  display: block;
+}
+
+.office-consult li span,
+.office-consult__closing {
+  display: block;
+  margin-top: 0.15rem;
+  line-height: 1.75;
+  color: #475569;
+}
+
+.office-consult__cta {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+@media (min-width: 840px) {
+  .office-report__split {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .office-consult__cta {
+    width: auto;
+  }
+}
+
+@media print {
+  .major-office__rail,
+  .major-office__top,
+  .major-office__mobile-rooms,
+  .office-assess-print-hide {
+    display: none !important;
+  }
+
+  .major-office,
+  .major-office__main,
+  .major-office__body {
+    display: block !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .office-report {
+    border: 0;
+    padding: 0;
+    border-radius: 0;
+    background: #fff;
+  }
+
+  .office-matches {
+    break-inside: avoid;
+  }
+}

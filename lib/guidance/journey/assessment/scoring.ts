@@ -81,7 +81,7 @@ export type AssessmentDashboardModel = {
 export const ASSESSMENT_DISCLAIMER =
   "نتیجه بالا صرفاً خروجی آزمون است.\nتفسیر تخصصی این نتایج، بررسی بازار کار، شرایط دانشگاهها و انطباق با رتبه و سوابق تحصیلی، فقط در جلسه مشاوره با مهندس رضا ابراهیمی انجام میشود.";
 
-export const ASSESSMENT_RESULTS_CTA_LABEL = "رزرو جلسه تحلیل تخصصی نتایج";
+export const ASSESSMENT_RESULTS_CTA_LABEL = "رزرو جلسه تحلیل تخصصی";
 export const ASSESSMENT_RESULTS_CTA_HREF = "/book/guidance-first-session";
 
 function scoreForQuestion(question: AssessmentQuestion, answer: number): number {

@@ -13,12 +13,20 @@ import {
 } from "../lib/guidance/journey/assessment/question-bank";
 import {
   ASSESSMENT_DISCLAIMER,
+  ASSESSMENT_RESULTS_CTA_HREF,
   ASSESSMENT_RESULTS_CTA_LABEL,
   buildAssessmentDashboard,
   computeAssessmentResult,
   isAssessmentComplete,
   type AssessmentAnswers,
 } from "../lib/guidance/journey/assessment/scoring";
+import {
+  INTEREST_CONSULTATION,
+  buildInterestReportIdentity,
+  buildTopMajorMatches,
+  deriveInterestReportId,
+  interestReportQrPayload,
+} from "../lib/guidance/office/interest-report";
 
 function test(name: string, fn: () => void) {
   try {
@@ -120,6 +128,63 @@ test("dashboard is explainable and includes conversion CTA", () => {
 test("flat answers produce a cautious confidence label", () => {
   const dashboard = buildAssessmentDashboard(fillAll(3));
   assert.ok(dashboard.confidence.percent <= 45);
+});
+
+test("report id is stable and parent-facing", () => {
+  const iso = "2026-08-31T08:00:00.000Z";
+  const a = deriveInterestReportId("plan-public-1", iso);
+  const b = deriveInterestReportId("plan-public-1", iso);
+  const c = deriveInterestReportId("plan-public-2", iso);
+  assert.equal(a, b);
+  assert.notEqual(a, c);
+  assert.match(a, /^RG-\d{4}-[A-F0-9]{6}$/);
+  assert.equal(
+    interestReportQrPayload(a),
+    `setareganplus:interest-report:${a}`,
+  );
+  const identity = buildInterestReportIdentity({
+    studentName: "  علی رضایی  ",
+    examGroupLabel: "تجربی",
+    assessmentDateLabel: "یکشنبه ۱۰ شهریور ۱۴۰۵",
+    planPublicId: "plan-public-1",
+    completedAtIso: iso,
+  });
+  assert.equal(identity.studentName, "علی رضایی");
+  assert.equal(identity.reportId, a);
+  assert.equal(identity.counselorName, "مهندس رضا ابراهیمی");
+});
+
+test("top three matches are visual fit scores, not prescriptions", () => {
+  const dashboard = buildAssessmentDashboard(fillAll(5));
+  const matches = buildTopMajorMatches(dashboard.suggestedMajors, 3);
+  assert.equal(matches.length, 3);
+  assert.equal(matches[0]?.rank, 1);
+  assert.ok(matches[0]!.fitScore >= matches[1]!.fitScore);
+  assert.ok(matches[1]!.fitScore >= matches[2]!.fitScore);
+  for (const item of matches) {
+    assert.ok(item.barPercent >= 4);
+    assert.ok(item.barPercent <= 100);
+  }
+});
+
+test("consultation card is a 90-minute conversion, not a magic button", () => {
+  assert.equal(INTEREST_CONSULTATION.duration, "۹۰ دقیقه");
+  assert.deepEqual([...INTEREST_CONSULTATION.formats], ["حضوری", "آنلاین"]);
+  assert.equal(INTEREST_CONSULTATION.ctaLabel, "رزرو جلسه تحلیل تخصصی");
+  assert.equal(INTEREST_CONSULTATION.ctaHref, ASSESSMENT_RESULTS_CTA_HREF);
+  assert.equal(INTEREST_CONSULTATION.items.length, 7);
+  const blob = `${INTEREST_CONSULTATION.title} ${INTEREST_CONSULTATION.items.map((i) => i.title + i.body).join(" ")} ${INTEREST_CONSULTATION.closing}`;
+  assert.ok(blob.includes("تفسیر تخصصی"));
+  assert.ok(blob.includes("بازار کار"));
+  assert.ok(blob.includes("دانشگاه"));
+  assert.ok(blob.includes("نظام"));
+  assert.ok(blob.includes("سوابق"));
+  assert.ok(blob.includes("رتبه"));
+  assert.ok(blob.includes("استراتژی"));
+  assert.ok(blob.includes("مهندس رضا ابراهیمی"));
+  assert.equal(blob.includes("RIASEC"), false);
+  assert.equal(ASSESSMENT_RESULTS_CTA_LABEL, "رزرو جلسه تحلیل تخصصی");
+  assert.equal(ASSESSMENT_DISCLAIMER.includes("تفسیر تخصصی این نتایج"), true);
 });
 
 console.log("guidance assessment unit tests passed");
