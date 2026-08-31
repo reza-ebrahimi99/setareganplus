@@ -27,6 +27,7 @@ import { requireGuidanceJourneyStepAccess } from "@/lib/guidance/journey/guard";
 import { buildGuidanceJourneySidebar } from "@/lib/guidance/journey/state";
 import { parseGuidanceJourneyStepParam } from "@/lib/guidance/journey/steps";
 import { loadStep1Prefill } from "@/lib/guidance/journey/steps/step1-personal-info";
+import { loadGuidanceOnboardingRecord } from "@/lib/guidance/onboarding";
 import { loadGuidanceStep2Session } from "@/lib/guidance/journey/steps/step2-interest-assessment";
 import { loadStep5Prefill } from "@/lib/guidance/journey/steps/step5-exam-results";
 import { loadStep6Data } from "@/lib/guidance/journey/steps/step6-education-preferences";
@@ -64,7 +65,7 @@ export default async function GuidanceJourneyStepPage({
   const sidebarSteps = buildGuidanceJourneySidebar(plan);
 
   if (stepId === 1) {
-    const [student, transcript, prefill] = await Promise.all([
+    const [student, transcript, prefill, onboarding] = await Promise.all([
       prisma.student.findFirst({
         where: { id: plan.studentId, organizationId: context.organization.id },
         select: { fullName: true },
@@ -83,22 +84,46 @@ export default async function GuidanceJourneyStepPage({
         organizationId: context.organization.id,
         planPublicId: plan.publicId,
       }),
+      loadGuidanceOnboardingRecord({
+        organizationId: context.organization.id,
+        userId: context.user.id,
+      }),
     ]);
+
+    const draft = onboarding?.draft;
+    const profile = onboarding?.profile;
 
     return (
       <PersonalInfoStep
         sidebarSteps={sidebarSteps}
         completionPercentage={plan.completionPercentage}
-        fullName={student?.fullName ?? ""}
+        fullName={student?.fullName || draft?.fullName || ""}
         examGroup={plan.examGroup}
         hasTranscript={Boolean(transcript)}
         existingTranscriptName={transcript?.originalFilename ?? null}
         provinces={IRAN_PROVINCES}
+        nextHref="/ms/grades"
         prefill={{
-          nationalId: prefill.nationalId ?? "",
-          gender: (prefill.gender as "MALE" | "FEMALE" | undefined) ?? "",
-          birthDate: prefill.birthDate ?? "",
-          province: prefill.province ?? "",
+          nationalId:
+            prefill.nationalId ||
+            profile?.nationalId ||
+            draft?.nationalId ||
+            "",
+          gender:
+            (prefill.gender as "MALE" | "FEMALE" | undefined) ||
+            profile?.gender ||
+            (draft?.gender === "FEMALE" || draft?.gender === "MALE"
+              ? draft.gender
+              : ""),
+          birthDate:
+            prefill.birthDate || profile?.birthDate || draft?.birthDate || "",
+          province:
+            prefill.province || profile?.province || draft?.province || "",
+          quota: plan.quota ?? draft?.quota ?? "",
+          highSchoolAverage:
+            plan.highSchoolAverage != null
+              ? String(plan.highSchoolAverage)
+              : "",
         }}
       />
     );

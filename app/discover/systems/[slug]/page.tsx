@@ -46,6 +46,7 @@ export default async function DiscoverSystemPage({ params }: PageProps) {
         { label: "نظام دانشگاهی", href: "/discover/systems" },
         { label: item.title },
       ]}
+      activePath="/discover/systems"
       jsonLd={discoverWebPageJsonLd({
         path,
         title: item.title,

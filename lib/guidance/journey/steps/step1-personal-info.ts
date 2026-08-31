@@ -210,13 +210,7 @@ export async function completeGuidanceStep1(params: {
     select: { id: true },
   });
 
-  if (!existingDoc && !params.file) {
-    return {
-      ok: false,
-      error: "بارگذاری کارنامه نهایی الزامی است.",
-      fieldErrors: { file: "فایل کارنامه را بارگذاری کنید." },
-    };
-  }
+  // Transcript PDF is collected after per-subject grades in the office flow.
 
   if (params.file) {
     const uploaded = await uploadGuidanceFinalGrades({

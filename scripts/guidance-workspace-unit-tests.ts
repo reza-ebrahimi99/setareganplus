@@ -28,6 +28,24 @@ import {
   deriveOfficeJourneyTracker,
   type TrackerDerivationInput,
 } from "../lib/guidance/office/tracker";
+import {
+  isSafeRelativePath,
+  resolveRelativePath,
+} from "../lib/guidance/office/relative-url";
+import {
+  nextOfficeIntakeHref,
+  officeIntakeContinueLabel,
+} from "../lib/guidance/office/intake-href";
+import {
+  deriveFinalExamSummary,
+  parseFinalExamScore,
+  subjectsForExamGroup,
+} from "../lib/guidance/office/final-exam";
+import {
+  draftHasAcademic,
+  draftHasIdentity,
+  EMPTY_ONBOARDING_DRAFT,
+} from "../lib/guidance/onboarding-draft";
 
 function test(name: string, fn: () => void) {
   try {
@@ -399,6 +417,130 @@ test("first session countdown and calendar are explainable", () => {
   assert.ok(ics.includes("SUMMARY:جلسه اول مشاوره"));
   assert.equal(FIRST_SESSION_DURATION, "۹۰ دقیقه");
   assert.ok(FIRST_SESSION_DOCUMENTS.length >= 3);
+});
+
+test("logout and continue paths stay relative", () => {
+  assert.equal(isSafeRelativePath("/guidance"), true);
+  assert.equal(isSafeRelativePath("/portal/login"), true);
+  assert.equal(isSafeRelativePath("http://localhost:3000/portal/login"), false);
+  assert.equal(isSafeRelativePath("//evil.test"), false);
+  assert.equal(isSafeRelativePath("https://example.com"), false);
+  assert.equal(
+    resolveRelativePath("http://localhost:3000/portal/login", "/guidance"),
+    "/guidance",
+  );
+  assert.equal(resolveRelativePath("/ms", "/guidance"), "/ms");
+});
+
+test("student intake continue never points at a missing room", () => {
+  assert.equal(
+    nextOfficeIntakeHref({
+      hasIdentityProfile: false,
+      hasAcademicProfile: false,
+      finalExamComplete: false,
+      hasTranscript: false,
+    }),
+    "/ms/identity",
+  );
+  assert.equal(
+    nextOfficeIntakeHref({
+      hasIdentityProfile: true,
+      hasAcademicProfile: false,
+      finalExamComplete: false,
+      hasTranscript: false,
+    }),
+    "/ms/academic",
+  );
+  assert.equal(
+    nextOfficeIntakeHref({
+      hasIdentityProfile: true,
+      hasAcademicProfile: true,
+      finalExamComplete: false,
+      hasTranscript: false,
+    }),
+    "/ms/grades",
+  );
+  assert.equal(
+    nextOfficeIntakeHref({
+      hasIdentityProfile: true,
+      hasAcademicProfile: true,
+      finalExamComplete: true,
+      hasTranscript: false,
+    }),
+    "/ms/transcript",
+  );
+  assert.ok(officeIntakeContinueLabel({
+    hasIdentityProfile: true,
+    hasAcademicProfile: true,
+    finalExamComplete: false,
+    hasTranscript: false,
+  }).includes("نمرات"));
+});
+
+test("tracker step 1 continue uses office intake, not a broken portal path", () => {
+  const model = deriveOfficeJourneyTracker(trackerInput());
+  assert.equal(model.phases[0]?.href, "/ms/identity");
+  assert.equal(model.phases[0]?.href?.includes("localhost"), false);
+  const filled = deriveOfficeJourneyTracker(
+    trackerInput({
+      hasIdentityProfile: true,
+      hasAcademicProfile: true,
+      finalExamComplete: true,
+      hasFinalGrades: false,
+    }),
+  );
+  assert.equal(filled.phases[0]?.href, "/ms/transcript");
+  assert.ok((filled.phases[0]?.documents.length ?? 0) >= 3);
+  assert.ok(filled.phases[0]?.purpose.length);
+});
+
+test("final exam scores validate, average, and classify strengths", () => {
+  const subjects = subjectsForExamGroup("EXPERIMENTAL_SCIENCES");
+  assert.ok(subjects.some((row) => row.id === "biology"));
+  assert.equal(parseFinalExamScore("۱۸.۵"), 18.5);
+  assert.equal(parseFinalExamScore("21"), null);
+  const scores = Object.fromEntries(
+    subjects.map((row, index) => [row.id, index === 0 ? 18 : 10]),
+  );
+  const summary = deriveFinalExamSummary(subjects, scores);
+  assert.equal(summary.complete, true);
+  assert.ok(summary.average != null && summary.average > 10);
+  assert.ok(summary.strengths.length >= 1);
+  assert.ok(summary.weaknesses.length >= 1);
+});
+
+test("onboarding draft identity/academic gates", () => {
+  assert.equal(draftHasIdentity(EMPTY_ONBOARDING_DRAFT), false);
+  assert.equal(draftHasAcademic(EMPTY_ONBOARDING_DRAFT), false);
+  assert.equal(
+    draftHasIdentity({
+      ...EMPTY_ONBOARDING_DRAFT,
+      fullName: "علی رضایی",
+      nationalId: "001",
+      birthDate: "2006-01-01",
+      gender: "MALE",
+      province: "تهران",
+      city: "نسیم‌شهر",
+    }),
+    true,
+  );
+});
+
+test("office rail identity and grades rooms are live", () => {
+  const sections = resolveOfficeRailSections({
+    currentStep: 1,
+    completedSteps: [],
+    finalApproved: false,
+  });
+  const items = sections.flatMap((section) => section.items);
+  const identity = items.find((item) => item.id === "profile");
+  const grades = items.find((item) => item.id === "grades");
+  const transcript = items.find((item) => item.id === "transcript");
+  assert.equal(identity?.live, true);
+  assert.equal(identity?.href, "/ms/identity");
+  assert.equal(grades?.live, true);
+  assert.equal(grades?.href, "/ms/grades");
+  assert.equal(transcript?.href, "/ms/transcript");
 });
 
 console.log("guidance workspace unit tests passed");

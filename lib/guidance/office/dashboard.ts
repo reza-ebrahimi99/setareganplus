@@ -16,6 +16,18 @@ import {
   deriveSessionCountdown,
   FIRST_SESSION_DOCUMENTS,
 } from "@/lib/guidance/office/first-session";
+import { loadFinalExamScores } from "@/lib/guidance/office/final-exam-store";
+import {
+  nextOfficeIntakeHref,
+  officeIntakeContinueLabel,
+  officeIntakeProgressPercent,
+} from "@/lib/guidance/office/intake-href";
+import { MAJOR_OFFICE_INTEREST, MAJOR_OFFICE_JOURNEY, MAJOR_OFFICE_SESSION } from "@/lib/guidance/office/nav";
+import { loadGuidanceOnboardingRecord } from "@/lib/guidance/onboarding";
+import {
+  draftHasAcademic,
+  draftHasIdentity,
+} from "@/lib/guidance/onboarding-draft";
 import {
   deriveOfficeCasePulse,
   type OfficeCasePulse,
@@ -30,6 +42,18 @@ export type OfficeFirstSessionCard = {
   checklist: readonly { label: string; hint: string }[];
 };
 
+export type OfficeTodayTask = {
+  title: string;
+  body: string;
+  href: string;
+  label: string;
+};
+
+export type OfficeCounselorActivity = {
+  title: string;
+  body: string;
+} | null;
+
 export type OfficeDashboardModel = {
   studentName: string;
   examGroupLabel: string;
@@ -38,6 +62,10 @@ export type OfficeDashboardModel = {
   pulse: OfficeCasePulse;
   departmentNote: string;
   firstSession: OfficeFirstSessionCard;
+  todayTask: OfficeTodayTask;
+  unreadMessages: number;
+  latestCounselorActivity: OfficeCounselorActivity;
+  intakePercent: number;
 };
 
 export async function loadOfficeDashboard(params: {
@@ -48,31 +76,41 @@ export async function loadOfficeDashboard(params: {
   const plan = await loadGuidanceJourneyPlan(params);
   if (!plan) return null;
 
-  const [student, reviews, pendingDoc, sessionState] = await Promise.all([
-    prisma.student.findFirst({
-      where: { id: params.studentId, organizationId: params.organizationId },
-      select: { fullName: true, firstName: true, lastName: true },
-    }),
-    loadStepReviewsForPlan({
-      organizationId: params.organizationId,
-      planId: plan.id,
-    }),
-    prisma.guidanceDocument.findFirst({
-      where: {
+  const [student, reviews, pendingDoc, sessionState, onboarding, examScores] =
+    await Promise.all([
+      prisma.student.findFirst({
+        where: { id: params.studentId, organizationId: params.organizationId },
+        select: { fullName: true, firstName: true, lastName: true },
+      }),
+      loadStepReviewsForPlan({
         organizationId: params.organizationId,
         planId: plan.id,
-        deletedAt: null,
-        isLatest: true,
-        verificationStatus: GuidanceDocumentVerificationStatus.PENDING,
-      },
-      select: { id: true },
-    }),
-    loadGuidanceCounselingSessionState({
-      organizationId: params.organizationId,
-      planPublicId: plan.publicId,
-      sessionNumber: 1,
-    }),
-  ]);
+      }),
+      prisma.guidanceDocument.findFirst({
+        where: {
+          organizationId: params.organizationId,
+          planId: plan.id,
+          deletedAt: null,
+          isLatest: true,
+          verificationStatus: GuidanceDocumentVerificationStatus.PENDING,
+        },
+        select: { id: true },
+      }),
+      loadGuidanceCounselingSessionState({
+        organizationId: params.organizationId,
+        planPublicId: plan.publicId,
+        sessionNumber: 1,
+      }),
+      loadGuidanceOnboardingRecord({
+        organizationId: params.organizationId,
+        userId: params.userId,
+      }),
+      loadFinalExamScores({
+        organizationId: params.organizationId,
+        planPublicId: plan.publicId,
+        examGroup: plan.examGroup,
+      }),
+    ]);
 
   const hasCounselorRevision = reviews.some(
     (row) => row.status === "NEEDS_REVISION" || row.status === "REJECTED",
@@ -102,6 +140,74 @@ export async function loadOfficeDashboard(params: {
     firstSessionCountdown: countdown?.label ?? null,
   });
 
+  const transcript = await prisma.guidanceDocument.findFirst({
+    where: {
+      organizationId: params.organizationId,
+      planId: plan.id,
+      documentType: "FINAL_GRADES",
+      isLatest: true,
+      deletedAt: null,
+    },
+    select: { id: true },
+  });
+
+  const intakeFlags = {
+    hasIdentityProfile: onboarding ? draftHasIdentity(onboarding.draft) : false,
+    hasAcademicProfile: onboarding ? draftHasAcademic(onboarding.draft) : false,
+    finalExamComplete: examScores.summary.complete,
+    hasTranscript: Boolean(transcript),
+  };
+  const intakePercent = officeIntakeProgressPercent(intakeFlags);
+  const intakeHref = nextOfficeIntakeHref(intakeFlags);
+  const latestWithMessage = [...reviews]
+    .reverse()
+    .find((row) => row.studentMessage);
+  const latestCounselorActivity = latestWithMessage
+    ? {
+        title: "آخرین پیام مهندس ابراهیمی",
+        body: latestWithMessage.studentMessage ?? "",
+      }
+    : hasCounselorRevision
+      ? {
+          title: "پرونده برای اصلاح برگشت",
+          body: "پیام دفتر را در نقشه مسیر بخوانید.",
+        }
+      : pendingDoc
+        ? {
+            title: "مدرک روی میز مشاور است",
+            body: "بازبینی کارنامه معمولاً یک تا دو روز کاری زمان می‌برد.",
+          }
+        : null;
+
+  const todayTask: OfficeTodayTask = booked && countdown?.upcoming
+    ? {
+        title: "آمادگی جلسه اول",
+        body: countdown.label,
+        href: MAJOR_OFFICE_SESSION,
+        label: "مدارک جلسه",
+      }
+    : !intakeFlags.hasIdentityProfile ||
+        !intakeFlags.hasAcademicProfile ||
+        !intakeFlags.finalExamComplete ||
+        !intakeFlags.hasTranscript
+      ? {
+          title: officeIntakeContinueLabel(intakeFlags),
+          body: pulse.waitingBody,
+          href: intakeHref,
+          label: officeIntakeContinueLabel(intakeFlags),
+        }
+      : {
+          title: pulse.waitingTitle,
+          body: pulse.waitingBody,
+          href:
+            plan.currentStep === 2
+              ? MAJOR_OFFICE_INTEREST
+              : plan.currentStep === 4
+                ? MAJOR_OFFICE_SESSION
+                : MAJOR_OFFICE_JOURNEY,
+          label: "ادامه مسیر",
+        };
+
   return {
     studentName:
       student?.fullName.trim() ||
@@ -121,5 +227,9 @@ export async function loadOfficeDashboard(params: {
       calendarHref: confirmationHref ? `${confirmationHref}/calendar` : null,
       checklist: FIRST_SESSION_DOCUMENTS,
     },
+    todayTask,
+    unreadMessages: reviews.filter((row) => Boolean(row.studentMessage)).length,
+    latestCounselorActivity,
+    intakePercent,
   };
 }

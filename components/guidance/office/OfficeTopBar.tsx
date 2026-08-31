@@ -20,6 +20,7 @@ export function OfficeTopBar({
           {userDisplayName}
         </span>
         <form action="/portal/logout" method="post">
+          <input type="hidden" name="next" value="/guidance" />
           <button type="submit" className="major-office__top-exit">
             <PortalIcon name="logout" className="size-4" />
             خروج

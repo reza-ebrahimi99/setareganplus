@@ -11,7 +11,6 @@ import { GuidanceStepActions } from "@/components/guidance/steps/GuidanceStepAct
 import { GuidanceStepShell } from "@/components/guidance/steps/GuidanceStepShell";
 import { useGuidanceUnsavedWarning } from "@/components/guidance/steps/useGuidanceUnsavedWarning";
 import type { GuidanceStepEmbedProps } from "@/components/guidance/steps/embed";
-import { guidanceJourneyStepPath } from "@/lib/guidance/journey/steps";
 import { GUIDANCE_QUOTA_OPTIONS } from "@/lib/guidance/journey/reference-data/quota";
 import type { GuidanceJourneySidebarStep } from "@/lib/guidance/journey/types";
 import type { GuidanceStepFormState } from "@/lib/guidance/journey/types";
@@ -37,7 +36,10 @@ type PersonalInfoStepProps = {
     gender: "MALE" | "FEMALE" | "";
     birthDate: string;
     province: string;
+    quota?: string;
+    highSchoolAverage?: string;
   };
+  nextHref?: string;
 } & GuidanceStepEmbedProps;
 
 const initial: GuidanceStepFormState = {};
@@ -51,6 +53,7 @@ export function PersonalInfoStep({
   existingTranscriptName,
   provinces,
   prefill,
+  nextHref = "/ms/grades",
   embed = false,
   stayOnSuccess = false,
   continueLabel,
@@ -69,10 +72,10 @@ export function PersonalInfoStep({
     if (!state.ok) return;
     if (stayOnSuccess) return;
     const timer = setTimeout(() => {
-      router.push(guidanceJourneyStepPath(2));
+      router.push(nextHref);
     }, 1400);
     return () => clearTimeout(timer);
-  }, [state.ok, router, stayOnSuccess]);
+  }, [state.ok, router, stayOnSuccess, nextHref]);
 
   const fieldErrors = state.fieldErrors ?? {};
   const examGroupLabel = useMemo(
@@ -107,14 +110,6 @@ export function PersonalInfoStep({
       event.preventDefault();
       setClientError("لطفاً صحت اطلاعات را تأیید کنید.");
       return;
-    }
-    if (!hasTranscript) {
-      const file = form.elements.namedItem("file");
-      if (file instanceof HTMLInputElement && file.files?.length === 0) {
-        event.preventDefault();
-        setClientError("بارگذاری کارنامه نهایی الزامی است.");
-        return;
-      }
     }
     setClientError(null);
   }
@@ -272,7 +267,7 @@ export function PersonalInfoStep({
             <select
               id="quota"
               name="quota"
-              defaultValue=""
+              defaultValue={prefill.quota || ""}
               className="gpj-select"
               aria-invalid={Boolean(fieldErrors.quota)}
             >
@@ -298,6 +293,7 @@ export function PersonalInfoStep({
               type="text"
               inputMode="decimal"
               placeholder="مثلاً ۱۸.۵۰"
+              defaultValue={prefill.highSchoolAverage ?? ""}
               className="gpj-input"
               aria-invalid={Boolean(fieldErrors.highSchoolAverage)}
             />
@@ -323,7 +319,7 @@ export function PersonalInfoStep({
 
         <div className="gpj-field" style={{ marginTop: "1.25rem" }}>
           <label className="gpj-field__label" htmlFor="file">
-            کارنامه نهایی (PDF)
+            کارنامه نهایی (اختیاری — بهتر است بعد از ورود نمرات در دفتر)
           </label>
           {hasTranscript && existingTranscriptName ? (
             <p className="gpj-banner gpj-banner--success" style={{ marginBottom: "0.5rem" }}>

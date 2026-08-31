@@ -62,6 +62,7 @@ export default async function DiscoverComparePage({ searchParams }: PageProps) {
         { label: "کانون کشف", href: "/discover" },
         { label: "مقایسه" },
       ]}
+      activePath="/discover/compare"
       jsonLd={discoverWebPageJsonLd({
         path: "/discover/compare",
         title: "مقایسه",

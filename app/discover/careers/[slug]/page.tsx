@@ -52,6 +52,7 @@ export default async function DiscoverCareerPage({ params }: PageProps) {
         { label: item.title, href: majorHref(item.slug) },
         { label: "مسیر شغلی" },
       ]}
+      activePath="/discover/majors"
       jsonLd={discoverWebPageJsonLd({
         path,
         title: `مسیر شغلی ${item.title}`,

@@ -52,6 +52,7 @@ export default async function DiscoverMajorPage({ params }: PageProps) {
         { label: "رشته‌ها", href: "/discover/majors" },
         { label: item.title },
       ]}
+      activePath="/discover/majors"
       jsonLd={discoverWebPageJsonLd({
         path,
         title: item.title,

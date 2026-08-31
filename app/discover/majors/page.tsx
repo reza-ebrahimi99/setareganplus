@@ -29,6 +29,7 @@ export default async function DiscoverMajorsIndexPage() {
         { label: "کانون کشف", href: "/discover" },
         { label: "رشته‌ها" },
       ]}
+      activePath="/discover/majors"
       jsonLd={discoverWebPageJsonLd({
         path: "/discover/majors",
         title: "کاوشگر رشته",

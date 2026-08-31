@@ -68,6 +68,7 @@ export function PortalShell({
                 </Link>
               ) : null}
               <form action="/portal/logout" method="post">
+                <input type="hidden" name="next" value="/portal/login" />
                 <button
                   type="submit"
                   className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-slate-50"

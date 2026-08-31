@@ -78,6 +78,23 @@ export function DiscoverRelated({ related }: { related: DiscoverRelated }) {
           </div>
         ) : null}
       </div>
+      {majors.length >= 2 ? (
+        <p className="discover-related__compare">
+          <Link
+            href={`/discover/compare?kind=major&a=${majors[0]!.slug}&b=${majors[1]!.slug}`}
+          >
+            مقایسه {majors[0]!.title} و {majors[1]!.title}
+          </Link>
+        </p>
+      ) : systems.length >= 2 ? (
+        <p className="discover-related__compare">
+          <Link
+            href={`/discover/compare?kind=system&a=${systems[0]!.slug}&b=${systems[1]!.slug}`}
+          >
+            مقایسه {systems[0]!.title} و {systems[1]!.title}
+          </Link>
+        </p>
+      ) : null}
     </section>
   );
 }

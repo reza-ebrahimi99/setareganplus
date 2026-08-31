@@ -8,7 +8,17 @@ import {
   guidanceJourneyStepPath,
   type GuidanceJourneyStepId,
 } from "@/lib/guidance/journey/steps";
-import { MAJOR_OFFICE_INTEREST, MAJOR_OFFICE_SESSION } from "@/lib/guidance/office/nav";
+import {
+  officeIntakeContinueLabel,
+  officeIntakeProgressPercent,
+  nextOfficeIntakeHref,
+  type OfficeIntakeFlags,
+} from "@/lib/guidance/office/intake-href";
+import {
+  MAJOR_OFFICE_INTEREST,
+  MAJOR_OFFICE_INTEREST_RESULTS,
+  MAJOR_OFFICE_SESSION,
+} from "@/lib/guidance/office/nav";
 import { guidanceJourneyStepStatus } from "@/lib/guidance/journey/state";
 import type { GuidanceJourneyStepStatus } from "@/lib/guidance/journey/types";
 import type { StepReviewStatus } from "@/lib/guidance/workspace/review";
@@ -27,6 +37,12 @@ export type TrackerPhaseAction = {
   done: boolean;
 };
 
+export type TrackerPhaseDocument = {
+  id: string;
+  label: string;
+  status: "missing" | "ready" | "pending";
+};
+
 export type TrackerPhase = {
   id: GuidanceJourneyStepId;
   title: string;
@@ -34,6 +50,7 @@ export type TrackerPhase = {
   chapter: string;
   chapterStart: boolean;
   description: string;
+  purpose: string;
   estimatedDuration: string;
   requiredActions: readonly TrackerPhaseAction[];
   status: GuidanceJourneyStepStatus;
@@ -45,6 +62,9 @@ export type TrackerPhase = {
   reviewable: boolean;
   href: string | null;
   hrefLabel: string | null;
+  nextAction: string | null;
+  progressPercent: number;
+  documents: readonly TrackerPhaseDocument[];
   knowledgeNote: string | null;
 };
 
@@ -73,6 +93,9 @@ export type TrackerDerivationInput = {
   choicesApproved: boolean;
   hasFinalGrades: boolean;
   hasExamResult: boolean;
+  hasIdentityProfile?: boolean;
+  hasAcademicProfile?: boolean;
+  finalExamComplete?: boolean;
   reviews: readonly TrackerReviewHint[];
 };
 
@@ -93,8 +116,10 @@ const PHASE_CATALOG: readonly PhaseCatalog[] = [
     lockReason: "بعد از تشکیل پرونده فعال می‌شود",
     continueLabel: "تکمیل شناسنامه",
     actions: [
-      { id: "confirm", label: "ثبت و تأیید اطلاعات فردی" },
-      { id: "grades", label: "بارگذاری کارنامه نهایی" },
+      { id: "identity", label: "ثبت اطلاعات هویتی" },
+      { id: "academic", label: "ثبت پرونده تحصیلی" },
+      { id: "examScores", label: "ورود نمرات امتحان نهایی" },
+      { id: "grades", label: "بارگذاری کارنامه رسمی PDF" },
     ],
   },
   {
@@ -221,7 +246,12 @@ function actionDone(
 
   switch (actionId) {
     case "confirm":
-      return input.personalInfoConfirmed || completed;
+    case "identity":
+      return Boolean(input.hasIdentityProfile) || input.personalInfoConfirmed || completed;
+    case "academic":
+      return Boolean(input.hasAcademicProfile) || completed;
+    case "examScores":
+      return Boolean(input.finalExamComplete) || completed;
     case "grades":
       return input.hasFinalGrades;
     case "assess":
@@ -322,6 +352,76 @@ export function deriveOfficeJourneyTracker(
     const chapterStart = catalog.chapter !== previousChapter;
     previousChapter = catalog.chapter;
 
+    const intakeFlags: OfficeIntakeFlags = {
+      hasIdentityProfile: Boolean(input.hasIdentityProfile),
+      hasAcademicProfile: Boolean(input.hasAcademicProfile),
+      finalExamComplete: Boolean(input.finalExamComplete),
+      hasTranscript: input.hasFinalGrades,
+    };
+
+    const doneCount = requiredActions.filter((action) => action.done).length;
+    const progressPercent =
+      catalog.id === 1
+        ? officeIntakeProgressPercent(intakeFlags)
+        : requiredActions.length === 0
+          ? status === "completed"
+            ? 100
+            : 0
+          : Math.round((doneCount / requiredActions.length) * 100);
+
+    const documents: TrackerPhaseDocument[] =
+      catalog.id === 1
+        ? [
+            {
+              id: "identity",
+              label: "شناسنامه هویتی",
+              status: intakeFlags.hasIdentityProfile ? "ready" : "missing",
+            },
+            {
+              id: "scores",
+              label: "نمرات امتحان نهایی",
+              status: intakeFlags.finalExamComplete ? "ready" : "missing",
+            },
+            {
+              id: "pdf",
+              label: "کارنامه رسمی PDF",
+              status: intakeFlags.hasTranscript ? "ready" : "missing",
+            },
+          ]
+        : catalog.id === 5
+          ? [
+              {
+                id: "exam",
+                label: "کارنامه رسمی سنجش",
+                status: input.hasExamResult ? "ready" : "missing",
+              },
+            ]
+          : [];
+
+    const href =
+      catalog.id === 1 && (status === "active" || status === "completed")
+        ? nextOfficeIntakeHref(intakeFlags)
+        : catalog.id === 2 && status === "active"
+          ? MAJOR_OFFICE_INTEREST
+          : catalog.id === 2 && status === "completed"
+            ? MAJOR_OFFICE_INTEREST_RESULTS
+          : catalog.id === 4 && (status === "active" || status === "completed")
+            ? MAJOR_OFFICE_SESSION
+            : status === "active"
+              ? guidanceJourneyStepPath(catalog.id)
+              : null;
+
+    const hrefLabel =
+      catalog.id === 1 && (status === "active" || status === "completed")
+        ? officeIntakeContinueLabel(intakeFlags)
+        : status === "active"
+          ? catalog.continueLabel
+          : catalog.id === 2 && status === "completed"
+            ? "مشاهده نتایج رغبت"
+            : catalog.id === 4 && status === "completed"
+              ? "مشاهده جلسه اول"
+              : null;
+
     return {
       id: catalog.id,
       title: def.title,
@@ -329,6 +429,7 @@ export function deriveOfficeJourneyTracker(
       chapter: catalog.chapter,
       chapterStart,
       description: def.description,
+      purpose: def.description,
       estimatedDuration: catalog.estimatedDuration,
       requiredActions,
       status,
@@ -338,20 +439,11 @@ export function deriveOfficeJourneyTracker(
       counselorMessage: counselor.message,
       lockReason: status === "locked" ? catalog.lockReason : null,
       reviewable: status === "completed",
-      href:
-        catalog.id === 2 && status === "active"
-          ? MAJOR_OFFICE_INTEREST
-          : catalog.id === 4 && (status === "active" || status === "completed")
-            ? MAJOR_OFFICE_SESSION
-            : status === "active"
-              ? guidanceJourneyStepPath(catalog.id)
-              : null,
-      hrefLabel:
-        status === "active"
-          ? catalog.continueLabel
-          : catalog.id === 4 && status === "completed"
-            ? "مشاهده جلسه اول"
-            : null,
+      href,
+      hrefLabel,
+      nextAction: hrefLabel,
+      progressPercent,
+      documents,
       knowledgeNote,
     };
   });

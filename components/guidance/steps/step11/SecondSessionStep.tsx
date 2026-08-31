@@ -71,7 +71,8 @@ export function SecondSessionStep({
         <div className="gpj-card">
           <h2 className="gpj-card__title">تقویم جلسه دوم هنوز آماده نشده</h2>
           <p className="gpj-card__desc">
-            مشاور به‌زودی نوبت‌های جلسه دوم را منتشر می‌کند.
+            نوبت‌های جلسه دوم هنوز از دفتر مشاور منتشر نشده است. به‌محض اعلام، از
+            همین صفحه رزرو می‌کنید.
           </p>
         </div>
       ) : slots.length === 0 ? (

@@ -23,6 +23,7 @@ export default async function DiscoverPathwaysIndexPage() {
         { label: "کانون کشف", href: "/discover" },
         { label: "مقطع تحصیلی" },
       ]}
+      activePath="/discover/pathways"
       jsonLd={discoverWebPageJsonLd({
         path: "/discover/pathways",
         title: "مقاطع تحصیلی",

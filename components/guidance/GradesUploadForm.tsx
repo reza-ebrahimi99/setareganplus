@@ -20,7 +20,15 @@ type GuidanceGradesUploadFormProps = {
   hasExisting: boolean;
   existingFileName?: string | null;
   existingVersion?: number | null;
+  acceptPdfOnly?: boolean;
+  successHref?: string;
+  successLabel?: string;
 };
+
+const PDF_ACCEPT = "application/pdf,.pdf";
+const DEFAULT_ACCEPT =
+  "application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp";
+const MAX_BYTES = 5 * 1024 * 1024;
 
 function formatBytes(size: number): string {
   if (size < 1024) return `${toPersianDigits(size)} B`;
@@ -34,12 +42,16 @@ export function GuidanceGradesUploadForm({
   hasExisting,
   existingFileName = null,
   existingVersion = null,
+  acceptPdfOnly = false,
+  successHref = "/ms",
+  successLabel = "بازگشت به دفتر",
 }: GuidanceGradesUploadFormProps) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [clientError, setClientError] = useState<string | null>(null);
   const [state, action, pending] = useActionState(
     uploadGuidanceFinalGradesAction,
     initial,
@@ -56,6 +68,24 @@ export function GuidanceGradesUploadForm({
   }, [file]);
 
   function assignFile(next: File | null) {
+    if (next) {
+      const isPdf =
+        next.type === "application/pdf" || next.name.toLowerCase().endsWith(".pdf");
+      const isImage = next.type.startsWith("image/");
+      if (acceptPdfOnly && !isPdf) {
+        setClientError("فقط فایل PDF کارنامه رسمی پذیرفته می‌شود.");
+        return;
+      }
+      if (!acceptPdfOnly && !isPdf && !isImage) {
+        setClientError("فقط PDF یا تصویر JPEG/PNG/WebP پذیرفته می‌شود.");
+        return;
+      }
+      if (next.size > MAX_BYTES) {
+        setClientError("حجم فایل باید حداکثر ۵ مگابایت باشد.");
+        return;
+      }
+    }
+    setClientError(null);
     setFile(next);
     if (inputRef.current) {
       if (!next) {
@@ -87,11 +117,8 @@ export function GuidanceGradesUploadForm({
               {state.replaced ? " (جایگزین نسخه قبلی)" : ""}
             </p>
           ) : null}
-          <a
-            href="/portal/student/services/guidance"
-            className="portal-upload-success__cta"
-          >
-            مشاهده مرکز تحلیل اولیه
+          <a href={successHref} className="portal-upload-success__cta">
+            {successLabel}
           </a>
         </div>
       </PortalSurface>
@@ -100,9 +127,9 @@ export function GuidanceGradesUploadForm({
 
   return (
     <form action={action} className="portal-upload">
-      {state.error ? (
+      {state.error || clientError ? (
         <p role="alert" className="portal-upload__error">
-          {state.error}
+          {clientError ?? state.error}
         </p>
       ) : null}
 
@@ -157,7 +184,7 @@ export function GuidanceGradesUploadForm({
           name="file"
           type="file"
           required
-          accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp"
+          accept={acceptPdfOnly ? PDF_ACCEPT : DEFAULT_ACCEPT}
           className="portal-upload-dropzone__input"
           onChange={(event) => assignFile(event.target.files?.[0] ?? null)}
         />
@@ -169,7 +196,9 @@ export function GuidanceGradesUploadForm({
           فایل را بکش و رها کن، یا انتخاب کن
         </p>
         <p className="portal-upload-dropzone__hint">
-          PDF یا تصویر · حداکثر ۵ مگابایت
+          {acceptPdfOnly
+            ? "فقط PDF رسمی · حداکثر ۵ مگابایت"
+            : "PDF یا تصویر · حداکثر ۵ مگابایت"}
         </p>
         <label htmlFor={inputId} className="portal-upload-dropzone__pick">
           انتخاب فایل

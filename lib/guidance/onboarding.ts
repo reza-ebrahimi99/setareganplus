@@ -18,11 +18,25 @@ import {
   GUIDANCE_PRE_REG_CONSENT_VERSION,
 } from "@/lib/guidance/consent";
 import { provisionExternalGuidanceCandidate } from "@/lib/guidance/external-candidate";
+import { isGuidanceQuotaId } from "@/lib/guidance/journey/reference-data/quota";
+import {
+  draftHasAcademic,
+  draftHasIdentity,
+  EMPTY_ONBOARDING_DRAFT,
+  type GuidanceOnboardingDraft,
+} from "@/lib/guidance/onboarding-draft";
 import {
   HIGH_SCHOOL_MAJOR_OPTIONS,
   ONBOARDING_PROVISIONAL_EXAM_GROUP,
   type HighSchoolMajorId,
 } from "@/lib/guidance/onboarding-options";
+
+export {
+  draftHasAcademic,
+  draftHasIdentity,
+  EMPTY_ONBOARDING_DRAFT,
+  type GuidanceOnboardingDraft,
+} from "@/lib/guidance/onboarding-draft";
 import { toLatinDigits } from "@/lib/forms/latin-digits";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { validateIranianNationalId } from "@/lib/forms/validate-national-id";
@@ -61,6 +75,7 @@ export type GuidanceOnboardingInput = {
   schoolName: string;
   mobile: string;
   parentMobile?: string;
+  quota?: string;
 };
 
 export type GuidanceOnboardingProfile = {
@@ -76,14 +91,22 @@ export type GuidanceOnboardingProfile = {
   schoolName: string;
   mobile: string;
   parentMobile: string | null;
+  quota: string | null;
   completedAtIso: string;
+};
+
+export type GuidanceOnboardingRecord = {
+  draft: GuidanceOnboardingDraft;
+  profile: GuidanceOnboardingProfile | null;
+  planPublicId: string | null;
 };
 
 type StoredPayload = {
   kind: typeof ONBOARDING_SESSION_KIND;
   planId: string;
   planPublicId: string;
-  profile: GuidanceOnboardingProfile;
+  profile: GuidanceOnboardingProfile | null;
+  draft: GuidanceOnboardingDraft;
 };
 
 export type CompleteGuidanceOnboardingResult =
@@ -211,6 +234,12 @@ export function validateGuidanceOnboardingInput(
     }
   }
 
+  const quotaRaw = (input.quota ?? "").trim();
+  const quota = quotaRaw && isGuidanceQuotaId(quotaRaw) ? quotaRaw : null;
+  if (quotaRaw && !quota) {
+    fieldErrors.quota = "سهمیه معتبر انتخاب کنید.";
+  }
+
   if (Object.keys(fieldErrors).length > 0) {
     return {
       ok: false,
@@ -234,6 +263,7 @@ export function validateGuidanceOnboardingInput(
       schoolName,
       mobile: mobileParsed.ok ? mobileParsed.normalized : "",
       parentMobile,
+      quota,
     },
   };
 }
@@ -248,11 +278,75 @@ async function readJsonFile(storageKey: string): Promise<unknown | null> {
   }
 }
 
-export async function loadGuidanceOnboardingProfile(params: {
+function asDraft(raw: unknown): GuidanceOnboardingDraft {
+  if (!raw || typeof raw !== "object") return { ...EMPTY_ONBOARDING_DRAFT };
+  const obj = raw as Record<string, unknown>;
+  const text = (key: string) =>
+    typeof obj[key] === "string" ? (obj[key] as string) : "";
+  return {
+    fullName: text("fullName"),
+    nationalId: text("nationalId"),
+    birthDate: text("birthDate"),
+    gender: text("gender"),
+    province: text("province"),
+    city: text("city"),
+    graduationYear: text("graduationYear"),
+    highSchoolMajor: text("highSchoolMajor"),
+    schoolName: text("schoolName"),
+    parentMobile: text("parentMobile"),
+    quota: text("quota"),
+    savedAtIso: text("savedAtIso"),
+    completedAtIso:
+      typeof obj.completedAtIso === "string" ? obj.completedAtIso : null,
+  };
+}
+
+function profileToDraft(
+  profile: GuidanceOnboardingProfile,
+): GuidanceOnboardingDraft {
+  return {
+    fullName: profile.fullName,
+    nationalId: profile.nationalId,
+    birthDate: profile.birthDate,
+    gender: profile.gender,
+    province: profile.province,
+    city: profile.city,
+    graduationYear: profile.graduationYear,
+    highSchoolMajor: profile.highSchoolMajor,
+    schoolName: profile.schoolName,
+    parentMobile: profile.parentMobile ?? "",
+    quota: profile.quota ?? "",
+    savedAtIso: profile.completedAtIso,
+    completedAtIso: profile.completedAtIso,
+  };
+}
+
+function parseStoredPayload(raw: unknown): StoredPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const obj = raw as Record<string, unknown>;
+  if (obj.kind !== ONBOARDING_SESSION_KIND) return null;
+  const profile =
+    obj.profile && typeof obj.profile === "object"
+      ? (obj.profile as GuidanceOnboardingProfile)
+      : null;
+  const draft = obj.draft
+    ? asDraft(obj.draft)
+    : profile
+      ? profileToDraft(profile)
+      : { ...EMPTY_ONBOARDING_DRAFT };
+  return {
+    kind: ONBOARDING_SESSION_KIND,
+    planId: typeof obj.planId === "string" ? obj.planId : "",
+    planPublicId: typeof obj.planPublicId === "string" ? obj.planPublicId : "",
+    profile,
+    draft,
+  };
+}
+
+export async function loadGuidanceOnboardingRecord(params: {
   organizationId: string;
   userId: string;
-  planPublicId: string;
-}): Promise<GuidanceOnboardingProfile | null> {
+}): Promise<GuidanceOnboardingRecord | null> {
   const asset = await prisma.mediaAsset.findFirst({
     where: {
       organizationId: params.organizationId,
@@ -269,27 +363,56 @@ export async function loadGuidanceOnboardingProfile(params: {
   const fileJson = await readJsonFile(asset.storageKey);
   const raw =
     fileJson && typeof fileJson === "object"
-      ? (fileJson as Record<string, unknown>)
-      : (asset.metadata as Record<string, unknown> | null);
-  if (!raw || raw.kind !== ONBOARDING_SESSION_KIND) return null;
-  if (raw.planPublicId !== params.planPublicId) return null;
-  const profile = raw.profile;
-  if (!profile || typeof profile !== "object") return null;
-  return profile as GuidanceOnboardingProfile;
+      ? fileJson
+      : asset.metadata;
+  const stored = parseStoredPayload(raw);
+  if (!stored) return null;
+  return {
+    draft: stored.draft,
+    profile: stored.profile,
+    planPublicId: stored.planPublicId || null,
+  };
 }
 
-async function persistOnboardingProfile(params: {
+export async function loadGuidanceOnboardingProfile(params: {
+  organizationId: string;
+  userId: string;
+  planPublicId: string;
+}): Promise<GuidanceOnboardingProfile | null> {
+  const record = await loadGuidanceOnboardingRecord({
+    organizationId: params.organizationId,
+    userId: params.userId,
+  });
+  return record?.profile ?? null;
+}
+
+function mergeDraft(
+  current: GuidanceOnboardingDraft,
+  patch: Partial<GuidanceOnboardingDraft>,
+): GuidanceOnboardingDraft {
+  return {
+    ...current,
+    ...Object.fromEntries(
+      Object.entries(patch).filter(([, value]) => value !== undefined),
+    ),
+    savedAtIso: new Date().toISOString(),
+  } as GuidanceOnboardingDraft;
+}
+
+async function persistOnboardingRecord(params: {
   organizationId: string;
   userId: string;
   planId: string;
   planPublicId: string;
-  profile: GuidanceOnboardingProfile;
+  profile: GuidanceOnboardingProfile | null;
+  draft: GuidanceOnboardingDraft;
 }): Promise<void> {
   const payload: StoredPayload = {
     kind: ONBOARDING_SESSION_KIND,
     planId: params.planId,
     planPublicId: params.planPublicId,
     profile: params.profile,
+    draft: params.draft,
   };
   const body = Buffer.from(JSON.stringify(payload, null, 2), "utf8");
   const checksum = createHash("sha256").update(body).digest("hex");
@@ -338,6 +461,109 @@ async function persistOnboardingProfile(params: {
       metadata: payload as object,
     },
   });
+}
+
+export async function saveGuidanceOnboardingDraft(params: {
+  organizationId: string;
+  userId: string;
+  studentId: string;
+  normalizedMobile: string;
+  patch: Partial<GuidanceOnboardingDraft>;
+}): Promise<{ ok: true; savedAtIso: string } | { ok: false; error: string }> {
+  let plan = await prisma.guidancePlan.findFirst({
+    where: {
+      organizationId: params.organizationId,
+      userId: params.userId,
+      studentId: params.studentId,
+      deletedAt: null,
+    },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, publicId: true },
+  });
+
+  if (!plan) {
+    const provisioned = await provisionExternalGuidanceCandidate({
+      organizationId: params.organizationId,
+      normalizedMobile: params.normalizedMobile,
+    });
+    if (!provisioned.ok) {
+      return { ok: false, error: provisioned.error };
+    }
+    const ensured = await prisma.guidancePlan.findFirst({
+      where: {
+        organizationId: params.organizationId,
+        publicId: provisioned.planPublicId,
+        deletedAt: null,
+      },
+      select: { id: true, publicId: true },
+    });
+    if (!ensured) {
+      return { ok: false, error: "پرونده هدایت ایجاد نشد. دوباره تلاش کنید." };
+    }
+    plan = ensured;
+  }
+
+  const existing = await loadGuidanceOnboardingRecord({
+    organizationId: params.organizationId,
+    userId: params.userId,
+  });
+  const draft = mergeDraft(existing?.draft ?? { ...EMPTY_ONBOARDING_DRAFT }, {
+    ...params.patch,
+    completedAtIso: existing?.profile?.completedAtIso ?? null,
+  });
+
+  await persistOnboardingRecord({
+    organizationId: params.organizationId,
+    userId: params.userId,
+    planId: plan.id,
+    planPublicId: plan.publicId,
+    profile: existing?.profile ?? null,
+    draft,
+  });
+
+  if (draftHasIdentity(draft)) {
+    const { firstName, lastName } = splitFullName(draft.fullName);
+    const fullName = composeStudentFullName(firstName, lastName);
+    await prisma.$transaction([
+      prisma.student.update({
+        where: { id: params.studentId },
+        data: {
+          firstName: firstName.slice(0, 80),
+          lastName: lastName.slice(0, 80),
+          fullName: fullName.slice(0, 160),
+        },
+      }),
+      prisma.user.update({
+        where: { id: params.userId },
+        data: {
+          firstName: firstName.slice(0, 80),
+          lastName: lastName.slice(0, 80),
+        },
+      }),
+    ]);
+  }
+
+  if (draftHasAcademic(draft)) {
+    const major = parseMajor(draft.highSchoolMajor);
+    const examGroup = (major?.examGroup ??
+      ONBOARDING_PROVISIONAL_EXAM_GROUP) as GuidanceExamGroup;
+    const year = parseGraduationYear(draft.graduationYear);
+    await prisma.guidancePlan.update({
+      where: { id: plan.id },
+      data: {
+        examGroup,
+        ...(isGuidanceQuotaId(draft.quota) ? { quota: draft.quota as never } : {}),
+      },
+    });
+    if (year) {
+      await prisma.student.update({
+        where: { id: params.studentId },
+        data: { schoolYear: year },
+      });
+    }
+  }
+
+  return { ok: true, savedAtIso: draft.savedAtIso };
 }
 
 /**
@@ -483,6 +709,7 @@ export async function completeGuidanceCandidateOnboarding(params: {
       data: {
         status: GuidancePlanStatus.PRE_REGISTERED,
         examGroup,
+        quota: (profile.quota as never) ?? undefined,
         consentGrantedAt: now,
         consentVersion: GUIDANCE_PRE_REG_CONSENT_VERSION,
         consentText: GUIDANCE_PRE_REG_CONSENT_TEXT,
@@ -513,12 +740,13 @@ export async function completeGuidanceCandidateOnboarding(params: {
     }),
   ]);
 
-  await persistOnboardingProfile({
+  await persistOnboardingRecord({
     organizationId: params.organizationId,
     userId: params.userId,
     planId: plan.id,
     planPublicId: plan.publicId,
     profile,
+    draft: profileToDraft(profile),
   });
 
   return {

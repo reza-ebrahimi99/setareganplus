@@ -13,6 +13,12 @@ export const DISCOVER_CENTER_SYSTEMS = "/discover/systems";
 export const DISCOVER_CENTER_MAJORS = "/discover/majors";
 export const DISCOVER_CENTER_PATHWAYS = "/discover/pathways";
 export const MAJOR_OFFICE_SESSION = "/ms/session";
+export {
+  MAJOR_OFFICE_IDENTITY,
+  MAJOR_OFFICE_ACADEMIC,
+  MAJOR_OFFICE_GRADES,
+  MAJOR_OFFICE_TRANSCRIPT,
+} from "@/lib/guidance/office/intake-href";
 
 export type OfficeRailItem = {
   id: string;
@@ -106,20 +112,38 @@ const OFFICE_RAIL_DEFS: readonly OfficeRailSectionDef[] = [
       {
         id: "profile",
         label: "شناسنامه",
-        href: null,
-        live: false,
-        unlock: { kind: "step_reached", step: 1 },
-        lockReasonBefore: "بعد از ثبت اطلاعات فعال می‌شود",
-        lockReasonReached: "شناسنامه را از مرحله اطلاعات فردی در نقشه مسیر باز کنید",
+        href: "/ms/identity",
+        live: true,
+        unlock: { kind: "path" },
+        lockReasonBefore: null,
+        lockReasonReached: null,
+      },
+      {
+        id: "academic",
+        label: "پرونده تحصیلی",
+        href: "/ms/academic",
+        live: true,
+        unlock: { kind: "path" },
+        lockReasonBefore: null,
+        lockReasonReached: null,
       },
       {
         id: "grades",
-        label: "کارنامه نهایی",
-        href: null,
-        live: false,
-        unlock: { kind: "step_reached", step: 1 },
-        lockReasonBefore: "بعد از ثبت اطلاعات فعال می‌شود",
-        lockReasonReached: "کارنامه نهایی بخشی از مرحله شناسنامه در نقشه مسیر است",
+        label: "نمرات نهایی",
+        href: "/ms/grades",
+        live: true,
+        unlock: { kind: "path" },
+        lockReasonBefore: null,
+        lockReasonReached: null,
+      },
+      {
+        id: "transcript",
+        label: "کارنامه PDF",
+        href: "/ms/transcript",
+        live: true,
+        unlock: { kind: "path" },
+        lockReasonBefore: null,
+        lockReasonReached: null,
       },
       {
         id: "konkur",
@@ -133,11 +157,11 @@ const OFFICE_RAIL_DEFS: readonly OfficeRailSectionDef[] = [
       {
         id: "documents",
         label: "مدارک",
-        href: null,
-        live: false,
-        unlock: { kind: "step_reached", step: 1 },
-        lockReasonBefore: "بعد از ثبت اطلاعات فعال می‌شود",
-        lockReasonReached: "مدارک پرونده را از نقشه مسیر، همان مرحله مربوط پیگیری کنید",
+        href: "/ms/transcript",
+        live: true,
+        unlock: { kind: "path" },
+        lockReasonBefore: null,
+        lockReasonReached: null,
       },
     ],
   },

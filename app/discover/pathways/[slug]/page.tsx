@@ -46,6 +46,7 @@ export default async function DiscoverPathwayPage({ params }: PageProps) {
         { label: "مقطع تحصیلی", href: "/discover/pathways" },
         { label: item.title },
       ]}
+      activePath="/discover/pathways"
       jsonLd={discoverWebPageJsonLd({
         path,
         title: item.title,

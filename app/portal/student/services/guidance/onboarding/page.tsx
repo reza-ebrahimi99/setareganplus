@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { GuidanceOnboardingForm } from "@/components/guidance/onboarding/GuidanceOnboardingForm";
 import { candidateNeedsGuidanceOnboarding } from "@/lib/guidance/external-candidate";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
+import { loadGuidanceOnboardingRecord } from "@/lib/guidance/onboarding";
 import { listHighSchoolMajorOptionsForForm } from "@/lib/guidance/onboarding-options";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { IRAN_PROVINCES } from "@/lib/registration/iran-locations";
@@ -42,6 +43,11 @@ export default async function GuidanceOnboardingPage() {
 
   const provinces = [...IRAN_PROVINCES];
   const majors = [...listHighSchoolMajorOptionsForForm()];
+  const record = await loadGuidanceOnboardingRecord({
+    organizationId: context.organization.id,
+    userId: context.user.id,
+  });
+  const draft = record?.draft;
 
   return (
     <main className="mx-auto w-full max-w-xl px-4 py-8 sm:py-10" dir="rtl">
@@ -53,8 +59,8 @@ export default async function GuidanceOnboardingPage() {
           خوش آمدید — تشکیل پرونده
         </h1>
         <p className="mt-2 text-sm leading-7 text-muted">
-          پرونده انتخاب رشته شما ایجاد شد. این چند اطلاعات هویت، پرونده را برای
-          همراهی مهندس رضا ابراهیمی آماده می‌کند.
+          هویت و پرونده تحصیلی را کامل کنید. هر بخش خودکار ذخیره می‌شود و بعد از
+          خروج یا ورود دوباره همین‌جا برمی‌گردد.
         </p>
       </header>
       <div className="rounded-2xl border border-border bg-surface p-5 shadow-[0_8px_24px_rgb(15_23_42_/_0.04)] sm:p-7">
@@ -62,6 +68,23 @@ export default async function GuidanceOnboardingPage() {
           mobile={parsed.normalized}
           provinces={provinces}
           majors={majors}
+          initial={
+            draft
+              ? {
+                  fullName: draft.fullName,
+                  nationalId: draft.nationalId,
+                  birthDate: draft.birthDate,
+                  gender: draft.gender,
+                  province: draft.province,
+                  city: draft.city,
+                  graduationYear: draft.graduationYear,
+                  highSchoolMajor: draft.highSchoolMajor,
+                  schoolName: draft.schoolName,
+                  parentMobile: draft.parentMobile,
+                  quota: draft.quota,
+                }
+              : undefined
+          }
         />
       </div>
     </main>

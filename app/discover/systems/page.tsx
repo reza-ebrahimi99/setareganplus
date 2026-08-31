@@ -23,6 +23,7 @@ export default async function DiscoverSystemsIndexPage() {
         { label: "کانون کشف", href: "/discover" },
         { label: "نظام دانشگاهی" },
       ]}
+      activePath="/discover/systems"
       jsonLd={discoverWebPageJsonLd({
         path: "/discover/systems",
         title: "نظام‌های دانشگاهی",

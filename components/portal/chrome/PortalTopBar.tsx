@@ -66,6 +66,7 @@ export function PortalTopBar({
           </Link>
         ) : null}
         <form action="/portal/logout" method="post">
+          <input type="hidden" name="next" value="/portal/login" />
           <button type="submit" className="portal-topbar__text-btn">
             <PortalIcon name="logout" className="size-4" />
             <span>خروج</span>

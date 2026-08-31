@@ -35,6 +35,7 @@ export default async function DiscoverSearchPage({ searchParams }: PageProps) {
         { label: "کانون کشف", href: "/discover" },
         { label: "جستجو" },
       ]}
+      activePath="/discover/search"
       jsonLd={discoverWebPageJsonLd({
         path: "/discover/search",
         title: "جستجوی دانشنامه",

@@ -14,6 +14,12 @@ import {
   MAJOR_OFFICE_SESSION,
   resolveOfficeRailSections,
 } from "@/lib/guidance/office/nav";
+import {
+  MAJOR_OFFICE_ACADEMIC,
+  MAJOR_OFFICE_GRADES,
+  MAJOR_OFFICE_IDENTITY,
+  MAJOR_OFFICE_TRANSCRIPT,
+} from "@/lib/guidance/office/intake-href";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
 
 export const dynamic = "force-dynamic";
@@ -60,19 +66,27 @@ export default async function MajorOfficeLayout({
     pathname === MAJOR_OFFICE_JOURNEY || pathname.startsWith(`${MAJOR_OFFICE_JOURNEY}/`);
   const onInterest = pathname === MAJOR_OFFICE_INTEREST || pathname.startsWith(`${MAJOR_OFFICE_INTEREST}/`);
   const onSession = pathname === MAJOR_OFFICE_SESSION || pathname.startsWith(`${MAJOR_OFFICE_SESSION}/`);
+  const statusLabel =
+    pathname === MAJOR_OFFICE_IDENTITY
+      ? "هویت"
+      : pathname === MAJOR_OFFICE_ACADEMIC
+        ? "پرونده تحصیلی"
+        : pathname === MAJOR_OFFICE_GRADES
+          ? "نمرات نهایی"
+          : pathname === MAJOR_OFFICE_TRANSCRIPT
+            ? "کارنامه رسمی"
+            : onSession
+              ? "جلسه اول"
+              : onInterest
+                ? "آزمون رغبت"
+                : onJourney
+                  ? "نقشه مسیر"
+                  : "دفتر انتخاب رشته";
 
   return (
     <MajorOfficeShell
       userDisplayName={context.user.displayName}
-      statusLabel={
-        onSession
-          ? "جلسه اول"
-          : onInterest
-            ? "آزمون رغبت"
-            : onJourney
-              ? "نقشه مسیر"
-              : "دفتر انتخاب رشته"
-      }
+      statusLabel={statusLabel}
       pathname={pathname}
       rail={rail}
     >

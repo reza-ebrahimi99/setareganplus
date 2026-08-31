@@ -3,6 +3,7 @@ import { Container } from "@/components/ui/Container";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import { DiscoverConversion } from "@/components/guidance/discover/DiscoverConversion";
+import { DiscoverNav } from "@/components/guidance/discover/DiscoverNav";
 import { DiscoverSearchForm } from "@/components/guidance/discover/DiscoverSearchForm";
 import type { DiscoveryVisitor } from "@/lib/guidance/discover/visitor";
 import type { JsonLdGraphDocument } from "@/lib/seo/schema";
@@ -28,6 +29,7 @@ export function DiscoverShell({
           <div className="discover__top">
             <Breadcrumbs items={breadcrumbs} />
             <DiscoverSearchForm />
+            <DiscoverNav activePath={activePath} />
           </div>
           {children}
           <DiscoverConversion visitor={visitor} />
