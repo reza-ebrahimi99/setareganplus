@@ -1,5 +1,3 @@
-import { ChamberFloat } from "@/components/guidance/office/ChamberMotion";
-
 export function ChamberScene({
   children,
   caption,
@@ -9,7 +7,7 @@ export function ChamberScene({
 }) {
   return (
     <figure className="chamber-scene">
-      <ChamberFloat>{children}</ChamberFloat>
+      {children}
       {caption ? <figcaption>{caption}</figcaption> : null}
     </figure>
   );

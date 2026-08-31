@@ -12459,3 +12459,190 @@ body {
     justify-content: center;
   }
 }
+
+/* Chamber wins last: kill leftover portal/admin chrome inside the office. */
+.chamber .gpj-shell__sidebar-wrap,
+.chamber .gpj-shell__mobile-progress,
+.chamber .gpj-shell__mobile-toggle,
+.chamber .gpj-shell__step-tag {
+  display: none !important;
+}
+
+.chamber .gpj-shell {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.chamber .gpj-shell__title {
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-weight: 300;
+  letter-spacing: -0.045em;
+}
+
+.chamber .gpj-shell__desc {
+  max-width: 34rem;
+  line-height: 2.1;
+  color: var(--quiet);
+}
+
+.chamber .portal-upload-dropzone,
+.chamber .portal-upload-success,
+.chamber .portal-upload-history {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 1.5rem 0;
+}
+
+.chamber .portal-upload-dropzone__pick {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 0;
+}
+.chamber .gpj-card,
+.chamber .gpj-banner,
+.chamber .office-report,
+.chamber .office-matches,
+.chamber .office-consult,
+.chamber .office-session,
+.chamber .office-assess-results__panel,
+.chamber .office-assess-results__disclaimer,
+.chamber .major-office__session-card {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+.chamber .gpj-card__title,
+.chamber .office-report h1,
+.chamber .office-session__hero h1 {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 300;
+  letter-spacing: -0.04em;
+}
+
+.chamber .gpj-input,
+.chamber .gpj-select,
+.chamber .gpj-textarea {
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0.65rem 0;
+  font-size: 1.08rem;
+}
+
+.chamber .gpj-input:focus,
+.chamber .gpj-select:focus,
+.chamber .gpj-textarea:focus {
+  border-color: transparent;
+  border-bottom-color: var(--gold);
+  box-shadow: none;
+}
+
+.chamber .gpj-actions {
+  position: static;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  border-radius: 0;
+  padding: 2.4rem 0 0;
+  justify-content: flex-start;
+  gap: 1.8rem;
+}
+
+.chamber .gpj-actions__continue {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 0;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+}
+
+.chamber .gpj-actions__continue:hover:not(:disabled) {
+  transform: none;
+  background: #000;
+}
+
+.chamber .gpj-actions__draft,
+.chamber .gpj-actions__draft:hover:not(:disabled) {
+  color: var(--quiet);
+}
+
+.chamber .office-report__brand,
+.chamber .office-assess__radar-legend span,
+.chamber .office-tracker__chip,
+.chamber .major-office__session-card a {
+  color: var(--gold);
+  background: none;
+  font-weight: 500;
+}
+
+.chamber .office-report__table th,
+.chamber .office-report__table td {
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  background: transparent;
+  padding: 0.7rem 0;
+}
+
+.chamber .office-report__letterhead {
+  border-bottom: 1px solid var(--gold);
+}
+
+.chamber .office-session__cta,
+.chamber .office-consult__cta,
+.chamber .office-report__print,
+.chamber .office-assess__cta {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 0;
+  font-weight: 400;
+}
+
+.chamber .office-session__ghost,
+.chamber .office-assess__ghost {
+  border: 0;
+  background: none;
+  border-radius: 0;
+  color: var(--quiet);
+  font-weight: 400;
+  min-height: 0;
+  padding: 0;
+}
+
+.chamber .office-assess__q,
+.chamber .office-assess__scale label {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.chamber .office-assess__bar,
+.chamber .office-assess__progress {
+  display: none;
+}
+
+.chamber .office-assess__radar-fill {
+  fill: rgb(176 141 74 / 0.16);
+  stroke: var(--gold);
+}
+
+.chamber .office-assess__radar-grid,
+.chamber .office-assess__radar-axis {
+  stroke: var(--hair);
+}
+
+@media print {
+  .chamber-colophon,
+  .chamber-folio {
+    display: none !important;
+  }
+}
+

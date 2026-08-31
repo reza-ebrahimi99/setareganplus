@@ -28,7 +28,7 @@ export function ChamberPage({
             <p className="chamber-kicker">{kicker}</p>
             <h1 className="chamber-title">{title}</h1>
             <p className="chamber-lead">{lead}</p>
-            {now ? <p className="chamber-kicker" style={{ marginTop: "1.4rem" }}>{now}</p> : null}
+            {now ? <p className="chamber-lead">{now}</p> : null}
             {action}
           </div>
           {art ? <ChamberScene caption={artCaption}>{art}</ChamberScene> : null}

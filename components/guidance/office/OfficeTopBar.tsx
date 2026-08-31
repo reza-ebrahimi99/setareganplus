@@ -8,16 +8,16 @@ export function OfficeTopBar({
   statusLabel: string;
 }) {
   return (
-    <header className="chamber-mast">
+    <header className="chamber-colophon">
       <div>
-        <p>دپارتمان انتخاب رشته · قلم‌چی نسیم‌شهر</p>
+        <p>دفتر انتخاب رشته · مهندس رضا ابراهیمی</p>
         <strong>{statusLabel}</strong>
       </div>
-      <div className="chamber-mast__end">
+      <div className="chamber-colophon__end">
         <span>{userDisplayName}</span>
         <form action="/portal/logout" method="post">
           <input type="hidden" name="next" value="/guidance" />
-          <button type="submit">خروج آرام</button>
+          <button type="submit">خروج</button>
         </form>
         <Link href="/guidance">درِ دفتر</Link>
       </div>

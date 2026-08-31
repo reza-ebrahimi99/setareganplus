@@ -21,9 +21,9 @@ export function AssessmentResultsDashboard({
 }) {
   if (view) {
     return (
-      <div className="office-assess-results">
-        <div className="office-assess-print-hide office-report__toolbar">
-          <p>گزارش قابل چاپ برای خانواده آماده است.</p>
+      <div className="chamber-analysis">
+        <p className="chamber-kicker office-assess-print-hide">برگ تحلیل</p>
+        <div className="office-assess-print-hide">
           <AssessmentPrintButton />
         </div>
         <AssessmentPrintReport view={view} />
@@ -38,72 +38,73 @@ export function AssessmentResultsDashboard({
 
   const matches = buildTopMajorMatches(model.suggestedMajors, 3);
   return (
-    <div className="office-assess-results">
+    <div className="chamber-analysis">
       <header className="chamber-hero">
         <div>
-          <p className="chamber-kicker">نگاه اول کامل شد</p>
+          <p className="chamber-kicker">برگ تحلیل</p>
           <h1 className="chamber-title">{model.result.personality.title}</h1>
           <p className="chamber-lead">{model.result.personality.description}</p>
         </div>
-        <ChamberScene caption="قطب‌نمای روشن">
+        <ChamberScene caption="نقشه ترجیح">
           <CompassMark />
         </ChamberScene>
       </header>
 
-      <section className="office-assess-results__panel">
+      <section>
         <h2>نمودار ابعاد</h2>
         <AssessmentRadar scores={model.result.categoryScores} />
       </section>
 
-      <div className="office-assess-results__grid">
-        <section>
-          <h2>قوی‌ترین الگوها</h2>
-          <ul className="office-assess-results__traits">
-            {model.strongest.map((item) => (
-              <li key={item.categoryId}>
-                <p>
-                  <strong>{item.title}</strong>
-                  <span>{toPersianDigits(item.score)}</span>
-                </p>
-                <em>{item.label}</em>
-                <span>{item.explanation}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <section>
-          <h2>الگوهای ضعیف‌تر در این آزمون</h2>
-          <ul className="office-assess-results__traits is-low">
-            {model.weaker.map((item) => (
-              <li key={item.categoryId}>
-                <p>
-                  <strong>{item.title}</strong>
-                  <span>{toPersianDigits(item.score)}</span>
-                </p>
-                <em>{item.label}</em>
-                <span>{item.explanation}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
-
-      <AssessmentTopMatches matches={matches} confidence={model.confidence} />
-
-      <section className="office-assess-results__panel">
-        <h2>گروه‌هایی که باید با احتیاط دیده شوند</h2>
-        <ul className="office-assess-results__majors is-caution">
-          {model.cautionMajors.map((major) => (
-            <li key={major.clusterId}>
-              <strong>{major.title}</strong>
-              <span>هم‌خوانی پاسخ: {toPersianDigits(major.fitScore)}</span>
-              <p>{major.cautionNote}</p>
+      <section>
+        <h2>قوی‌ترین الگوها</h2>
+        <ul className="chamber-analysis__traits">
+          {model.strongest.map((item) => (
+            <li key={item.categoryId}>
+              <p>
+                <strong>{item.title}</strong>
+                <span>{toPersianDigits(item.score)}</span>
+              </p>
+              <em>{item.label}</em>
+              <span>{item.explanation}</span>
             </li>
           ))}
         </ul>
       </section>
 
-      <aside className="office-assess-results__disclaimer" role="note">
+      <section>
+        <h2>الگوهای ضعیف‌تر در این آزمون</h2>
+        <ul className="chamber-analysis__traits">
+          {model.weaker.map((item) => (
+            <li key={item.categoryId}>
+              <p>
+                <strong>{item.title}</strong>
+                <span>{toPersianDigits(item.score)}</span>
+              </p>
+              <em>{item.label}</em>
+              <span>{item.explanation}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <AssessmentTopMatches matches={matches} confidence={model.confidence} />
+
+      <section>
+        <h2>گروه‌هایی که باید با احتیاط دیده شوند</h2>
+        <ul className="chamber-analysis__traits">
+          {model.cautionMajors.map((major) => (
+            <li key={major.clusterId}>
+              <p>
+                <strong>{major.title}</strong>
+                <span>{toPersianDigits(major.fitScore)}</span>
+              </p>
+              <span>{major.cautionNote}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <aside role="note">
         {model.disclaimer.split("\n").map((line) => (
           <p key={line}>{line}</p>
         ))}

@@ -1,16 +1,16 @@
 "use client";
 
 /**
- * Guidance ERP — premium final grades upload (presentation only).
+ * Guidance ERP — sealed transcript upload (presentation only).
  * Same server action / validation contract — UI only.
  */
 
-import { useActionState, useEffect, useId, useRef, useState } from "react";
+import { useActionState, useId, useRef, useState } from "react";
 import {
   uploadGuidanceFinalGradesAction,
   type GuidanceGradesUploadState,
 } from "@/app/portal/student/services/guidance/grades/actions";
-import { PortalIcon } from "@/components/portal/icons";
+import { RibbonMark, SealMark } from "@/components/guidance/office/illustrations";
 import { toPersianDigits } from "@/lib/persian";
 
 const initial: GuidanceGradesUploadState = {};
@@ -56,16 +56,6 @@ export function GuidanceGradesUploadForm({
     initial,
   );
 
-  useEffect(() => {
-    if (!file || !file.type.startsWith("image/")) {
-      setPreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
-
   function assignFile(next: File | null) {
     if (next) {
       const isPdf =
@@ -84,6 +74,10 @@ export function GuidanceGradesUploadForm({
         return;
       }
     }
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(
+      next && next.type.startsWith("image/") ? URL.createObjectURL(next) : null,
+    );
     setClientError(null);
     setFile(next);
     if (inputRef.current) {
@@ -99,23 +93,19 @@ export function GuidanceGradesUploadForm({
 
   if (state.ok) {
     return (
-      <div className="chamber-sheet">
-        <div role="status">
-          <span className="portal-upload-success__badge" aria-hidden="true">
-            <PortalIcon name="medal" className="size-7" />
-          </span>
-          <p className="portal-upload-success__title">کارنامه شما دریافت شد</p>
-          <p className="portal-upload-success__support">در انتظار بررسی...</p>
-          {state.versionNumber ? (
-            <p className="portal-upload-success__meta">
-              نسخه {toPersianDigits(state.versionNumber)}
-              {state.replaced ? " (جایگزین نسخه قبلی)" : ""}
-            </p>
-          ) : null}
-          <a href={successHref} className="chamber-go">
-            {successLabel}
-          </a>
-        </div>
+      <div className="chamber-empty" role="status">
+        <SealMark />
+        <h2>سند روی میز مشاور است</h2>
+        <p>
+          {state.versionNumber
+            ? `نسخه ${toPersianDigits(state.versionNumber)}${
+                state.replaced ? " جایگزین نسخه قبلی شد." : " ثبت شد."
+              }`
+            : "کارنامه دریافت شد."}
+        </p>
+        <a href={successHref} className="chamber-go">
+          {successLabel}
+        </a>
       </div>
     );
   }
@@ -123,37 +113,29 @@ export function GuidanceGradesUploadForm({
   return (
     <form action={action} className="chamber-sheet">
       {state.error || clientError ? (
-        <p role="alert" className="portal-upload__error">
+        <p role="alert" className="chamber-alert">
           {clientError ?? state.error}
         </p>
       ) : null}
 
       {hasExisting ? (
-        <div>
-          <p className="portal-upload-history__title">نسخه فعلی در پرونده</p>
-          <p className="portal-upload-history__file">
-            {existingFileName ?? "کارنامه بارگذاری‌شده"}
-            {existingVersion != null
-              ? ` · نسخه ${toPersianDigits(existingVersion)}`
-              : ""}
-          </p>
-          <p className="portal-upload-history__hint">
-            بارگذاری جدید به‌عنوان نسخه تازه ثبت می‌شود؛ نسخه قبلی در سوابق
-            می‌ماند.
-          </p>
-        </div>
+        <p className="chamber-kicker">
+          {existingFileName ?? "کارنامه بارگذاری‌شده"}
+          {existingVersion != null
+            ? ` · نسخه ${toPersianDigits(existingVersion)}`
+            : ""}
+        </p>
       ) : null}
 
-      <div
+      <label
+        htmlFor={inputId}
         className={[
-          "portal-upload-dropzone",
-          dragging ? "portal-upload-dropzone--dragging" : "",
-          file ? "portal-upload-dropzone--ready" : "",
-          pending ? "portal-upload-dropzone--pending" : "",
+          "chamber-deed",
+          dragging ? "is-over" : "",
+          file ? "is-ready" : "",
         ]
           .filter(Boolean)
           .join(" ")}
-        data-portal-accent="teal"
         onDragEnter={(event) => {
           event.preventDefault();
           setDragging(true);
@@ -180,76 +162,34 @@ export function GuidanceGradesUploadForm({
           type="file"
           required
           accept={acceptPdfOnly ? PDF_ACCEPT : DEFAULT_ACCEPT}
-          className="portal-upload-dropzone__input"
           onChange={(event) => assignFile(event.target.files?.[0] ?? null)}
         />
-
-        <span className="portal-upload-dropzone__icon" aria-hidden="true">
-          <PortalIcon name="clipboard" className="size-8" />
-        </span>
-        <p className="portal-upload-dropzone__title">
-          فایل را بکش و رها کن، یا انتخاب کن
+        {file ? <SealMark /> : <RibbonMark />}
+        <h2>{file ? file.name : "این سند را روی میز بگذارید"}</h2>
+        <p>
+          {pending
+            ? "در حال گذاشتن روی میز…"
+            : file
+              ? formatBytes(file.size)
+              : acceptPdfOnly
+                ? "PDF رسمی · حداکثر پنج مگابایت"
+                : "PDF یا تصویر · حداکثر پنج مگابایت"}
         </p>
-        <p className="portal-upload-dropzone__hint">
-          {acceptPdfOnly
-            ? "فقط PDF رسمی · حداکثر ۵ مگابایت"
-            : "PDF یا تصویر · حداکثر ۵ مگابایت"}
-        </p>
-        <label htmlFor={inputId} className="portal-upload-dropzone__pick">
-          انتخاب فایل
-        </label>
-
-        {pending ? (
-          <div className="portal-upload-progress" aria-live="polite">
-            <span className="portal-upload-progress__bar" />
-            <p>در حال بارگذاری امن فایل…</p>
-          </div>
+        {previewUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={previewUrl} alt="" className="chamber-deed__preview" />
         ) : null}
-      </div>
+        <span className="chamber-quiet">
+          {file ? "تعویض فایل" : "انتخاب فایل"}
+        </span>
+      </label>
 
-      {file ? (
-        <div>
-          <div className="portal-upload-preview__row">
-            {previewUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={previewUrl}
-                alt=""
-                className="portal-upload-preview__thumb"
-              />
-            ) : (
-              <span className="portal-upload-preview__file-icon" aria-hidden="true">
-                <PortalIcon name="book" className="size-6" />
-              </span>
-            )}
-            <div className="min-w-0">
-              <p className="portal-upload-preview__name">{file.name}</p>
-              <p className="portal-upload-preview__meta">{formatBytes(file.size)}</p>
-            </div>
-            <button
-              type="button"
-              className="portal-upload-preview__replace"
-              onClick={() => {
-                assignFile(null);
-                inputRef.current?.click();
-              }}
-            >
-              تعویض
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      <button
-        type="submit"
-        disabled={pending || !file}
-        className="chamber-go"
-      >
+      <button type="submit" disabled={pending || !file} className="chamber-go">
         {pending
           ? "در حال ارسال…"
           : hasExisting
-            ? "جایگزینی کارنامه"
-            : "ارسال کارنامه"}
+            ? "جایگزینی سند"
+            : "مُهر کردن سند"}
       </button>
     </form>
   );

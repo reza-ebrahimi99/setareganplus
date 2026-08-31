@@ -5,7 +5,7 @@
 
 import { redirect } from "next/navigation";
 import { ChamberPage } from "@/components/guidance/office/ChamberPage";
-import { ConstellationMark } from "@/components/guidance/office/illustrations";
+import { PortraitMark } from "@/components/guidance/office/illustrations";
 import { GuidanceOnboardingForm } from "@/components/guidance/onboarding/GuidanceOnboardingForm";
 import { candidateNeedsGuidanceOnboarding } from "@/lib/guidance/external-candidate";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
@@ -53,16 +53,14 @@ export default async function GuidanceOnboardingPage() {
 
   return (
     <div className="chamber" dir="rtl">
-      <div className="chamber-wash" aria-hidden="true" />
-      <div className="chamber-stage">
-        <div className="chamber-body">
+      <div className="chamber-body">
           <ChamberPage
             kicker="ورود به دفتر"
             title="خوش آمدید. آینده از همین اتاق شروع می‌شود."
             lead="این فرم دولتی نیست. دو تصویر می‌سازیم: کی هستید، و از کدام مسیر تحصیلی می‌آیید. هر بخش ذخیره می‌شود؛ می‌توانید بروید و برگردید."
             now="هویت، سپس تصویر تحصیلی"
-            art={<ConstellationMark />}
-            artCaption="آغاز صورت‌فلکی"
+            art={<PortraitMark />}
+            artCaption="پرتره ورود"
           >
             <GuidanceOnboardingForm
               mobile={parsed.normalized}
@@ -88,7 +86,6 @@ export default async function GuidanceOnboardingPage() {
             />
           </ChamberPage>
         </div>
-      </div>
     </div>
   );
 }

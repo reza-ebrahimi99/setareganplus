@@ -14,10 +14,6 @@ import {
 } from "@/app/portal/student/services/guidance/onboarding/actions";
 import { GUIDANCE_QUOTA_OPTIONS } from "@/lib/guidance/journey/reference-data/quota";
 
-const fieldClass = "";
-
-const labelClass = "";
-
 export type GuidanceOnboardingFormOption = {
   id: string;
   label: string;
@@ -61,6 +57,11 @@ const emptyInitial: GuidanceOnboardingInitial = {
 };
 
 const formInitial: GuidanceOnboardingFormState = {};
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="chamber-field__error">{message}</p>;
+}
 
 export function GuidanceOnboardingForm({
   mobile,
@@ -177,70 +178,53 @@ export function GuidanceOnboardingForm({
       {showIdentity ? (
         <section aria-labelledby="intake-identity">
           <header>
-            <p>تصویر اول</p>
+            <p>کاغذ رسمی</p>
             <h2 id="intake-identity">کی هستید</h2>
-            <p>نام و جای شما. اگر بروید، همین کلمات منتظر می‌مانند.</p>
           </header>
 
-          <div>
-            <label htmlFor="fullName" className={labelClass}>
-              نام و نام خانوادگی
-            </label>
+          <div className="chamber-field">
+            <label htmlFor="fullName">نام و نام خانوادگی</label>
             <input
               id="fullName"
               name="fullName"
               type="text"
               autoComplete="name"
               defaultValue={values.fullName}
-              className={fieldClass}
               aria-invalid={Boolean(fieldErrors.fullName)}
             />
-            {fieldErrors.fullName ? (
-              <p className="mt-1 text-xs text-red-600">{fieldErrors.fullName}</p>
-            ) : null}
+            <FieldError message={fieldErrors.fullName} />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="nationalId" className={labelClass}>
-                کد ملی
-              </label>
-              <input
-                id="nationalId"
-                name="nationalId"
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                defaultValue={values.nationalId}
-                className={fieldClass}
-                aria-invalid={Boolean(fieldErrors.nationalId)}
-              />
-              {fieldErrors.nationalId ? (
-                <p className="mt-1 text-xs text-red-600">{fieldErrors.nationalId}</p>
-              ) : null}
-            </div>
-            <div>
-              <label htmlFor="birthDate" className={labelClass}>
-                تاریخ تولد
-              </label>
-              <input
-                id="birthDate"
-                name="birthDate"
-                type="date"
-                defaultValue={values.birthDate}
-                className={fieldClass}
-                aria-invalid={Boolean(fieldErrors.birthDate)}
-              />
-              {fieldErrors.birthDate ? (
-                <p className="mt-1 text-xs text-red-600">{fieldErrors.birthDate}</p>
-              ) : null}
-            </div>
+          <div className="chamber-field">
+            <label htmlFor="nationalId">کد ملی</label>
+            <input
+              id="nationalId"
+              name="nationalId"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              defaultValue={values.nationalId}
+              aria-invalid={Boolean(fieldErrors.nationalId)}
+            />
+            <FieldError message={fieldErrors.nationalId} />
           </div>
 
-          <div>
-            <span className={labelClass}>جنسیت</span>
-            <div className="mt-1.5 flex gap-4">
-              <label className="inline-flex items-center gap-2 text-sm">
+          <div className="chamber-field">
+            <label htmlFor="birthDate">تاریخ تولد</label>
+            <input
+              id="birthDate"
+              name="birthDate"
+              type="date"
+              defaultValue={values.birthDate}
+              aria-invalid={Boolean(fieldErrors.birthDate)}
+            />
+            <FieldError message={fieldErrors.birthDate} />
+          </div>
+
+          <div className="chamber-field">
+            <span>جنسیت</span>
+            <div className="chamber-choice">
+              <label>
                 <input
                   type="radio"
                   name="gender"
@@ -249,7 +233,7 @@ export function GuidanceOnboardingForm({
                 />
                 پسر
               </label>
-              <label className="inline-flex items-center gap-2 text-sm">
+              <label>
                 <input
                   type="radio"
                   name="gender"
@@ -259,88 +243,66 @@ export function GuidanceOnboardingForm({
                 دختر
               </label>
             </div>
-            {fieldErrors.gender ? (
-              <p className="mt-1 text-xs text-red-600">{fieldErrors.gender}</p>
-            ) : null}
+            <FieldError message={fieldErrors.gender} />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="province" className={labelClass}>
-                استان
-              </label>
-              <select
-                id="province"
-                name="province"
-                className={fieldClass}
-                defaultValue={values.province}
-                aria-invalid={Boolean(fieldErrors.province)}
-              >
-                <option value="" disabled>
-                  انتخاب استان
+          <div className="chamber-field">
+            <label htmlFor="province">استان</label>
+            <select
+              id="province"
+              name="province"
+              defaultValue={values.province}
+              aria-invalid={Boolean(fieldErrors.province)}
+            >
+              <option value="" disabled>
+                انتخاب استان
+              </option>
+              {provinces.map((province) => (
+                <option key={province} value={province}>
+                  {province}
                 </option>
-                {provinces.map((province) => (
-                  <option key={province} value={province}>
-                    {province}
-                  </option>
-                ))}
-              </select>
-              {fieldErrors.province ? (
-                <p className="mt-1 text-xs text-red-600">{fieldErrors.province}</p>
-              ) : null}
-            </div>
-            <div>
-              <label htmlFor="city" className={labelClass}>
-                شهر
-              </label>
-              <input
-                id="city"
-                name="city"
-                type="text"
-                defaultValue={values.city}
-                className={fieldClass}
-                aria-invalid={Boolean(fieldErrors.city)}
-              />
-              {fieldErrors.city ? (
-                <p className="mt-1 text-xs text-red-600">{fieldErrors.city}</p>
-              ) : null}
-            </div>
+              ))}
+            </select>
+            <FieldError message={fieldErrors.province} />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="mobileDisplay" className={labelClass}>
-                موبایل
-              </label>
-              <input
-                id="mobileDisplay"
-                type="tel"
-                value={mobile}
-                readOnly
-                className={`${fieldClass} bg-slate-50 text-muted`}
-              />
-            </div>
-            <div>
-              <label htmlFor="parentMobile" className={labelClass}>
-                موبایل والد (اختیاری)
-              </label>
-              <input
-                id="parentMobile"
-                name="parentMobile"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                defaultValue={values.parentMobile}
-                className={fieldClass}
-                aria-invalid={Boolean(fieldErrors.parentMobile)}
-              />
-              {fieldErrors.parentMobile ? (
-                <p className="mt-1 text-xs text-red-600">
-                  {fieldErrors.parentMobile}
-                </p>
-              ) : null}
-            </div>
+          <div className="chamber-field">
+            <label htmlFor="city">شهر</label>
+            <input
+              id="city"
+              name="city"
+              type="text"
+              defaultValue={values.city}
+              aria-invalid={Boolean(fieldErrors.city)}
+            />
+            <FieldError message={fieldErrors.city} />
           </div>
+
+          <div className="chamber-field">
+            <label htmlFor="mobileDisplay">موبایل</label>
+            <input id="mobileDisplay" type="tel" value={mobile} readOnly />
+          </div>
+
+          <div className="chamber-field">
+            <label htmlFor="parentMobile">موبایل والد (اختیاری)</label>
+            <input
+              id="parentMobile"
+              name="parentMobile"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              defaultValue={values.parentMobile}
+              aria-invalid={Boolean(fieldErrors.parentMobile)}
+            />
+            <FieldError message={fieldErrors.parentMobile} />
+          </div>
+
+          {mode === "identity" ? (
+            <div className="chamber-sign">
+              <p>امضا</p>
+              <strong>رضا ابراهیمی</strong>
+            </div>
+          ) : null}
         </section>
       ) : (
         <>
@@ -357,85 +319,61 @@ export function GuidanceOnboardingForm({
       {showAcademic ? (
         <section aria-labelledby="intake-academic">
           <header>
-            <p>تصویر دوم</p>
+            <p>گواهی تحصیلی</p>
             <h2 id="intake-academic">تصویر تحصیلی</h2>
-            <p>مدرسه، سهمیه و سالی که از آن می‌آیید — زمینهٔ انتخاب، نه یک ردیف اداری.</p>
           </header>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="graduationYear" className={labelClass}>
-                سال فارغ‌التحصیلی (شمسی)
-              </label>
-              <input
-                id="graduationYear"
-                name="graduationYear"
-                type="text"
-                inputMode="numeric"
-                placeholder="مثلاً ۱۴۰۴"
-                defaultValue={values.graduationYear}
-                className={fieldClass}
-                aria-invalid={Boolean(fieldErrors.graduationYear)}
-              />
-              {fieldErrors.graduationYear ? (
-                <p className="mt-1 text-xs text-red-600">
-                  {fieldErrors.graduationYear}
-                </p>
-              ) : null}
-            </div>
-            <div>
-              <label htmlFor="highSchoolMajor" className={labelClass}>
-                رشته دبیرستان
-              </label>
-              <select
-                id="highSchoolMajor"
-                name="highSchoolMajor"
-                className={fieldClass}
-                defaultValue={values.highSchoolMajor}
-                aria-invalid={Boolean(fieldErrors.highSchoolMajor)}
-              >
-                <option value="" disabled>
-                  انتخاب رشته
-                </option>
-                {majors.map((major) => (
-                  <option key={major.id} value={major.id}>
-                    {major.label}
-                  </option>
-                ))}
-              </select>
-              {fieldErrors.highSchoolMajor ? (
-                <p className="mt-1 text-xs text-red-600">
-                  {fieldErrors.highSchoolMajor}
-                </p>
-              ) : null}
-            </div>
+          <div className="chamber-field">
+            <label htmlFor="graduationYear">سال فارغ‌التحصیلی (شمسی)</label>
+            <input
+              id="graduationYear"
+              name="graduationYear"
+              type="text"
+              inputMode="numeric"
+              placeholder="مثلاً ۱۴۰۴"
+              defaultValue={values.graduationYear}
+              aria-invalid={Boolean(fieldErrors.graduationYear)}
+            />
+            <FieldError message={fieldErrors.graduationYear} />
           </div>
 
-          <div>
-            <label htmlFor="schoolName" className={labelClass}>
-              نام مدرسه
-            </label>
+          <div className="chamber-field">
+            <label htmlFor="highSchoolMajor">رشته دبیرستان</label>
+            <select
+              id="highSchoolMajor"
+              name="highSchoolMajor"
+              defaultValue={values.highSchoolMajor}
+              aria-invalid={Boolean(fieldErrors.highSchoolMajor)}
+            >
+              <option value="" disabled>
+                انتخاب رشته
+              </option>
+              {majors.map((major) => (
+                <option key={major.id} value={major.id}>
+                  {major.label}
+                </option>
+              ))}
+            </select>
+            <FieldError message={fieldErrors.highSchoolMajor} />
+          </div>
+
+          <div className="chamber-field">
+            <label htmlFor="schoolName">نام مدرسه</label>
             <input
               id="schoolName"
               name="schoolName"
               type="text"
               defaultValue={values.schoolName}
-              className={fieldClass}
               aria-invalid={Boolean(fieldErrors.schoolName)}
             />
-            {fieldErrors.schoolName ? (
-              <p className="mt-1 text-xs text-red-600">{fieldErrors.schoolName}</p>
-            ) : null}
+            <FieldError message={fieldErrors.schoolName} />
           </div>
 
-          <div>
-            <label htmlFor="quota" className={labelClass}>
-              سهمیه پذیرش
-            </label>
+          <div className="chamber-field">
+            <label htmlFor="quota">سهمیه پذیرش</label>
             <select
               id="quota"
               name="quota"
-              className={fieldClass}
               defaultValue={values.quota}
               aria-invalid={Boolean(fieldErrors.quota)}
             >
@@ -448,9 +386,7 @@ export function GuidanceOnboardingForm({
                 </option>
               ))}
             </select>
-            {fieldErrors.quota ? (
-              <p className="mt-1 text-xs text-red-600">{fieldErrors.quota}</p>
-            ) : null}
+            <FieldError message={fieldErrors.quota} />
           </div>
         </section>
       ) : (
@@ -466,6 +402,7 @@ export function GuidanceOnboardingForm({
         <OtpSubmitButton
           idleLabel="ورود به دفتر"
           pendingLabel="در حال گشودن دفتر…"
+          className="chamber-go"
         />
       ) : continueHref ? (
         <a href={continueHref} className="chamber-go">

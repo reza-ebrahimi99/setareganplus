@@ -5,10 +5,10 @@ export function AssessmentConsultationCard() {
   const card = INTEREST_CONSULTATION;
 
   return (
-    <section className="office-consult office-assess-print-hide" aria-labelledby="consult-title">
-      <p className="office-consult__kicker">{card.kicker}</p>
+    <section className="chamber-consult office-assess-print-hide" aria-labelledby="consult-title">
+      <p className="chamber-kicker">{card.kicker}</p>
       <h2 id="consult-title">{card.title}</h2>
-      <dl className="office-consult__meta">
+      <dl>
         <div>
           <dt>مدت</dt>
           <dd>{card.duration}</dd>
@@ -26,8 +26,8 @@ export function AssessmentConsultationCard() {
           </li>
         ))}
       </ul>
-      <p className="office-consult__closing">{card.closing}</p>
-      <Link href={card.ctaHref} className="office-consult__cta">
+      <p>{card.closing}</p>
+      <Link href={card.ctaHref} className="chamber-go">
         {card.ctaLabel}
       </Link>
     </section>

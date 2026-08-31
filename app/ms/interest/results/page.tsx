@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ChamberEmpty } from "@/components/guidance/office/ChamberScene";
+import { ChamberPage } from "@/components/guidance/office/ChamberPage";
+import { UnfinishedMark } from "@/components/guidance/office/illustrations";
 import { AssessmentResultsDashboard } from "@/components/guidance/office/assessment/AssessmentResultsDashboard";
 import { loadOfficeInterestResults } from "@/lib/guidance/office/interest-report-loader";
 import { requireOfficeGuidancePlan } from "@/lib/guidance/office/interest-access";
@@ -20,16 +23,23 @@ export default async function OfficeInterestResultsPage() {
 
   if (!view) {
     return (
-      <div className="office-assess">
-        <header className="office-assess__hero">
-          <p>نتیجه آزمون</p>
-          <h1>هنوز نتیجه کاملی ثبت نشده</h1>
-          <p>آزمون را ادامه دهید تا گزارش خانواده باز شود.</p>
-        </header>
-        <Link href={MAJOR_OFFICE_INTEREST} className="office-assess__cta">
-          ادامه آزمون رغبت
-        </Link>
-      </div>
+      <ChamberPage
+        kicker="برگ تحلیل"
+        title="هنوز صورت‌فلکی کامل نیست"
+        lead="آزمون را ادامه دهید تا گزارش خانواده باز شود."
+        art={<UnfinishedMark />}
+        artCaption="ناتمام"
+      >
+        <ChamberEmpty
+          title="نتیجه‌ای روی میز نیست"
+          body="هر بخش که پاسخ دهید ذخیره می‌شود. لازم نیست یک‌نفس تمام شود."
+          action={
+            <Link href={MAJOR_OFFICE_INTEREST} className="chamber-go">
+              ادامه کشف
+            </Link>
+          }
+        />
+      </ChamberPage>
     );
   }
 

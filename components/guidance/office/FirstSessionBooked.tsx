@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ChamberPage } from "@/components/guidance/office/ChamberPage";
+import { LampMark } from "@/components/guidance/office/illustrations";
 import { MAJOR_OFFICE_JOURNEY } from "@/lib/guidance/office/nav";
 import {
   FIRST_SESSION_DOCUMENTS,
@@ -24,42 +26,41 @@ export function FirstSessionBooked({
   calendarHref: string;
 }) {
   return (
-    <div className="chamber-session">
-      <header className="chamber-hero">
-        <div>
-        <p className="chamber-kicker">صندلی شما روی تقویم است</p>
-        <h1 className="chamber-title">{countdownLabel}</h1>
-        <p>
-          {whenLabel} · {meetingLabel} · مشاور: {counselorName}
-        </p>
-        <p className="chamber-lead">
-          کد پیگیری: {toPersianDigits(trackingCode)}
-        </p>
-        </div>
-      </header>
-      <section>
-        <h2>چک‌لیست آمادگی</h2>
-        <ul className="office-session__docs">
-          {FIRST_SESSION_DOCUMENTS.map((item) => (
-            <li key={item.label}>
-              <strong>{item.label}</strong>
-              <span>{item.hint}</span>
-            </li>
-          ))}
-        </ul>
-        <p>مدت جلسه {FIRST_SESSION_DURATION} است.</p>
-      </section>
-      <div className="office-session__actions">
-        <a href={calendarHref} className="office-session__cta">
+    <ChamberPage
+      kicker="چراغ میز روشن است"
+      title={countdownLabel}
+      lead={`${whenLabel} · ${meetingLabel} · مشاور: ${counselorName}`}
+      now={`کد پیگیری: ${toPersianDigits(trackingCode)}`}
+      art={<LampMark />}
+      artCaption="چراغ میز"
+      action={
+        <a href={calendarHref} className="chamber-go">
           افزودن به تقویم
         </a>
-        <Link href={confirmationHref} className="office-session__ghost">
-          رسید رزرو
-        </Link>
-        <Link href={MAJOR_OFFICE_JOURNEY} className="office-session__ghost">
-          ادامه نقشه مسیر
-        </Link>
+      }
+    >
+      <div className="chamber-desk">
+        <section>
+          <h2>چک‌لیست آمادگی</h2>
+          <ul>
+            {FIRST_SESSION_DOCUMENTS.map((item) => (
+              <li key={item.label}>
+                <strong>{item.label}</strong>
+                <span>{item.hint}</span>
+              </li>
+            ))}
+          </ul>
+          <p>مدت جلسه {FIRST_SESSION_DURATION} است.</p>
+        </section>
+        <div className="chamber-actions">
+          <Link href={confirmationHref} className="chamber-quiet">
+            رسید رزرو
+          </Link>
+          <Link href={MAJOR_OFFICE_JOURNEY} className="chamber-quiet">
+            فهرست دفتر
+          </Link>
+        </div>
       </div>
-    </div>
+    </ChamberPage>
   );
 }

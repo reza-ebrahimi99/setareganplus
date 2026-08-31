@@ -17,12 +17,12 @@ export function AssessmentRadar({ scores }: { scores: readonly CategoryScore[] }
 
   const grid = [0.25, 0.5, 0.75, 1].map((ratio) => {
     const pts = scores.map((_, i) => point(i, ratio).join(",")).join(" ");
-    return <polygon key={ratio} points={pts} className="office-assess__radar-grid" />;
+    return <polygon key={ratio} points={pts} className="chamber-radar-grid" />;
   });
 
   const axes = scores.map((_, i) => {
     const [x, y] = point(i, 1);
-    return <line key={i} x1={cx} y1={cy} x2={x} y2={y} className="office-assess__radar-axis" />;
+    return <line key={i} x1={cx} y1={cy} x2={x} y2={y} className="chamber-radar-axis" />;
   });
 
   const poly = scores
@@ -30,18 +30,18 @@ export function AssessmentRadar({ scores }: { scores: readonly CategoryScore[] }
     .join(" ");
 
   return (
-    <div className="office-assess__radar-wrap">
+    <div className="chamber-radar-wrap">
       <svg
         viewBox={`0 0 ${size} ${size}`}
-        className="office-assess__radar"
+        className="chamber-radar"
         role="img"
         aria-label="نمودار راداری ابعاد آزمون"
       >
         {grid}
         {axes}
-        <polygon points={poly} className="office-assess__radar-fill" />
+        <polygon points={poly} className="chamber-radar-fill" />
       </svg>
-      <ol className="office-assess__radar-legend">
+      <ol className="chamber-radar-legend">
         {scores.map((row, i) => {
           const def = getAssessmentCategory(row.categoryId);
           return (

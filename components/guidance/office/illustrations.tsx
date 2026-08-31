@@ -101,9 +101,52 @@ export function SealMark(props: MarkProps) {
       <path d="M188 128 H328" stroke="#0a0d13" strokeOpacity="0.1" />
       <path d="M188 152 H300" stroke="#0a0d13" strokeOpacity="0.1" />
       <path d="M188 176 H318" stroke="#0a0d13" strokeOpacity="0.1" />
+      <path d="M364 48 L430 18 L430 118 L364 88 Z" fill="#c4a05a" />
       <circle cx="260" cy="268" r="38" fill="none" stroke="#c4a05a" strokeWidth="2" />
       <circle cx="260" cy="268" r="14" fill="#c4a05a" />
       <path d="M260 238 V258 M260 278 V298 M230 268 H250 M270 268 H290" stroke="#c4a05a" strokeOpacity="0.7" />
+    </Scene>
+  );
+}
+
+export function RibbonMark(props: MarkProps) {
+  return (
+    <Scene {...props} title={props.title ?? "روبان طلایی سند"}>
+      <rect x="132" y="36" width="248" height="328" fill="#faf7f0" stroke="#111111" strokeOpacity="0.16" />
+      <path d="M132 78 H380" stroke="#b08d4a" strokeWidth="10" />
+      <path d="M380 36 L456 8 L456 132 L380 96 Z" fill="#b08d4a" />
+      <path d="M168 128 H344 M168 156 H300 M168 184 H328 M168 212 H288" stroke="#111111" strokeOpacity="0.12" />
+      <circle cx="260" cy="292" r="28" fill="none" stroke="#b08d4a" strokeWidth="1.6" />
+      <circle cx="260" cy="292" r="8" fill="#b08d4a" />
+    </Scene>
+  );
+}
+
+export function WaxMark(props: MarkProps) {
+  return (
+    <Scene {...props} title={props.title ?? "پوشه و مُهر موم"}>
+      <rect x="86" y="92" width="168" height="228" fill="#111111" fillOpacity="0.82" />
+      <rect x="118" y="64" width="168" height="228" fill="#b08d4a" fillOpacity="0.55" />
+      <rect x="154" y="88" width="196" height="244" fill="#faf7f0" stroke="#111111" strokeOpacity="0.18" />
+      <path d="M154 128 H350" stroke="#b08d4a" />
+      <circle cx="252" cy="248" r="36" fill="#7a3a2e" />
+      <circle cx="252" cy="248" r="22" fill="none" stroke="#faf7f0" strokeOpacity="0.55" />
+    </Scene>
+  );
+}
+
+export function SignatureMark(props: MarkProps) {
+  return (
+    <Scene {...props} title={props.title ?? "امضای دست‌نویس"}>
+      <path d="M70 286 H450" stroke="#111111" strokeOpacity="0.14" />
+      <path
+        d="M96 248 C140 200 168 312 232 236 C268 196 286 268 348 228 C392 204 422 188 448 176"
+        fill="none"
+        stroke="#111111"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+      <path d="M188 268 C210 252 238 280 262 258" fill="none" stroke="#b08d4a" strokeWidth="1.2" />
     </Scene>
   );
 }

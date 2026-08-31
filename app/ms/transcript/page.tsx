@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChamberEmpty } from "@/components/guidance/office/ChamberScene";
 import { ChamberPage } from "@/components/guidance/office/ChamberPage";
-import { SealMark, UnfinishedMark } from "@/components/guidance/office/illustrations";
+import { RibbonMark, UnfinishedMark } from "@/components/guidance/office/illustrations";
 import { GuidanceGradesUploadForm } from "@/components/guidance/GradesUploadForm";
 import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
 import { loadGuidanceJourneyPlan } from "@/lib/guidance/journey/plan";
@@ -73,8 +73,8 @@ export default async function OfficeTranscriptPage() {
       kicker="اتاق سند"
       title="آخرین قطعه از تصویر تحصیلی شما"
       lead="فایل رسمی را بگذارید تا مهندس نمره‌ها را با سند تطبیق دهد."
-      art={<SealMark />}
-      artCaption="مهر طلایی"
+      art={<RibbonMark />}
+      artCaption="روبان طلایی"
     >
       <GuidanceGradesUploadForm
         hasExisting={Boolean(latest)}

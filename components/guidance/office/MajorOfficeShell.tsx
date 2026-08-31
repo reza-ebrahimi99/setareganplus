@@ -1,6 +1,6 @@
 import { DepartmentRail } from "@/components/guidance/office/DepartmentRail";
-import { OfficeMobileNav } from "@/components/guidance/office/OfficeMobileNav";
 import { OfficeTopBar } from "@/components/guidance/office/OfficeTopBar";
+import { chamberRoomKey } from "@/lib/guidance/office/chrome";
 import type { OfficeRailSection } from "@/lib/guidance/office/nav";
 
 export function MajorOfficeShell({
@@ -17,22 +17,13 @@ export function MajorOfficeShell({
   rail: readonly OfficeRailSection[];
 }) {
   return (
-    <div className="chamber" dir="rtl">
-      <div className="chamber-wash" aria-hidden="true" />
-      <div className="chamber-dust" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-        <span />
-        <span />
-        <span />
-      </div>
+    <div className="chamber" data-room={chamberRoomKey(pathname)} dir="rtl">
+      <OfficeTopBar
+        userDisplayName={userDisplayName}
+        statusLabel={statusLabel}
+      />
       <DepartmentRail pathname={pathname} sections={rail} />
-      <div className="chamber-stage">
-        <OfficeTopBar userDisplayName={userDisplayName} statusLabel={statusLabel} />
-        <OfficeMobileNav pathname={pathname} sections={rail} />
-        <div className="chamber-body">{children}</div>
-      </div>
+      <main className="chamber-body">{children}</main>
     </div>
   );
 }

@@ -20,11 +20,11 @@ export function JourneyTracker({ model }: { model: OfficeJourneyTrackerModel }) 
             <p className="chamber-kicker">مسیر همراهی</p>
             <h1 className="chamber-title">از شناخت خود تا فهرست نهایی</h1>
             <p className="chamber-lead">
-              دوازده اتاق، یک خط طلایی. شما روی یک نقطه ایستاده‌اید. بقیه منتظر
-              می‌مانند.
+              این فهرست یک ویزارد نیست. فصل‌های یک پرونده‌اند. شما در یک اتاق
+              ایستاده‌اید.
             </p>
             <a className="chamber-go" href={`#phase-${model.currentStep}`}>
-              پرش به جایی که الان هستید — {toPersianDigits(model.completionPercentage)}٪
+              اتاق جاری · {toPersianDigits(model.completionPercentage)}٪
             </a>
           </div>
           <ChamberScene caption={model.currentTitle}>
@@ -44,7 +44,6 @@ export function JourneyTracker({ model }: { model: OfficeJourneyTrackerModel }) 
               className={`chamber-mile is-${phase.status}`}
               aria-current={phase.status === "active" ? "step" : undefined}
             >
-              <span className="chamber-mile__dot" aria-hidden="true" />
               <p className="chamber-kicker">{phase.statusLabel}</p>
               <h3>{phase.storyTitle}</h3>
               {phase.status === "active" ? (
@@ -58,7 +57,10 @@ export function JourneyTracker({ model }: { model: OfficeJourneyTrackerModel }) 
                   ) : null}
                   <ul className="chamber-checks">
                     {phase.requiredActions.map((action) => (
-                      <li key={action.id} data-done={action.done ? "true" : "false"}>
+                      <li
+                        key={action.id}
+                        data-done={action.done ? "true" : "false"}
+                      >
                         {action.label}
                       </li>
                     ))}
@@ -77,8 +79,12 @@ export function JourneyTracker({ model }: { model: OfficeJourneyTrackerModel }) 
               {phase.lockReason ? (
                 <p className="chamber-mile__story">{phase.lockReason}</p>
               ) : null}
-              {phase.href && phase.hrefLabel ? (
+              {phase.href && phase.hrefLabel && phase.status === "active" ? (
                 <Link href={phase.href} className="chamber-go">
+                  {phase.hrefLabel}
+                </Link>
+              ) : phase.href && phase.hrefLabel && phase.status === "completed" ? (
+                <Link href={phase.href} className="chamber-quiet">
                   {phase.hrefLabel}
                 </Link>
               ) : null}

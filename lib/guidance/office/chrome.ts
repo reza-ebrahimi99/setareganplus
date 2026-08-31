@@ -15,6 +15,24 @@ import {
   MAJOR_OFFICE_TRANSCRIPT,
 } from "@/lib/guidance/office/intake-href";
 
+export function chamberRoomKey(pathname: string): string {
+  if (pathname.includes("/identity") || pathname.includes("/onboarding")) {
+    return "identity";
+  }
+  if (pathname.includes("/academic")) return "academic";
+  if (pathname.includes("/grades")) return "grades";
+  if (pathname.includes("/transcript")) return "transcript";
+  if (pathname.includes("/interest")) return "interest";
+  if (pathname.includes("/session")) return "session";
+  if (pathname.includes("/journey")) return "journey";
+  if (pathname.includes("/guidance/steps/12")) return "archive";
+  if (pathname.includes("/guidance/steps/")) return "engine";
+  if (pathname === MAJOR_OFFICE_HOME || pathname === `${MAJOR_OFFICE_HOME}/`) {
+    return "home";
+  }
+  return "office";
+}
+
 export function chamberStatusLabel(pathname: string): string {
   if (pathname === MAJOR_OFFICE_IDENTITY) return "کی هستید";
   if (pathname === MAJOR_OFFICE_ACADEMIC) return "تصویر تحصیلی";
