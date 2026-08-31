@@ -8,6 +8,8 @@ import { suggestBookingTimes } from "@/lib/ai/booking-assistant";
 import { loadPublicBookingService } from "@/lib/booking/load-public-service";
 import { getPublicBookingPath } from "@/lib/booking/public-url";
 import { createPageMetadata } from "@/lib/seo/create-page-metadata";
+import { FirstSessionPrep } from "@/components/guidance/office/FirstSessionPrep";
+import { GUIDANCE_FIRST_SESSION_SERVICE_SLUG } from "@/lib/guidance/journey/booking";
 
 export const dynamic = "force-dynamic";
 
@@ -66,8 +68,16 @@ export default async function PublicBookingPage({ params }: PageProps) {
     serviceId: service.id,
   });
 
+  const isFirstSession = service.slug === GUIDANCE_FIRST_SESSION_SERVICE_SLUG;
+
   return (
     <PublicFormShell>
+      {isFirstSession ? (
+        <div className="mb-8">
+          <FirstSessionPrep bookHref="#booking-wizard" />
+        </div>
+      ) : null}
+      <div id="booking-wizard">
       <Suspense fallback={<p className="text-sm text-muted">در حال بارگذاری…</p>}>
         <PublicBookingWizard
           serviceSlug={service.slug}
@@ -80,6 +90,7 @@ export default async function PublicBookingPage({ params }: PageProps) {
           recommendationMessage={suggestion.message}
         />
       </Suspense>
+      </div>
     </PublicFormShell>
   );
 }

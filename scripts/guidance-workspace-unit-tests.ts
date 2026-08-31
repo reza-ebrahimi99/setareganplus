@@ -17,6 +17,12 @@ import {
 import { workspaceStepEmptyMessage } from "../lib/guidance/workspace/presentation";
 import { computeRewindPlanState, diffFields } from "../lib/guidance/workspace";
 import { deriveOfficeCasePulse } from "../lib/guidance/office/pulse";
+import {
+  buildFirstSessionIcs,
+  deriveSessionCountdown,
+  FIRST_SESSION_DOCUMENTS,
+  FIRST_SESSION_DURATION,
+} from "../lib/guidance/office/first-session";
 import { resolveOfficeRailSections } from "../lib/guidance/office/nav";
 import {
   deriveOfficeJourneyTracker,
@@ -255,6 +261,11 @@ test("tracker past phases are reviewable; future phases have lock copy", () => {
     trackerInput({ currentStep: 2, completedSteps: [1], completionPercentage: 8 }),
   );
   assert.equal(atInterest.phases[1]?.href, "/ms/interest");
+  const atSession = deriveOfficeJourneyTracker(
+    trackerInput({ currentStep: 4, completedSteps: [1, 2, 3], completionPercentage: 25 }),
+  );
+  assert.equal(atSession.phases[3]?.href, "/ms/session");
+  assert.equal(atSession.phases[3]?.estimatedDuration, "۹۰ دقیقه");
   assert.equal(model.phases[3]?.href, null);
   assert.ok(model.phases[1]?.lockReason === null);
   assert.ok(model.phases[3]?.lockReason?.includes("فعال"));
@@ -346,6 +357,48 @@ test("office rail never uses coming-soon copy", () => {
   const journey = early.flatMap((s) => s.items).find((item) => item.id === "journey");
   assert.equal(journey?.live, true);
   assert.equal(journey?.href, "/ms/journey");
+  const session = early.flatMap((s) => s.items).find((item) => item.id === "session");
+  assert.equal(session?.live, true);
+  assert.equal(session?.href, "/ms/session");
+});
+
+test("office pulse: booked first session is highlighted", () => {
+  const pulse = deriveOfficeCasePulse({
+    currentStep: 5,
+    completionPercentage: 33,
+    finalApproved: false,
+    hasCounselorRevision: false,
+    hasPendingDocument: false,
+    unpaid: false,
+    firstSessionUpcoming: true,
+    firstSessionCountdown: "۲ روز تا جلسه",
+  });
+  assert.equal(pulse.statusLabel, "جلسه اول رزرو شد");
+  assert.equal(pulse.waitingTitle, "جلسه اول رزرو شد");
+  assert.ok(pulse.waitingBody.includes("۲ روز"));
+});
+
+test("first session countdown and calendar are explainable", () => {
+  const future = new Date("2026-09-02T12:00:00.000Z");
+  const now = new Date("2026-09-01T12:00:00.000Z");
+  const count = deriveSessionCountdown(future.toISOString(), now);
+  assert.equal(count.upcoming, true);
+  assert.ok(count.label.includes("روز") || count.label.includes("ساعت"));
+  const past = deriveSessionCountdown("2026-08-01T12:00:00.000Z", now);
+  assert.equal(past.past, true);
+  const ics = buildFirstSessionIcs({
+    uid: "res-1@setareganplus.ir",
+    startsAt: future,
+    endsAt: new Date(future.getTime() + 90 * 60 * 1000),
+    summary: "جلسه اول مشاوره",
+    description: "مدارک را آماده کنید",
+    location: "حضوری",
+  });
+  assert.ok(ics.includes("BEGIN:VEVENT"));
+  assert.ok(ics.includes("DTSTART:20260902T120000Z"));
+  assert.ok(ics.includes("SUMMARY:جلسه اول مشاوره"));
+  assert.equal(FIRST_SESSION_DURATION, "۹۰ دقیقه");
+  assert.ok(FIRST_SESSION_DOCUMENTS.length >= 3);
 });
 
 console.log("guidance workspace unit tests passed");

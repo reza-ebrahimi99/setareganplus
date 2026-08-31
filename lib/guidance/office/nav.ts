@@ -12,6 +12,7 @@ export const DISCOVER_CENTER_HOME = "/discover";
 export const DISCOVER_CENTER_SYSTEMS = "/discover/systems";
 export const DISCOVER_CENTER_MAJORS = "/discover/majors";
 export const DISCOVER_CENTER_PATHWAYS = "/discover/pathways";
+export const MAJOR_OFFICE_SESSION = "/ms/session";
 
 export type OfficeRailItem = {
   id: string;
@@ -73,6 +74,15 @@ const OFFICE_RAIL_DEFS: readonly OfficeRailSectionDef[] = [
         id: "journey",
         label: "نقشه مسیر",
         href: MAJOR_OFFICE_JOURNEY,
+        live: true,
+        unlock: { kind: "path" },
+        lockReasonBefore: null,
+        lockReasonReached: null,
+      },
+      {
+        id: "session",
+        label: "جلسه اول",
+        href: MAJOR_OFFICE_SESSION,
         live: true,
         unlock: { kind: "path" },
         lockReasonBefore: null,

@@ -9,7 +9,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { reserveGuidanceFirstSessionAction } from "@/app/portal/student/services/guidance/steps/actions/step4";
 import { GuidanceStepShell } from "@/components/guidance/steps/GuidanceStepShell";
-import { guidanceJourneyStepPath } from "@/lib/guidance/journey/steps";
+
 import { toPersianDigits } from "@/lib/persian";
 import type { GuidanceJourneySidebarStep } from "@/lib/guidance/journey/types";
 
@@ -48,7 +48,11 @@ export function FirstSessionStep({
       return;
     }
     setCelebrating(true);
-    setTimeout(() => router.push(guidanceJourneyStepPath(5)), 1400);
+    setTimeout(() => {
+      router.push(
+        `/book/guidance-first-session/confirmation/${encodeURIComponent(result.trackingCode)}`,
+      );
+    }, 900);
   }
 
   return (
@@ -71,8 +75,7 @@ export function FirstSessionStep({
         <div className="gpj-card">
           <h2 className="gpj-card__title">تقویم مشاور هنوز آماده نشده</h2>
           <p className="gpj-card__desc">
-            مشاور به‌زودی نوبت‌های در دسترس را منتشر می‌کند. لطفاً کمی بعد دوباره
-            سر بزن.
+            تقویم مهندس هنوز نوبت باز ندارد. پرونده شما اینجاست؛ کمی بعد دوباره سر بزنید.
           </p>
         </div>
       ) : slots.length === 0 ? (

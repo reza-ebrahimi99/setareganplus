@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { toPersianDigits } from "@/lib/persian";
 import type { OfficeDashboardModel } from "@/lib/guidance/office/dashboard";
-import { MAJOR_OFFICE_INTEREST, MAJOR_OFFICE_JOURNEY } from "@/lib/guidance/office/nav";
+import {
+  MAJOR_OFFICE_INTEREST,
+  MAJOR_OFFICE_JOURNEY,
+  MAJOR_OFFICE_SESSION,
+} from "@/lib/guidance/office/nav";
 
 export function OfficeHome({ model }: { model: OfficeDashboardModel }) {
   const { pulse } = model;
@@ -47,6 +51,19 @@ export function OfficeHome({ model }: { model: OfficeDashboardModel }) {
         <p className="major-office__chapter">فصل جاری: {pulse.currentChapter}</p>
       </section>
 
+      {model.firstSession.booked ? (
+        <section className="major-office__session-card">
+          <p>جلسه اول رزرو شد</p>
+          <h2>{model.firstSession.countdownLabel || "نوبت شما ثبت شده است"}</h2>
+          <ul>
+            {model.firstSession.checklist.map((item) => (
+              <li key={item.label}>{item.label}</li>
+            ))}
+          </ul>
+          <Link href={MAJOR_OFFICE_SESSION}>آمادگی جلسه و مدارک</Link>
+        </section>
+      ) : null}
+
       <p className="major-office__note">{model.departmentNote}</p>
 
       <div className="major-office__cta-row">
@@ -55,6 +72,9 @@ export function OfficeHome({ model }: { model: OfficeDashboardModel }) {
         </Link>
         <Link href={MAJOR_OFFICE_INTEREST} className="major-office__journey-cta is-gold">
           آزمون رغبت رایگان
+        </Link>
+        <Link href={MAJOR_OFFICE_SESSION} className="major-office__journey-cta">
+          جلسه اول مشاوره
         </Link>
       </div>
     </div>

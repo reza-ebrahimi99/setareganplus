@@ -14,6 +14,9 @@ import { getCurrentOrganization } from "@/lib/organizations/get-current-organiza
 import { prisma } from "@/lib/prisma";
 import { toPersianDigits } from "@/lib/persian";
 import { createPageMetadata } from "@/lib/seo/create-page-metadata";
+import { GUIDANCE_FIRST_SESSION_SERVICE_SLUG } from "@/lib/guidance/journey/booking";
+import { GuidanceBookingConfirmation } from "@/components/guidance/office/GuidanceBookingConfirmation";
+import { deriveSessionCountdown } from "@/lib/guidance/office/first-session";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +82,34 @@ export default async function BookingConfirmationPage({
   }
 
   const settings = parseBookingServiceSettings(reservation.slot.service.settings);
+  if (serviceSlug === GUIDANCE_FIRST_SESSION_SERVICE_SLUG) {
+    const whenLabel = `${formatJalaliDateLong(reservation.slot.startsAt)} · ${formatPersianTimeRange(
+      reservation.slot.startsAt,
+      reservation.slot.endsAt,
+    )}`;
+    const countdown = deriveSessionCountdown(reservation.slot.startsAt.toISOString());
+    const locationNote =
+      (reservation.meetingType === "ONLINE"
+        ? settings.onlineMeetingInfo
+        : settings.addressInfo) ?? null;
+    return (
+      <PublicFormShell>
+        <GuidanceBookingConfirmation
+          trackingCode={reservation.trackingCode}
+          counselorName={reservation.slot.advisor.displayName}
+          whenLabel={whenLabel}
+          meetingLabel={MEETING_LABELS[reservation.meetingType] ?? reservation.meetingType}
+          branchName={reservation.slot.branch?.name ?? null}
+          locationNote={locationNote}
+          countdownLabel={
+            countdown.upcoming ? countdown.label : "جلسه اول در پرونده شما ثبت شد"
+          }
+          calendarHref={`${getBookingConfirmationPath(serviceSlug, reservation.trackingCode)}/calendar`}
+        />
+      </PublicFormShell>
+    );
+  }
+
   const qrTarget = checkInToken
     ? buildPublicCheckInUrl(checkInToken)
     : `https://setareganplus.ir/book/${serviceSlug}/confirmation/${encodeURIComponent(reservation.trackingCode)}`;

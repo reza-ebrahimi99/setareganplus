@@ -11,6 +11,7 @@ import {
   MAJOR_OFFICE_HOME,
   MAJOR_OFFICE_INTEREST,
   MAJOR_OFFICE_JOURNEY,
+  MAJOR_OFFICE_SESSION,
   resolveOfficeRailSections,
 } from "@/lib/guidance/office/nav";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
@@ -58,12 +59,19 @@ export default async function MajorOfficeLayout({
   const onJourney =
     pathname === MAJOR_OFFICE_JOURNEY || pathname.startsWith(`${MAJOR_OFFICE_JOURNEY}/`);
   const onInterest = pathname === MAJOR_OFFICE_INTEREST || pathname.startsWith(`${MAJOR_OFFICE_INTEREST}/`);
+  const onSession = pathname === MAJOR_OFFICE_SESSION || pathname.startsWith(`${MAJOR_OFFICE_SESSION}/`);
 
   return (
     <MajorOfficeShell
       userDisplayName={context.user.displayName}
       statusLabel={
-        onInterest ? "آزمون رغبت" : onJourney ? "نقشه مسیر" : "دفتر انتخاب رشته"
+        onSession
+          ? "جلسه اول"
+          : onInterest
+            ? "آزمون رغبت"
+            : onJourney
+              ? "نقشه مسیر"
+              : "دفتر انتخاب رشته"
       }
       pathname={pathname}
       rail={rail}

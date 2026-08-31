@@ -8,7 +8,7 @@ import {
   guidanceJourneyStepPath,
   type GuidanceJourneyStepId,
 } from "@/lib/guidance/journey/steps";
-import { MAJOR_OFFICE_INTEREST } from "@/lib/guidance/office/nav";
+import { MAJOR_OFFICE_INTEREST, MAJOR_OFFICE_SESSION } from "@/lib/guidance/office/nav";
 import { guidanceJourneyStepStatus } from "@/lib/guidance/journey/state";
 import type { GuidanceJourneyStepStatus } from "@/lib/guidance/journey/types";
 import type { StepReviewStatus } from "@/lib/guidance/workspace/review";
@@ -119,9 +119,9 @@ const PHASE_CATALOG: readonly PhaseCatalog[] = [
   {
     id: 4,
     chapter: "انتخاب اولویت‌ها و جلسه اول",
-    estimatedDuration: "یک جلسه ۳۰ تا ۴۵ دقیقه‌ای",
+    estimatedDuration: "۹۰ دقیقه",
     lockReason: "پس از فعال‌سازی بسته مشاوره فعال می‌شود",
-    continueLabel: "رزرو جلسه اول",
+    continueLabel: "آمادگی و رزرو جلسه اول",
     actions: [{ id: "book1", label: "رزرو نوبت جلسه اول با مهندس" }],
   },
   {
@@ -339,12 +339,19 @@ export function deriveOfficeJourneyTracker(
       lockReason: status === "locked" ? catalog.lockReason : null,
       reviewable: status === "completed",
       href:
+        catalog.id === 2 && status === "active"
+          ? MAJOR_OFFICE_INTEREST
+          : catalog.id === 4 && (status === "active" || status === "completed")
+            ? MAJOR_OFFICE_SESSION
+            : status === "active"
+              ? guidanceJourneyStepPath(catalog.id)
+              : null,
+      hrefLabel:
         status === "active"
-          ? catalog.id === 2
-            ? MAJOR_OFFICE_INTEREST
-            : guidanceJourneyStepPath(catalog.id)
-          : null,
-      hrefLabel: status === "active" ? catalog.continueLabel : null,
+          ? catalog.continueLabel
+          : catalog.id === 4 && status === "completed"
+            ? "مشاهده جلسه اول"
+            : null,
       knowledgeNote,
     };
   });

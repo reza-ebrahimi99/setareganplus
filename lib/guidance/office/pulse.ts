@@ -63,6 +63,8 @@ export function deriveOfficeCasePulse(input: {
   hasCounselorRevision: boolean;
   hasPendingDocument: boolean;
   unpaid: boolean;
+  firstSessionUpcoming?: boolean;
+  firstSessionCountdown?: string | null;
 }): OfficeCasePulse {
   const currentStepTitle =
     GUIDANCE_JOURNEY_STEPS.find((step) => step.id === input.currentStep)?.title ??
@@ -105,6 +107,21 @@ export function deriveOfficeCasePulse(input: {
       waitingTitle: "پرونده شما روی میز مهندس ابراهیمی است",
       waitingBody:
         "مدرک دریافت شد. بازبینی کارنامه معمولاً یک تا دو روز کاری زمان می‌برد. لازم نیست همین حالا فرم دیگری پر کنید.",
+      completionPercentage: input.completionPercentage,
+      currentChapter,
+      currentStepTitle,
+    };
+  }
+
+  if (input.firstSessionUpcoming) {
+    return {
+      status: "in_progress",
+      statusLabel: "جلسه اول رزرو شد",
+      waitingKind: "none",
+      waitingTitle: "جلسه اول رزرو شد",
+      waitingBody:
+        input.firstSessionCountdown ??
+        "نوبت شما ثبت شده است. مدارک را طبق چک‌لیست آماده کنید.",
       completionPercentage: input.completionPercentage,
       currentChapter,
       currentStepTitle,

@@ -11836,3 +11836,112 @@ body {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+.office-session {
+  max-width: 40rem;
+}
+
+.office-session__hero h1 {
+  margin: 0.25rem 0 0;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-weight: 900;
+}
+
+.office-session__hero > p:first-child {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #8a6a12;
+}
+
+.office-session__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.office-session__meta dt {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--portal-muted);
+}
+
+.office-session__meta dd {
+  margin: 0.15rem 0 0;
+  font-weight: 800;
+}
+
+.office-session section {
+  margin-top: 1.25rem;
+}
+
+.office-session__list,
+.office-session__docs {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+}
+
+.office-session__list li,
+.office-session__docs li {
+  margin-bottom: 0.7rem;
+  line-height: 1.75;
+}
+
+.office-session__list strong,
+.office-session__docs strong {
+  display: block;
+}
+
+.office-session__cta,
+.office-session__ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.office-session__cta {
+  margin-top: 1.25rem;
+  background: linear-gradient(90deg, #c9a227, #e4c36a);
+  color: #3a2a00;
+}
+
+.office-session__ghost {
+  border: 1px solid var(--portal-border);
+  color: inherit;
+}
+
+.office-session__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1.2rem;
+}
+
+.office-session__code,
+.office-session__note {
+  line-height: 1.8;
+}
+
+.major-office__session-card {
+  margin-top: 1.1rem;
+  padding: 1.05rem 1.15rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgb(212 175 55 / 0.4);
+  background: linear-gradient(165deg, #fff, rgb(248 239 208 / 0.45));
+}
+
+.major-office__session-card h2 {
+  margin: 0.2rem 0 0.55rem;
+}
+
+.major-office__session-card a {
+  font-weight: 800;
+  color: #5b3df5;
+}
