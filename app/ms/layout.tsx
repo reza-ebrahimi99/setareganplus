@@ -6,7 +6,12 @@ import {
   candidateNeedsGuidanceOnboarding,
 } from "@/lib/guidance/external-candidate";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
-import { MAJOR_OFFICE_HOME } from "@/lib/guidance/office/nav";
+import { loadGuidanceJourneyPlan } from "@/lib/guidance/journey/plan";
+import {
+  MAJOR_OFFICE_HOME,
+  MAJOR_OFFICE_JOURNEY,
+  resolveOfficeRailSections,
+} from "@/lib/guidance/office/nav";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
 
 export const dynamic = "force-dynamic";
@@ -35,11 +40,29 @@ export default async function MajorOfficeLayout({
   const headerStore = await headers();
   const pathname = headerStore.get("x-pathname") ?? MAJOR_OFFICE_HOME;
 
+  const plan = await loadGuidanceJourneyPlan({
+    organizationId: context.organization.id,
+    userId: context.user.id,
+    studentId,
+  });
+  const rail = resolveOfficeRailSections(
+    plan
+      ? {
+          currentStep: plan.currentStep,
+          completedSteps: plan.completedSteps,
+          finalApproved: Boolean(plan.finalApprovedAtIso),
+        }
+      : null,
+  );
+  const onJourney =
+    pathname === MAJOR_OFFICE_JOURNEY || pathname.startsWith(`${MAJOR_OFFICE_JOURNEY}/`);
+
   return (
     <MajorOfficeShell
       userDisplayName={context.user.displayName}
-      statusLabel="دفتر انتخاب رشته"
+      statusLabel={onJourney ? "نقشه مسیر" : "دفتر انتخاب رشته"}
       pathname={pathname}
+      rail={rail}
     >
       {children}
     </MajorOfficeShell>

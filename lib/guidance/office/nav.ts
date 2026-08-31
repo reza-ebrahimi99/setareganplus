@@ -1,15 +1,18 @@
 /**
  * Student office rail — rooms of the department.
- * Slice 2: only Home is live. Other items are visible, not fake destinations.
+ * Slice 3: Home + Journey Tracker are live. Other rooms stay on the
+ * student's path (never «به‌زودی»).
  */
 
 export const MAJOR_OFFICE_HOME = "/ms";
+export const MAJOR_OFFICE_JOURNEY = "/ms/journey";
 
 export type OfficeRailItem = {
   id: string;
   label: string;
   href: string | null;
   live: boolean;
+  lockReason: string | null;
 };
 
 export type OfficeRailSection = {
@@ -18,42 +21,236 @@ export type OfficeRailSection = {
   items: readonly OfficeRailItem[];
 };
 
-export const OFFICE_RAIL_SECTIONS: readonly OfficeRailSection[] = [
+export type OfficeRailPlanHint = {
+  currentStep: number;
+  completedSteps: readonly number[];
+  finalApproved: boolean;
+} | null;
+
+type UnlockRule =
+  | { kind: "path" }
+  | { kind: "step_reached"; step: number }
+  | { kind: "step_completed"; step: number }
+  | { kind: "final_approved" };
+
+type OfficeRailItemDef = {
+  id: string;
+  label: string;
+  href: string | null;
+  live: boolean;
+  unlock: UnlockRule;
+  lockReasonBefore: string | null;
+  lockReasonReached: string | null;
+};
+
+type OfficeRailSectionDef = {
+  id: string;
+  label: string;
+  items: readonly OfficeRailItemDef[];
+};
+
+const OFFICE_RAIL_DEFS: readonly OfficeRailSectionDef[] = [
   {
     id: "office",
     label: "دفتر",
     items: [
-      { id: "home", label: "خانه", href: MAJOR_OFFICE_HOME, live: true },
-      { id: "journey", label: "نقشه مسیر", href: null, live: false },
-      { id: "timeline", label: "خط زمان", href: null, live: false },
+      {
+        id: "home",
+        label: "خانه",
+        href: MAJOR_OFFICE_HOME,
+        live: true,
+        unlock: { kind: "path" },
+        lockReasonBefore: null,
+        lockReasonReached: null,
+      },
+      {
+        id: "journey",
+        label: "نقشه مسیر",
+        href: MAJOR_OFFICE_JOURNEY,
+        live: true,
+        unlock: { kind: "path" },
+        lockReasonBefore: null,
+        lockReasonReached: null,
+      },
+      {
+        id: "timeline",
+        label: "خط زمان",
+        href: null,
+        live: false,
+        unlock: { kind: "path" },
+        lockReasonBefore: "خط زمان پرونده را از نقشه مسیر دنبال کنید",
+        lockReasonReached: "خط زمان پرونده را از نقشه مسیر دنبال کنید",
+      },
     ],
   },
   {
     id: "file",
     label: "پرونده",
     items: [
-      { id: "profile", label: "شناسنامه", href: null, live: false },
-      { id: "grades", label: "کارنامه نهایی", href: null, live: false },
-      { id: "konkur", label: "نتایج کنکور", href: null, live: false },
-      { id: "documents", label: "مدارک", href: null, live: false },
+      {
+        id: "profile",
+        label: "شناسنامه",
+        href: null,
+        live: false,
+        unlock: { kind: "step_reached", step: 1 },
+        lockReasonBefore: "بعد از ثبت اطلاعات فعال می‌شود",
+        lockReasonReached: "شناسنامه را از مرحله اطلاعات فردی در نقشه مسیر باز کنید",
+      },
+      {
+        id: "grades",
+        label: "کارنامه نهایی",
+        href: null,
+        live: false,
+        unlock: { kind: "step_reached", step: 1 },
+        lockReasonBefore: "بعد از ثبت اطلاعات فعال می‌شود",
+        lockReasonReached: "کارنامه نهایی بخشی از مرحله شناسنامه در نقشه مسیر است",
+      },
+      {
+        id: "konkur",
+        label: "نتایج کنکور",
+        href: null,
+        live: false,
+        unlock: { kind: "step_reached", step: 5 },
+        lockReasonBefore: "پس از تکمیل این مرحله فعال می‌شود",
+        lockReasonReached: "نتایج کنکور را از مرحله کارنامه سنجش در نقشه مسیر ببینید",
+      },
+      {
+        id: "documents",
+        label: "مدارک",
+        href: null,
+        live: false,
+        unlock: { kind: "step_reached", step: 1 },
+        lockReasonBefore: "بعد از ثبت اطلاعات فعال می‌شود",
+        lockReasonReached: "مدارک پرونده را از نقشه مسیر، همان مرحله مربوط پیگیری کنید",
+      },
     ],
   },
   {
     id: "discover",
     label: "کشف",
     items: [
-      { id: "interest", label: "آزمون رغبت", href: null, live: false },
-      { id: "universities", label: "دانشنامه دانشگاه", href: null, live: false },
-      { id: "majors", label: "دانشنامه رشته", href: null, live: false },
-      { id: "systems", label: "نظام‌های آموزشی", href: null, live: false },
+      {
+        id: "interest",
+        label: "آزمون رغبت",
+        href: null,
+        live: false,
+        unlock: { kind: "step_reached", step: 2 },
+        lockReasonBefore: "بعد از ثبت اطلاعات فعال می‌شود",
+        lockReasonReached: "آزمون رغبت در نقشه مسیر، مرحله شناخت خود است",
+      },
+      {
+        id: "universities",
+        label: "دانشنامه دانشگاه",
+        href: null,
+        live: false,
+        unlock: { kind: "step_completed", step: 2 },
+        lockReasonBefore: "بعد از انجام آزمون رغبت‌سنجی در دسترس قرار می‌گیرد",
+        lockReasonReached: "دانشنامه دانشگاه همراه با مسیر مشاوره شما باز می‌شود",
+      },
+      {
+        id: "majors",
+        label: "دانشنامه رشته",
+        href: null,
+        live: false,
+        unlock: { kind: "step_completed", step: 2 },
+        lockReasonBefore: "بعد از انجام آزمون رغبت‌سنجی در دسترس قرار می‌گیرد",
+        lockReasonReached: "دانشنامه رشته همراه با مسیر مشاوره شما باز می‌شود",
+      },
+      {
+        id: "systems",
+        label: "نظام‌های آموزشی",
+        href: null,
+        live: false,
+        unlock: { kind: "step_completed", step: 2 },
+        lockReasonBefore: "بعد از انجام آزمون رغبت‌سنجی در دسترس قرار می‌گیرد",
+        lockReasonReached: "نظام‌های آموزشی همراه با مسیر مشاوره شما باز می‌شوند",
+      },
     ],
   },
   {
     id: "list",
     label: "فهرست ۱۵۰",
     items: [
-      { id: "draft", label: "پیش‌نویس مشاور", href: null, live: false },
-      { id: "reports", label: "گزارش‌ها", href: null, live: false },
+      {
+        id: "draft",
+        label: "پیش‌نویس مشاور",
+        href: null,
+        live: false,
+        unlock: { kind: "step_reached", step: 10 },
+        lockReasonBefore: "پس از تکمیل اولویت‌ها و چیدمان فعال می‌شود",
+        lockReasonReached: "پیش‌نویس فهرست را از مرحله چیدمان هوشمند در نقشه مسیر ببینید",
+      },
+      {
+        id: "reports",
+        label: "گزارش‌ها",
+        href: null,
+        live: false,
+        unlock: { kind: "final_approved" },
+        lockReasonBefore: "پس از تأیید نهایی در دسترس قرار می‌گیرد",
+        lockReasonReached: "گزارش نهایی پس از بایگانی پرونده در همین دفتر می‌ماند",
+      },
     ],
   },
 ];
+
+export function isOfficeStepReached(
+  step: number,
+  plan: NonNullable<OfficeRailPlanHint>,
+): boolean {
+  return plan.currentStep >= step || plan.completedSteps.includes(step);
+}
+
+export function isOfficeStepCompleted(
+  step: number,
+  plan: NonNullable<OfficeRailPlanHint>,
+): boolean {
+  return plan.completedSteps.includes(step) || (plan.finalApproved && step <= 12);
+}
+
+function ruleReached(rule: UnlockRule, plan: OfficeRailPlanHint): boolean {
+  if (!plan) return false;
+  switch (rule.kind) {
+    case "path":
+      return true;
+    case "step_reached":
+      return isOfficeStepReached(rule.step, plan);
+    case "step_completed":
+      return isOfficeStepCompleted(rule.step, plan);
+    case "final_approved":
+      return plan.finalApproved;
+  }
+}
+
+export function resolveOfficeRailSections(
+  plan: OfficeRailPlanHint,
+): OfficeRailSection[] {
+  return OFFICE_RAIL_DEFS.map((section) => ({
+    id: section.id,
+    label: section.label,
+    items: section.items.map((item) => {
+      if (item.live) {
+        return {
+          id: item.id,
+          label: item.label,
+          href: item.href,
+          live: true,
+          lockReason: null,
+        };
+      }
+      const reached = ruleReached(item.unlock, plan);
+      return {
+        id: item.id,
+        label: item.label,
+        href: null,
+        live: false,
+        lockReason: reached
+          ? (item.lockReasonReached ?? item.lockReasonBefore)
+          : item.lockReasonBefore,
+      };
+    }),
+  }));
+}
+
+/** Default rail (no plan yet) — still journey-tied, never «به‌زودی». */
+export const OFFICE_RAIL_SECTIONS: readonly OfficeRailSection[] =
+  resolveOfficeRailSections(null);

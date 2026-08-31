@@ -17,6 +17,11 @@ import {
 import { workspaceStepEmptyMessage } from "../lib/guidance/workspace/presentation";
 import { computeRewindPlanState, diffFields } from "../lib/guidance/workspace";
 import { deriveOfficeCasePulse } from "../lib/guidance/office/pulse";
+import { resolveOfficeRailSections } from "../lib/guidance/office/nav";
+import {
+  deriveOfficeJourneyTracker,
+  type TrackerDerivationInput,
+} from "../lib/guidance/office/tracker";
 
 function test(name: string, fn: () => void) {
   try {
@@ -208,6 +213,133 @@ test("office pulse: final approval is terminal", () => {
   });
   assert.equal(pulse.status, "approved");
   assert.equal(pulse.waitingKind, "none");
+});
+
+function trackerInput(
+  over: Partial<TrackerDerivationInput> = {},
+): TrackerDerivationInput {
+  return {
+    currentStep: 1,
+    completedSteps: [],
+    completionPercentage: 0,
+    finalApproved: false,
+    personalInfoConfirmed: false,
+    packageCode: null,
+    packagePaid: false,
+    choicesApproved: false,
+    hasFinalGrades: false,
+    hasExamResult: false,
+    reviews: [],
+    ...over,
+  };
+}
+
+test("tracker shows all 12 phases with current highlighted", () => {
+  const model = deriveOfficeJourneyTracker(trackerInput({ currentStep: 3, completedSteps: [1, 2], completionPercentage: 17 }));
+  assert.equal(model.phases.length, 12);
+  assert.equal(model.phases.filter((phase) => phase.status === "active").length, 1);
+  assert.equal(model.phases[2]?.status, "active");
+  assert.equal(model.currentStep, 3);
+  assert.equal(model.phases[0]?.status, "completed");
+  assert.equal(model.phases[3]?.status, "locked");
+});
+
+test("tracker past phases are reviewable; future phases have lock copy", () => {
+  const model = deriveOfficeJourneyTracker(
+    trackerInput({ currentStep: 3, completedSteps: [1, 2], completionPercentage: 17 }),
+  );
+  assert.equal(model.phases[0]?.reviewable, true);
+  assert.equal(model.phases[1]?.reviewable, true);
+  assert.equal(model.phases[2]?.href, "/portal/student/services/guidance/steps/3");
+  assert.equal(model.phases[3]?.href, null);
+  assert.ok(model.phases[1]?.lockReason === null);
+  assert.ok(model.phases[3]?.lockReason?.includes("فعال"));
+  for (const phase of model.phases) {
+    assert.ok(phase.description.length > 0);
+    assert.ok(phase.estimatedDuration.length > 0);
+    assert.ok(phase.requiredActions.length > 0);
+    assert.ok(phase.counselorLabel.length > 0);
+    assert.equal(phase.lockReason?.includes("به‌زودی") ?? false, false);
+    assert.equal(phase.lockReason?.includes("به زودی") ?? false, false);
+  }
+});
+
+test("tracker lock copy matches the student journey", () => {
+  const model = deriveOfficeJourneyTracker(trackerInput());
+  assert.equal(model.phases[1]?.lockReason, "بعد از ثبت اطلاعات فعال می‌شود");
+  assert.ok(model.phases[2]?.lockReason?.includes("رغبت"));
+  assert.ok(model.phases[1]?.knowledgeNote?.includes("رغبت"));
+});
+
+test("tracker counselor status uses reviews, never private notes", () => {
+  const model = deriveOfficeJourneyTracker(
+    trackerInput({
+      currentStep: 2,
+      completedSteps: [1],
+      completionPercentage: 8,
+      personalInfoConfirmed: true,
+      hasFinalGrades: true,
+      reviews: [
+        {
+          stepNumber: 1,
+          status: "APPROVED",
+          studentMessage: "شناسنامه تأیید شد",
+          rejectReason: null,
+        },
+        {
+          stepNumber: 2,
+          status: "NEEDS_REVISION",
+          studentMessage: "لطفاً آزمون را کامل کنید",
+          rejectReason: null,
+        },
+      ],
+    }),
+  );
+  assert.equal(model.phases[0]?.counselorKind, "approved");
+  assert.equal(model.phases[0]?.counselorMessage, "شناسنامه تأیید شد");
+  assert.equal(model.phases[1]?.counselorKind, "needs_revision");
+  assert.equal(model.phases[1]?.counselorMessage, "لطفاً آزمون را کامل کنید");
+  assert.equal(model.phases[2]?.counselorKind, "not_reached");
+});
+
+test("tracker final approval completes every phase", () => {
+  const model = deriveOfficeJourneyTracker(
+    trackerInput({
+      currentStep: 12,
+      completedSteps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      completionPercentage: 100,
+      finalApproved: true,
+    }),
+  );
+  assert.ok(model.phases.every((phase) => phase.status === "completed"));
+  assert.ok(model.phases.every((phase) => phase.counselorKind === "approved"));
+  assert.equal(model.completionPercentage, 100);
+});
+
+test("office rail never uses coming-soon copy", () => {
+  const early = resolveOfficeRailSections({
+    currentStep: 1,
+    completedSteps: [],
+    finalApproved: false,
+  });
+  const afterInterest = resolveOfficeRailSections({
+    currentStep: 3,
+    completedSteps: [1, 2],
+    finalApproved: false,
+  });
+  const items = [...early, ...afterInterest].flatMap((section) => section.items);
+  for (const item of items) {
+    const blob = `${item.label} ${item.lockReason ?? ""}`;
+    assert.equal(blob.includes("به‌زودی"), false);
+    assert.equal(blob.includes("به زودی"), false);
+  }
+  const interest = early.flatMap((s) => s.items).find((item) => item.id === "interest");
+  assert.equal(interest?.lockReason, "بعد از ثبت اطلاعات فعال می‌شود");
+  const uni = afterInterest.flatMap((s) => s.items).find((item) => item.id === "universities");
+  assert.ok(uni?.lockReason?.includes("همراه با مسیر مشاوره"));
+  const journey = early.flatMap((s) => s.items).find((item) => item.id === "journey");
+  assert.equal(journey?.live, true);
+  assert.equal(journey?.href, "/ms/journey");
 });
 
 console.log("guidance workspace unit tests passed");
