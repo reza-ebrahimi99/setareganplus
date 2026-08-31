@@ -9,6 +9,7 @@ import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
 import { loadGuidanceJourneyPlan } from "@/lib/guidance/journey/plan";
 import {
   MAJOR_OFFICE_HOME,
+  MAJOR_OFFICE_INTEREST,
   MAJOR_OFFICE_JOURNEY,
   resolveOfficeRailSections,
 } from "@/lib/guidance/office/nav";
@@ -56,11 +57,14 @@ export default async function MajorOfficeLayout({
   );
   const onJourney =
     pathname === MAJOR_OFFICE_JOURNEY || pathname.startsWith(`${MAJOR_OFFICE_JOURNEY}/`);
+  const onInterest = pathname === MAJOR_OFFICE_INTEREST || pathname.startsWith(`${MAJOR_OFFICE_INTEREST}/`);
 
   return (
     <MajorOfficeShell
       userDisplayName={context.user.displayName}
-      statusLabel={onJourney ? "نقشه مسیر" : "دفتر انتخاب رشته"}
+      statusLabel={
+        onInterest ? "آزمون رغبت" : onJourney ? "نقشه مسیر" : "دفتر انتخاب رشته"
+      }
       pathname={pathname}
       rail={rail}
     >

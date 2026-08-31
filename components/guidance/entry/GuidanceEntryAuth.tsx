@@ -76,6 +76,7 @@ function AuthCard({
 }) {
   return (
     <section
+      id={`entry-${id}`}
       className={`guidance-entry__login-card${selected ? " is-open" : ""}`}
       data-role={id}
     >

@@ -8,6 +8,7 @@ import {
   guidanceJourneyStepPath,
   type GuidanceJourneyStepId,
 } from "@/lib/guidance/journey/steps";
+import { MAJOR_OFFICE_INTEREST } from "@/lib/guidance/office/nav";
 import { guidanceJourneyStepStatus } from "@/lib/guidance/journey/state";
 import type { GuidanceJourneyStepStatus } from "@/lib/guidance/journey/types";
 import type { StepReviewStatus } from "@/lib/guidance/workspace/review";
@@ -337,7 +338,12 @@ export function deriveOfficeJourneyTracker(
       counselorMessage: counselor.message,
       lockReason: status === "locked" ? catalog.lockReason : null,
       reviewable: status === "completed",
-      href: status === "active" ? guidanceJourneyStepPath(catalog.id) : null,
+      href:
+        status === "active"
+          ? catalog.id === 2
+            ? MAJOR_OFFICE_INTEREST
+            : guidanceJourneyStepPath(catalog.id)
+          : null,
       hrefLabel: status === "active" ? catalog.continueLabel : null,
       knowledgeNote,
     };

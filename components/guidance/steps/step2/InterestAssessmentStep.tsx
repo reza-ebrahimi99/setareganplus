@@ -19,8 +19,10 @@ import { GuidanceStepShell } from "@/components/guidance/steps/GuidanceStepShell
 import type { GuidanceStepEmbedProps } from "@/components/guidance/steps/embed";
 import { GuidanceInterestResultsView } from "@/components/guidance/steps/step2/GuidanceInterestResultsView";
 import { guidanceJourneyStepPath } from "@/lib/guidance/journey/steps";
-import { ASSESSMENT_CATEGORIES } from "@/lib/guidance/journey/assessment/categories";
-import { getQuestionsForCategory } from "@/lib/guidance/journey/assessment/question-bank";
+import {
+  ASSESSMENT_SECTIONS,
+  getQuestionsForSection,
+} from "@/lib/guidance/journey/assessment/question-bank";
 import { toPersianDigits } from "@/lib/persian";
 import type {
   AssessmentAnswers,
@@ -56,9 +58,9 @@ export function InterestAssessmentStep({
 
   const sections = useMemo(
     () =>
-      ASSESSMENT_CATEGORIES.map((category) => ({
-        category,
-        questions: getQuestionsForCategory(category.id),
+      ASSESSMENT_SECTIONS.map((section) => ({
+        section,
+        questions: getQuestionsForSection(section.id),
       })),
     [],
   );
@@ -109,6 +111,10 @@ export function InterestAssessmentStep({
     "personality" in (state.result as object)
       ? (state.result as AssessmentResult)
       : undefined;
+  const submittedAnswers: AssessmentAnswers | undefined =
+    "answers" in state && state.answers && typeof state.answers === "object"
+      ? (state.answers as AssessmentAnswers)
+      : undefined;
 
   if (state.ok && result) {
     return (
@@ -122,7 +128,7 @@ export function InterestAssessmentStep({
         celebrate
         embed={embed}
       >
-        <GuidanceInterestResultsView result={result} />
+        <GuidanceInterestResultsView result={result} answers={submittedAnswers} />
         {stayOnSuccess ? null : (
           <div className="gpj-actions" style={{ position: "static", marginTop: "1rem" }}>
             <span />
@@ -144,7 +150,7 @@ export function InterestAssessmentStep({
       stepId={2}
       stepCount={12}
       title="آزمون سنجش رغبت"
-      description="۱۱ بخش کوتاه، حدود ۵۰ سؤال. صادقانه و بر اساس اولین برداشتت پاسخ بده."
+      description="ده بخش کوتاه، شصت سؤال. صادقانه و بر اساس اولین برداشت پاسخ بده."
       sidebarSteps={sidebarSteps}
       completionPercentage={completionPercentage}
       embed={embed}
@@ -153,11 +159,11 @@ export function InterestAssessmentStep({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <p className="gpj-card__title" style={{ marginBottom: 0 }}>
             بخش {toPersianDigits(activeIndex + 1)} از {toPersianDigits(sections.length)} ·{" "}
-            {activeSection.category.title}
+            {activeSection.section.title}
           </p>
         </div>
         <p className="gpj-card__desc" style={{ marginTop: "0.375rem", marginBottom: 0 }}>
-          {activeSection.category.description}
+          {activeSection.section.description}
         </p>
         <div className="gpj-shell__mobile-progress-track" style={{ marginTop: "0.75rem" }}>
           <div
@@ -189,7 +195,7 @@ export function InterestAssessmentStep({
         ) : null}
         {sections.map((section, index) => (
           <div
-            key={section.category.id}
+            key={section.section.id}
             style={{ display: index === activeIndex ? "block" : "none" }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>

@@ -6,6 +6,8 @@
 
 export const MAJOR_OFFICE_HOME = "/ms";
 export const MAJOR_OFFICE_JOURNEY = "/ms/journey";
+export const MAJOR_OFFICE_INTEREST = "/ms/interest";
+export const MAJOR_OFFICE_INTEREST_RESULTS = "/ms/interest/results";
 
 export type OfficeRailItem = {
   id: string;
@@ -132,11 +134,11 @@ const OFFICE_RAIL_DEFS: readonly OfficeRailSectionDef[] = [
       {
         id: "interest",
         label: "آزمون رغبت",
-        href: null,
-        live: false,
-        unlock: { kind: "step_reached", step: 2 },
-        lockReasonBefore: "بعد از ثبت اطلاعات فعال می‌شود",
-        lockReasonReached: "آزمون رغبت در نقشه مسیر، مرحله شناخت خود است",
+        href: MAJOR_OFFICE_INTEREST,
+        live: true,
+        unlock: { kind: "path" },
+        lockReasonBefore: null,
+        lockReasonReached: null,
       },
       {
         id: "universities",

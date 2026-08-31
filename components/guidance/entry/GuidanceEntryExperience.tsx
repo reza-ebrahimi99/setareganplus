@@ -101,6 +101,16 @@ export function GuidanceEntryExperience({
         </div>
 
         <div className="guidance-entry__landing">
+          <section className="guidance-entry__lead-magnet">
+            <h2>{copy.freeAssessment.title}</h2>
+            <p>{copy.freeAssessment.body}</p>
+            <a
+              href={studentSignedIn ? "/ms/interest" : "#entry-student"}
+              className="guidance-entry__lead-cta"
+            >
+              {copy.freeAssessment.cta}
+            </a>
+          </section>
           <section>
             <h2>{copy.story.title}</h2>
             <p>{copy.story.body}</p>

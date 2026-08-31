@@ -251,6 +251,10 @@ test("tracker past phases are reviewable; future phases have lock copy", () => {
   assert.equal(model.phases[0]?.reviewable, true);
   assert.equal(model.phases[1]?.reviewable, true);
   assert.equal(model.phases[2]?.href, "/portal/student/services/guidance/steps/3");
+  const atInterest = deriveOfficeJourneyTracker(
+    trackerInput({ currentStep: 2, completedSteps: [1], completionPercentage: 8 }),
+  );
+  assert.equal(atInterest.phases[1]?.href, "/ms/interest");
   assert.equal(model.phases[3]?.href, null);
   assert.ok(model.phases[1]?.lockReason === null);
   assert.ok(model.phases[3]?.lockReason?.includes("فعال"));
@@ -334,7 +338,8 @@ test("office rail never uses coming-soon copy", () => {
     assert.equal(blob.includes("به زودی"), false);
   }
   const interest = early.flatMap((s) => s.items).find((item) => item.id === "interest");
-  assert.equal(interest?.lockReason, "بعد از ثبت اطلاعات فعال می‌شود");
+  assert.equal(interest?.live, true);
+  assert.equal(interest?.href, "/ms/interest");
   const uni = afterInterest.flatMap((s) => s.items).find((item) => item.id === "universities");
   assert.ok(uni?.lockReason?.includes("همراه با مسیر مشاوره"));
   const journey = early.flatMap((s) => s.items).find((item) => item.id === "journey");

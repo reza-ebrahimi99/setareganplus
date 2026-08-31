@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { toPersianDigits } from "@/lib/persian";
 import type { OfficeDashboardModel } from "@/lib/guidance/office/dashboard";
-import { MAJOR_OFFICE_JOURNEY } from "@/lib/guidance/office/nav";
+import { MAJOR_OFFICE_INTEREST, MAJOR_OFFICE_JOURNEY } from "@/lib/guidance/office/nav";
 
 export function OfficeHome({ model }: { model: OfficeDashboardModel }) {
   const { pulse } = model;
@@ -49,9 +49,14 @@ export function OfficeHome({ model }: { model: OfficeDashboardModel }) {
 
       <p className="major-office__note">{model.departmentNote}</p>
 
-      <Link href={MAJOR_OFFICE_JOURNEY} className="major-office__journey-cta">
-        نقشه کامل مسیر مشاوره
-      </Link>
+      <div className="major-office__cta-row">
+        <Link href={MAJOR_OFFICE_JOURNEY} className="major-office__journey-cta">
+          نقشه کامل مسیر مشاوره
+        </Link>
+        <Link href={MAJOR_OFFICE_INTEREST} className="major-office__journey-cta is-gold">
+          آزمون رغبت رایگان
+        </Link>
+      </div>
     </div>
   );
 }

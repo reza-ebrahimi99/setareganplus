@@ -17,6 +17,7 @@ import type {
 
 export type GuidanceStep2FormState = GuidanceStepFormState & {
   result?: AssessmentResult;
+  answers?: AssessmentAnswers;
 };
 
 function parseAnswers(formData: FormData): AssessmentAnswers {
@@ -52,7 +53,7 @@ export async function submitGuidanceStep2Action(
     return { error: outcome.error };
   }
 
-  return { ok: true, result: outcome.result };
+  return { ok: true, result: outcome.result, answers };
 }
 
 export async function saveGuidanceStep2DraftAction(
