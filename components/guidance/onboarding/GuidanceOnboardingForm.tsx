@@ -14,10 +14,9 @@ import {
 } from "@/app/portal/student/services/guidance/onboarding/actions";
 import { GUIDANCE_QUOTA_OPTIONS } from "@/lib/guidance/journey/reference-data/quota";
 
-const fieldClass =
-  "mt-1.5 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20";
+const fieldClass = "";
 
-const labelClass = "block text-sm font-medium text-foreground";
+const labelClass = "";
 
 export type GuidanceOnboardingFormOption = {
   id: string;
@@ -151,32 +150,32 @@ export function GuidanceOnboardingForm({
       onSubmit={validate}
       onInput={queueAutosave}
       onChange={queueAutosave}
-      className="office-intake"
+      className="chamber-sheet"
       dir="rtl"
     >
       <input type="hidden" name="mobile" value={mobile} />
 
-      <p className="office-intake__save" aria-live="polite">
+      <p
+        className={`chamber-save${saveLabel === "idle" ? "" : " is-on"}`}
+        aria-live="polite"
+      >
         {saveLabel === "saving"
-          ? "در حال ذخیره پیش‌نویس…"
+          ? "…"
           : saveLabel === "saved"
-            ? "ذخیره شد — می‌توانید بعداً ادامه دهید"
+            ? "ثبت شد"
             : saveLabel === "error"
-              ? "ذخیره پیش‌نویس انجام نشد. دوباره تلاش کنید."
-              : "هر بخش به‌صورت خودکار ذخیره می‌شود"}
+              ? "ذخیره نشد"
+              : ""}
       </p>
 
       {(clientError || state.error) && (
-        <p
-          className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
-          role="alert"
-        >
+        <p className="chamber-alert" role="alert">
           {clientError ?? state.error}
         </p>
       )}
 
       {showIdentity ? (
-        <section className="office-intake__section" aria-labelledby="intake-identity">
+        <section aria-labelledby="intake-identity">
           <header>
             <p>تصویر اول</p>
             <h2 id="intake-identity">کی هستید</h2>
@@ -356,7 +355,7 @@ export function GuidanceOnboardingForm({
       )}
 
       {showAcademic ? (
-        <section className="office-intake__section" aria-labelledby="intake-academic">
+        <section aria-labelledby="intake-academic">
           <header>
             <p>تصویر دوم</p>
             <h2 id="intake-academic">تصویر تحصیلی</h2>
@@ -469,7 +468,7 @@ export function GuidanceOnboardingForm({
           pendingLabel="در حال گشودن دفتر…"
         />
       ) : continueHref ? (
-        <a href={continueHref} className="office-intake__continue">
+        <a href={continueHref} className="chamber-go">
           ادامه مسیر
         </a>
       ) : null}

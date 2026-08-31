@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "../styles/atrin.css";
-@import "../styles/atelier.css";
+@import "../styles/chamber.css";
 
 :root {
   --primary: #0f172a;

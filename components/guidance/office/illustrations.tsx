@@ -1,11 +1,8 @@
-/**
- * Editorial ink/gold marks for the counseling atelier.
- * Geometric, sparse — a private office, not clip-art.
- */
+/** Atmospheric ink-and-gold scenes. Not UI icons. */
 
 type MarkProps = { className?: string; title?: string };
 
-function Frame({
+function Scene({
   children,
   className,
   title,
@@ -13,7 +10,7 @@ function Frame({
   return (
     <svg
       className={className}
-      viewBox="0 0 280 220"
+      viewBox="0 0 520 400"
       role="img"
       aria-hidden={title ? undefined : true}
       aria-label={title}
@@ -25,135 +22,168 @@ function Frame({
 
 export function ConstellationMark(props: MarkProps) {
   return (
-    <Frame {...props} title={props.title ?? "صورت‌فلکی مسیر"}>
-      <ellipse cx="140" cy="118" rx="92" ry="62" fill="none" stroke="#b8944a" strokeOpacity="0.28" />
-      <ellipse cx="140" cy="118" rx="58" ry="38" fill="none" stroke="#0b0f16" strokeOpacity="0.12" />
+    <Scene {...props} title={props.title ?? "صورت‌فلکی مسیر"}>
+      <ellipse cx="270" cy="210" rx="190" ry="128" fill="none" stroke="#c4a05a" strokeOpacity="0.18" />
+      <ellipse cx="270" cy="210" rx="118" ry="78" fill="none" stroke="#0a0d13" strokeOpacity="0.1" />
       <path
-        d="M68 148 L112 86 L154 128 L198 64 L232 112"
+        d="M90 268 L168 142 L248 228 L338 88 L430 190 L470 150"
         fill="none"
-        stroke="#b8944a"
-        strokeWidth="1.4"
+        stroke="#c4a05a"
+        strokeWidth="1.6"
         strokeLinecap="round"
       />
-      <circle cx="68" cy="148" r="4.5" fill="#0b0f16" />
-      <circle cx="112" cy="86" r="6" fill="#b8944a" />
-      <circle cx="154" cy="128" r="4" fill="#0b0f16" />
-      <circle cx="198" cy="64" r="7" fill="#b8944a" />
-      <circle cx="232" cy="112" r="4.5" fill="#0b0f16" />
-      <circle cx="198" cy="64" r="14" fill="none" stroke="#b8944a" strokeOpacity="0.35" />
-    </Frame>
+      <circle cx="90" cy="268" r="5" fill="#0a0d13" />
+      <circle cx="168" cy="142" r="7" fill="#c4a05a" />
+      <circle cx="248" cy="228" r="5" fill="#0a0d13" />
+      <circle cx="338" cy="88" r="9" fill="#c4a05a" />
+      <circle cx="338" cy="88" r="22" fill="none" stroke="#c4a05a" strokeOpacity="0.35" />
+      <circle cx="430" cy="190" r="5.5" fill="#0a0d13" />
+      <circle cx="470" cy="150" r="4" fill="#c4a05a" />
+    </Scene>
   );
 }
 
 export function PortraitMark(props: MarkProps) {
   return (
-    <Frame {...props} title={props.title ?? "پرتره پرونده"}>
-      <rect x="78" y="28" width="124" height="164" rx="8" fill="none" stroke="#0b0f16" strokeOpacity="0.18" />
-      <rect x="88" y="38" width="104" height="144" rx="4" fill="#faf6ee" stroke="#b8944a" strokeOpacity="0.45" />
-      <circle cx="140" cy="92" r="22" fill="none" stroke="#0b0f16" strokeWidth="1.4" />
-      <path d="M108 158 C108 132 172 132 172 158" fill="none" stroke="#0b0f16" strokeWidth="1.4" />
-      <path d="M78 28 L62 18" stroke="#b8944a" strokeWidth="1.2" />
-      <path d="M202 28 L218 18" stroke="#b8944a" strokeWidth="1.2" />
-    </Frame>
+    <Scene {...props} title={props.title ?? "طرح پرتره"}>
+      <rect x="148" y="36" width="224" height="308" rx="2" fill="none" stroke="#0a0d13" strokeOpacity="0.2" />
+      <rect x="168" y="56" width="184" height="268" fill="#f4eee0" stroke="#c4a05a" strokeOpacity="0.4" />
+      <circle cx="260" cy="148" r="38" fill="none" stroke="#0a0d13" strokeWidth="1.5" />
+      <path d="M198 268 C198 214 322 214 322 268" fill="none" stroke="#0a0d13" strokeWidth="1.5" />
+      <path d="M148 36 L118 18" stroke="#c4a05a" />
+      <path d="M372 36 L402 18" stroke="#c4a05a" />
+      <path d="M188 92 H332" stroke="#c4a05a" strokeOpacity="0.25" />
+    </Scene>
   );
 }
 
-export function LampMark(props: MarkProps) {
+export function BooksMark(props: MarkProps) {
   return (
-    <Frame {...props} title={props.title ?? "چراغ میز مهندس"}>
-      <path d="M40 188 H240" stroke="#0b0f16" strokeOpacity="0.2" />
-      <rect x="108" y="168" width="64" height="8" rx="2" fill="#0b0f16" fillOpacity="0.75" />
-      <path d="M140 168 V96" stroke="#0b0f16" strokeWidth="2" />
-      <path d="M140 96 L188 64" stroke="#0b0f16" strokeWidth="2" />
-      <path d="M168 52 L208 78 L196 92 L156 66 Z" fill="#b8944a" fillOpacity="0.85" />
-      <ellipse cx="198" cy="132" rx="46" ry="18" fill="#b8944a" fillOpacity="0.12" />
-      <rect x="58" y="148" width="52" height="36" rx="3" fill="none" stroke="#0b0f16" strokeOpacity="0.25" />
-    </Frame>
-  );
-}
-
-export function ChairMark(props: MarkProps) {
-  return (
-    <Frame {...props} title={props.title ?? "صندلی خالی گفتگو"}>
-      <path d="M50 188 H230" stroke="#0b0f16" strokeOpacity="0.16" />
-      <rect x="96" y="78" width="88" height="54" rx="8" fill="none" stroke="#0b0f16" strokeWidth="1.6" />
-      <rect x="102" y="132" width="76" height="12" rx="3" fill="#b8944a" fillOpacity="0.35" />
-      <path d="M110 144 V188" stroke="#0b0f16" strokeWidth="1.6" />
-      <path d="M170 144 V188" stroke="#0b0f16" strokeWidth="1.6" />
-      <circle cx="140" cy="58" r="10" fill="none" stroke="#b8944a" strokeWidth="1.4" />
-    </Frame>
-  );
-}
-
-export function EnvelopeMark(props: MarkProps) {
-  return (
-    <Frame {...props} title={props.title ?? "نامه مشاور"}>
-      <rect x="56" y="64" width="168" height="108" rx="6" fill="#faf6ee" stroke="#0b0f16" strokeOpacity="0.22" />
-      <path d="M56 70 L140 128 L224 70" fill="none" stroke="#b8944a" strokeWidth="1.5" />
-      <path d="M56 172 L112 124" stroke="#0b0f16" strokeOpacity="0.18" />
-      <path d="M224 172 L168 124" stroke="#0b0f16" strokeOpacity="0.18" />
-      <circle cx="140" cy="118" r="8" fill="#b8944a" />
-    </Frame>
+    <Scene {...props} title={props.title ?? "کتاب و کارنامه"}>
+      <rect x="86" y="168" width="92" height="148" rx="2" fill="#0a0d13" fillOpacity="0.78" />
+      <rect x="186" y="128" width="88" height="188" rx="2" fill="#c4a05a" fillOpacity="0.55" />
+      <rect x="282" y="156" width="96" height="160" rx="2" fill="#0a0d13" fillOpacity="0.5" />
+      <rect x="330" y="78" width="118" height="86" rx="2" fill="#f4eee0" stroke="#0a0d13" strokeOpacity="0.22" transform="rotate(-8 390 121)" />
+      <path d="M348 102 L430 90" stroke="#c4a05a" strokeOpacity="0.5" transform="rotate(-8 390 121)" />
+      <path d="M70 328 H460" stroke="#0a0d13" strokeOpacity="0.18" />
+    </Scene>
   );
 }
 
 export function ScoresMark(props: MarkProps) {
   return (
-    <Frame {...props} title={props.title ?? "نقشه توانایی‌ها"}>
-      <path d="M48 168 H232" stroke="#0b0f16" strokeOpacity="0.16" />
-      <path d="M48 168 V48" stroke="#0b0f16" strokeOpacity="0.16" />
+    <Scene {...props} title={props.title ?? "صورت‌فلکی نمرات"}>
+      <path d="M64 312 H456" stroke="#0a0d13" strokeOpacity="0.14" />
+      <path d="M64 312 V72" stroke="#0a0d13" strokeOpacity="0.14" />
       <path
-        d="M70 142 L102 108 L128 120 L164 72 L196 96 L226 58"
+        d="M96 248 L156 188 L214 214 L278 118 L348 164 L428 86"
         fill="none"
-        stroke="#b8944a"
-        strokeWidth="1.8"
+        stroke="#c4a05a"
+        strokeWidth="2"
         strokeLinecap="round"
       />
-      <rect x="94" y="108" width="16" height="60" rx="2" fill="#0b0f16" fillOpacity="0.08" />
-      <rect x="156" y="72" width="16" height="96" rx="2" fill="#b8944a" fillOpacity="0.35" />
-      <rect x="218" y="58" width="16" height="110" rx="2" fill="#b8944a" fillOpacity="0.55" />
-    </Frame>
+      <circle cx="96" cy="248" r="5" fill="#0a0d13" />
+      <circle cx="156" cy="188" r="6" fill="#c4a05a" />
+      <circle cx="214" cy="214" r="5" fill="#0a0d13" />
+      <circle cx="278" cy="118" r="8" fill="#c4a05a" />
+      <circle cx="278" cy="118" r="20" fill="none" stroke="#c4a05a" strokeOpacity="0.3" />
+      <circle cx="348" cy="164" r="5" fill="#0a0d13" />
+      <circle cx="428" cy="86" r="7" fill="#c4a05a" />
+    </Scene>
   );
 }
 
 export function SealMark(props: MarkProps) {
   return (
-    <Frame {...props} title={props.title ?? "مهر سند"}>
-      <rect x="84" y="42" width="112" height="148" rx="4" fill="#faf6ee" stroke="#0b0f16" strokeOpacity="0.2" />
-      <path d="M84 62 H196" stroke="#b8944a" strokeOpacity="0.45" />
-      <path d="M102 88 H178" stroke="#0b0f16" strokeOpacity="0.12" />
-      <path d="M102 104 H162" stroke="#0b0f16" strokeOpacity="0.12" />
-      <path d="M102 120 H170" stroke="#0b0f16" strokeOpacity="0.12" />
-      <circle cx="140" cy="158" r="16" fill="none" stroke="#b8944a" strokeWidth="1.6" />
-      <circle cx="140" cy="158" r="6" fill="#b8944a" />
-    </Frame>
+    <Scene {...props} title={props.title ?? "مهر طلایی"}>
+      <rect x="156" y="48" width="208" height="292" rx="3" fill="#f4eee0" stroke="#0a0d13" strokeOpacity="0.18" />
+      <path d="M156 84 H364" stroke="#c4a05a" strokeOpacity="0.45" />
+      <path d="M188 128 H328" stroke="#0a0d13" strokeOpacity="0.1" />
+      <path d="M188 152 H300" stroke="#0a0d13" strokeOpacity="0.1" />
+      <path d="M188 176 H318" stroke="#0a0d13" strokeOpacity="0.1" />
+      <circle cx="260" cy="268" r="38" fill="none" stroke="#c4a05a" strokeWidth="2" />
+      <circle cx="260" cy="268" r="14" fill="#c4a05a" />
+      <path d="M260 238 V258 M260 278 V298 M230 268 H250 M270 268 H290" stroke="#c4a05a" strokeOpacity="0.7" />
+    </Scene>
   );
 }
 
 export function CompassMark(props: MarkProps) {
   return (
-    <Frame {...props} title={props.title ?? "قطب‌نمای رغبت"}>
-      <circle cx="140" cy="112" r="72" fill="none" stroke="#0b0f16" strokeOpacity="0.16" />
-      <circle cx="140" cy="112" r="48" fill="none" stroke="#b8944a" strokeOpacity="0.45" />
-      <path d="M140 52 V72" stroke="#0b0f16" />
-      <path d="M140 152 V172" stroke="#0b0f16" />
-      <path d="M80 112 H100" stroke="#0b0f16" />
-      <path d="M180 112 H200" stroke="#0b0f16" />
-      <path d="M140 112 L158 78 L140 122 L118 148 Z" fill="#b8944a" />
-      <path d="M140 112 L122 146 L140 102 L162 76 Z" fill="#0b0f16" fillOpacity="0.75" />
-    </Frame>
+    <Scene {...props} title={props.title ?? "قطب‌نمای روشن"}>
+      <circle cx="260" cy="200" r="132" fill="none" stroke="#0a0d13" strokeOpacity="0.12" />
+      <circle cx="260" cy="200" r="88" fill="none" stroke="#c4a05a" strokeOpacity="0.55" />
+      <circle cx="260" cy="200" r="88" fill="#c4a05a" fillOpacity="0.06" />
+      <path d="M260 80 V118 M260 282 V320 M140 200 H178 M342 200 H380" stroke="#0a0d13" strokeOpacity="0.35" />
+      <path d="M260 200 L298 128 L260 216 L214 268 Z" fill="#c4a05a" />
+      <path d="M260 200 L222 272 L260 184 L306 132 Z" fill="#0a0d13" fillOpacity="0.8" />
+      <circle cx="260" cy="200" r="7" fill="#f4eee0" stroke="#c4a05a" />
+    </Scene>
+  );
+}
+
+export function ChairMark(props: MarkProps) {
+  return (
+    <Scene {...props} title={props.title ?? "صندلی چرم خالی"}>
+      <path d="M70 338 H450" stroke="#0a0d13" strokeOpacity="0.14" />
+      <rect x="168" y="118" width="184" height="108" rx="10" fill="none" stroke="#0a0d13" strokeWidth="2" />
+      <path d="M178 226 H342" stroke="#c4a05a" strokeWidth="10" strokeLinecap="round" />
+      <path d="M196 232 V338 M340 232 V338" stroke="#0a0d13" strokeWidth="2.2" />
+      <path d="M168 138 H352" stroke="#0a0d13" strokeOpacity="0.15" />
+      <ellipse cx="260" cy="86" rx="16" ry="10" fill="none" stroke="#c4a05a" />
+      <ellipse cx="300" cy="300" rx="90" ry="16" fill="#c4a05a" fillOpacity="0.08" />
+    </Scene>
+  );
+}
+
+export function LampMark(props: MarkProps) {
+  return (
+    <Scene {...props} title={props.title ?? "چراغ میز"}>
+      <path d="M60 342 H460" stroke="#0a0d13" strokeOpacity="0.14" />
+      <rect x="210" y="312" width="100" height="12" rx="2" fill="#0a0d13" fillOpacity="0.75" />
+      <path d="M260 312 V168" stroke="#0a0d13" strokeWidth="2.4" />
+      <path d="M260 168 L348 108" stroke="#0a0d13" strokeWidth="2.4" />
+      <path d="M318 86 L392 138 L368 162 L294 110 Z" fill="#c4a05a" />
+      <ellipse cx="372" cy="232" rx="88" ry="28" fill="#c4a05a" fillOpacity="0.14" />
+      <rect x="96" y="268" width="86" height="54" rx="2" fill="none" stroke="#0a0d13" strokeOpacity="0.22" />
+    </Scene>
+  );
+}
+
+export function EnvelopeMark(props: MarkProps) {
+  return (
+    <Scene {...props} title={props.title ?? "نامه مشاور"}>
+      <rect x="98" y="112" width="324" height="188" rx="4" fill="#f4eee0" stroke="#0a0d13" strokeOpacity="0.18" />
+      <path d="M98 122 L260 228 L422 122" fill="none" stroke="#c4a05a" strokeWidth="1.7" />
+      <circle cx="260" cy="210" r="16" fill="#c4a05a" />
+      <path d="M98 300 L196 214 M422 300 L324 214" stroke="#0a0d13" strokeOpacity="0.12" />
+    </Scene>
+  );
+}
+
+export function SignedMark(props: MarkProps) {
+  return (
+    <Scene {...props} title={props.title ?? "سند امضاشده"}>
+      <rect x="132" y="44" width="256" height="312" fill="#f4eee0" stroke="#0a0d13" strokeOpacity="0.16" />
+      <path d="M132 82 H388" stroke="#c4a05a" />
+      <path d="M164 128 H356" stroke="#0a0d13" strokeOpacity="0.1" />
+      <path d="M164 152 H320" stroke="#0a0d13" strokeOpacity="0.1" />
+      <path d="M164 176 H340" stroke="#0a0d13" strokeOpacity="0.1" />
+      <path d="M220 268 C248 248 280 288 318 252" fill="none" stroke="#0a0d13" strokeWidth="1.6" />
+      <circle cx="340" cy="300" r="22" fill="none" stroke="#c4a05a" strokeWidth="1.8" />
+    </Scene>
   );
 }
 
 export function UnfinishedMark(props: MarkProps) {
   return (
-    <Frame {...props} title={props.title ?? "تصویر ناتمام"}>
-      <circle cx="140" cy="110" r="70" fill="none" stroke="#0b0f16" strokeOpacity="0.12" strokeDasharray="6 8" />
-      <path d="M88 128 L120 92 L148 118" fill="none" stroke="#b8944a" strokeWidth="1.6" strokeLinecap="round" />
-      <circle cx="88" cy="128" r="4" fill="#0b0f16" />
-      <circle cx="120" cy="92" r="5" fill="#b8944a" />
-      <circle cx="176" cy="84" r="4" fill="none" stroke="#b8944a" />
-      <circle cx="208" cy="132" r="4" fill="none" stroke="#0b0f16" strokeOpacity="0.3" />
-    </Frame>
+    <Scene {...props} title={props.title ?? "صورت‌فلکی ناتمام"}>
+      <circle cx="260" cy="200" r="128" fill="none" stroke="#0a0d13" strokeOpacity="0.12" strokeDasharray="7 10" />
+      <path d="M140 236 L210 156 L268 208" fill="none" stroke="#c4a05a" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="140" cy="236" r="5" fill="#0a0d13" />
+      <circle cx="210" cy="156" r="6" fill="#c4a05a" />
+      <circle cx="330" cy="148" r="5" fill="none" stroke="#c4a05a" />
+      <circle cx="390" cy="230" r="5" fill="none" stroke="#0a0d13" strokeOpacity="0.28" />
+    </Scene>
   );
 }

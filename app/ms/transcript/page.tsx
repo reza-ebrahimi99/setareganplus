@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AtelierEmpty } from "@/components/guidance/office/AtelierScene";
-import { AtelierPage } from "@/components/guidance/office/AtelierPage";
+import { ChamberEmpty } from "@/components/guidance/office/ChamberScene";
+import { ChamberPage } from "@/components/guidance/office/ChamberPage";
 import { SealMark, UnfinishedMark } from "@/components/guidance/office/illustrations";
 import { GuidanceGradesUploadForm } from "@/components/guidance/GradesUploadForm";
 import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
@@ -46,37 +46,35 @@ export default async function OfficeTranscriptPage() {
 
   if (!scores.summary.complete) {
     return (
-      <AtelierPage
+      <ChamberPage
         kicker="اتاق سند"
         title="آخرین قطعه هنوز زود است"
-        lead="اول توانایی‌ها را کامل کنید. کارنامه رسمی برای تطبیق روی میز مهندس است، نه برای شروع خالی."
-        now="بازگشت به شناخت توانایی‌ها"
+        lead="مهر سند وقتی باز می‌شود که توانایی‌ها کامل روی میز نشسته باشند."
         art={<UnfinishedMark />}
         artCaption="صورت‌فلکی ناتمام"
       >
-        <AtelierEmpty
+        <ChamberEmpty
           title="مهر هنوز بسته است"
-          body="تا وقتی همه نمره‌ها روی میز ننشینند، سند رسمی باز نمی‌شود. عجله‌ای نیست."
+          body="عجله‌ای نیست. اول نمره‌ها."
           action={
-            <Link href={MAJOR_OFFICE_GRADES} className="atelier-cta">
+            <Link href={MAJOR_OFFICE_GRADES} className="chamber-go">
               ادامه شناخت توانایی‌ها
             </Link>
           }
         />
-      </AtelierPage>
+      </ChamberPage>
     );
   }
 
   const latest = portalPlan?.latestFinalGrades ?? null;
 
   return (
-    <AtelierPage
+    <ChamberPage
       kicker="اتاق سند"
       title="آخرین قطعه از تصویر تحصیلی شما"
-      lead="فایل رسمی را بگذارید تا مهندس نمره‌هایی که نوشتید را با سند تطبیق دهد. این بارگذاری، پایان شناخت نیست — آغاز گفتگوست."
-      now="بعد از سند: نگاه اول به شخصیت تحصیلی"
+      lead="فایل رسمی را بگذارید تا مهندس نمره‌ها را با سند تطبیق دهد."
       art={<SealMark />}
-      artCaption="مهر کارنامه رسمی"
+      artCaption="مهر طلایی"
     >
       <GuidanceGradesUploadForm
         hasExisting={Boolean(latest)}
@@ -86,6 +84,6 @@ export default async function OfficeTranscriptPage() {
         successHref={MAJOR_OFFICE_INTEREST}
         successLabel="ادامه: نگاه اول به شخصیت"
       />
-    </AtelierPage>
+    </ChamberPage>
   );
 }

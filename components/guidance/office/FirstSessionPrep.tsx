@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AtelierScene } from "@/components/guidance/office/AtelierScene";
+import { ChamberScene } from "@/components/guidance/office/ChamberScene";
 import { LampMark } from "@/components/guidance/office/illustrations";
 import {
   FIRST_SESSION_BOOK_HREF,
@@ -14,11 +14,11 @@ import {
 export function FirstSessionPrep({ bookHref = FIRST_SESSION_BOOK_HREF }: { bookHref?: string }) {
   return (
     <div className="office-session">
-      <header className="atelier-hero">
-        <div className="atelier-hero__copy">
-          <p className="atelier-kicker">نخستین گفتگو</p>
-          <h1 className="atelier-title">{FIRST_SESSION_WHY.title}</h1>
-          <p className="atelier-lead">{FIRST_SESSION_WHY.lead}</p>
+      <header className="chamber-hero">
+        <div>
+          <p className="chamber-kicker">نخستین گفتگو</p>
+          <h1 className="chamber-title">{FIRST_SESSION_WHY.title}</h1>
+          <p className="chamber-lead">{FIRST_SESSION_WHY.lead}</p>
         <dl className="office-session__meta">
           <div>
             <dt>مدت</dt>
@@ -30,9 +30,9 @@ export function FirstSessionPrep({ bookHref = FIRST_SESSION_BOOK_HREF }: { bookH
           </div>
         </dl>
         </div>
-        <AtelierScene caption="چراغ میز مهندس">
+        <ChamberScene caption="صندلی در انتظار">
           <LampMark />
-        </AtelierScene>
+        </ChamberScene>
       </header>
 
       <section>
@@ -77,7 +77,7 @@ export function FirstSessionPrep({ bookHref = FIRST_SESSION_BOOK_HREF }: { bookH
         </ul>
       </section>
 
-      <Link href={bookHref} className="office-session__cta">
+      <Link href={bookHref} className="chamber-go">
         رزرو جلسه تحلیل تخصصی
       </Link>
     </div>

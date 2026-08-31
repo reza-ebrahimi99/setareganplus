@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AtelierPage } from "@/components/guidance/office/AtelierPage";
-import { ScoresMark } from "@/components/guidance/office/illustrations";
+import { ChamberPage } from "@/components/guidance/office/ChamberPage";
+import { BooksMark } from "@/components/guidance/office/illustrations";
 import { GuidanceOnboardingForm } from "@/components/guidance/onboarding/GuidanceOnboardingForm";
 import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
 import { loadOfficeIntakeContext } from "@/lib/guidance/office/intake-loader";
@@ -23,13 +23,13 @@ export default async function OfficeAcademicPage() {
   if (!intake) redirect(GUIDANCE_ONBOARDING_PATH);
 
   return (
-    <AtelierPage
+    <ChamberPage
       kicker="اتاق تصویر تحصیلی"
       title="مدرسه، سهمیه و سالی که از آن می‌آیید"
       lead="این‌ها اعداد اداری نیستند. زمینهٔ انتخاب رشته‌اند. نمرات را در اتاق بعد، یکی‌یکی می‌چینیم."
       now="پس از این تصویر، شناخت توانایی‌ها"
-      art={<ScoresMark />}
-      artCaption="زمینه تحصیلی"
+      art={<BooksMark />}
+      artCaption="کتاب و کارنامه"
     >
       <GuidanceOnboardingForm
         mobile={intake.mobile}
@@ -39,6 +39,6 @@ export default async function OfficeAcademicPage() {
         mode="academic"
         continueHref={MAJOR_OFFICE_GRADES}
       />
-    </AtelierPage>
+    </ChamberPage>
   );
 }

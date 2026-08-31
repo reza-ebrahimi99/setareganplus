@@ -68,44 +68,20 @@ export function FinalExamForm({
   const specialized = subjects.filter((row) => row.group === "specialized");
 
   return (
-    <div className="office-grades" dir="rtl">
-      <p className="office-intake__save" aria-live="polite">
-        {saveLabel === "saving"
-          ? "در حال ذخیره نمره…"
-          : saveLabel === "saved"
-            ? "نمره ذخیره شد"
-            : saveLabel === "error"
-              ? error ?? "ذخیره نشد"
-              : "هر نمره به‌صورت خودکار ذخیره می‌شود"}
+    <div className="chamber-sheet" dir="rtl">
+      <p className={`chamber-save${saveLabel === "idle" ? "" : " is-on"}`} aria-live="polite">
+        {saveLabel === "saving" ? "…" : saveLabel === "saved" ? "ثبت شد" : saveLabel === "error" ? error : ""}
       </p>
 
-      <section className="office-grades__progress" aria-label="پیشرفت نمرات">
-        <div>
-          <span>پیشرفت ورود نمرات</span>
-          <strong>
-            {toPersianDigits(summary.entered)} از {toPersianDigits(summary.total)}
-          </strong>
-        </div>
-        <div
-          className="office-grades__bar"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={summary.progressPercent}
-        >
-          <span style={{ width: `${Math.max(4, summary.progressPercent)}%` }} />
-        </div>
-        {summary.average != null ? (
-          <p>
-            معدل فعلی: <strong>{toPersianDigits(summary.average.toFixed(2))}</strong>
-          </p>
-        ) : (
-          <p>با ورود اولین نمره، معدل به‌صورت خودکار محاسبه می‌شود.</p>
-        )}
-      </section>
+      <p className="chamber-kicker">
+        {toPersianDigits(summary.entered)} از {toPersianDigits(summary.total)}
+        {summary.average != null
+          ? ` · معدل ${toPersianDigits(summary.average.toFixed(2))}`
+          : ""}
+      </p>
 
       {error ? (
-        <p className="office-grades__error" role="alert">
+        <p className="chamber-alert" role="alert">
           {error}
         </p>
       ) : null}
@@ -114,11 +90,11 @@ export function FinalExamForm({
         group.length === 0 ? null : (
           <section
             key={group[0]?.group}
-            className="office-grades__group"
+            className="chamber-ledger"
             aria-label={GROUP_LABEL[group[0]!.group]}
           >
             <h2>{GROUP_LABEL[group[0]!.group]}</h2>
-            <ul>
+            <ol>
               {group.map((subject) => (
                 <li key={subject.id} data-status={subject.status}>
                   <label htmlFor={`score-${subject.id}`}>
@@ -150,35 +126,29 @@ export function FinalExamForm({
                   />
                 </li>
               ))}
-            </ul>
+            </ol>
           </section>
         ),
       )}
 
       {summary.complete ? (
-        <section className="office-grades__summary" aria-live="polite">
-          <p>تصویر توانایی‌ها کامل شد</p>
-          <h2>معدل کل: {toPersianDigits((summary.average ?? 0).toFixed(2))}</h2>
+        <section className="chamber-mean" aria-live="polite">
+          <p className="chamber-kicker">تصویر توانایی‌ها کامل شد</p>
+          <h2>{toPersianDigits((summary.average ?? 0).toFixed(2))}</h2>
           {summary.strengths.length > 0 ? (
-            <p>
-              نقاط قوت: {summary.strengths.join("، ")}
-            </p>
+            <p>نقاط قوت: {summary.strengths.join("، ")}</p>
           ) : null}
           {summary.weaknesses.length > 0 ? (
-            <p>
-              نیاز به تقویت: {summary.weaknesses.join("، ")}
-            </p>
+            <p>نیاز به تقویت: {summary.weaknesses.join("، ")}</p>
           ) : (
             <p>نمره ضعیف ثبت نشده است.</p>
           )}
-          <a href={MAJOR_OFFICE_TRANSCRIPT} className="office-intake__continue">
+          <a href={MAJOR_OFFICE_TRANSCRIPT} className="chamber-go">
             آخرین قطعه از تصویر تحصیلی
           </a>
         </section>
       ) : (
-        <p className="office-grades__hint">
-          پس از ورود همه نمرات، بارگذاری فایل PDF کارنامه باز می‌شود.
-        </p>
+        <p className="chamber-lead">پس از ورود همه نمرات، مهر سند باز می‌شود.</p>
       )}
     </div>
   );

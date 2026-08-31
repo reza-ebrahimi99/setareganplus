@@ -24,16 +24,18 @@ export function FirstSessionBooked({
   calendarHref: string;
 }) {
   return (
-    <div className="office-session">
-      <header className="office-session__hero">
-        <p>صندلی شما روی تقویم است</p>
-        <h1>{countdownLabel}</h1>
+    <div className="chamber-session">
+      <header className="chamber-hero">
+        <div>
+        <p className="chamber-kicker">صندلی شما روی تقویم است</p>
+        <h1 className="chamber-title">{countdownLabel}</h1>
         <p>
           {whenLabel} · {meetingLabel} · مشاور: {counselorName}
         </p>
-        <p className="office-session__code">
+        <p className="chamber-lead">
           کد پیگیری: {toPersianDigits(trackingCode)}
         </p>
+        </div>
       </header>
       <section>
         <h2>چک‌لیست آمادگی</h2>

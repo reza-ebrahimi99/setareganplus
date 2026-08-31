@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { PortalIcon } from "@/components/portal/icons";
 
 export function OfficeTopBar({
   userDisplayName,
@@ -9,26 +8,18 @@ export function OfficeTopBar({
   statusLabel: string;
 }) {
   return (
-    <header className="atelier-top">
+    <header className="chamber-mast">
       <div>
-        <p className="atelier-top__eyebrow">دپارتمان انتخاب رشته · قلم‌چی نسیم‌شهر</p>
-        <p className="atelier-top__status">{statusLabel}</p>
+        <p>دپارتمان انتخاب رشته · قلم‌چی نسیم‌شهر</p>
+        <strong>{statusLabel}</strong>
       </div>
-      <div className="atelier-top__end">
-        <span className="atelier-top__user">
-          <PortalIcon name="user" className="size-4" />
-          {userDisplayName}
-        </span>
+      <div className="chamber-mast__end">
+        <span>{userDisplayName}</span>
         <form action="/portal/logout" method="post">
           <input type="hidden" name="next" value="/guidance" />
-          <button type="submit" className="atelier-top__exit">
-            <PortalIcon name="logout" className="size-4" />
-            خروج آرام
-          </button>
+          <button type="submit">خروج آرام</button>
         </form>
-        <Link href="/guidance" className="atelier-top__exit">
-          درِ دفتر
-        </Link>
+        <Link href="/guidance">درِ دفتر</Link>
       </div>
     </header>
   );

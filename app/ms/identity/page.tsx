@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AtelierPage } from "@/components/guidance/office/AtelierPage";
+import { ChamberPage } from "@/components/guidance/office/ChamberPage";
 import { PortraitMark } from "@/components/guidance/office/illustrations";
 import { GuidanceOnboardingForm } from "@/components/guidance/onboarding/GuidanceOnboardingForm";
 import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
@@ -23,7 +23,7 @@ export default async function OfficeIdentityPage() {
   if (!intake) redirect(GUIDANCE_ONBOARDING_PATH);
 
   return (
-    <AtelierPage
+    <ChamberPage
       kicker="اتاق هویت"
       title="قبل از هر انتخاب، باید بدانیم که هستید"
       lead="نام، کد ملی و جای زندگی‌تان سنگ بنای پرونده است. هر کلمه خودکار ذخیره می‌شود؛ می‌توانید بروید و آرام برگردید."
@@ -39,6 +39,6 @@ export default async function OfficeIdentityPage() {
         mode="identity"
         continueHref={MAJOR_OFFICE_ACADEMIC}
       />
-    </AtelierPage>
+    </ChamberPage>
   );
 }

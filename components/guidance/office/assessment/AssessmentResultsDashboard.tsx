@@ -1,3 +1,5 @@
+import { ChamberScene } from "@/components/guidance/office/ChamberScene";
+import { CompassMark } from "@/components/guidance/office/illustrations";
 import { AssessmentConsultationCard } from "@/components/guidance/office/assessment/AssessmentConsultationCard";
 import { AssessmentPrintButton } from "@/components/guidance/office/assessment/AssessmentPrintButton";
 import { AssessmentPrintReport } from "@/components/guidance/office/assessment/AssessmentPrintReport";
@@ -37,10 +39,15 @@ export function AssessmentResultsDashboard({
   const matches = buildTopMajorMatches(model.suggestedMajors, 3);
   return (
     <div className="office-assess-results">
-      <header className="office-assess-results__hero">
-        <p>نگاه اول کامل شد</p>
-        <h1>{model.result.personality.title}</h1>
-        <p className="office-assess-results__lead">{model.result.personality.description}</p>
+      <header className="chamber-hero">
+        <div>
+          <p className="chamber-kicker">نگاه اول کامل شد</p>
+          <h1 className="chamber-title">{model.result.personality.title}</h1>
+          <p className="chamber-lead">{model.result.personality.description}</p>
+        </div>
+        <ChamberScene caption="قطب‌نمای روشن">
+          <CompassMark />
+        </ChamberScene>
       </header>
 
       <section className="office-assess-results__panel">

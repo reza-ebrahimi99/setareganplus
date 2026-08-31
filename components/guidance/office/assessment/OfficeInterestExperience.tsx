@@ -16,7 +16,7 @@ import {
 } from "@/lib/guidance/journey/assessment/question-bank";
 import type { AssessmentAnswers } from "@/lib/guidance/journey/assessment/scoring";
 import { MAJOR_OFFICE_HOME } from "@/lib/guidance/office/nav";
-import { AtelierScene } from "@/components/guidance/office/AtelierScene";
+import { ChamberScene } from "@/components/guidance/office/ChamberScene";
 import { CompassMark } from "@/components/guidance/office/illustrations";
 
 const SCALE_LABELS = [
@@ -133,21 +133,21 @@ export function OfficeInterestExperience({
     <div className="office-assess">
       {phase === "intro" ? (
         <>
-          <header className="atelier-hero">
-            <div className="atelier-hero__copy">
-              <p className="atelier-kicker">نگاه اول</p>
-              <h1 className="atelier-title">اولین نگاه به شخصیت تحصیلی شما</h1>
-              <p className="atelier-lead">
+          <header className="chamber-hero">
+            <div>
+              <p className="chamber-kicker">نگاه اول</p>
+              <h1 className="chamber-title">اولین نگاه به شخصیت تحصیلی شما</h1>
+              <p className="chamber-lead">
                 ده اتاق کوتاه، هر کدام شش پرسش. این برچسب روان‌شناختی نیست —
                 روشن کردن ترجیح‌هاست تا گفتگو با مهندس از حدس خالی شروع نشود.
                 هر بخش ذخیره می‌شود؛ می‌توانید بروید و آرام برگردید.
               </p>
             </div>
-            <AtelierScene caption="قطب‌نما">
+            <ChamberScene caption="نقشه شخصیت">
               <CompassMark />
-            </AtelierScene>
+            </ChamberScene>
           </header>
-          <ul className="office-assess__promises">
+          <ul className="chamber-promises">
             <li>
               حدود {toPersianDigits(ASSESSMENT_QUESTION_COUNT)} سؤال · مقیاس کاملاً
               مخالف تا کاملاً موافق
@@ -157,7 +157,7 @@ export function OfficeInterestExperience({
           </ul>
           <button
             type="button"
-            className="office-assess__cta"
+            className="chamber-go"
             onClick={() => setPhase("taking")}
           >
             آغاز نگاه اول

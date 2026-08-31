@@ -4,7 +4,7 @@
  */
 
 import { redirect } from "next/navigation";
-import { AtelierPage } from "@/components/guidance/office/AtelierPage";
+import { ChamberPage } from "@/components/guidance/office/ChamberPage";
 import { ConstellationMark } from "@/components/guidance/office/illustrations";
 import { GuidanceOnboardingForm } from "@/components/guidance/onboarding/GuidanceOnboardingForm";
 import { candidateNeedsGuidanceOnboarding } from "@/lib/guidance/external-candidate";
@@ -52,12 +52,11 @@ export default async function GuidanceOnboardingPage() {
   const draft = record?.draft;
 
   return (
-    <div className="atelier" dir="rtl">
-      <div className="atelier__glow" aria-hidden="true" />
-      <div className="atelier__grain" aria-hidden="true" />
-      <div className="atelier-stage">
-        <div className="atelier-canvas">
-          <AtelierPage
+    <div className="chamber" dir="rtl">
+      <div className="chamber-wash" aria-hidden="true" />
+      <div className="chamber-stage">
+        <div className="chamber-body">
+          <ChamberPage
             kicker="ورود به دفتر"
             title="خوش آمدید. آینده از همین اتاق شروع می‌شود."
             lead="این فرم دولتی نیست. دو تصویر می‌سازیم: کی هستید، و از کدام مسیر تحصیلی می‌آیید. هر بخش ذخیره می‌شود؛ می‌توانید بروید و برگردید."
@@ -87,7 +86,7 @@ export default async function GuidanceOnboardingPage() {
               : undefined
           }
             />
-          </AtelierPage>
+          </ChamberPage>
         </div>
       </div>
     </div>

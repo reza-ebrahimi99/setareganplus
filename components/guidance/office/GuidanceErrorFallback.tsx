@@ -20,15 +20,14 @@ export function GuidanceErrorFallback({
   }, [error]);
 
   return (
-    <div className="office-error atelier-empty" dir="rtl" role="alert">
-      <UnfinishedMark className="atelier-scene__svg" />
-      <p>دفتر لحظه‌ای مکث کرد</p>
+    <div className="chamber-error" dir="rtl" role="alert">
+      <UnfinishedMark />
+      <p className="chamber-kicker">دفتر لحظه‌ای مکث کرد</p>
       <h1>این اتاق الان آرام نیست</h1>
       <p>
-        پرونده‌تان سر جایش است. فقط این صفحه بار نشد. دوباره تلاش کنید، یا به
-        دفتر برگردید — هیچ انتخابی از دست نرفته.
+        پرونده‌تان سر جایش است. دوباره تلاش کنید — هیچ انتخابی از دست نرفته.
       </p>
-      <div className="office-error__actions">
+      <div className="chamber-error__actions">
         {retry ? (
           <button type="button" onClick={retry}>
             تلاش دوباره

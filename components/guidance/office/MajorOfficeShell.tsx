@@ -17,17 +17,21 @@ export function MajorOfficeShell({
   rail: readonly OfficeRailSection[];
 }) {
   return (
-    <div className="atelier" dir="rtl">
-      <div className="atelier__glow" aria-hidden="true" />
-      <div className="atelier__grain" aria-hidden="true" />
+    <div className="chamber" dir="rtl">
+      <div className="chamber-wash" aria-hidden="true" />
+      <div className="chamber-dust" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
       <DepartmentRail pathname={pathname} sections={rail} />
-      <div className="atelier-stage">
-        <OfficeTopBar
-          userDisplayName={userDisplayName}
-          statusLabel={statusLabel}
-        />
+      <div className="chamber-stage">
+        <OfficeTopBar userDisplayName={userDisplayName} statusLabel={statusLabel} />
         <OfficeMobileNav pathname={pathname} sections={rail} />
-        <div className="atelier-canvas">{children}</div>
+        <div className="chamber-body">{children}</div>
       </div>
     </div>
   );

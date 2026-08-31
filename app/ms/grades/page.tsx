@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AtelierPage } from "@/components/guidance/office/AtelierPage";
+import { ChamberPage } from "@/components/guidance/office/ChamberPage";
 import { ScoresMark } from "@/components/guidance/office/illustrations";
 import { FinalExamForm } from "@/components/guidance/office/FinalExamForm";
 import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
@@ -33,7 +33,7 @@ export default async function OfficeGradesPage() {
   });
 
   return (
-    <AtelierPage
+    <ChamberPage
       kicker="اتاق توانایی‌ها"
       title="شناخت توانایی‌های شما"
       lead="هر درس یک قطعه است، نه یک ردیف فرم. نمره را بنویسید و بروید؛ معدل خودش شکل می‌گیرد. سند PDF بعد از کامل شدن تصویر باز می‌شود."
@@ -42,6 +42,6 @@ export default async function OfficeGradesPage() {
       artCaption="نقشه توانایی‌ها"
     >
       <FinalExamForm examGroup={plan.examGroup} initialScores={stored.scores} />
-    </AtelierPage>
+    </ChamberPage>
   );
 }

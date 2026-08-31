@@ -1,6 +1,6 @@
-import { AtelierFloat } from "@/components/guidance/office/AtelierMotion";
+import { ChamberFloat } from "@/components/guidance/office/ChamberMotion";
 
-export function AtelierScene({
+export function ChamberScene({
   children,
   caption,
 }: {
@@ -8,16 +8,14 @@ export function AtelierScene({
   caption?: string;
 }) {
   return (
-    <figure className="atelier-scene">
-      <div className="atelier-scene__glass">
-        <AtelierFloat>{children}</AtelierFloat>
-      </div>
+    <figure className="chamber-scene">
+      <ChamberFloat>{children}</ChamberFloat>
       {caption ? <figcaption>{caption}</figcaption> : null}
     </figure>
   );
 }
 
-export function AtelierEmpty({
+export function ChamberEmpty({
   art,
   title,
   body,
@@ -29,8 +27,8 @@ export function AtelierEmpty({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="atelier-empty" role="status">
-      {art ? <AtelierScene>{art}</AtelierScene> : null}
+    <div className="chamber-empty" role="status">
+      {art}
       <h2>{title}</h2>
       <p>{body}</p>
       {action}
