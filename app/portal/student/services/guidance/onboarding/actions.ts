@@ -61,5 +61,5 @@ export async function submitGuidanceOnboardingAction(
     };
   }
 
-  redirect("/portal/student/services/guidance");
+  redirect("/ms");
 }

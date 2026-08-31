@@ -16,6 +16,7 @@ import {
 } from "../lib/guidance/workspace";
 import { workspaceStepEmptyMessage } from "../lib/guidance/workspace/presentation";
 import { computeRewindPlanState, diffFields } from "../lib/guidance/workspace";
+import { deriveOfficeCasePulse } from "../lib/guidance/office/pulse";
 
 function test(name: string, fn: () => void) {
   try {
@@ -169,6 +170,44 @@ test("field diff records old and new values", () => {
   assert.equal(changes[0]?.field, "quota");
   assert.equal(changes[0]?.oldValue, "NORMAL");
   assert.equal(changes[0]?.newValue, "VETERAN_5");
+});
+
+test("office pulse: pending document waits on counselor", () => {
+  const pulse = deriveOfficeCasePulse({
+    currentStep: 5,
+    completionPercentage: 40,
+    finalApproved: false,
+    hasCounselorRevision: false,
+    hasPendingDocument: true,
+    unpaid: false,
+  });
+  assert.equal(pulse.status, "waiting_on_counselor");
+  assert.equal(pulse.waitingKind, "counselor");
+});
+
+test("office pulse: revision waits on student", () => {
+  const pulse = deriveOfficeCasePulse({
+    currentStep: 5,
+    completionPercentage: 40,
+    finalApproved: false,
+    hasCounselorRevision: true,
+    hasPendingDocument: false,
+    unpaid: false,
+  });
+  assert.equal(pulse.status, "waiting_on_student");
+});
+
+test("office pulse: final approval is terminal", () => {
+  const pulse = deriveOfficeCasePulse({
+    currentStep: 12,
+    completionPercentage: 100,
+    finalApproved: true,
+    hasCounselorRevision: false,
+    hasPendingDocument: false,
+    unpaid: false,
+  });
+  assert.equal(pulse.status, "approved");
+  assert.equal(pulse.waitingKind, "none");
 });
 
 console.log("guidance workspace unit tests passed");

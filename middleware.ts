@@ -34,6 +34,21 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (pathname.startsWith("/ms")) {
+    const portalToken = request.cookies.get(PORTAL_SESSION_COOKIE)?.value;
+    if (!portalToken) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/guidance";
+      loginUrl.search = "";
+      return NextResponse.redirect(loginUrl);
+    }
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-pathname", pathname);
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+  }
+
   if (pathname.startsWith("/portal")) {
     if (
       pathname === "/portal/login" ||
@@ -66,5 +81,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin", "/admin/:path*", "/portal", "/portal/:path*"],
+  matcher: ["/admin", "/admin/:path*", "/portal", "/portal/:path*", "/ms", "/ms/:path*"],
 };

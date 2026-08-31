@@ -32,7 +32,7 @@ export default async function GuidanceOnboardingPage() {
     studentId,
   });
   if (!needs) {
-    redirect("/portal/student/services/guidance");
+    redirect("/ms");
   }
 
   const parsed = normalizeIranianMobile(context.user.mobile ?? "");

@@ -99,6 +99,54 @@ export function GuidanceEntryExperience({
             />
           </aside>
         </div>
+
+        <div className="guidance-entry__landing">
+          <section>
+            <h2>{copy.story.title}</h2>
+            <p>{copy.story.body}</p>
+          </section>
+          <section>
+            <h2>{copy.whyTrust.title}</h2>
+            <ul>
+              {copy.whyTrust.items.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </section>
+          <section>
+            <h2>{copy.guides.title}</h2>
+            <div className="guidance-entry__guide-grid">
+              {copy.guides.items.map((item) => (
+                <article key={item.title}>
+                  <h3>{item.title}</h3>
+                  <p>{item.body}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+          <section>
+            <h2>پرسش‌های پرتکرار</h2>
+            <dl className="guidance-entry__faq">
+              {copy.faq.map((item) => (
+                <div key={item.question}>
+                  <dt>{item.question}</dt>
+                  <dd>{item.answer}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+          <section>
+            <h2>آنچه خانواده‌ها در این دفتر می‌جویند</h2>
+            <div className="guidance-entry__guide-grid">
+              {copy.familyNotes.map((item) => (
+                <article key={item.title}>
+                  <h3>{item.title}</h3>
+                  <p>{item.body}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        </div>
       </main>
     </PortalTheme>
   );
