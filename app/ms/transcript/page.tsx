@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AtelierEmpty } from "@/components/guidance/office/AtelierScene";
 import { AtelierPage } from "@/components/guidance/office/AtelierPage";
+import { SealMark, UnfinishedMark } from "@/components/guidance/office/illustrations";
 import { GuidanceGradesUploadForm } from "@/components/guidance/GradesUploadForm";
 import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
 import { loadGuidanceJourneyPlan } from "@/lib/guidance/journey/plan";
@@ -49,13 +51,18 @@ export default async function OfficeTranscriptPage() {
         title="آخرین قطعه هنوز زود است"
         lead="اول توانایی‌ها را کامل کنید. کارنامه رسمی برای تطبیق روی میز مهندس است، نه برای شروع خالی."
         now="بازگشت به شناخت توانایی‌ها"
+        art={<UnfinishedMark />}
+        artCaption="صورت‌فلکی ناتمام"
       >
-        <div className="office-empty" role="status">
-          <p>تصویر نمرات هنوز کامل نیست.</p>
-          <Link href={MAJOR_OFFICE_GRADES} className="atelier-cta">
-            ادامه شناخت توانایی‌ها
-          </Link>
-        </div>
+        <AtelierEmpty
+          title="مهر هنوز بسته است"
+          body="تا وقتی همه نمره‌ها روی میز ننشینند، سند رسمی باز نمی‌شود. عجله‌ای نیست."
+          action={
+            <Link href={MAJOR_OFFICE_GRADES} className="atelier-cta">
+              ادامه شناخت توانایی‌ها
+            </Link>
+          }
+        />
       </AtelierPage>
     );
   }
@@ -68,6 +75,8 @@ export default async function OfficeTranscriptPage() {
       title="آخرین قطعه از تصویر تحصیلی شما"
       lead="فایل رسمی را بگذارید تا مهندس نمره‌هایی که نوشتید را با سند تطبیق دهد. این بارگذاری، پایان شناخت نیست — آغاز گفتگوست."
       now="بعد از سند: نگاه اول به شخصیت تحصیلی"
+      art={<SealMark />}
+      artCaption="مهر کارنامه رسمی"
     >
       <GuidanceGradesUploadForm
         hasExisting={Boolean(latest)}

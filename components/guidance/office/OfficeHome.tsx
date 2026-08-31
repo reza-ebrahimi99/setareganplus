@@ -12,35 +12,59 @@ import {
   MAJOR_OFFICE_TRANSCRIPT,
 } from "@/lib/guidance/office/intake-href";
 import { AtelierPress, AtelierReveal } from "@/components/guidance/office/AtelierMotion";
+import { AtelierScene } from "@/components/guidance/office/AtelierScene";
+import {
+  ChairMark,
+  CompassMark,
+  ConstellationMark,
+  EnvelopeMark,
+  LampMark,
+  PortraitMark,
+  ScoresMark,
+  SealMark,
+} from "@/components/guidance/office/illustrations";
 
 function firstName(full: string): string {
   const part = full.trim().split(/\s+/).filter(Boolean)[0];
   return part && part !== "داوطلب" ? part : full;
 }
 
-function ProgressRing({ value }: { value: number }) {
+function ProgressOrb({ value }: { value: number }) {
   const clamped = Math.max(0, Math.min(100, value));
-  const r = 40;
+  const r = 52;
   const c = 2 * Math.PI * r;
   const offset = c * (1 - clamped / 100);
   return (
     <svg
-      className="atelier-ring"
-      viewBox="0 0 104 104"
+      className="atelier-orb"
+      viewBox="0 0 140 140"
       role="img"
       aria-label={`پیشرفت ${toPersianDigits(clamped)} درصد`}
     >
-      <circle className="atelier-ring-track" cx="52" cy="52" r={r} />
+      <defs>
+        <filter id="atelier-orb-glow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="4" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <circle className="atelier-orb__track" cx="70" cy="70" r={r} />
       <circle
-        className="atelier-ring-value"
-        cx="52"
-        cy="52"
+        className="atelier-orb__value"
+        cx="70"
+        cy="70"
         r={r}
         strokeDasharray={c}
         strokeDashoffset={offset}
+        filter="url(#atelier-orb-glow)"
       />
-      <text x="52" y="57" textAnchor="middle">
+      <text x="70" y="66" textAnchor="middle">
         {toPersianDigits(clamped)}٪
+      </text>
+      <text className="atelier-orb__caption" x="70" y="86" textAnchor="middle">
+        مسیر
       </text>
     </svg>
   );
@@ -53,50 +77,66 @@ export function OfficeHome({ model }: { model: OfficeDashboardModel }) {
   return (
     <div>
       <AtelierReveal>
-        <header className="atelier-page__hero">
-          <p className="atelier-kicker">دفتر خصوصی انتخاب رشته</p>
-          <h1 className="atelier-title">سلام، {name}.</h1>
-          <p className="atelier-lead">
-            آینده‌تان اینجا مدیریت می‌شود — آرام، دقیق، و با نظارت مهندس رضا
-            ابراهیمی. لازم نیست همه چیز را امروز تمام کنید.
-          </p>
-        </header>
-      </AtelierReveal>
-
-      <AtelierReveal delay={0.08}>
-        <section className="atelier-now" data-kind={pulse.waitingKind} aria-live="polite">
-          <div>
-            <p className="atelier-kicker">{pulse.statusLabel}</p>
-            <h2>{pulse.waitingTitle}</h2>
-            <p>{pulse.waitingBody}</p>
+        <header className="atelier-hero atelier-hero--flagship">
+          <div className="atelier-hero__copy">
+            <p className="atelier-kicker">دفتر خصوصی انتخاب رشته</p>
+            <h1 className="atelier-title">سلام، {name}.</h1>
+            <p className="atelier-lead">
+              آینده‌تان اینجا مدیریت می‌شود — آرام، دقیق، با نظارت مهندس رضا
+              ابراهیمی. امروز فقط یک حرکت لازم است.
+            </p>
             <Link href={model.todayTask.href} className="atelier-now__cta">
               {model.todayTask.label}
             </Link>
           </div>
-          <ProgressRing value={pulse.completionPercentage} />
+          <div className="atelier-hero__focus">
+            <AtelierScene caption={pulse.currentChapter}>
+              <ConstellationMark />
+            </AtelierScene>
+            <div className="atelier-hero__orb">
+              <ProgressOrb value={pulse.completionPercentage} />
+            </div>
+          </div>
+        </header>
+      </AtelierReveal>
+
+      <AtelierReveal delay={0.1}>
+        <section className="atelier-glass atelier-now" data-kind={pulse.waitingKind} aria-live="polite">
+          <div>
+            <p className="atelier-kicker">{pulse.statusLabel}</p>
+            <h2>{pulse.waitingTitle}</h2>
+            <p>{pulse.waitingBody}</p>
+          </div>
+          <p className="atelier-now-line">
+            <span>حالا</span>
+            {model.todayTask.title}
+          </p>
         </section>
       </AtelierReveal>
 
       <div className="atelier-duo">
-        <AtelierReveal delay={0.14}>
+        <AtelierReveal delay={0.16}>
           <AtelierPress>
-            <section className="atelier-appoint">
+            <section className="atelier-glass atelier-appoint">
+              <AtelierScene>
+                {model.firstSession.booked ? <LampMark /> : <ChairMark />}
+              </AtelierScene>
               <p className="atelier-kicker">نوبت روی میز</p>
               {model.firstSession.booked ? (
                 <>
                   <h2>{model.firstSession.countdownLabel || "گفتگوی شما ثبت شده"}</h2>
                   <p>
-                    نخستین جلسه با {model.counselorName}. مدارک را آرام آماده کنید؛
-                    عجله‌ای در کار نیست.
+                    نخستین جلسه با {model.counselorName}. چراغ میز روشن است؛ مدارک
+                    را آرام آماده کنید.
                   </p>
                   <Link href={MAJOR_OFFICE_SESSION}>ورود به اتاق جلسه</Link>
                 </>
               ) : (
                 <>
-                  <h2>هنوز گفتگویی روی تقویم نیست</h2>
+                  <h2>صندلی هنوز خالی است</h2>
                   <p>
-                    وقتی تصویر تحصیلی و نگاه اول به شخصیت کامل شد، صندلی مقابل
-                    مهندس برای شما خالی می‌شود.
+                    وقتی تصویر تحصیلی و نگاه اول کامل شد، این صندلی برای گفتگو با
+                    مهندس منتظر شماست.
                   </p>
                   <Link href={MAJOR_OFFICE_SESSION}>آمادگی نخستین گفتگو</Link>
                 </>
@@ -105,9 +145,12 @@ export function OfficeHome({ model }: { model: OfficeDashboardModel }) {
           </AtelierPress>
         </AtelierReveal>
 
-        <AtelierReveal delay={0.2}>
+        <AtelierReveal delay={0.22}>
           <AtelierPress>
-            <section className="atelier-letter">
+            <section className="atelier-glass atelier-letter">
+              <AtelierScene>
+                <EnvelopeMark />
+              </AtelierScene>
               <p className="atelier-kicker">صدای مشاور</p>
               {model.latestCounselorActivity ? (
                 <>
@@ -116,11 +159,12 @@ export function OfficeHome({ model }: { model: OfficeDashboardModel }) {
                 </>
               ) : (
                 <>
-                  <h2>مهندس هنوز چیزی روی میز نگذاشته</h2>
+                  <h2>نامهٔ دفتر هنوز نرسیده</h2>
                   <p>
-                    وقتی مدرکی برسد یا مرحله‌ای بازبینی شود، نامهٔ دفتر همین‌جا
-                    ظاهر می‌شود — {toPersianDigits(model.unreadMessages)} پیام
-                    قابل مشاهده.
+                    وقتی مدرکی به میز مهندس برسد، مهر طلایی همین‌جا ظاهر می‌شود.
+                    {model.unreadMessages
+                      ? ` ${toPersianDigits(model.unreadMessages)} پیام قابل مشاهده.`
+                      : " سکوت الان یعنی همه‌چیز سر جایش است."}
                   </p>
                 </>
               )}
@@ -130,36 +174,30 @@ export function OfficeHome({ model }: { model: OfficeDashboardModel }) {
         </AtelierReveal>
       </div>
 
-      <nav className="atelier-rooms" aria-label="اتاق‌های زنده دفتر">
-        <AtelierReveal delay={0.24}>
-          <Link href={MAJOR_OFFICE_IDENTITY} className="atelier-room">
+      <AtelierReveal delay={0.28}>
+        <nav className="atelier-ribbon" aria-label="چهار اتاق زنده">
+          <Link href={MAJOR_OFFICE_IDENTITY} className="atelier-ribbon__node">
+            <PortraitMark />
             <span>هویت</span>
             <strong>کی هستید</strong>
-            <em>نام و جای شما در پرونده، قبل از هر انتخاب.</em>
           </Link>
-        </AtelierReveal>
-        <AtelierReveal delay={0.28}>
-          <Link href={MAJOR_OFFICE_GRADES} className="atelier-room">
+          <Link href={MAJOR_OFFICE_GRADES} className="atelier-ribbon__node">
+            <ScoresMark />
             <span>توانایی</span>
-            <strong>شناخت توانایی‌های شما</strong>
-            <em>هر نمره، یک قطعه از تصویر تحصیلی.</em>
+            <strong>شناخت توانایی‌ها</strong>
           </Link>
-        </AtelierReveal>
-        <AtelierReveal delay={0.32}>
-          <Link href={MAJOR_OFFICE_TRANSCRIPT} className="atelier-room">
+          <Link href={MAJOR_OFFICE_TRANSCRIPT} className="atelier-ribbon__node">
+            <SealMark />
             <span>سند</span>
-            <strong>آخرین قطعه تصویر</strong>
-            <em>کارنامه رسمی، برای تطبیق روی میز مشاور.</em>
+            <strong>آخرین قطعه</strong>
           </Link>
-        </AtelierReveal>
-        <AtelierReveal delay={0.36}>
-          <Link href={MAJOR_OFFICE_INTEREST} className="atelier-room">
+          <Link href={MAJOR_OFFICE_INTEREST} className="atelier-ribbon__node">
+            <CompassMark />
             <span>شخصیت</span>
-            <strong>نگاه اول به شخصیت</strong>
-            <em>ترجیح‌ها، نه برچسب؛ تفسیر نهایی با مهندس است.</em>
+            <strong>نگاه اول</strong>
           </Link>
-        </AtelierReveal>
-      </nav>
+        </nav>
+      </AtelierReveal>
 
       <p className="atelier-whisper">
         {model.examGroupLabel}

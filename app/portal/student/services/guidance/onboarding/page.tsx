@@ -5,6 +5,7 @@
 
 import { redirect } from "next/navigation";
 import { AtelierPage } from "@/components/guidance/office/AtelierPage";
+import { ConstellationMark } from "@/components/guidance/office/illustrations";
 import { GuidanceOnboardingForm } from "@/components/guidance/onboarding/GuidanceOnboardingForm";
 import { candidateNeedsGuidanceOnboarding } from "@/lib/guidance/external-candidate";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
@@ -61,6 +62,8 @@ export default async function GuidanceOnboardingPage() {
             title="خوش آمدید. آینده از همین اتاق شروع می‌شود."
             lead="این فرم دولتی نیست. دو تصویر می‌سازیم: کی هستید، و از کدام مسیر تحصیلی می‌آیید. هر بخش ذخیره می‌شود؛ می‌توانید بروید و برگردید."
             now="هویت، سپس تصویر تحصیلی"
+            art={<ConstellationMark />}
+            artCaption="آغاز صورت‌فلکی"
           >
             <GuidanceOnboardingForm
               mobile={parsed.normalized}

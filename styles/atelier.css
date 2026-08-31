@@ -846,3 +846,241 @@
   color: #e8d7a8;
   border-color: transparent;
 }
+
+.atelier-hero {
+  display: grid;
+  gap: 1.5rem;
+  align-items: center;
+  margin-bottom: 1.75rem;
+}
+
+.atelier-hero--flagship {
+  margin-bottom: 1.4rem;
+}
+
+.atelier-hero__focus {
+  position: relative;
+}
+
+.atelier-hero__orb {
+  position: relative;
+  margin-top: -3.5rem;
+  margin-inline-end: 0.4rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.atelier-scene {
+  margin: 0;
+}
+
+.atelier-scene__glass {
+  display: grid;
+  place-items: center;
+  min-height: 14rem;
+  padding: 0.6rem;
+  border-radius: 1.8rem;
+  background: rgb(255 252 246 / 0.42);
+  border: 1px solid rgb(255 255 255 / 0.55);
+  box-shadow:
+    0 24px 60px rgb(12 16 24 / 0.08),
+    inset 0 1px 0 rgb(255 255 255 / 0.7);
+  backdrop-filter: blur(22px) saturate(1.2);
+}
+
+.atelier-scene svg,
+.atelier-scene__svg {
+  width: min(100%, 18rem);
+  height: auto;
+}
+
+.atelier-scene figcaption {
+  margin-top: 0.55rem;
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  color: var(--atelier-gold);
+  font-weight: 700;
+}
+
+.atelier-glass {
+  background: rgb(255 252 246 / 0.55);
+  border: 1px solid rgb(255 255 255 / 0.5);
+  box-shadow:
+    0 22px 50px rgb(12 16 24 / 0.08),
+    inset 0 1px 0 rgb(255 255 255 / 0.65);
+  backdrop-filter: blur(18px) saturate(1.15);
+}
+
+.atelier-now {
+  margin-top: 0;
+}
+
+.atelier-orb {
+  width: 8.6rem;
+  height: 8.6rem;
+  transform: rotate(-90deg);
+  filter: drop-shadow(0 12px 24px rgb(184 148 74 / 0.28));
+}
+
+.atelier-orb__track,
+.atelier-orb__value {
+  fill: none;
+  stroke-width: 7;
+}
+
+.atelier-orb__track {
+  stroke: rgb(23 20 15 / 0.08);
+}
+
+.atelier-orb__value {
+  stroke: #b8944a;
+  stroke-linecap: round;
+  animation: atelier-orb-breathe 4.8s ease-in-out infinite;
+}
+
+.atelier-orb text {
+  transform: rotate(90deg);
+  transform-origin: 70px 70px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  fill: var(--atelier-text);
+}
+
+.atelier-orb__caption {
+  font-size: 0.58rem !important;
+  font-weight: 650 !important;
+  letter-spacing: 0.16em;
+  fill: var(--atelier-muted) !important;
+}
+
+@keyframes atelier-orb-breathe {
+  0%,
+  100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
+
+.atelier-ribbon {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 2rem;
+  position: relative;
+}
+
+.atelier-ribbon::before {
+  display: none;
+}
+
+.atelier-ribbon__node {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+  padding: 0.4rem 0.4rem 1rem;
+  border-radius: 1.4rem;
+  transition: transform 0.3s ease;
+}
+
+.atelier-ribbon__node svg {
+  width: 8.5rem;
+  height: auto;
+}
+
+.atelier-ribbon__node span {
+  margin-top: 0.15rem;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  color: var(--atelier-gold);
+}
+
+.atelier-ribbon__node strong {
+  margin-top: 0.2rem;
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+}
+
+.atelier-ribbon__node:hover,
+.atelier-ribbon__node:focus-visible {
+  transform: translateY(-5px);
+}
+
+.atelier-empty {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  padding: 1.4rem 1.2rem 1.8rem;
+  border-radius: 1.7rem;
+  background: rgb(255 252 246 / 0.48);
+  border: 1px solid rgb(255 255 255 / 0.5);
+  backdrop-filter: blur(16px);
+}
+
+.atelier-empty h2 {
+  margin: 0.4rem 0 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+}
+
+.atelier-empty p {
+  margin: 0.5rem 0 0;
+  max-width: 28rem;
+  line-height: 1.85;
+  color: var(--atelier-muted);
+}
+
+.atelier-empty .atelier-cta {
+  margin-top: 1.1rem;
+}
+
+.atelier-phase.is-active {
+  background: rgb(255 252 246 / 0.62);
+  backdrop-filter: blur(16px);
+}
+
+.atelier-appoint .atelier-scene,
+.atelier-letter .atelier-scene {
+  margin-bottom: 0.6rem;
+}
+
+.atelier-appoint .atelier-scene__glass,
+.atelier-letter .atelier-scene__glass {
+  min-height: 10.5rem;
+}
+
+@media (min-width: 880px) {
+  .atelier-hero {
+    grid-template-columns: minmax(0, 1.15fr) minmax(16rem, 0.85fr);
+    gap: 2rem;
+  }
+
+  .atelier-hero__orb {
+    position: absolute;
+    inset-inline-end: 0.35rem;
+    bottom: 0.2rem;
+    margin: 0;
+  }
+
+  .atelier-ribbon {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .atelier-ribbon::before {
+    display: block;
+    content: "";
+    position: absolute;
+    inset-inline: 8%;
+    top: 4.2rem;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--atelier-gold), transparent);
+    opacity: 0.45;
+    pointer-events: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atelier-orb__value {
+    animation: none;
+  }
+}

@@ -16,6 +16,8 @@ import {
 } from "@/lib/guidance/journey/assessment/question-bank";
 import type { AssessmentAnswers } from "@/lib/guidance/journey/assessment/scoring";
 import { MAJOR_OFFICE_HOME } from "@/lib/guidance/office/nav";
+import { AtelierScene } from "@/components/guidance/office/AtelierScene";
+import { CompassMark } from "@/components/guidance/office/illustrations";
 
 const SCALE_LABELS = [
   "کاملاً مخالفم",
@@ -131,14 +133,19 @@ export function OfficeInterestExperience({
     <div className="office-assess">
       {phase === "intro" ? (
         <>
-          <header className="office-assess__hero">
-            <p>نگاه اول</p>
-            <h1>اولین نگاه به شخصیت تحصیلی شما</h1>
-            <p>
-              ده اتاق کوتاه، هر کدام شش پرسش. این برچسب روان‌شناختی نیست —
-              روشن کردن ترجیح‌هاست تا گفتگو با مهندس از حدس خالی شروع نشود.
-              هر بخش ذخیره می‌شود؛ می‌توانید بروید و آرام برگردید.
-            </p>
+          <header className="atelier-hero">
+            <div className="atelier-hero__copy">
+              <p className="atelier-kicker">نگاه اول</p>
+              <h1 className="atelier-title">اولین نگاه به شخصیت تحصیلی شما</h1>
+              <p className="atelier-lead">
+                ده اتاق کوتاه، هر کدام شش پرسش. این برچسب روان‌شناختی نیست —
+                روشن کردن ترجیح‌هاست تا گفتگو با مهندس از حدس خالی شروع نشود.
+                هر بخش ذخیره می‌شود؛ می‌توانید بروید و آرام برگردید.
+              </p>
+            </div>
+            <AtelierScene caption="قطب‌نما">
+              <CompassMark />
+            </AtelierScene>
           </header>
           <ul className="office-assess__promises">
             <li>

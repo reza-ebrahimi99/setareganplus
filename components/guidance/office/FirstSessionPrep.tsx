@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { AtelierScene } from "@/components/guidance/office/AtelierScene";
+import { LampMark } from "@/components/guidance/office/illustrations";
 import {
   FIRST_SESSION_BOOK_HREF,
   FIRST_SESSION_DOCUMENTS,
@@ -12,10 +14,11 @@ import {
 export function FirstSessionPrep({ bookHref = FIRST_SESSION_BOOK_HREF }: { bookHref?: string }) {
   return (
     <div className="office-session">
-      <header className="office-session__hero">
-        <p>نخستین گفتگو</p>
-        <h1>{FIRST_SESSION_WHY.title}</h1>
-        <p>{FIRST_SESSION_WHY.lead}</p>
+      <header className="atelier-hero">
+        <div className="atelier-hero__copy">
+          <p className="atelier-kicker">نخستین گفتگو</p>
+          <h1 className="atelier-title">{FIRST_SESSION_WHY.title}</h1>
+          <p className="atelier-lead">{FIRST_SESSION_WHY.lead}</p>
         <dl className="office-session__meta">
           <div>
             <dt>مدت</dt>
@@ -26,6 +29,10 @@ export function FirstSessionPrep({ bookHref = FIRST_SESSION_BOOK_HREF }: { bookH
             <dd>{FIRST_SESSION_FORMATS.join(" / ")}</dd>
           </div>
         </dl>
+        </div>
+        <AtelierScene caption="چراغ میز مهندس">
+          <LampMark />
+        </AtelierScene>
       </header>
 
       <section>

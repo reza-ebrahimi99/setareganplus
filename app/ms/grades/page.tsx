@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AtelierPage } from "@/components/guidance/office/AtelierPage";
+import { ScoresMark } from "@/components/guidance/office/illustrations";
 import { FinalExamForm } from "@/components/guidance/office/FinalExamForm";
 import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
 import { loadGuidanceJourneyPlan } from "@/lib/guidance/journey/plan";
@@ -37,6 +38,8 @@ export default async function OfficeGradesPage() {
       title="شناخت توانایی‌های شما"
       lead="هر درس یک قطعه است، نه یک ردیف فرم. نمره را بنویسید و بروید؛ معدل خودش شکل می‌گیرد. سند PDF بعد از کامل شدن تصویر باز می‌شود."
       now="پس از نمرات، آخرین قطعه تصویر تحصیلی"
+      art={<ScoresMark />}
+      artCaption="نقشه توانایی‌ها"
     >
       <FinalExamForm examGroup={plan.examGroup} initialScores={stored.scores} />
     </AtelierPage>

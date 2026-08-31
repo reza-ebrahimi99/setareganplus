@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AtelierPage } from "@/components/guidance/office/AtelierPage";
+import { PortraitMark } from "@/components/guidance/office/illustrations";
 import { GuidanceOnboardingForm } from "@/components/guidance/onboarding/GuidanceOnboardingForm";
 import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
 import { loadOfficeIntakeContext } from "@/lib/guidance/office/intake-loader";
@@ -27,6 +28,8 @@ export default async function OfficeIdentityPage() {
       title="قبل از هر انتخاب، باید بدانیم که هستید"
       lead="نام، کد ملی و جای زندگی‌تان سنگ بنای پرونده است. هر کلمه خودکار ذخیره می‌شود؛ می‌توانید بروید و آرام برگردید."
       now="تکمیل هویت، بعد تصویر تحصیلی"
+      art={<PortraitMark />}
+      artCaption="پرتره پرونده"
     >
       <GuidanceOnboardingForm
         mobile={intake.mobile}

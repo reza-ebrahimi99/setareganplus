@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AtelierPage } from "@/components/guidance/office/AtelierPage";
+import { ScoresMark } from "@/components/guidance/office/illustrations";
 import { GuidanceOnboardingForm } from "@/components/guidance/onboarding/GuidanceOnboardingForm";
 import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
 import { loadOfficeIntakeContext } from "@/lib/guidance/office/intake-loader";
@@ -27,6 +28,8 @@ export default async function OfficeAcademicPage() {
       title="مدرسه، سهمیه و سالی که از آن می‌آیید"
       lead="این‌ها اعداد اداری نیستند. زمینهٔ انتخاب رشته‌اند. نمرات را در اتاق بعد، یکی‌یکی می‌چینیم."
       now="پس از این تصویر، شناخت توانایی‌ها"
+      art={<ScoresMark />}
+      artCaption="زمینه تحصیلی"
     >
       <GuidanceOnboardingForm
         mobile={intake.mobile}

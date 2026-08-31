@@ -20,9 +20,9 @@ export function AtelierReveal({
   return (
     <motion.div
       className={className}
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, delay, ease }}
+      initial={{ opacity: 0, y: 22, filter: "blur(6px)" }}
+      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      transition={{ duration: 0.85, delay, ease }}
     >
       {children}
     </motion.div>
@@ -40,9 +40,31 @@ export function AtelierPress({
   return (
     <motion.div
       className={className}
-      whileHover={reduce ? undefined : { y: -3 }}
-      whileTap={reduce ? undefined : { scale: 0.985 }}
-      transition={{ duration: 0.28, ease }}
+      whileHover={reduce ? undefined : { y: -4 }}
+      whileTap={reduce ? undefined : { scale: 0.987 }}
+      transition={{ duration: 0.32, ease }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export function AtelierFloat({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const reduce = useReducedMotion();
+  if (reduce) {
+    return <div className={className}>{children}</div>;
+  }
+  return (
+    <motion.div
+      className={className}
+      animate={{ y: [0, -8, 0] }}
+      transition={{ duration: 7.5, repeat: Infinity, ease: "easeInOut" }}
     >
       {children}
     </motion.div>

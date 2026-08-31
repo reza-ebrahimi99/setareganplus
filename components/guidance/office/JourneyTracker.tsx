@@ -2,6 +2,8 @@ import Link from "next/link";
 import { toPersianDigits } from "@/lib/persian";
 import type { OfficeJourneyTrackerModel } from "@/lib/guidance/office/tracker";
 import { AtelierReveal } from "@/components/guidance/office/AtelierMotion";
+import { AtelierScene } from "@/components/guidance/office/AtelierScene";
+import { ConstellationMark } from "@/components/guidance/office/illustrations";
 
 const DOC_STATUS: Record<string, string> = {
   missing: "جا دارد",
@@ -13,20 +15,25 @@ export function JourneyTracker({ model }: { model: OfficeJourneyTrackerModel }) 
   return (
     <div className="atelier-path">
       <AtelierReveal>
-        <header className="atelier-path__hero">
-          <p className="atelier-kicker">مسیر همراهی</p>
-          <h1 className="atelier-title">از شناخت خود تا فهرست نهایی</h1>
-          <p className="atelier-lead">
-            این یک ویزارد اداری نیست. هر فصل، یک اتاق در دفتر است. مرحله جاری
-            روشن است؛ بقیه آرام منتظر می‌مانند.
-          </p>
-          <p className="atelier-now-line">
-            <span>{toPersianDigits(model.completionPercentage)}٪</span>
-            اکنون: {model.currentTitle}
-          </p>
-          <a className="atelier-jump" href={`#phase-${model.currentStep}`}>
-            رفتن به جایی که الان هستید
-          </a>
+        <header className="atelier-hero">
+          <div className="atelier-hero__copy">
+            <p className="atelier-kicker">مسیر همراهی</p>
+            <h1 className="atelier-title">از شناخت خود تا فهرست نهایی</h1>
+            <p className="atelier-lead">
+              دوازده اتاق، یک خط طلایی. شما روی یک نقطه از صورت‌فلکی ایستاده‌اید؛
+              بقیه آرام منتظر می‌مانند.
+            </p>
+            <p className="atelier-now-line">
+              <span>{toPersianDigits(model.completionPercentage)}٪</span>
+              اکنون: {model.currentTitle}
+            </p>
+            <a className="atelier-jump" href={`#phase-${model.currentStep}`}>
+              پرش به جایی که الان هستید
+            </a>
+          </div>
+          <AtelierScene caption="صورت‌فلکی پرونده">
+            <ConstellationMark />
+          </AtelierScene>
         </header>
       </AtelierReveal>
 
@@ -36,7 +43,7 @@ export function JourneyTracker({ model }: { model: OfficeJourneyTrackerModel }) 
             {phase.chapterStart ? (
               <h2 className="atelier-path__chapter">{phase.chapter}</h2>
             ) : null}
-            <AtelierReveal delay={Math.min(index * 0.03, 0.24)}>
+            <AtelierReveal delay={Math.min(index * 0.04, 0.28)}>
               <article
                 id={`phase-${phase.id}`}
                 className={`atelier-phase is-${phase.status}`}
@@ -49,24 +56,16 @@ export function JourneyTracker({ model }: { model: OfficeJourneyTrackerModel }) 
                 <h3>{phase.storyTitle}</h3>
                 <p className="atelier-phase__story">{phase.purpose}</p>
 
-                {phase.status !== "locked" ? (
-                  <div className="atelier-phase__chips">
-                    <span>{phase.estimatedDuration}</span>
-                    <span>{phase.counselorLabel}</span>
-                    {phase.nextAction ? <span>{phase.nextAction}</span> : null}
-                  </div>
-                ) : null}
-
-                {phase.counselorMessage ? (
-                  <p className="atelier-phase__note">{phase.counselorMessage}</p>
-                ) : null}
-
-                {phase.lockReason ? (
-                  <p className="atelier-phase__story">{phase.lockReason}</p>
-                ) : null}
-
                 {phase.status === "active" ? (
-                  <>
+                  <div className="atelier-phase__live">
+                    <div className="atelier-phase__chips">
+                      <span>{phase.estimatedDuration}</span>
+                      <span>{phase.counselorLabel}</span>
+                      {phase.nextAction ? <span>{phase.nextAction}</span> : null}
+                    </div>
+                    {phase.counselorMessage ? (
+                      <p className="atelier-phase__note">{phase.counselorMessage}</p>
+                    ) : null}
                     <ul className="atelier-check">
                       {phase.requiredActions.map((action) => (
                         <li
@@ -86,11 +85,14 @@ export function JourneyTracker({ model }: { model: OfficeJourneyTrackerModel }) 
                         ))}
                       </div>
                     ) : null}
-                  </>
+                    {phase.knowledgeNote ? (
+                      <p className="atelier-phase__story">{phase.knowledgeNote}</p>
+                    ) : null}
+                  </div>
                 ) : null}
 
-                {phase.knowledgeNote && phase.status !== "locked" ? (
-                  <p className="atelier-phase__story">{phase.knowledgeNote}</p>
+                {phase.lockReason ? (
+                  <p className="atelier-phase__story">{phase.lockReason}</p>
                 ) : null}
 
                 {phase.href && phase.hrefLabel ? (

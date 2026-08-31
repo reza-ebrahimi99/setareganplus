@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { UnfinishedMark } from "@/components/guidance/office/illustrations";
 
 export function GuidanceErrorFallback({
   error,
@@ -19,7 +20,8 @@ export function GuidanceErrorFallback({
   }, [error]);
 
   return (
-    <div className="office-error" dir="rtl" role="alert">
+    <div className="office-error atelier-empty" dir="rtl" role="alert">
+      <UnfinishedMark className="atelier-scene__svg" />
       <p>دفتر لحظه‌ای مکث کرد</p>
       <h1>این اتاق الان آرام نیست</h1>
       <p>
