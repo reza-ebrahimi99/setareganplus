@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AtelierPage } from "@/components/guidance/office/AtelierPage";
 import { GuidanceGradesUploadForm } from "@/components/guidance/GradesUploadForm";
 import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
 import { loadGuidanceJourneyPlan } from "@/lib/guidance/journey/plan";
@@ -12,7 +13,7 @@ import { requireStudentPortalAccess } from "@/lib/portal/auth";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "کارنامه رسمی",
+  title: "آخرین قطعه از تصویر تحصیلی",
   robots: { index: false, follow: false },
 };
 
@@ -43,45 +44,39 @@ export default async function OfficeTranscriptPage() {
 
   if (!scores.summary.complete) {
     return (
-      <div className="office-intake-page">
-        <header>
-          <p>گام ۴ از مسیر مشاوره</p>
-          <h1>بارگذاری کارنامه رسمی</h1>
-          <p>
-            ابتدا همه نمرات امتحان نهایی را وارد کنید تا فایل PDF برای مقایسه
-            مشاور باز شود.
-          </p>
-        </header>
+      <AtelierPage
+        kicker="اتاق سند"
+        title="آخرین قطعه هنوز زود است"
+        lead="اول توانایی‌ها را کامل کنید. کارنامه رسمی برای تطبیق روی میز مهندس است، نه برای شروع خالی."
+        now="بازگشت به شناخت توانایی‌ها"
+      >
         <div className="office-empty" role="status">
-          <p>نمرات هنوز کامل نیست.</p>
-          <Link href={MAJOR_OFFICE_GRADES} className="office-intake__continue">
-            بازگشت به ورود نمرات
+          <p>تصویر نمرات هنوز کامل نیست.</p>
+          <Link href={MAJOR_OFFICE_GRADES} className="atelier-cta">
+            ادامه شناخت توانایی‌ها
           </Link>
         </div>
-      </div>
+      </AtelierPage>
     );
   }
 
   const latest = portalPlan?.latestFinalGrades ?? null;
 
   return (
-    <div className="office-intake-page">
-      <header>
-        <p>گام ۴ از مسیر مشاوره</p>
-        <h1>بارگذاری کارنامه رسمی PDF</h1>
-        <p>
-          فایل رسمی کارنامه را بعد از ورود نمرات بارگذاری کنید تا مشاور بتواند
-          نمرات واردشده را با سند تطبیق دهد.
-        </p>
-      </header>
+    <AtelierPage
+      kicker="اتاق سند"
+      title="آخرین قطعه از تصویر تحصیلی شما"
+      lead="فایل رسمی را بگذارید تا مهندس نمره‌هایی که نوشتید را با سند تطبیق دهد. این بارگذاری، پایان شناخت نیست — آغاز گفتگوست."
+      now="بعد از سند: نگاه اول به شخصیت تحصیلی"
+    >
       <GuidanceGradesUploadForm
         hasExisting={Boolean(latest)}
         existingFileName={latest?.originalFilename ?? null}
         existingVersion={latest?.versionNumber ?? null}
         acceptPdfOnly
         successHref={MAJOR_OFFICE_INTEREST}
-        successLabel="ادامه: آزمون رغبت"
+        successLabel="ادامه: نگاه اول به شخصیت"
       />
-    </div>
+    </AtelierPage>
   );
 }

@@ -46,6 +46,7 @@ export type TrackerPhaseDocument = {
 export type TrackerPhase = {
   id: GuidanceJourneyStepId;
   title: string;
+  storyTitle: string;
   shortTitle: string;
   chapter: string;
   chapterStart: boolean;
@@ -102,6 +103,8 @@ export type TrackerDerivationInput = {
 type PhaseCatalog = {
   id: GuidanceJourneyStepId;
   chapter: string;
+  storyTitle: string;
+  story: string;
   estimatedDuration: string;
   lockReason: string;
   continueLabel: string;
@@ -111,120 +114,144 @@ type PhaseCatalog = {
 const PHASE_CATALOG: readonly PhaseCatalog[] = [
   {
     id: 1,
-    chapter: "ساخت شناسنامه دانش‌آموز",
+    chapter: "ورود به دفتر",
+    storyTitle: "کی هستید، و تصویر تحصیلی‌تان چیست",
+    story: "قبل از هر انتخاب، باید خودتان را دقیق ببینیم. هویت، مدرسه، توانایی‌ها و سند رسمی — چهار قطعهٔ یک تصویر.",
     estimatedDuration: "حدود ۱۵ دقیقه",
     lockReason: "بعد از تشکیل پرونده فعال می‌شود",
-    continueLabel: "تکمیل شناسنامه",
+    continueLabel: "کشف تصویر تحصیلی",
     actions: [
-      { id: "identity", label: "ثبت اطلاعات هویتی" },
-      { id: "academic", label: "ثبت پرونده تحصیلی" },
-      { id: "examScores", label: "ورود نمرات امتحان نهایی" },
-      { id: "grades", label: "بارگذاری کارنامه رسمی PDF" },
+      { id: "identity", label: "کی هستید" },
+      { id: "academic", label: "تصویر تحصیلی" },
+      { id: "examScores", label: "شناخت توانایی‌های شما" },
+      { id: "grades", label: "آخرین قطعه از تصویر تحصیلی" },
     ],
   },
   {
     id: 2,
     chapter: "شناخت خود",
+    storyTitle: "اولین نگاه به شخصیت تحصیلی شما",
+    story: "این آزمون برچسب روان‌شناختی نیست. ترجیح‌ها را روشن می‌کند تا گفتگو با مهندس از حدس خالی شروع نشود.",
     estimatedDuration: "حدود ۲۵ دقیقه",
     lockReason: "بعد از ثبت اطلاعات فعال می‌شود",
-    continueLabel: "شروع آزمون رغبت",
-    actions: [{ id: "assess", label: "انجام آزمون رغبت‌سنجی" }],
+    continueLabel: "شروع نگاه اول",
+    actions: [{ id: "assess", label: "پاسخ به پرسش‌های رغبت" }],
   },
   {
     id: 3,
     chapter: "آمادگی برای مشاوره",
+    storyTitle: "آماده‌سازی میز مشاوره",
+    story: "بستهٔ همراهی، صندلی مقابل مهندس را رسمی می‌کند. تا آن لحظه دانشنامه و آزمون باز است.",
     estimatedDuration: "حدود ۱۰ دقیقه",
     lockReason: "بعد از انجام آزمون رغبت‌سنجی در دسترس قرار می‌گیرد",
-    continueLabel: "فعال‌سازی بسته",
+    continueLabel: "فعال‌سازی همراهی",
     actions: [
-      { id: "package", label: "انتخاب بسته مشاوره" },
-      { id: "pay", label: "پرداخت و فعال‌سازی پرونده" },
+      { id: "package", label: "انتخاب شکل همراهی" },
+      { id: "pay", label: "فعال‌سازی پرونده روی میز مهندس" },
     ],
   },
   {
     id: 4,
-    chapter: "انتخاب اولویت‌ها و جلسه اول",
+    chapter: "نخستین گفتگو",
+    storyTitle: "نشستن مقابل مهندس",
+    story: "نود دقیقه برای فهمیدن مسیر — نه برای بستن فهرست. پرونده از کاغذ به گفتگو می‌رسد.",
     estimatedDuration: "۹۰ دقیقه",
     lockReason: "پس از فعال‌سازی بسته مشاوره فعال می‌شود",
-    continueLabel: "آمادگی و رزرو جلسه اول",
-    actions: [{ id: "book1", label: "رزرو نوبت جلسه اول با مهندس" }],
+    continueLabel: "آمادگی نخستین گفتگو",
+    actions: [{ id: "book1", label: "رزرو نوبت نخستین گفتگو" }],
   },
   {
     id: 5,
-    chapter: "کارنامه و نتایج کنکور",
+    chapter: "نتایج سنجش",
+    storyTitle: "وقتی کارنامه سنجش می‌رسد",
+    story: "رتبه و تراز، تصویر را کامل می‌کنند. تا اعلام رسمی، حدس نزنید.",
     estimatedDuration: "حدود ۱۰ دقیقه — پس از اعلام نتایج",
     lockReason: "پس از جلسه اول مشاوره فعال می‌شود",
-    continueLabel: "ثبت نتایج سنجش",
+    continueLabel: "ثبت تصویر سنجش",
     actions: [
-      { id: "ranks", label: "ثبت رتبه و تراز سنجش" },
-      { id: "examDoc", label: "بارگذاری کارنامه رسمی سنجش" },
+      { id: "ranks", label: "ثبت رتبه و تراز" },
+      { id: "examDoc", label: "سند رسمی سنجش" },
     ],
   },
   {
     id: 6,
-    chapter: "انتخاب اولویت‌ها و جلسه اول",
+    chapter: "چیدن میدان انتخاب",
+    storyTitle: "کدام نوع آموزش با زندگی شما می‌سازد",
+    story: "روزانه، شبانه، غیرانتفاعی — اولویت زندگی است، نه برچسب دانشگاه.",
     estimatedDuration: "حدود ۱۰ دقیقه",
     lockReason: "پس از ثبت نتایج آزمون سنجش فعال می‌شود",
-    continueLabel: "تعیین نوع آموزش",
-    actions: [{ id: "edu", label: "مرتب‌سازی نوع دوره (روزانه، شبانه و …)" }],
+    continueLabel: "چیدن نوع آموزش",
+    actions: [{ id: "edu", label: "مرتب‌سازی نوع دوره" }],
   },
   {
     id: 7,
-    chapter: "انتخاب اولویت‌ها و جلسه اول",
+    chapter: "چیدن میدان انتخاب",
+    storyTitle: "کجا می‌توانید زندگی کنید",
+    story: "شهر فقط روی نقشه نیست. خانواده، خوابگاه و فاصله، تصمیم را عوض می‌کنند.",
     estimatedDuration: "حدود ۱۰ دقیقه",
     lockReason: "پس از تعیین نوع آموزش فعال می‌شود",
-    continueLabel: "انتخاب شهرها",
-    actions: [{ id: "city", label: "انتخاب استان و شهرهای مورد قبول" }],
+    continueLabel: "انتخاب جغرافیا",
+    actions: [{ id: "city", label: "شهرها و استان‌های مورد قبول" }],
   },
   {
     id: 8,
-    chapter: "انتخاب اولویت‌ها و جلسه اول",
+    chapter: "چیدن میدان انتخاب",
+    storyTitle: "رشته‌هایی که ارزش فکر کردن دارند",
+    story: "فهرست بلند را بعداً می‌چینیم. اینجا فقط میدان را محدود می‌کنیم.",
     estimatedDuration: "حدود ۱۵ دقیقه",
     lockReason: "پس از تعیین شهرهای مورد قبول فعال می‌شود",
-    continueLabel: "انتخاب رشته‌ها",
-    actions: [{ id: "majors", label: "انتخاب رشته‌های متناسب با گروه آزمایشی" }],
+    continueLabel: "انتخاب میدان رشته",
+    actions: [{ id: "majors", label: "رشته‌های متناسب با گروه آزمایشی" }],
   },
   {
     id: 9,
-    chapter: "انتخاب اولویت‌ها و جلسه اول",
+    chapter: "چیدن میدان انتخاب",
+    storyTitle: "چه چیزی برای شما سنگین‌تر است",
+    story: "رشته، دانشگاه، شهر، هزینه — وزن هر کدام را شما می‌گذارید، نه فرم.",
     estimatedDuration: "حدود ۱۰ دقیقه",
     lockReason: "پس از انتخاب رشته‌ها فعال می‌شود",
-    continueLabel: "وزن‌دهی اولویت‌ها",
-    actions: [{ id: "weights", label: "وزن‌دهی رشته، دانشگاه، شهر و سایر عوامل" }],
+    continueLabel: "وزن‌دهی زندگی",
+    actions: [{ id: "weights", label: "وزن رشته، دانشگاه، شهر" }],
   },
   {
     id: 10,
     chapter: "پیش‌نویس فهرست و بازبینی مهندس",
+    storyTitle: "چیدمان هوشمند، زیر نگاه مهندس",
+    story: "پیش‌نویس ۱۵۰ از ترجیح‌های شما ساخته می‌شود. حکم نهایی هنوز با مهندس است.",
     estimatedDuration: "کار شما حدود ۱۵ دقیقه؛ بازبینی مهندس معمولاً یک تا دو روز کاری",
     lockReason: "پس از وزن‌دهی اولویت‌ها فعال می‌شود",
-    continueLabel: "ادامه چیدمان هوشمند",
+    continueLabel: "دیدن پیش‌نویس",
     actions: [
-      { id: "export", label: "صدور و ورود پیش‌نویس فهرست ۱۵۰" },
+      { id: "export", label: "صدور پیش‌نویس فهرست ۱۵۰" },
       { id: "review10", label: "بازبینی مهندس رضا ابراهیمی" },
     ],
   },
   {
     id: 11,
     chapter: "بازبینی دانش‌آموز و جلسه والدین",
+    storyTitle: "گفتگوی دوم، این بار با خانواده",
+    story: "فهرست روی میز می‌آید تا زندگی خانواده هم شنیده شود — نه فقط رتبه.",
     estimatedDuration: "یک جلسه با مشاور و خانواده",
     lockReason: "پس از بازبینی مهندس روی چیدمان فعال می‌شود",
-    continueLabel: "رزرو جلسه دوم",
+    continueLabel: "رزرو گفتگوی خانواده",
     actions: [{ id: "book2", label: "رزرو جلسه دوم و حضور خانواده" }],
   },
   {
     id: 12,
     chapter: "تأیید نهایی و ارسال به سنجش",
+    storyTitle: "بستن پرونده، با اطمینان",
+    story: "تأیید دیجیتال یعنی فهرست از میز مهندس به سنجش می‌رود. عجله اینجا جایی ندارد.",
     estimatedDuration: "حدود ۵ دقیقه",
     lockReason: "پس از جلسه دوم مشاوره فعال می‌شود",
-    continueLabel: "تأیید نهایی فهرست",
+    continueLabel: "تأیید آرام فهرست",
     actions: [{ id: "final", label: "تأیید دیجیتال فهرست نهایی" }],
   },
 ];
 
 const STATUS_LABELS: Record<GuidanceJourneyStepStatus, string> = {
   locked: "هنوز نرسیده‌اید",
-  active: "مرحله جاری",
-  completed: "انجام شد",
+  active: "همین‌جا هستید",
+  completed: "این اتاق طی شد",
 };
 
 const COUNSELOR_LABELS: Record<TrackerCounselorKind, string> = {
@@ -374,17 +401,17 @@ export function deriveOfficeJourneyTracker(
         ? [
             {
               id: "identity",
-              label: "شناسنامه هویتی",
+              label: "کی هستید",
               status: intakeFlags.hasIdentityProfile ? "ready" : "missing",
             },
             {
               id: "scores",
-              label: "نمرات امتحان نهایی",
+              label: "توانایی‌های شما",
               status: intakeFlags.finalExamComplete ? "ready" : "missing",
             },
             {
               id: "pdf",
-              label: "کارنامه رسمی PDF",
+              label: "آخرین قطعه تصویر",
               status: intakeFlags.hasTranscript ? "ready" : "missing",
             },
           ]
@@ -425,11 +452,12 @@ export function deriveOfficeJourneyTracker(
     return {
       id: catalog.id,
       title: def.title,
+      storyTitle: catalog.storyTitle,
       shortTitle: def.shortTitle,
       chapter: catalog.chapter,
       chapterStart,
       description: def.description,
-      purpose: def.description,
+      purpose: catalog.story,
       estimatedDuration: catalog.estimatedDuration,
       requiredActions,
       status,
@@ -455,7 +483,7 @@ export function deriveOfficeJourneyTracker(
   return {
     completionPercentage: input.finalApproved ? 100 : input.completionPercentage,
     currentStep: current?.id ?? input.currentStep,
-    currentTitle: current?.title ?? "",
+    currentTitle: current?.storyTitle ?? current?.title ?? "",
     phases,
   };
 }

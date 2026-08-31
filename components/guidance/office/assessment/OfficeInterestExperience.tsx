@@ -132,11 +132,12 @@ export function OfficeInterestExperience({
       {phase === "intro" ? (
         <>
           <header className="office-assess__hero">
-            <p>آزمون رغبت رایگان</p>
-            <h1>شناخت ترجیح‌ها، نه برچسب روان‌شناختی</h1>
+            <p>نگاه اول</p>
+            <h1>اولین نگاه به شخصیت تحصیلی شما</h1>
             <p>
-              ده بخش کوتاه، هر کدام شش سؤال. پیشرفت بعد از هر بخش ذخیره می‌شود.
-              هر وقت خواستید دفتر را ترک کنید و با همان پرونده برگردید.
+              ده اتاق کوتاه، هر کدام شش پرسش. این برچسب روان‌شناختی نیست —
+              روشن کردن ترجیح‌هاست تا گفتگو با مهندس از حدس خالی شروع نشود.
+              هر بخش ذخیره می‌شود؛ می‌توانید بروید و آرام برگردید.
             </p>
           </header>
           <ul className="office-assess__promises">
@@ -152,7 +153,7 @@ export function OfficeInterestExperience({
             className="office-assess__cta"
             onClick={() => setPhase("taking")}
           >
-            شروع آزمون
+            آغاز نگاه اول
           </button>
         </>
       ) : null}

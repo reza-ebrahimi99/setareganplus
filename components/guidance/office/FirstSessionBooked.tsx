@@ -26,7 +26,7 @@ export function FirstSessionBooked({
   return (
     <div className="office-session">
       <header className="office-session__hero">
-        <p>جلسه اول رزرو شد</p>
+        <p>صندلی شما روی تقویم است</p>
         <h1>{countdownLabel}</h1>
         <p>
           {whenLabel} · {meetingLabel} · مشاور: {counselorName}

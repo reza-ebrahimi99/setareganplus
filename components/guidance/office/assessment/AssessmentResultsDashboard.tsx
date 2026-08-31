@@ -38,7 +38,7 @@ export function AssessmentResultsDashboard({
   return (
     <div className="office-assess-results">
       <header className="office-assess-results__hero">
-        <p>خروجی آزمون رغبت</p>
+        <p>نگاه اول کامل شد</p>
         <h1>{model.result.personality.title}</h1>
         <p className="office-assess-results__lead">{model.result.personality.description}</p>
       </header>

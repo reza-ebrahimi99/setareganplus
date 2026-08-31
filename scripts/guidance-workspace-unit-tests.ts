@@ -289,6 +289,8 @@ test("tracker past phases are reviewable; future phases have lock copy", () => {
   assert.ok(model.phases[3]?.lockReason?.includes("فعال"));
   for (const phase of model.phases) {
     assert.ok(phase.description.length > 0);
+    assert.ok(phase.storyTitle.length > 0);
+    assert.ok(phase.purpose.length > 0);
     assert.ok(phase.estimatedDuration.length > 0);
     assert.ok(phase.requiredActions.length > 0);
     assert.ok(phase.counselorLabel.length > 0);

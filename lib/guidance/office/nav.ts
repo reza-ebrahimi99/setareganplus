@@ -65,11 +65,11 @@ type OfficeRailSectionDef = {
 const OFFICE_RAIL_DEFS: readonly OfficeRailSectionDef[] = [
   {
     id: "office",
-    label: "دفتر",
+    label: "اتاق‌ها",
     items: [
       {
         id: "home",
-        label: "خانه",
+        label: "دفتر شما",
         href: MAJOR_OFFICE_HOME,
         live: true,
         unlock: { kind: "path" },
@@ -78,7 +78,7 @@ const OFFICE_RAIL_DEFS: readonly OfficeRailSectionDef[] = [
       },
       {
         id: "journey",
-        label: "نقشه مسیر",
+        label: "مسیر همراهی",
         href: MAJOR_OFFICE_JOURNEY,
         live: true,
         unlock: { kind: "path" },
@@ -87,7 +87,7 @@ const OFFICE_RAIL_DEFS: readonly OfficeRailSectionDef[] = [
       },
       {
         id: "session",
-        label: "جلسه اول",
+        label: "نخستین گفتگو",
         href: MAJOR_OFFICE_SESSION,
         live: true,
         unlock: { kind: "path" },
@@ -107,11 +107,11 @@ const OFFICE_RAIL_DEFS: readonly OfficeRailSectionDef[] = [
   },
   {
     id: "file",
-    label: "پرونده",
+    label: "تصویر شما",
     items: [
       {
         id: "profile",
-        label: "شناسنامه",
+        label: "کی هستید",
         href: "/ms/identity",
         live: true,
         unlock: { kind: "path" },
@@ -120,7 +120,7 @@ const OFFICE_RAIL_DEFS: readonly OfficeRailSectionDef[] = [
       },
       {
         id: "academic",
-        label: "پرونده تحصیلی",
+        label: "تصویر تحصیلی",
         href: "/ms/academic",
         live: true,
         unlock: { kind: "path" },
@@ -129,7 +129,7 @@ const OFFICE_RAIL_DEFS: readonly OfficeRailSectionDef[] = [
       },
       {
         id: "grades",
-        label: "نمرات نهایی",
+        label: "توانایی‌های شما",
         href: "/ms/grades",
         live: true,
         unlock: { kind: "path" },
@@ -138,7 +138,7 @@ const OFFICE_RAIL_DEFS: readonly OfficeRailSectionDef[] = [
       },
       {
         id: "transcript",
-        label: "کارنامه PDF",
+        label: "آخرین قطعه تصویر",
         href: "/ms/transcript",
         live: true,
         unlock: { kind: "path" },
@@ -167,11 +167,11 @@ const OFFICE_RAIL_DEFS: readonly OfficeRailSectionDef[] = [
   },
   {
     id: "discover",
-    label: "کشف",
+    label: "فهمیدن",
     items: [
       {
         id: "interest",
-        label: "آزمون رغبت",
+        label: "نگاه اول به شخصیت",
         href: MAJOR_OFFICE_INTEREST,
         live: true,
         unlock: { kind: "path" },

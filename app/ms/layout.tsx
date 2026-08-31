@@ -68,20 +68,20 @@ export default async function MajorOfficeLayout({
   const onSession = pathname === MAJOR_OFFICE_SESSION || pathname.startsWith(`${MAJOR_OFFICE_SESSION}/`);
   const statusLabel =
     pathname === MAJOR_OFFICE_IDENTITY
-      ? "هویت"
+      ? "کی هستید"
       : pathname === MAJOR_OFFICE_ACADEMIC
-        ? "پرونده تحصیلی"
+        ? "تصویر تحصیلی"
         : pathname === MAJOR_OFFICE_GRADES
-          ? "نمرات نهایی"
+          ? "توانایی‌های شما"
           : pathname === MAJOR_OFFICE_TRANSCRIPT
-            ? "کارنامه رسمی"
+            ? "آخرین قطعه تصویر"
             : onSession
-              ? "جلسه اول"
+              ? "نخستین گفتگو"
               : onInterest
-                ? "آزمون رغبت"
+                ? "نگاه اول به شخصیت"
                 : onJourney
-                  ? "نقشه مسیر"
-                  : "دفتر انتخاب رشته";
+                  ? "مسیر همراهی"
+                  : "دفتر شما";
 
   return (
     <MajorOfficeShell

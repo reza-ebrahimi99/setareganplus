@@ -178,9 +178,9 @@ export function GuidanceOnboardingForm({
       {showIdentity ? (
         <section className="office-intake__section" aria-labelledby="intake-identity">
           <header>
-            <p>گام ۱</p>
-            <h2 id="intake-identity">هویت</h2>
-            <p>اطلاعات فردی پرونده. خروج و ورود دوباره همین مقادیر را برمی‌گرداند.</p>
+            <p>تصویر اول</p>
+            <h2 id="intake-identity">کی هستید</h2>
+            <p>نام و جای شما. اگر بروید، همین کلمات منتظر می‌مانند.</p>
           </header>
 
           <div>
@@ -358,9 +358,9 @@ export function GuidanceOnboardingForm({
       {showAcademic ? (
         <section className="office-intake__section" aria-labelledby="intake-academic">
           <header>
-            <p>گام ۲</p>
-            <h2 id="intake-academic">پرونده تحصیلی</h2>
-            <p>مدرسه، گروه آزمایشی، سهمیه و سال فارغ‌التحصیلی.</p>
+            <p>تصویر دوم</p>
+            <h2 id="intake-academic">تصویر تحصیلی</h2>
+            <p>مدرسه، سهمیه و سالی که از آن می‌آیید — زمینهٔ انتخاب، نه یک ردیف اداری.</p>
           </header>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -465,12 +465,12 @@ export function GuidanceOnboardingForm({
 
       {mode === "onboarding" ? (
         <OtpSubmitButton
-          idleLabel="ثبت و ورود به سامانه هدایت"
-          pendingLabel="در حال ثبت…"
+          idleLabel="ورود به دفتر"
+          pendingLabel="در حال گشودن دفتر…"
         />
       ) : continueHref ? (
         <a href={continueHref} className="office-intake__continue">
-          ذخیره شد — ادامه
+          ادامه مسیر
         </a>
       ) : null}
     </form>

@@ -22,7 +22,7 @@ import {
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "جلسه اول مشاوره",
+  title: "نخستین گفتگو",
   robots: { index: false, follow: false },
 };
 

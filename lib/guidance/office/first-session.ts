@@ -11,8 +11,8 @@ export const FIRST_SESSION_FORMATS = INTEREST_CONSULTATION.formats;
 export const FIRST_SESSION_BOOK_HREF = "/book/guidance-first-session";
 
 export const FIRST_SESSION_WHY = {
-  title: "چرا جلسه اول مهم است",
-  lead: "این اولین جلسهٔ استراتژیک مسیر انتخاب رشته است — نه یک نوبت اداری. پرونده از روی کاغذ به میز مهندس رضا ابراهیمی می‌رسد.",
+  title: "نشستن مقابل مهندس",
+  lead: "این نوبت اداری نیست. نود دقیقه برای فهمیدن مسیر — تا پرونده از کاغذ به گفتگو برسد و آینده‌تان روی میز مهندس رضا ابراهیمی دیده شود.",
   items: INTEREST_CONSULTATION.items,
 } as const;
 

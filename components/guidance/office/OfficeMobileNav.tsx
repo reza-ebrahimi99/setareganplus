@@ -14,29 +14,18 @@ export function OfficeMobileNav({
   pathname: string;
   sections: readonly OfficeRailSection[];
 }) {
-  const items = sections.flatMap((section) => section.items);
+  const items = sections.flatMap((section) => section.items).filter((item) => item.live);
 
   return (
-    <nav className="major-office__mobile-rooms" aria-label="اتاق‌های دپارتمان">
+    <nav className="atelier-mobile" aria-label="اتاق‌های دفتر مشاوره">
       {items.map((item) => {
-        if (!item.live || !item.href) {
-          return (
-            <span
-              key={item.id}
-              className="major-office__chip is-locked"
-              title={item.lockReason ?? item.label}
-            >
-              <strong>{item.label}</strong>
-              {item.lockReason ? <em>{item.lockReason}</em> : null}
-            </span>
-          );
-        }
+        if (!item.href) return null;
         const active = isRailActive(pathname, item.href);
         return (
           <Link
             key={item.id}
             href={item.href}
-            className={`major-office__chip${active ? " is-active" : ""}`}
+            className={`atelier-chip${active ? " is-active" : ""}`}
             aria-current={active ? "page" : undefined}
           >
             {item.label}

@@ -7,7 +7,7 @@ import { requireStudentPortalAccess } from "@/lib/portal/auth";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "نقشه مسیر مشاوره",
+  title: "مسیر همراهی",
   robots: { index: false, follow: false },
 };
 

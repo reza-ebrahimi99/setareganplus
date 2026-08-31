@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { AtelierPage } from "@/components/guidance/office/AtelierPage";
 import { FinalExamForm } from "@/components/guidance/office/FinalExamForm";
 import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
 import { loadGuidanceJourneyPlan } from "@/lib/guidance/journey/plan";
@@ -8,7 +9,7 @@ import { requireStudentPortalAccess } from "@/lib/portal/auth";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "نمرات امتحان نهایی",
+  title: "شناخت توانایی‌های شما",
   robots: { index: false, follow: false },
 };
 
@@ -31,16 +32,13 @@ export default async function OfficeGradesPage() {
   });
 
   return (
-    <div className="office-intake-page">
-      <header>
-        <p>گام ۳ از مسیر مشاوره</p>
-        <h1>نمرات امتحان نهایی</h1>
-        <p>
-          نمره هر درس را جداگانه وارد کنید. معدل خودکار محاسبه می‌شود و می‌توانید
-          بعداً برگردید. کارنامه PDF بعد از تکمیل نمرات باز می‌شود.
-        </p>
-      </header>
+    <AtelierPage
+      kicker="اتاق توانایی‌ها"
+      title="شناخت توانایی‌های شما"
+      lead="هر درس یک قطعه است، نه یک ردیف فرم. نمره را بنویسید و بروید؛ معدل خودش شکل می‌گیرد. سند PDF بعد از کامل شدن تصویر باز می‌شود."
+      now="پس از نمرات، آخرین قطعه تصویر تحصیلی"
+    >
       <FinalExamForm examGroup={plan.examGroup} initialScores={stored.scores} />
-    </div>
+    </AtelierPage>
   );
 }

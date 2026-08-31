@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { AtelierPage } from "@/components/guidance/office/AtelierPage";
 import { GuidanceOnboardingForm } from "@/components/guidance/onboarding/GuidanceOnboardingForm";
 import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
 import { loadOfficeIntakeContext } from "@/lib/guidance/office/intake-loader";
@@ -8,7 +9,7 @@ import { requireStudentPortalAccess } from "@/lib/portal/auth";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "هویت",
+  title: "کی هستید",
   robots: { index: false, follow: false },
 };
 
@@ -21,14 +22,12 @@ export default async function OfficeIdentityPage() {
   if (!intake) redirect(GUIDANCE_ONBOARDING_PATH);
 
   return (
-    <div className="office-intake-page">
-      <header>
-        <p>گام ۱ از مسیر مشاوره</p>
-        <h1>اطلاعات هویتی</h1>
-        <p>
-          نام، کد ملی و محل سکونت پرونده شماست. هر تغییر خودکار ذخیره می‌شود.
-        </p>
-      </header>
+    <AtelierPage
+      kicker="اتاق هویت"
+      title="قبل از هر انتخاب، باید بدانیم که هستید"
+      lead="نام، کد ملی و جای زندگی‌تان سنگ بنای پرونده است. هر کلمه خودکار ذخیره می‌شود؛ می‌توانید بروید و آرام برگردید."
+      now="تکمیل هویت، بعد تصویر تحصیلی"
+    >
       <GuidanceOnboardingForm
         mobile={intake.mobile}
         provinces={intake.provinces}
@@ -37,6 +36,6 @@ export default async function OfficeIdentityPage() {
         mode="identity"
         continueHref={MAJOR_OFFICE_ACADEMIC}
       />
-    </div>
+    </AtelierPage>
   );
 }

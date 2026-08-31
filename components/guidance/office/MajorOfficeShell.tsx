@@ -1,4 +1,3 @@
-import { PortalTheme } from "@/components/portal/theme/PortalTheme";
 import { DepartmentRail } from "@/components/guidance/office/DepartmentRail";
 import { OfficeMobileNav } from "@/components/guidance/office/OfficeMobileNav";
 import { OfficeTopBar } from "@/components/guidance/office/OfficeTopBar";
@@ -18,18 +17,18 @@ export function MajorOfficeShell({
   rail: readonly OfficeRailSection[];
 }) {
   return (
-    <PortalTheme className="major-office-root">
-      <div className="major-office" dir="rtl" data-portal-accent="purple">
-        <DepartmentRail pathname={pathname} sections={rail} />
-        <div className="major-office__main">
-          <OfficeTopBar
-            userDisplayName={userDisplayName}
-            statusLabel={statusLabel}
-          />
-          <OfficeMobileNav pathname={pathname} sections={rail} />
-          <div className="major-office__body">{children}</div>
-        </div>
+    <div className="atelier" dir="rtl">
+      <div className="atelier__glow" aria-hidden="true" />
+      <div className="atelier__grain" aria-hidden="true" />
+      <DepartmentRail pathname={pathname} sections={rail} />
+      <div className="atelier-stage">
+        <OfficeTopBar
+          userDisplayName={userDisplayName}
+          statusLabel={statusLabel}
+        />
+        <OfficeMobileNav pathname={pathname} sections={rail} />
+        <div className="atelier-canvas">{children}</div>
       </div>
-    </PortalTheme>
+    </div>
   );
 }

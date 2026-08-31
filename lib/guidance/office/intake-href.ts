@@ -24,11 +24,11 @@ export function nextOfficeIntakeHref(flags: OfficeIntakeFlags): string {
 }
 
 export function officeIntakeContinueLabel(flags: OfficeIntakeFlags): string {
-  if (!flags.hasIdentityProfile) return "تکمیل اطلاعات هویتی";
-  if (!flags.hasAcademicProfile) return "تکمیل پرونده تحصیلی";
-  if (!flags.finalExamComplete) return "ورود نمرات امتحان نهایی";
-  if (!flags.hasTranscript) return "بارگذاری کارنامه رسمی";
-  return "بازبینی شناسنامه";
+  if (!flags.hasIdentityProfile) return "بگویید کی هستید";
+  if (!flags.hasAcademicProfile) return "کامل کردن تصویر تحصیلی";
+  if (!flags.finalExamComplete) return "شناخت توانایی‌ها — ورود نمرات";
+  if (!flags.hasTranscript) return "آخرین قطعه از تصویر تحصیلی";
+  return "مرور تصویر شما";
 }
 
 export function officeIntakeProgressPercent(flags: OfficeIntakeFlags): number {

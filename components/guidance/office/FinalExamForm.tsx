@@ -157,7 +157,7 @@ export function FinalExamForm({
 
       {summary.complete ? (
         <section className="office-grades__summary" aria-live="polite">
-          <p>کارنامه نهایی شما کامل شد</p>
+          <p>تصویر توانایی‌ها کامل شد</p>
           <h2>معدل کل: {toPersianDigits((summary.average ?? 0).toFixed(2))}</h2>
           {summary.strengths.length > 0 ? (
             <p>
@@ -172,7 +172,7 @@ export function FinalExamForm({
             <p>نمره ضعیف ثبت نشده است.</p>
           )}
           <a href={MAJOR_OFFICE_TRANSCRIPT} className="office-intake__continue">
-            ادامه: بارگذاری کارنامه رسمی PDF
+            آخرین قطعه از تصویر تحصیلی
           </a>
         </section>
       ) : (

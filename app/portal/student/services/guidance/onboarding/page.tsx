@@ -4,6 +4,7 @@
  */
 
 import { redirect } from "next/navigation";
+import { AtelierPage } from "@/components/guidance/office/AtelierPage";
 import { GuidanceOnboardingForm } from "@/components/guidance/onboarding/GuidanceOnboardingForm";
 import { candidateNeedsGuidanceOnboarding } from "@/lib/guidance/external-candidate";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
@@ -50,24 +51,21 @@ export default async function GuidanceOnboardingPage() {
   const draft = record?.draft;
 
   return (
-    <main className="mx-auto w-full max-w-xl px-4 py-8 sm:py-10" dir="rtl">
-      <header className="mb-8">
-        <p className="text-sm font-medium text-primary">
-          دپارتمان انتخاب رشته قلم‌چی نسیم‌شهر
-        </p>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight text-foreground">
-          خوش آمدید — تشکیل پرونده
-        </h1>
-        <p className="mt-2 text-sm leading-7 text-muted">
-          هویت و پرونده تحصیلی را کامل کنید. هر بخش خودکار ذخیره می‌شود و بعد از
-          خروج یا ورود دوباره همین‌جا برمی‌گردد.
-        </p>
-      </header>
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-[0_8px_24px_rgb(15_23_42_/_0.04)] sm:p-7">
-        <GuidanceOnboardingForm
-          mobile={parsed.normalized}
-          provinces={provinces}
-          majors={majors}
+    <div className="atelier" dir="rtl">
+      <div className="atelier__glow" aria-hidden="true" />
+      <div className="atelier__grain" aria-hidden="true" />
+      <div className="atelier-stage">
+        <div className="atelier-canvas">
+          <AtelierPage
+            kicker="ورود به دفتر"
+            title="خوش آمدید. آینده از همین اتاق شروع می‌شود."
+            lead="این فرم دولتی نیست. دو تصویر می‌سازیم: کی هستید، و از کدام مسیر تحصیلی می‌آیید. هر بخش ذخیره می‌شود؛ می‌توانید بروید و برگردید."
+            now="هویت، سپس تصویر تحصیلی"
+          >
+            <GuidanceOnboardingForm
+              mobile={parsed.normalized}
+              provinces={provinces}
+              majors={majors}
           initial={
             draft
               ? {
@@ -85,8 +83,10 @@ export default async function GuidanceOnboardingPage() {
                 }
               : undefined
           }
-        />
+            />
+          </AtelierPage>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

@@ -9,24 +9,24 @@ export function OfficeTopBar({
   statusLabel: string;
 }) {
   return (
-    <header className="major-office__top">
-      <div className="major-office__top-copy">
-        <p className="major-office__top-eyebrow">ستارگان پلاس · نظارت مهندس رضا ابراهیمی</p>
-        <p className="major-office__top-status">{statusLabel}</p>
+    <header className="atelier-top">
+      <div>
+        <p className="atelier-top__eyebrow">دپارتمان انتخاب رشته · قلم‌چی نسیم‌شهر</p>
+        <p className="atelier-top__status">{statusLabel}</p>
       </div>
-      <div className="major-office__top-end">
-        <span className="major-office__top-user">
+      <div className="atelier-top__end">
+        <span className="atelier-top__user">
           <PortalIcon name="user" className="size-4" />
           {userDisplayName}
         </span>
         <form action="/portal/logout" method="post">
           <input type="hidden" name="next" value="/guidance" />
-          <button type="submit" className="major-office__top-exit">
+          <button type="submit" className="atelier-top__exit">
             <PortalIcon name="logout" className="size-4" />
-            خروج
+            خروج آرام
           </button>
         </form>
-        <Link href="/guidance" className="major-office__top-exit">
+        <Link href="/guidance" className="atelier-top__exit">
           درِ دفتر
         </Link>
       </div>

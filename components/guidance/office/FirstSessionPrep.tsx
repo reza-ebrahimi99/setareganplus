@@ -13,7 +13,7 @@ export function FirstSessionPrep({ bookHref = FIRST_SESSION_BOOK_HREF }: { bookH
   return (
     <div className="office-session">
       <header className="office-session__hero">
-        <p>جلسه اول مشاوره</p>
+        <p>نخستین گفتگو</p>
         <h1>{FIRST_SESSION_WHY.title}</h1>
         <p>{FIRST_SESSION_WHY.lead}</p>
         <dl className="office-session__meta">
