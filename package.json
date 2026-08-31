@@ -33,6 +33,7 @@
     "guidance:journey-e2e-seed": "tsx --env-file=.env scripts/guidance-journey-e2e-seed.ts",
     "test:guidance-workspace": "tsx scripts/guidance-workspace-unit-tests.ts",
     "test:guidance-assessment": "tsx scripts/guidance-assessment-unit-tests.ts",
+    "test:guidance-discover": "tsx scripts/guidance-discover-unit-tests.ts",
     "test:sxp": "tsx scripts/sxp-unit-tests.ts",
     "test:crm-smoke": "prisma generate && tsx scripts/crm-smoke.ts",
     "test:crm": "tsx --env-file=.env scripts/crm-integration-tests.ts",

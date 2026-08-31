@@ -341,7 +341,8 @@ test("office rail never uses coming-soon copy", () => {
   assert.equal(interest?.live, true);
   assert.equal(interest?.href, "/ms/interest");
   const uni = afterInterest.flatMap((s) => s.items).find((item) => item.id === "universities");
-  assert.ok(uni?.lockReason?.includes("همراه با مسیر مشاوره"));
+  assert.equal(uni?.live, true);
+  assert.equal(uni?.href, "/discover/systems");
   const journey = early.flatMap((s) => s.items).find((item) => item.id === "journey");
   assert.equal(journey?.live, true);
   assert.equal(journey?.href, "/ms/journey");

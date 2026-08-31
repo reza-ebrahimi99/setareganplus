@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { listDiscoverSitemapPaths } from "@/lib/guidance/discover/catalog";
 import { SITE_ORIGIN } from "@/lib/seo/site-metadata";
 
 /**
@@ -27,6 +28,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/team", changeFrequency: "weekly", priority: 0.7 },
     { path: "/achievements", changeFrequency: "weekly", priority: 0.7 },
     { path: "/faq", changeFrequency: "monthly", priority: 0.65 },
+    { path: "/guidance", changeFrequency: "weekly", priority: 0.9 },
+    ...listDiscoverSitemapPaths().map((path) => ({
+      path,
+      changeFrequency: "weekly" as const,
+      priority: path === "/discover" ? 0.85 : 0.7,
+    })),
   ];
 
   return entries.map((entry) => ({

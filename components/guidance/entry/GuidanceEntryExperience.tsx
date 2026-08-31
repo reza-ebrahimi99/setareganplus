@@ -102,6 +102,13 @@ export function GuidanceEntryExperience({
 
         <div className="guidance-entry__landing">
           <section className="guidance-entry__lead-magnet">
+            <h2>{copy.discover.title}</h2>
+            <p>{copy.discover.body}</p>
+            <a href={copy.discover.href} className="guidance-entry__lead-cta">
+              {copy.discover.cta}
+            </a>
+          </section>
+          <section className="guidance-entry__lead-magnet">
             <h2>{copy.freeAssessment.title}</h2>
             <p>{copy.freeAssessment.body}</p>
             <a

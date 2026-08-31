@@ -1,0 +1,108 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { DiscoverCover } from "@/components/guidance/discover/DiscoverCover";
+import { DiscoverFaq } from "@/components/guidance/discover/DiscoverFaq";
+import { DiscoverInsight } from "@/components/guidance/discover/DiscoverInsight";
+import { DiscoverRelated } from "@/components/guidance/discover/DiscoverRelated";
+import { DiscoverShell } from "@/components/guidance/discover/DiscoverShell";
+import { DISCOVER_SYSTEMS, getDiscoverSystem } from "@/lib/guidance/discover/systems";
+import { discoverWebPageJsonLd } from "@/lib/guidance/discover/jsonld";
+import { loadDiscoveryVisitor } from "@/lib/guidance/discover/visitor";
+import { relatedForSystem, systemHref } from "@/lib/guidance/discover/catalog";
+import { createPageMetadata } from "@/lib/seo/create-page-metadata";
+
+type PageProps = { params: Promise<{ slug: string }> };
+
+export function generateStaticParams() {
+  return DISCOVER_SYSTEMS.map((item) => ({ slug: item.slug }));
+}
+
+export const dynamicParams = false;
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const item = getDiscoverSystem(slug);
+  if (!item) return {};
+  return createPageMetadata({
+    path: systemHref(slug),
+    title: `${item.title} | نظام دانشگاهی | ستارگان پلاس`,
+    description: item.lead,
+    keywords: [item.title, "انتخاب رشته", "دانشگاه", "ستارگان پلاس"],
+  });
+}
+
+export default async function DiscoverSystemPage({ params }: PageProps) {
+  const { slug } = await params;
+  const item = getDiscoverSystem(slug);
+  if (!item) notFound();
+  const visitor = await loadDiscoveryVisitor();
+  const path = systemHref(slug);
+
+  return (
+    <DiscoverShell
+      breadcrumbs={[
+        { label: "خانه", href: "/" },
+        { label: "کانون کشف", href: "/discover" },
+        { label: "نظام دانشگاهی", href: "/discover/systems" },
+        { label: item.title },
+      ]}
+      jsonLd={discoverWebPageJsonLd({
+        path,
+        title: item.title,
+        description: item.lead,
+        breadcrumbs: [
+          { name: "خانه", path: "/" },
+          { name: "کانون کشف", path: "/discover" },
+          { name: "نظام دانشگاهی", path: "/discover/systems" },
+          { name: item.title, path },
+        ],
+        faq: item.faq,
+      })}
+      visitor={visitor}
+    >
+      <article className="discover-article">
+        <header className="discover-hero">
+          <p>{item.kicker}</p>
+          <h1>{item.title}</h1>
+          <p className="discover-hero__lead">{item.lead}</p>
+        </header>
+        <DiscoverCover slug={item.slug} title={item.title} />
+        <section>
+          <h2>تصویر کلی</h2>
+          <p>{item.overview}</p>
+        </section>
+        <section>
+          <h2>پذیرش</h2>
+          <p>{item.admission}</p>
+        </section>
+        <section>
+          <h2>شهریه و هزینه</h2>
+          <p>{item.tuition}</p>
+        </section>
+        <section>
+          <h2>زندگی دانشجویی</h2>
+          <p>{item.studentLife}</p>
+        </section>
+        <section>
+          <h2>مزیت‌ها</h2>
+          <ul>
+            {item.advantages.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </section>
+        <section>
+          <h2>چالش‌ها</h2>
+          <ul>
+            {item.challenges.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </section>
+        <DiscoverFaq items={item.faq} />
+        <DiscoverInsight insight={item.insight} />
+        <DiscoverRelated related={relatedForSystem(item.slug)} />
+      </article>
+    </DiscoverShell>
+  );
+}

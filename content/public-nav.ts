@@ -125,6 +125,18 @@ export const publicNavItems: readonly PublicNavItem[] = [
     href: "/guidance",
     label: "سامانه جامع انتخاب رشته",
     description: "مسیر یکپارچه انتخاب رشته تا پذیرش دانشگاه",
+    children: [
+      {
+        href: "/guidance",
+        label: "ورود به دفتر",
+        description: "آزمون رغبت و پرونده انتخاب رشته",
+      },
+      {
+        href: "/discover",
+        label: "کانون کشف",
+        description: "رشته، دانشگاه و مقطع را پیش از انتخاب بشناسید",
+      },
+    ],
   },
   { href: "/gallery", label: "گالری" },
   { href: "/contact", label: "تماس" },

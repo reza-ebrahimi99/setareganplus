@@ -11553,3 +11553,286 @@ body {
     break-inside: avoid;
   }
 }
+
+.discover {
+  padding: 1.5rem 0 4rem;
+  color: var(--portal-foreground, inherit);
+}
+
+.discover__top {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.discover-hero h1 {
+  margin: 0.25rem 0 0;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.discover-hero > p:first-child {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #8a6a12;
+}
+
+.discover-hero__lead {
+  margin: 0.85rem 0 0;
+  max-width: 38rem;
+  font-size: 1.12rem;
+  line-height: 1.95;
+}
+
+.discover-cover {
+  margin: 1.5rem 0 2rem;
+}
+
+.discover-cover__img {
+  width: 100%;
+  height: auto;
+  border-radius: 1.5rem;
+  object-fit: cover;
+}
+
+.discover-cover figcaption {
+  margin-top: 0.55rem;
+  font-size: 0.82rem;
+  color: var(--portal-muted, #64748b);
+}
+
+.discover-doors,
+.discover-index {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.discover-door,
+.discover-index a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.2rem 1.25rem;
+  border-radius: 1.35rem;
+  border: 1px solid var(--portal-border, #e5e7eb);
+  background: rgb(255 255 255 / 0.86);
+  text-decoration: none;
+  color: inherit;
+}
+
+.discover-door strong,
+.discover-index strong {
+  font-size: 1.25rem;
+}
+
+.discover-door span,
+.discover-index span {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #8a6a12;
+}
+
+.discover-door em,
+.discover-index em {
+  font-style: normal;
+  line-height: 1.75;
+  color: var(--portal-muted, #64748b);
+}
+
+.discover-index li {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.discover-index__career {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #5b3df5;
+}
+
+.discover-article {
+  display: grid;
+  gap: 1.35rem;
+  max-width: 44rem;
+}
+
+.discover-article section h2,
+.discover-faq h2,
+.discover-related h2,
+.discover-insight h2 {
+  margin: 0 0 0.55rem;
+  font-size: 1.35rem;
+}
+
+.discover-article p,
+.discover-article li,
+.discover-faq dd,
+.discover-insight dd {
+  line-height: 1.95;
+}
+
+.discover-article ul {
+  margin: 0.4rem 0 0;
+  padding-inline-start: 1.2rem;
+}
+
+.discover-faq dt,
+.discover-article dt {
+  font-weight: 800;
+  margin-top: 0.85rem;
+}
+
+.discover-insight {
+  padding: 1.2rem 1.25rem;
+  border-radius: 1.35rem;
+  border: 1px solid rgb(212 175 55 / 0.45);
+  background: linear-gradient(165deg, #fff, rgb(248 239 208 / 0.45));
+}
+
+.discover-insight__kicker {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #8a6a12;
+}
+
+.discover-insight__note {
+  color: var(--portal-muted, #64748b);
+}
+
+.discover-insight dl {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1rem 0 0;
+}
+
+.discover-related__grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.discover-related a {
+  color: #5b3df5;
+  font-weight: 700;
+}
+
+.discover-search label {
+  display: block;
+  font-weight: 800;
+  margin-bottom: 0.4rem;
+}
+
+.discover-search div {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.discover-search input {
+  flex: 1;
+  min-height: 2.85rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.9rem;
+  border: 1px solid var(--portal-border, #e5e7eb);
+}
+
+.discover-search button,
+.discover-compare-form button,
+.discover-convert__cta,
+.discover-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.85rem;
+  padding: 0.45rem 1.1rem;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #5b3df5, #7c5cff);
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.discover-convert {
+  margin-top: 2.5rem;
+  padding: 1.35rem 1.3rem;
+  border-radius: 1.5rem;
+  border: 1px solid rgb(212 175 55 / 0.4);
+  background: linear-gradient(165deg, #fff, rgb(248 239 208 / 0.5));
+}
+
+.discover-convert__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.discover-convert__ghost {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.85rem;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--portal-border, #e5e7eb);
+  text-decoration: none;
+  font-weight: 700;
+  color: inherit;
+}
+
+.discover-compare-form {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1.25rem 0;
+}
+
+.discover-compare-form select {
+  display: block;
+  width: 100%;
+  min-height: 2.75rem;
+  margin-top: 0.35rem;
+}
+
+.discover-compare-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.discover-compare-card {
+  padding: 1.1rem 1.15rem;
+  border-radius: 1.25rem;
+  border: 1px solid var(--portal-border, #e5e7eb);
+  background: rgb(255 255 255 / 0.9);
+}
+
+.discover-group {
+  margin-top: 2rem;
+}
+
+.discover-inline {
+  margin-top: 0.85rem;
+}
+
+@media (min-width: 840px) {
+  .discover__top {
+    grid-template-columns: 1fr 22rem;
+    align-items: end;
+  }
+
+  .discover-doors,
+  .discover-related__grid,
+  .discover-compare-form,
+  .discover-compare-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .discover-doors {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
