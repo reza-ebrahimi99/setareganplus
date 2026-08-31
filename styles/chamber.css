@@ -818,3 +818,113 @@
     animation: none;
   }
 }
+
+/* Engine rooms rendered inside the Chamber */
+
+.chamber .gpj-shell {
+  max-width: none;
+  margin: 0;
+  padding: 0 0 4rem;
+  --gpj-purple: #c4a05a;
+  --gpj-gold: #c4a05a;
+}
+
+.chamber .gpj-shell__title {
+  font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+  font-weight: 300;
+  letter-spacing: -0.045em;
+}
+
+.chamber .gpj-shell__step-tag {
+  color: var(--gold);
+  letter-spacing: 0.16em;
+  font-weight: 600;
+  font-size: 0.72rem;
+}
+
+.chamber .gpj-shell__desc {
+  line-height: 2;
+  max-width: 34rem;
+}
+
+.chamber .gpj-shell__exit:hover {
+  color: var(--gold);
+}
+
+.chamber .gpj-card {
+  background: var(--folio);
+  border: 0;
+  border-radius: 0;
+  box-shadow: 0 40px 80px rgb(10 13 19 / 0.1);
+  padding: 2rem 6vw;
+}
+
+.chamber .gpj-input,
+.chamber .gpj-select,
+.chamber .gpj-textarea {
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  border-radius: 0;
+  background: transparent;
+  padding-inline: 0;
+}
+
+.chamber .gpj-input:focus,
+.chamber .gpj-select:focus,
+.chamber .gpj-textarea:focus {
+  outline: none;
+  border-bottom-color: var(--gold);
+  box-shadow: none;
+}
+
+.chamber .gpj-shell__sidebar-wrap {
+  display: none;
+}
+
+.chamber .portal-upload,
+.chamber .portal-upload-dropzone,
+.chamber .portal-upload-success,
+.chamber .portal-upload-history {
+  background: var(--folio);
+  border: 0;
+  border-radius: 0;
+  box-shadow: 0 40px 80px rgb(10 13 19 / 0.08);
+}
+
+.chamber .portal-upload__submit,
+.chamber .portal-upload-success__cta {
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--gold);
+  border-radius: 0;
+  color: var(--ink);
+  box-shadow: none;
+}
+
+.chamber .office-assess__q {
+  padding: 1.2rem 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.chamber .office-assess__scale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+}
+
+.chamber .office-assess__cta,
+.chamber .office-assess__ghost {
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--gold);
+  border-radius: 0;
+  min-height: auto;
+  padding: 0.2rem 0;
+  color: var(--ink);
+}
+
+.chamber .office-assess__ghost {
+  border-bottom-color: var(--hair);
+  color: var(--quiet);
+}

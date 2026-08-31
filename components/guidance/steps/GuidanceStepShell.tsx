@@ -42,7 +42,7 @@ export function GuidanceStepShell({
   const [confettiActive, setConfettiActive] = useState(celebrate);
 
   return (
-    <div className={`gpj-shell${embed ? " gpj-shell--embed" : ""}`} dir="rtl" data-portal-accent="purple">
+    <div className={`gpj-shell${embed ? " gpj-shell--embed" : ""}`} dir="rtl">
       <GuidanceStepConfetti
         active={confettiActive}
         onDone={() => setConfettiActive(false)}
@@ -51,9 +51,9 @@ export function GuidanceStepShell({
       <header className="gpj-shell__header">
         {embed ? null : (
           <div className="gpj-shell__header-top">
-            <Link href="/portal/student/services/guidance" className="gpj-shell__exit">
+            <Link href="/ms/journey" className="gpj-shell__exit">
               <ExitIcon />
-              خروج از مسیر
+              مسیر همراهی
             </Link>
             <button
               type="button"
@@ -66,7 +66,7 @@ export function GuidanceStepShell({
           </div>
         )}
         <p className="gpj-shell__step-tag">
-          گام {toPersianDigits(stepId)} از {toPersianDigits(stepCount)}
+          اتاق {toPersianDigits(stepId)} از {toPersianDigits(stepCount)}
         </p>
         <h1 className="gpj-shell__title">{title}</h1>
         <p className="gpj-shell__desc">{description}</p>

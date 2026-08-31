@@ -30,6 +30,7 @@ export default async function StudentPortalLayout({
 
   const headerStore = await headers();
   const pathname = headerStore.get("x-pathname") ?? "";
+  const onGuidance = pathname.startsWith("/portal/student/services/guidance");
   const onOnboarding = pathname.startsWith(GUIDANCE_ONBOARDING_PATH);
   const studentId = context.activeLink.studentId;
 
@@ -42,6 +43,10 @@ export default async function StudentPortalLayout({
     if (needsOnboarding) {
       redirect(GUIDANCE_ONBOARDING_PATH);
     }
+  }
+
+  if (onGuidance) {
+    return children;
   }
 
   const sections = buildStudentPortalNavSections({

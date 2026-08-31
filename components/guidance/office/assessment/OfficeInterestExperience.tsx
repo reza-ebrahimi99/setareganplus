@@ -195,10 +195,10 @@ export function OfficeInterestExperience({
             </p>
           </div>
           <div className="office-assess__nav">
-            <button type="button" className="office-assess__ghost" onClick={leave}>
+            <button type="button" className="chamber-go" onClick={leave}>
               ذخیره و بعداً ادامه می‌دهم
             </button>
-            <button type="button" className="office-assess__cta" onClick={continueAfterPause}>
+            <button type="button" className="chamber-go" onClick={continueAfterPause}>
               {isLast ? "مشاهده نتیجه" : "بخش بعدی"}
             </button>
           </div>
@@ -206,13 +206,13 @@ export function OfficeInterestExperience({
       ) : null}
 
       {phase === "taking" ? (
-        <header className="office-assess__hero">
-          <p>
+        <header>
+          <p className="chamber-kicker">
             بخش {toPersianDigits(activeIndex + 1)} از{" "}
             {toPersianDigits(ASSESSMENT_SECTIONS.length)}
           </p>
-          <h1>{section.title}</h1>
-          <p>{section.description}</p>
+          <h1 className="chamber-title">{section.title}</h1>
+          <p className="chamber-lead">{section.description}</p>
           <div className="office-assess__progress">
             <div className="office-assess__progress-row">
               <span>کل آزمون</span>
@@ -275,15 +275,15 @@ export function OfficeInterestExperience({
         ))}
 
         <div className="office-assess__nav">
-          <button type="button" className="office-assess__ghost" onClick={leave}>
+          <button type="button" className="chamber-go" onClick={leave}>
             ذخیره و بعداً ادامه می‌دهم
           </button>
           {activeIndex > 0 ? (
-            <button type="button" className="office-assess__ghost" onClick={goBack}>
+            <button type="button" className="chamber-go" onClick={goBack}>
               بخش قبلی
             </button>
           ) : null}
-          <button type="button" className="office-assess__cta" onClick={goNext}>
+          <button type="button" className="chamber-go" onClick={goNext}>
             پایان این بخش
           </button>
         </div>

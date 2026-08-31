@@ -11,7 +11,6 @@ import {
   type GuidanceGradesUploadState,
 } from "@/app/portal/student/services/guidance/grades/actions";
 import { PortalIcon } from "@/components/portal/icons";
-import { PortalSurface } from "@/components/portal/PortalSurface";
 import { toPersianDigits } from "@/lib/persian";
 
 const initial: GuidanceGradesUploadState = {};
@@ -100,11 +99,7 @@ export function GuidanceGradesUploadForm({
 
   if (state.ok) {
     return (
-      <PortalSurface
-        accent="emerald"
-        padding="lg"
-        className="portal-upload-success"
-      >
+      <div className="chamber-sheet">
         <div role="status">
           <span className="portal-upload-success__badge" aria-hidden="true">
             <PortalIcon name="medal" className="size-7" />
@@ -117,16 +112,16 @@ export function GuidanceGradesUploadForm({
               {state.replaced ? " (جایگزین نسخه قبلی)" : ""}
             </p>
           ) : null}
-          <a href={successHref} className="portal-upload-success__cta">
+          <a href={successHref} className="chamber-go">
             {successLabel}
           </a>
         </div>
-      </PortalSurface>
+      </div>
     );
   }
 
   return (
-    <form action={action} className="portal-upload">
+    <form action={action} className="chamber-sheet">
       {state.error || clientError ? (
         <p role="alert" className="portal-upload__error">
           {clientError ?? state.error}
@@ -134,7 +129,7 @@ export function GuidanceGradesUploadForm({
       ) : null}
 
       {hasExisting ? (
-        <PortalSurface accent="orange" padding="md" className="portal-upload-history">
+        <div>
           <p className="portal-upload-history__title">نسخه فعلی در پرونده</p>
           <p className="portal-upload-history__file">
             {existingFileName ?? "کارنامه بارگذاری‌شده"}
@@ -146,7 +141,7 @@ export function GuidanceGradesUploadForm({
             بارگذاری جدید به‌عنوان نسخه تازه ثبت می‌شود؛ نسخه قبلی در سوابق
             می‌ماند.
           </p>
-        </PortalSurface>
+        </div>
       ) : null}
 
       <div
@@ -213,7 +208,7 @@ export function GuidanceGradesUploadForm({
       </div>
 
       {file ? (
-        <PortalSurface accent="teal" padding="md" className="portal-upload-preview">
+        <div>
           <div className="portal-upload-preview__row">
             {previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -242,13 +237,13 @@ export function GuidanceGradesUploadForm({
               تعویض
             </button>
           </div>
-        </PortalSurface>
+        </div>
       ) : null}
 
       <button
         type="submit"
         disabled={pending || !file}
-        className="portal-upload__submit"
+        className="chamber-go"
       >
         {pending
           ? "در حال ارسال…"

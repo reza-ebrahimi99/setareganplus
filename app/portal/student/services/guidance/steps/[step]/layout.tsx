@@ -23,14 +23,12 @@ export default async function GuidanceStepLayout({
   return (
     <>
       {message ? (
-        <div
-          className="gpj-banner gpj-banner--warning"
-          role="status"
-          style={{ margin: "0.75rem 1rem 0" }}
-        >
-          <strong>پیام مشاور</strong>
+        <article className="chamber-letter" role="status">
+          <time>از میز مشاور</time>
+          <h2>پیام مهندس</h2>
           <p>{message}</p>
-        </div>
+          <footer>رضا ابراهیمی</footer>
+        </article>
       ) : null}
       {children}
     </>
