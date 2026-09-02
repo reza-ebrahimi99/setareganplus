@@ -58,6 +58,7 @@ export type OfficeDashboardModel = {
   studentName: string;
   examGroupLabel: string;
   packageLabel: string | null;
+  packagePaid: boolean;
   counselorName: string;
   pulse: OfficeCasePulse;
   departmentNote: string;
@@ -66,6 +67,8 @@ export type OfficeDashboardModel = {
   unreadMessages: number;
   latestCounselorActivity: OfficeCounselorActivity;
   intakePercent: number;
+  interestCompleted: boolean;
+  intakeComplete: boolean;
 };
 
 export async function loadOfficeDashboard(params: {
@@ -215,6 +218,7 @@ export async function loadOfficeDashboard(params: {
       "دانش‌آموز",
     examGroupLabel: workspaceExamGroupLabel(plan.examGroup),
     packageLabel: plan.guidancePackageCode,
+    packagePaid: Boolean(plan.packagePaidAtIso),
     counselorName: "مهندس رضا ابراهیمی",
     pulse,
     departmentNote:
@@ -231,5 +235,7 @@ export async function loadOfficeDashboard(params: {
     unreadMessages: reviews.filter((row) => Boolean(row.studentMessage)).length,
     latestCounselorActivity,
     intakePercent,
+    interestCompleted: plan.completedSteps.includes(2),
+    intakeComplete: intakePercent >= 100,
   };
 }

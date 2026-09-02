@@ -18,7 +18,7 @@ export const GUIDANCE_PLATFORM_HOME = MAJOR_OFFICE_HOME;
 export const GUIDANCE_STUDENT_PORTAL_NAV: PortalOsNavItem[] = [
   {
     id: "guidance",
-    href: GP,
+    href: MAJOR_OFFICE_HOME,
     label: "انتخاب رشته",
     icon: "route",
     match: "prefix",
@@ -39,7 +39,7 @@ export const GUIDANCE_PLATFORM_NAV_SECTIONS: PortalOsNavSection[] = [
     items: [
       {
         id: "gp-dashboard",
-        href: GP,
+        href: MAJOR_OFFICE_HOME,
         label: "داشبورد",
         icon: "home",
         match: "exact",

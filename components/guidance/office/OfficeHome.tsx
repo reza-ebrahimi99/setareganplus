@@ -7,6 +7,7 @@ import {
   ChairMark,
   LampMark,
 } from "@/components/guidance/office/illustrations";
+import { GuidanceStudentDashboardPanels } from "@/components/guidance/office/GuidanceStudentDashboardPanels";
 
 function firstName(full: string): string {
   const part = full.trim().split(/\s+/).filter(Boolean)[0];
@@ -83,6 +84,8 @@ export function OfficeHome({ model }: { model: OfficeDashboardModel }) {
           <p>{pulse.waitingTitle}</p>
         </Link>
       </ChamberReveal>
+
+      <GuidanceStudentDashboardPanels model={model} />
     </div>
   );
 }

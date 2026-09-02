@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { PortalEmptyState } from "@/components/portal/PortalEmptyState";
 import { StudentHomeScreen } from "@/components/portal/home/StudentHomeScreen";
+import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
+import { resolveGuidanceStudentHomePath } from "@/lib/guidance/student-entry";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
 import {
   loadStudentIntelligenceSnapshot,
@@ -23,6 +27,15 @@ export default async function StudentPortalHomePage() {
         description="حساب دانش‌آموزی برای شما تعریف نشده است. لطفاً با مدرسه تماس بگیرید."
       />
     );
+  }
+
+  const guidanceOn = await isGuidanceEnabled(context.organization.id);
+  if (guidanceOn) {
+    const host = (await headers()).get("host");
+    const guidanceHome = await resolveGuidanceStudentHomePath(context, { host });
+    if (guidanceHome !== "/portal/student") {
+      redirect(guidanceHome);
+    }
   }
 
   const snapshot = await loadStudentIntelligenceSnapshot(context, studentId);

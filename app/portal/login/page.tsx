@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { PortalLoginForm } from "@/app/portal/login/PortalLoginForm";
+import { resolvePortalHubPath } from "@/lib/guidance/student-entry";
 import { resolvePortalContext } from "@/lib/portal/auth";
 
 export const metadata: Metadata = {
@@ -11,7 +13,11 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function PortalLoginPage() {
-  if (await resolvePortalContext()) redirect("/portal");
+  const context = await resolvePortalContext();
+  if (context) {
+    const host = (await headers()).get("host");
+    redirect(await resolvePortalHubPath(context, { host }));
+  }
 
   return (
     <main

@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
-import { PortalAccountType } from "@/generated/prisma/enums";
 import {
   readActivePortalLinkCookie,
   requirePortalContext,
 } from "@/lib/portal/auth";
+import { headers } from "next/headers";
+import { resolvePortalHubPath } from "@/lib/guidance/student-entry";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +16,6 @@ export default async function PortalHomePage() {
     redirect("/portal/select-account");
   }
 
-  if (context.activeLink.accountType === PortalAccountType.STUDENT) {
-    redirect("/portal/student");
-  }
-
-  redirect("/portal/parent");
+  const host = (await headers()).get("host");
+  redirect(await resolvePortalHubPath(context, { host }));
 }
