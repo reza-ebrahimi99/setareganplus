@@ -93,7 +93,12 @@ Models: `CounselorStudentAssignment`, `CounselorAppointment`, `CounselingSession
 
 ## 13. Git commits
 
-See `git log` after commit pass (structured per mission spec).
+```
+ce8b1ab feat(counselor): complete counselor OS pages and student booking UI
+76f6095 feat(counselor): add counselor OS dashboard, cases, and sessions UI (styles + middleware)
+8c8a3cb feat(student): add counseling appointment booking on guidance dashboard (deploy package)
+76ee734 feat(counselor): add counselor domain foundation
+```
 
 ## 14. Files safe to transfer
 
