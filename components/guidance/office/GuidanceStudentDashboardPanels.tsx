@@ -18,10 +18,12 @@ export function GuidanceStudentDashboardPanels({
   model,
   userDisplayName = model.studentName,
   journeyContinueHref: journeyContinueHrefProp,
+  counselingCard,
 }: {
   model: OfficeDashboardModel;
   userDisplayName?: string;
   journeyContinueHref?: string;
+  counselingCard?: React.ReactNode;
 }) {
   const journeyContinueHref = journeyContinueHrefProp ?? GUIDANCE_STEPS_ENTRY;
   const { pulse } = model;
@@ -164,6 +166,8 @@ export function GuidanceStudentDashboardPanels({
             <PortalIcon name="clipboard" className="size-4" aria-hidden="true" />
           </span>
         </Link>
+
+        {counselingCard}
       </section>
 
       <section className="guidance-command-checks" aria-label="خلاصه پرونده">

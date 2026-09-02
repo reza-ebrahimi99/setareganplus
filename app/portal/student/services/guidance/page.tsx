@@ -6,6 +6,7 @@
 import { notFound, redirect } from "next/navigation";
 import { GuidanceStudentDashboardPanels } from "@/components/guidance/office/GuidanceStudentDashboardPanels";
 import { GuidanceUniversitiesHub } from "@/components/guidance/platform/GuidanceUniversitiesHub";
+import { prisma } from "@/lib/prisma";
 import {
   GUIDANCE_ONBOARDING_PATH,
   candidateNeedsGuidanceOnboarding,
@@ -64,7 +65,32 @@ export default async function GuidancePortalServicePage({
     return <GuidanceUniversitiesHub />;
   }
 
-  const [model, plan] = await Promise.all([
+  if (view === "appointments") {
+    const { StudentCounselingPanel } = await import(
+      "@/components/counselor-os/StudentCounselingPanel"
+    );
+    const student = await prisma.student.findFirst({
+      where: {
+        organizationId: context.organization.id,
+        id: studentId,
+        deletedAt: null,
+      },
+      select: { firstName: true, lastName: true },
+    });
+    return (
+      <StudentCounselingPanel
+        organizationId={context.organization.id}
+        studentId={studentId}
+        userId={context.user.id}
+        studentFirstName={student?.firstName ?? context.user.firstName}
+        studentLastName={student?.lastName ?? context.user.lastName}
+        mobile={context.user.mobile ?? ""}
+        mode="full"
+      />
+    );
+  }
+
+  const [model, plan, counselingCard] = await Promise.all([
     loadOfficeDashboard({
       organizationId: context.organization.id,
       userId: context.user.id,
@@ -75,6 +101,28 @@ export default async function GuidancePortalServicePage({
       userId: context.user.id,
       studentId,
     }),
+    (async () => {
+      const { StudentCounselingPanel } = await import(
+        "@/components/counselor-os/StudentCounselingPanel"
+      );
+      const student = await prisma.student.findFirst({
+        where: {
+          organizationId: context.organization.id,
+          id: studentId,
+          deletedAt: null,
+        },
+        select: { firstName: true, lastName: true },
+      });
+      return StudentCounselingPanel({
+        organizationId: context.organization.id,
+        studentId,
+        userId: context.user.id,
+        studentFirstName: student?.firstName ?? context.user.firstName,
+        studentLastName: student?.lastName ?? context.user.lastName,
+        mobile: context.user.mobile ?? "",
+        mode: "card",
+      });
+    })(),
   ]);
   if (!model || !plan) {
     redirect(GUIDANCE_ONBOARDING_PATH);
@@ -85,6 +133,7 @@ export default async function GuidancePortalServicePage({
       model={model}
       userDisplayName={model.studentName}
       journeyContinueHref={GUIDANCE_STEPS_ENTRY}
+      counselingCard={counselingCard}
     />
   );
 }
