@@ -47,7 +47,11 @@ export function MajorEncyclopediaExplorer({
       </header>
 
       <p className="major-encyclopedia-explorer__crosslink">
-        <Link href="/discover/programs">دانشنامه مقاطع و دوره‌های دانشگاهی</Link>
+        <Link href="/discover/systems">نظام‌های دانشگاهی</Link>
+        <span aria-hidden="true"> · </span>
+        <Link href="/discover/programs">مقاطع و دوره‌ها</Link>
+        <span aria-hidden="true"> · </span>
+        <Link href="/discover">کانون کشف</Link>
       </p>
 
       <div className="major-encyclopedia-explorer__toolbar">

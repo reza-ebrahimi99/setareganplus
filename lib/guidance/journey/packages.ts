@@ -23,6 +23,7 @@ export const GUIDANCE_PACKAGES: readonly GuidancePackageDefinition[] = [
     features: [
       "۱ جلسه مشاوره اختصاصی",
       "تحلیل نتیجه آزمون رغبت",
+      "چیدمان اولیه انتخاب‌ها",
       "چیدمان هوشمند انتخاب رشته",
     ],
   },

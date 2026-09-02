@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { PortalIcon } from "@/components/portal/icons";
 import type { OfficeDashboardModel } from "@/lib/guidance/office/dashboard";
-import {
-  DISCOVER_CENTER_MAJORS,
-  DISCOVER_CENTER_SYSTEMS,
-} from "@/lib/guidance/office/nav";
 import { toPersianDigits } from "@/lib/persian";
 
+const DISCOVER_MAJORS = "/discover/majors";
+const DISCOVER_UNIVERSITIES = "/portal/student/services/guidance?view=universities";
 const GUIDANCE_PLANS_HREF = "/portal/student/services/guidance/steps/3";
 
 function firstName(full: string): string {
@@ -16,9 +14,12 @@ function firstName(full: string): string {
 
 export function GuidanceStudentDashboardPanels({
   model,
+  journeyContinueHref: journeyContinueHrefProp,
 }: {
   model: OfficeDashboardModel;
+  journeyContinueHref?: string;
 }) {
+  const journeyContinueHref = journeyContinueHrefProp ?? model.todayTask.href;
   const { pulse } = model;
   const name = firstName(model.studentName);
   const journeySubtitle = model.packagePaid
@@ -32,26 +33,31 @@ export function GuidanceStudentDashboardPanels({
         <div className="guidance-command-hero__grid" aria-hidden="true" />
 
         <div className="guidance-command-hero__content">
-          <p className="guidance-command-hero__eyebrow">انتخاب رشته هوشمند و تخصصی</p>
-          <p className="guidance-command-hero__welcome">سلام، {name}.</p>
+          <p className="guidance-command-hero__eyebrow">سامانه جامع انتخاب رشته ستارگان پلاس</p>
+          <p className="guidance-command-hero__welcome">
+            به سامانه جامع انتخاب رشته ستارگان پلاس خوش آمدید، {name}.
+          </p>
           <h1 id="guidance-command-hero-title" className="guidance-command-hero__headline">
             مسیر درست دانشگاه از یک انتخاب آگاهانه شروع می‌شود
           </h1>
           <p className="guidance-command-hero__support">
             از شناخت علایق و تحلیل وضعیت تحصیلی تا بررسی رشته‌ها، دانشگاه‌ها و ساخت
-            مسیر نهایی انتخاب رشته.
+            مسیر نهایی انتخاب رشته — زیر نظر مهندس رضا ابراهیمی.
           </p>
 
           <div className="guidance-command-hero__actions">
-            <Link href={model.todayTask.href} className="guidance-command-hero__cta guidance-command-hero__cta--primary">
-              <span>ادامه مسیر انتخاب رشته</span>
+            <Link
+              href={journeyContinueHref}
+              className="guidance-command-hero__cta guidance-command-hero__cta--primary guidance-command-hero__cta--journey"
+            >
+              <span>ورود به مسیر انتخاب رشته</span>
               <PortalIcon name="route" className="size-5" aria-hidden="true" />
             </Link>
             <Link
-              href={DISCOVER_CENTER_MAJORS}
+              href={DISCOVER_MAJORS}
               className="guidance-command-hero__cta guidance-command-hero__cta--secondary"
             >
-              <span>مشاهده رشته‌های دانشگاهی</span>
+              <span>معرفی رشته‌ها</span>
               <PortalIcon name="layers" className="size-5" aria-hidden="true" />
             </Link>
           </div>
@@ -77,8 +83,8 @@ export function GuidanceStudentDashboardPanels({
             <dd>{pulse.currentStepTitle}</dd>
           </div>
           <div>
-            <dt>گام بعدی</dt>
-            <dd>{model.todayTask.title}</dd>
+            <dt>پیشرفت</dt>
+            <dd>{toPersianDigits(pulse.completionPercentage)}٪</dd>
           </div>
         </dl>
 
@@ -90,14 +96,14 @@ export function GuidanceStudentDashboardPanels({
 
       <section className="guidance-command-grid" aria-label="دسترسی‌های اصلی">
         <Link
-          href={model.todayTask.href}
-          className="guidance-command-card guidance-command-card--primary"
+          href={journeyContinueHref}
+          className="guidance-command-card guidance-command-card--primary guidance-command-card--journey"
         >
           <span className="guidance-command-card__icon" aria-hidden="true">
             <PortalIcon name="route" className="size-6" />
           </span>
           <span className="guidance-command-card__eyebrow">مسیر همراهی</span>
-          <strong className="guidance-command-card__title">ادامه مسیر انتخاب رشته</strong>
+          <strong className="guidance-command-card__title">ورود به مسیر انتخاب رشته</strong>
           <em className="guidance-command-card__desc">{journeySubtitle}</em>
           <span className="guidance-command-card__cta">
             {model.todayTask.label}
@@ -105,12 +111,12 @@ export function GuidanceStudentDashboardPanels({
           </span>
         </Link>
 
-        <Link href={DISCOVER_CENTER_MAJORS} className="guidance-command-card">
+        <Link href={DISCOVER_MAJORS} className="guidance-command-card">
           <span className="guidance-command-card__icon" aria-hidden="true">
             <PortalIcon name="layers" className="size-6" />
           </span>
           <span className="guidance-command-card__eyebrow">دانشنامه</span>
-          <strong className="guidance-command-card__title">دانشنامه رشته‌های دانشگاهی</strong>
+          <strong className="guidance-command-card__title">معرفی رشته‌ها</strong>
           <em className="guidance-command-card__desc">
             رشته‌ها را بر اساس گروه آزمایشی، علایق و مسیر آینده بررسی کنید.
           </em>
@@ -120,17 +126,17 @@ export function GuidanceStudentDashboardPanels({
           </span>
         </Link>
 
-        <Link href={DISCOVER_CENTER_SYSTEMS} className="guidance-command-card">
+        <Link href={DISCOVER_UNIVERSITIES} className="guidance-command-card">
           <span className="guidance-command-card__icon" aria-hidden="true">
             <PortalIcon name="grid" className="size-6" />
           </span>
           <span className="guidance-command-card__eyebrow">دانشنامه</span>
-          <strong className="guidance-command-card__title">دانشنامه دانشگاه‌ها</strong>
+          <strong className="guidance-command-card__title">معرفی دانشگاه‌ها</strong>
           <em className="guidance-command-card__desc">
             نظام‌های آموزشی، مقاطع و انواع پذیرش را قبل از انتخاب نهایی بشناسید.
           </em>
           <span className="guidance-command-card__cta">
-            ورود به دانشنامه
+            ورود به معرفی
             <PortalIcon name="grid" className="size-4" aria-hidden="true" />
           </span>
         </Link>
@@ -140,12 +146,14 @@ export function GuidanceStudentDashboardPanels({
             <PortalIcon name="clipboard" className="size-6" />
           </span>
           <span className="guidance-command-card__eyebrow">خدمات تخصصی</span>
-          <strong className="guidance-command-card__title">پلن‌های انتخاب رشته</strong>
+          <strong className="guidance-command-card__title">
+            پلن‌های ثبت‌نام انتخاب رشته ویژه مهندس رضا ابراهیمی
+          </strong>
           <em className="guidance-command-card__desc">
-            خدمات تخصصی انتخاب رشته با نظارت مهندس رضا ابراهیمی
+            خدمات تخصصی انتخاب رشته با نظارت مستقیم مهندس رضا ابراهیمی
           </em>
           <span className="guidance-command-card__cta">
-            {model.packagePaid ? "مشاهده بسته" : "فعال‌سازی بسته"}
+            {model.packagePaid ? "مشاهده بسته" : "مشاهده پلن‌ها"}
             <PortalIcon name="clipboard" className="size-4" aria-hidden="true" />
           </span>
         </Link>

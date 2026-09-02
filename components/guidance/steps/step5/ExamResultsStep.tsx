@@ -7,6 +7,7 @@
 import { useActionState, useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { submitGuidanceStep5Action } from "@/app/portal/student/services/guidance/steps/actions/step5";
+import { GuidanceFileUploadField } from "@/components/guidance/shared/GuidanceFileUploadField";
 import { GuidanceStepActions } from "@/components/guidance/steps/GuidanceStepActions";
 import { GuidanceStepShell } from "@/components/guidance/steps/GuidanceStepShell";
 import type { GuidanceStepEmbedProps } from "@/components/guidance/steps/embed";
@@ -187,25 +188,21 @@ export function ExamResultsStep({
           </div>
         </div>
 
-        <div className="gpj-field" style={{ marginTop: "1.25rem" }}>
-          <label className="gpj-field__label" htmlFor="file">
-            کارنامه رسمی سنجش (PDF)
-          </label>
-          {hasDocument && existingFileName ? (
-            <p className="gpj-banner gpj-banner--success" style={{ marginBottom: "0.5rem" }}>
-              فایل «{existingFileName}» قبلاً بارگذاری شده. برای جایگزینی فایل جدید
-              انتخاب کن.
-            </p>
-          ) : null}
-          <input
+        <div style={{ marginTop: "1.25rem" }}>
+          <GuidanceFileUploadField
             id="file"
             name="file"
-            type="file"
+            required={!hasDocument}
             accept="application/pdf,image/jpeg,image/png"
-            className="gpj-input"
-            aria-invalid={Boolean(fieldErrors.file)}
+            title="بارگذاری کارنامه رسمی سنجش"
+            helper="فایل PDF یا تصویر · حداکثر ۵ مگابایت"
+            existingLabel={
+              hasDocument && existingFileName
+                ? `فایل «${existingFileName}» قبلاً بارگذاری شده — برای جایگزینی فایل جدید انتخاب کنید.`
+                : null
+            }
+            error={fieldErrors.file ?? null}
           />
-          {fieldErrors.file && <p className="gpj-field__error">{fieldErrors.file}</p>}
         </div>
 
         <label className="gpj-checkbox-row" style={{ marginTop: "1.25rem" }}>
@@ -217,7 +214,12 @@ export function ExamResultsStep({
         {fieldErrors.acknowledged && <p className="gpj-field__error">{fieldErrors.acknowledged}</p>}
 
         <div style={{ marginTop: "1.5rem" }}>
-          <GuidanceStepActions continueLabel={continueLabel ?? "ثبت و ادامه"} showSaveDraft={false} />
+          <GuidanceStepActions
+            continueLabel={continueLabel ?? "ثبت و ادامه"}
+            showSaveDraft={false}
+            backHref="/portal/student/services/guidance"
+            backLabel="بازگشت به داشبورد"
+          />
         </div>
       </form>
     </GuidanceStepShell>

@@ -51,7 +51,9 @@ export function ProgramEncyclopediaExplorer({
       </header>
 
       <p className="program-encyclopedia-explorer__crosslink">
-        <Link href="/discover/majors">دانشنامه رشته‌های دانشگاهی</Link>
+        <Link href="/discover/majors">دانشنامه رشته‌ها</Link>
+        <span aria-hidden="true"> · </span>
+        <Link href="/discover/systems">نظام‌های دانشگاهی</Link>
         <span aria-hidden="true"> · </span>
         <Link href="/discover">کانون کشف</Link>
       </p>

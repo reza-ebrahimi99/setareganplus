@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { DiscoverShell } from "@/components/guidance/discover/DiscoverShell";
+import { DiscoverSystemsExplorer } from "@/components/guidance/discover/DiscoverSystemsExplorer";
 import { DISCOVER_SYSTEMS } from "@/lib/guidance/discover/systems";
 import { discoverWebPageJsonLd } from "@/lib/guidance/discover/jsonld";
-import { loadDiscoveryVisitor } from "@/lib/guidance/discover/visitor";
 import { systemHref } from "@/lib/guidance/discover/catalog";
+import { loadDiscoveryVisitor } from "@/lib/guidance/discover/visitor";
 import { createPageMetadata } from "@/lib/seo/create-page-metadata";
 
 export const metadata: Metadata = createPageMetadata({
@@ -16,6 +16,14 @@ export const metadata: Metadata = createPageMetadata({
 
 export default async function DiscoverSystemsIndexPage() {
   const visitor = await loadDiscoveryVisitor();
+  const cards = DISCOVER_SYSTEMS.map((item) => ({
+    slug: item.slug,
+    href: systemHref(item.slug),
+    title: item.title,
+    kicker: item.kicker,
+    lead: item.lead,
+  }));
+
   return (
     <DiscoverShell
       breadcrumbs={[
@@ -36,25 +44,7 @@ export default async function DiscoverSystemsIndexPage() {
       })}
       visitor={visitor}
     >
-      <header className="discover-hero">
-        <p>نظام دانشگاهی</p>
-        <h1>همان رشته، زندگی‌های متفاوت.</h1>
-        <p className="discover-hero__lead">
-          روزانه و پردیس یک دانشگاه می‌توانند دو هزینه و دو خوابگاه باشند. اینجا
-          برچسب را از زندگی جدا می‌کنیم.
-        </p>
-      </header>
-      <ul className="discover-index">
-        {DISCOVER_SYSTEMS.map((item) => (
-          <li key={item.slug}>
-            <Link href={systemHref(item.slug)}>
-              <span>{item.kicker}</span>
-              <strong>{item.title}</strong>
-              <em>{item.lead}</em>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <DiscoverSystemsExplorer systems={cards} />
     </DiscoverShell>
   );
 }

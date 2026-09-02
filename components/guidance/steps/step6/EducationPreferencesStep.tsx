@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { submitGuidanceStep6Action } from "@/app/portal/student/services/guidance/steps/actions/step6";
+import { GuidanceStepActions } from "@/components/guidance/steps/GuidanceStepActions";
 import { GuidanceStepShell } from "@/components/guidance/steps/GuidanceStepShell";
 import { moveItem } from "@/lib/guidance/journey/preferences/reorder";
 import { guidanceEducationTypeLabel } from "@/lib/guidance/journey/reference-data/education-types";
@@ -106,9 +107,11 @@ export function EducationPreferencesStep({
         ) : null}
         <h2 className="gpj-card__title">دوره‌های تحصیلی</h2>
         <p className="gpj-card__desc">
-          فعال/غیرفعال کن و با فلش‌ها ترتیب اولویت را تغییر بده.{" "}
-          <Link href="/discover/programs" target="_blank" rel="noopener noreferrer">
-            راهنمای مقاطع و دوره‌های دانشگاهی
+          فعال/غیرفعال کن و با فلش‌ها ترتیب اولویت را تغییر بده.
+        </p>
+        <p className="gpj-card__tools">
+          <Link href="/discover/programs" className="gpj-guide-link">
+            آشنایی با انواع دوره‌ها
           </Link>
         </p>
         <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -161,12 +164,14 @@ export function EducationPreferencesStep({
         </ul>
       </div>
 
-      <div className="gpj-actions">
-        <span />
-        <button type="button" className="gpj-actions__continue" disabled={pending} onClick={handleSubmit}>
-          {pending ? "در حال ثبت…" : continueLabel ?? "ادامه"}
-        </button>
-      </div>
+      <GuidanceStepActions
+        continueLabel={continueLabel ?? "ثبت و ادامه"}
+        continueType="button"
+        onContinue={handleSubmit}
+        showSaveDraft={false}
+        backHref="/portal/student/services/guidance"
+        backLabel="بازگشت به داشبورد"
+      />
     </GuidanceStepShell>
   );
 }

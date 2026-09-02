@@ -8,6 +8,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { submitGuidanceStep7Action } from "@/app/portal/student/services/guidance/steps/actions/step7";
+import { GuidanceStepActions } from "@/components/guidance/steps/GuidanceStepActions";
 import { GuidanceStepShell } from "@/components/guidance/steps/GuidanceStepShell";
 import { moveItem } from "@/lib/guidance/journey/preferences/reorder";
 import { getCitiesForProvince } from "@/lib/guidance/journey/reference-data/cities";
@@ -223,12 +224,14 @@ export function CityPreferencesStep({
         )}
       </div>
 
-      <div className="gpj-actions">
-        <span />
-        <button type="button" className="gpj-actions__continue" disabled={pending} onClick={handleSubmit}>
-          {pending ? "در حال ثبت…" : continueLabel ?? "ادامه"}
-        </button>
-      </div>
+      <GuidanceStepActions
+        continueLabel={continueLabel ?? "ثبت و ادامه"}
+        continueType="button"
+        onContinue={handleSubmit}
+        showSaveDraft={false}
+        backHref="/portal/student/services/guidance"
+        backLabel="بازگشت به داشبورد"
+      />
     </GuidanceStepShell>
   );
 }

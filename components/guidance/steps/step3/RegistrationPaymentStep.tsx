@@ -7,6 +7,7 @@
 
 import { useState } from "react";
 import { startGuidanceCheckoutAction } from "@/app/portal/student/services/guidance/steps/actions/step3";
+import { GuidanceDiscountCodeField } from "@/components/guidance/steps/step3/GuidanceDiscountCodeField";
 import { GuidanceStepShell } from "@/components/guidance/steps/GuidanceStepShell";
 import { GUIDANCE_PACKAGES } from "@/lib/guidance/journey/packages";
 import { formatRials } from "@/lib/registration/format";
@@ -50,7 +51,9 @@ export function RegistrationPaymentStep({
     >
       {(paymentError || error) && (
         <p className="gpj-banner gpj-banner--error" role="alert">
-          پرداخت ناموفق بود یا لغو شد. لطفاً دوباره تلاش کن.
+          {paymentError
+            ? "پرداخت ناموفق بود یا لغو شد. لطفاً دوباره تلاش کن."
+            : error}
         </p>
       )}
 
@@ -59,49 +62,28 @@ export function RegistrationPaymentStep({
         می‌شود.
       </p>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <GuidanceDiscountCodeField />
+
+      <div className="gp-package-grid">
         {GUIDANCE_PACKAGES.map((pkg) => (
           <div
             key={pkg.code}
-            className="gpj-card"
-            data-portal-accent={pkg.highlighted ? "gold" : "purple"}
-            style={
-              pkg.highlighted
-                ? { borderColor: "color-mix(in srgb, var(--gpj-gold) 45%, transparent)" }
-                : undefined
-            }
+            className={`gp-package-card${pkg.highlighted ? " gp-package-card--featured" : ""}`}
           >
-            {pkg.highlighted && (
-              <p
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 700,
-                  color: "var(--gpj-gold)",
-                  marginBottom: "0.5rem",
-                }}
-              >
-                محبوب‌ترین انتخاب
-              </p>
-            )}
-            <h2 className="gpj-card__title">{pkg.title}</h2>
-            <p className="gpj-card__desc">{pkg.description}</p>
-            <p style={{ fontSize: "1.375rem", fontWeight: 800, color: "var(--gpj-purple)", marginBottom: "0.75rem" }}>
-              {formatRials(pkg.priceRials)}
-            </p>
-            <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1.25rem" }}>
+            {pkg.highlighted ? (
+              <p className="gp-package-card__badge">محبوب‌ترین انتخاب</p>
+            ) : null}
+            <h2 className="gp-package-card__title">{pkg.title}</h2>
+            <p className="gp-package-card__desc">{pkg.description}</p>
+            <p className="gp-package-card__price">{formatRials(pkg.priceRials)}</p>
+            <ul className="gp-package-card__features">
               {pkg.features.map((feature) => (
-                <li key={feature} style={{ fontSize: "0.8125rem", display: "flex", gap: "0.5rem" }}>
-                  <span aria-hidden="true" style={{ color: "var(--gpj-green)" }}>
-                    ✓
-                  </span>
-                  {feature}
-                </li>
+                <li key={feature}>{feature}</li>
               ))}
             </ul>
             <button
               type="button"
-              className="gpj-actions__continue"
-              style={{ width: "100%" }}
+              className="gp-package-card__pay"
               disabled={pendingCode !== null}
               onClick={() => handlePay(pkg.code)}
             >

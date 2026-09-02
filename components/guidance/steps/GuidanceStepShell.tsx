@@ -51,7 +51,7 @@ export function GuidanceStepShell({
       <header className="gpj-shell__header">
         {embed ? null : (
           <div className="gpj-shell__header-top">
-            <Link href="/ms/journey" className="gpj-shell__exit">
+            <Link href="/portal/student/services/guidance" className="gpj-shell__exit">
               <ExitIcon />
               مسیر همراهی
             </Link>

@@ -122,14 +122,19 @@ export const publicNavItems: readonly PublicNavItem[] = [
     ],
   },
   {
-    href: "/guidance",
+    href: "/portal/login?next=%2Fportal%2Fstudent%2Fservices%2Fguidance",
     label: "سامانه جامع انتخاب رشته",
     description: "مسیر یکپارچه انتخاب رشته تا پذیرش دانشگاه",
     children: [
       {
+        href: "/portal/login?next=%2Fportal%2Fstudent%2Fservices%2Fguidance",
+        label: "ورود دانش‌آموز",
+        description: "داشبورد انتخاب رشته و مسیر همراهی",
+      },
+      {
         href: "/guidance",
-        label: "ورود به دفتر",
-        description: "آزمون رغبت و پرونده انتخاب رشته",
+        label: "معرفی سامانه",
+        description: "آشنایی با دپارتمان انتخاب رشته",
       },
       {
         href: "/discover",

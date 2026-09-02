@@ -112,7 +112,7 @@ export function GuidanceEntryExperience({
             <h2>{copy.freeAssessment.title}</h2>
             <p>{copy.freeAssessment.body}</p>
             <a
-              href={studentSignedIn ? "/ms/interest" : "#entry-student"}
+              href={studentSignedIn ? "/portal/student/services/guidance" : "#entry-student"}
               className="guidance-entry__lead-cta"
             >
               {copy.freeAssessment.cta}

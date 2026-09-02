@@ -8,6 +8,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { submitGuidanceStep10Action } from "@/app/portal/student/services/guidance/steps/actions/step10";
+import { GuidanceStepActions } from "@/components/guidance/steps/GuidanceStepActions";
 import { GuidanceStepShell } from "@/components/guidance/steps/GuidanceStepShell";
 import { guidanceJourneyStepPath } from "@/lib/guidance/journey/steps";
 import { toPersianDigits } from "@/lib/persian";
@@ -111,12 +112,14 @@ export function AiArrangementStep({
             </div>
           </div>
 
-          <div className="gpj-actions">
-            <span />
-            <button type="button" className="gpj-actions__continue" disabled={pending} onClick={handleContinue}>
-              {pending ? "در حال ثبت…" : "ادامه به جلسه دوم مشاوره"}
-            </button>
-          </div>
+          <GuidanceStepActions
+            continueLabel="ادامه به جلسه دوم مشاوره"
+            continueType="button"
+            onContinue={handleContinue}
+            showSaveDraft={false}
+            backHref="/portal/student/services/guidance"
+            backLabel="بازگشت به داشبورد"
+          />
         </>
       )}
     </GuidanceStepShell>

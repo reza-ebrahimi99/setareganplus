@@ -7,6 +7,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { submitGuidanceStep9Action } from "@/app/portal/student/services/guidance/steps/actions/step9";
+import { GuidanceStepActions } from "@/components/guidance/steps/GuidanceStepActions";
 import { GuidanceStepShell } from "@/components/guidance/steps/GuidanceStepShell";
 import { moveItem } from "@/lib/guidance/journey/preferences/reorder";
 import { GUIDANCE_PRIORITY_FACTORS } from "@/lib/guidance/journey/reference-data/priority-factors";
@@ -160,12 +161,14 @@ export function PriorityWeightsStep({
         </ol>
       </div>
 
-      <div className="gpj-actions">
-        <span />
-        <button type="button" className="gpj-actions__continue" disabled={pending} onClick={handleSubmit}>
-          {pending ? "در حال ثبت…" : continueLabel ?? "ادامه به چیدمان هوشمند"}
-        </button>
-      </div>
+      <GuidanceStepActions
+        continueLabel={continueLabel ?? "ادامه به چیدمان هوشمند"}
+        continueType="button"
+        onContinue={handleSubmit}
+        showSaveDraft={false}
+        backHref="/portal/student/services/guidance"
+        backLabel="بازگشت به داشبورد"
+      />
     </GuidanceStepShell>
   );
 }

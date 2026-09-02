@@ -42,8 +42,8 @@ export function GuidanceGradesUploadForm({
   existingFileName = null,
   existingVersion = null,
   acceptPdfOnly = false,
-  successHref = "/ms",
-  successLabel = "بازگشت به دفتر",
+  successHref = "/portal/student/services/guidance",
+  successLabel = "بازگشت به داشبورد",
 }: GuidanceGradesUploadFormProps) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
