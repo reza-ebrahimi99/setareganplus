@@ -1,8 +1,5 @@
 import Link from "next/link";
-import {
-  MAJOR_OFFICE_HOME,
-  MAJOR_OFFICE_INTEREST,
-} from "@/lib/guidance/office/nav";
+import { GUIDANCE_PLATFORM_HOME, GUIDANCE_PORTAL_LOGIN } from "@/lib/guidance/portal-nav";
 import { ASSESSMENT_RESULTS_CTA_HREF } from "@/lib/guidance/journey/assessment/scoring";
 import type { DiscoveryVisitor } from "@/lib/guidance/discover/visitor";
 
@@ -21,18 +18,18 @@ export function DiscoverConversion({ visitor }: { visitor: DiscoveryVisitor }) {
         </Link>
         {visitor.interestDone ? null : (
           <Link
-            href={visitor.signedIn ? MAJOR_OFFICE_INTEREST : "/guidance"}
+            href={visitor.signedIn ? `${GUIDANCE_PLATFORM_HOME}?view=interest` : GUIDANCE_PORTAL_LOGIN}
             className="discover-convert__ghost"
           >
             انجام آزمون رغبت‌سنجی رایگان
           </Link>
         )}
         {visitor.signedIn ? (
-          <Link href={MAJOR_OFFICE_HOME} className="discover-convert__ghost">
+          <Link href={GUIDANCE_PLATFORM_HOME} className="discover-convert__ghost">
             ادامه پرونده انتخاب رشته
           </Link>
         ) : (
-          <Link href="/guidance" className="discover-convert__ghost">
+          <Link href={GUIDANCE_PORTAL_LOGIN} className="discover-convert__ghost">
             ورود به دفتر انتخاب رشته
           </Link>
         )}

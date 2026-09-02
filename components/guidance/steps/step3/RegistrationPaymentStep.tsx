@@ -7,7 +7,6 @@
 
 import { useState } from "react";
 import { startGuidanceCheckoutAction } from "@/app/portal/student/services/guidance/steps/actions/step3";
-import { GuidanceDiscountCodeField } from "@/components/guidance/steps/step3/GuidanceDiscountCodeField";
 import { GuidanceStepShell } from "@/components/guidance/steps/GuidanceStepShell";
 import { GUIDANCE_PACKAGES } from "@/lib/guidance/journey/packages";
 import { formatRials } from "@/lib/registration/format";
@@ -61,8 +60,6 @@ export function RegistrationPaymentStep({
         دسترسی به جلسه مشاوره، نتایج آزمون و مراحل بعدی فقط پس از پرداخت باز
         می‌شود.
       </p>
-
-      <GuidanceDiscountCodeField />
 
       <div className="gp-package-grid">
         {GUIDANCE_PACKAGES.map((pkg) => (

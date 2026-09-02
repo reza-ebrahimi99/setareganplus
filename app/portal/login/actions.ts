@@ -13,6 +13,7 @@ import {
   provisionExternalGuidanceCandidate,
 } from "@/lib/guidance/external-candidate";
 import { GUIDANCE_PLATFORM_HOME } from "@/lib/guidance/portal-nav";
+import { isSafeRelativePath } from "@/lib/guidance/office/relative-url";
 import { getPublicOrganizationBySlug } from "@/lib/organizations/get-current-organization";
 import { prisma } from "@/lib/prisma";
 import { PORTAL_NO_ACCESS_MESSAGE } from "@/lib/portal/auth";
@@ -30,6 +31,7 @@ export type PortalLoginState = {
   message?: string;
   error?: string;
   mobile?: string;
+  next?: string;
 };
 
 function field(formData: FormData, key: string): string {
@@ -54,6 +56,8 @@ export async function requestPortalOtpAction(
   const organizationId =
     access?.organizationId ??
     (await getPublicOrganizationBySlug()).id;
+
+  const requestedNext = field(formData, "next");
 
   const requested = await requestOtp({
     organizationId,
@@ -83,6 +87,7 @@ export async function requestPortalOtpAction(
     phase: "otp",
     message: GENERIC_REQUEST,
     mobile: parsed.normalized,
+    next: isSafeRelativePath(requestedNext) ? requestedNext.trim() : undefined,
   };
 }
 
@@ -184,16 +189,19 @@ export async function verifyPortalOtpAction(
   let userId: string;
   let membershipId: string;
   let redirectPath = "/portal";
+  const requestedNext = field(formData, "next");
 
   if (access) {
     userId = access.userId;
     membershipId = access.membershipId;
-    redirectPath = await resolvePostLoginRedirect({
-      organizationId: access.organizationId,
-      userId: access.userId,
-      ipAddress: requestMetadata.ipAddress,
-      userAgent: requestMetadata.userAgent,
-    });
+    redirectPath = isSafeRelativePath(requestedNext)
+      ? requestedNext.trim()
+      : await resolvePostLoginRedirect({
+          organizationId: access.organizationId,
+          userId: access.userId,
+          ipAddress: requestMetadata.ipAddress,
+          userAgent: requestMetadata.userAgent,
+        });
   } else {
     const provisioned = await provisionExternalGuidanceCandidate({
       organizationId,

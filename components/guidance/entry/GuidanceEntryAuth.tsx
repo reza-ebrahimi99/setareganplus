@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PortalLoginForm } from "@/app/portal/login/PortalLoginForm";
 import { StaffOtpLoginForm } from "@/components/admin/StaffOtpLoginForm";
 import { guidanceEntryContent } from "@/content/guidance";
+import { GUIDANCE_PLATFORM_HOME } from "@/lib/guidance/portal-nav";
 
 type Role = "student" | "counselor";
 
@@ -32,7 +33,7 @@ export function GuidanceEntryAuth({
             {copy.student.continue}
           </Link>
         ) : role === "student" ? (
-          <PortalLoginForm />
+          <PortalLoginForm next={GUIDANCE_PLATFORM_HOME} />
         ) : (
           <p className="guidance-entry__card-cta">ورود با موبایل و کد یک‌بارمصرف</p>
         )}

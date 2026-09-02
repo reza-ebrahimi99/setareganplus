@@ -2,13 +2,14 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { GUIDANCE_PLATFORM_HOME } from "@/lib/guidance/portal-nav";
 import { UnfinishedMark } from "@/components/guidance/office/illustrations";
 
 export function GuidanceErrorFallback({
   error,
   retry,
-  homeHref = "/ms",
-  homeLabel = "بازگشت به دفتر",
+  homeHref = GUIDANCE_PLATFORM_HOME,
+  homeLabel = "بازگشت به داشبورد",
 }: {
   error: Error & { digest?: string };
   retry?: () => void;

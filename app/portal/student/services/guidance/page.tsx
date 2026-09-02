@@ -12,7 +12,7 @@ import {
   ensureGuidanceCase,
 } from "@/lib/guidance/external-candidate";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
-import { resolveGuidanceJourneyContinueHref } from "@/lib/guidance/journey-entry";
+import { GUIDANCE_STEPS_ENTRY } from "@/lib/guidance/portal-nav";
 import { loadGuidanceJourneyPlan } from "@/lib/guidance/journey/plan";
 import { loadOfficeDashboard } from "@/lib/guidance/office/dashboard";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
@@ -80,15 +80,11 @@ export default async function GuidancePortalServicePage({
     redirect(GUIDANCE_ONBOARDING_PATH);
   }
 
-  const journeyContinueHref = resolveGuidanceJourneyContinueHref({
-    journeyVersion: null,
-    currentStep: plan.currentStep,
-  });
-
   return (
     <GuidanceStudentDashboardPanels
       model={model}
-      journeyContinueHref={journeyContinueHref}
+      userDisplayName={model.studentName}
+      journeyContinueHref={GUIDANCE_STEPS_ENTRY}
     />
   );
 }

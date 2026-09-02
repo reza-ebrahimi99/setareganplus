@@ -3,6 +3,8 @@ import Image from "next/image";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { PortalLoginForm } from "@/app/portal/login/PortalLoginForm";
+import { isSafeRelativePath } from "@/lib/guidance/office/relative-url";
+import { GUIDANCE_PLATFORM_HOME } from "@/lib/guidance/portal-nav";
 import { resolvePortalHubPath } from "@/lib/guidance/student-entry";
 import { resolvePortalContext } from "@/lib/portal/auth";
 
@@ -12,10 +14,32 @@ export const metadata: Metadata = {
 };
 export const dynamic = "force-dynamic";
 
-export default async function PortalLoginPage() {
+type PortalLoginPageProps = {
+  searchParams?: Promise<{ next?: string }>;
+};
+
+function isGuidanceLoginIntent(next: string | undefined): boolean {
+  if (!next) return false;
+  return (
+    next === GUIDANCE_PLATFORM_HOME ||
+    next.startsWith(`${GUIDANCE_PLATFORM_HOME}?`) ||
+    next.startsWith(`${GUIDANCE_PLATFORM_HOME}/`)
+  );
+}
+
+export default async function PortalLoginPage({
+  searchParams,
+}: PortalLoginPageProps) {
+  const params = searchParams ? await searchParams : {};
+  const next = isSafeRelativePath(params.next) ? params.next.trim() : undefined;
+  const guidanceIntent = isGuidanceLoginIntent(next);
+
   const context = await resolvePortalContext();
   if (context) {
     const host = (await headers()).get("host");
+    if (next) {
+      redirect(next);
+    }
     redirect(await resolvePortalHubPath(context, { host }));
   }
 
@@ -35,13 +59,17 @@ export default async function PortalLoginPage() {
             priority
           />
           <h1 className="mt-4 text-xl font-bold text-primary">
-            پرتال دانش‌آموز و والدین
+            {guidanceIntent
+              ? "ورود به سامانه انتخاب رشته"
+              : "پرتال دانش‌آموز و والدین"}
           </h1>
           <p className="mt-2 text-sm text-muted">
-            ورود با شماره موبایل و کد یک‌بارمصرف — دانش‌آموزان فعلی و داوطلبان جدید
+            {guidanceIntent
+              ? "ورود با شماره موبایل و کد یک‌بارمصرف — پس از تأیید، به داشبورد انتخاب رشته هدایت می‌شوید."
+              : "ورود با شماره موبایل و کد یک‌بارمصرف — دانش‌آموزان فعلی و داوطلبان جدید"}
           </p>
         </div>
-        <PortalLoginForm />
+        <PortalLoginForm next={next} />
       </div>
     </main>
   );

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { PortalIcon } from "@/components/portal/icons";
+import { OfficeAccountMenu } from "@/components/guidance/office/OfficeAccountMenu";
 import type { OfficeDashboardModel } from "@/lib/guidance/office/dashboard";
+import { GUIDANCE_STEPS_ENTRY } from "@/lib/guidance/portal-nav";
 import { toPersianDigits } from "@/lib/persian";
 
 const DISCOVER_MAJORS = "/discover/majors";
@@ -14,12 +16,14 @@ function firstName(full: string): string {
 
 export function GuidanceStudentDashboardPanels({
   model,
+  userDisplayName = model.studentName,
   journeyContinueHref: journeyContinueHrefProp,
 }: {
   model: OfficeDashboardModel;
+  userDisplayName?: string;
   journeyContinueHref?: string;
 }) {
-  const journeyContinueHref = journeyContinueHrefProp ?? model.todayTask.href;
+  const journeyContinueHref = journeyContinueHrefProp ?? GUIDANCE_STEPS_ENTRY;
   const { pulse } = model;
   const name = firstName(model.studentName);
   const journeySubtitle = model.packagePaid
@@ -33,6 +37,9 @@ export function GuidanceStudentDashboardPanels({
         <div className="guidance-command-hero__grid" aria-hidden="true" />
 
         <div className="guidance-command-hero__content">
+          <div className="guidance-command-hero__top">
+            <OfficeAccountMenu userDisplayName={userDisplayName} />
+          </div>
           <p className="guidance-command-hero__eyebrow">سامانه جامع انتخاب رشته ستارگان پلاس</p>
           <p className="guidance-command-hero__welcome">
             به سامانه جامع انتخاب رشته ستارگان پلاس خوش آمدید، {name}.

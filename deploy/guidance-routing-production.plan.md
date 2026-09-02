@@ -58,52 +58,35 @@ NODE_OPTIONS="--max-old-space-size=4096" npm run build
 ## 3. Surgical change — production yellow dashboard CTA
 
 **File:** `app/portal/student/services/guidance/page.tsx`  
-**Scope:** routing-only; do **not** replace the yellow dashboard component or UI.
+**Scope:** routing-only on the yellow journey card; do **not** replace the dashboard.
 
-### Step A — import (top of file)
+### Keep production entry router
+
+Yellow card **«ورود به مسیر انتخاب رشته»** must link to:
 
 ```typescript
-import { resolveGuidanceJourneyContinueHref } from "@/lib/guidance/journey-entry";
+const journeyContinueHref = "/portal/student/services/guidance/steps";
 ```
 
-### Step B — compute href after `plan` is loaded
+The `/steps` index redirects using `journeyVersion` + `currentStep` (V2 → `journey/steps/{n}`, V1 → `steps/{n}`).
 
-Where the page already has a `GuidancePlan` (or snapshot plan) with `currentStep`:
+**Do not** point the yellow CTA directly at a step URL or use `resolveGuidanceJourneyContinueHref` on the dashboard — that bypasses production's version-aware index.
 
-```typescript
-const journeyContinueHref = resolveGuidanceJourneyContinueHref({
-  journeyVersion: plan.journeyVersion,
-  currentStep: plan.currentStep,
-});
-```
+See also: `deploy/production-yellow-dashboard-merge.md` for visual polish + logout + universities hub.
 
-If `journeyVersion` lives on a nested object, pass the same field production already reads — do not add Prisma fields.
-
-### Step C — wire the yellow card only
-
-Find the primary CTA labeled **«ورود به مسیر انتخاب رشته»** (or equivalent yellow journey card). Replace its `href` with `journeyContinueHref`.
-
-**Remove / replace any of these anti-patterns on that CTA only:**
+### Remove / replace anti-patterns on yellow CTA only
 
 ```typescript
-// legacy V1 hardcode
+// direct step — wrong for dashboard entry
+resolveGuidanceJourneyContinueHref({ journeyVersion, currentStep })
 `/portal/student/services/guidance/steps/${plan.currentStep}`
-guidanceJourneyStepPath(plan.currentStep)
 
-// chamber entry (must not remain on yellow CTA)
-"/ms"
-"/ms/journey"
-MAJOR_OFFICE_JOURNEY
+// chamber / legacy entry
+"/ms" | "/ms/journey" | MAJOR_OFFICE_JOURNEY
+
+// hardcoded
+"/journey/steps/1"
 ```
-
-**Do not change:** welcome copy, card layout, other dashboard links, view routing (`?view=`), loaders, or plan mutations.
-
-### Expected resolver output
-
-| `journeyVersion` | CTA target |
-|------------------|------------|
-| `>= 2` | `/portal/student/services/guidance/journey/steps/{currentStep}` |
-| `< 2` or null | `/portal/student/services/guidance/steps/{currentStep}` |
 
 ---
 

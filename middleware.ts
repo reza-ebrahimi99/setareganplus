@@ -38,8 +38,12 @@ export function middleware(request: NextRequest) {
     const portalToken = request.cookies.get(PORTAL_SESSION_COOKIE)?.value;
     if (!portalToken) {
       const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = "/guidance";
+      loginUrl.pathname = "/portal/login";
       loginUrl.search = "";
+      loginUrl.searchParams.set(
+        "next",
+        "/portal/student/services/guidance",
+      );
       return NextResponse.redirect(loginUrl);
     }
     const requestHeaders = new Headers(request.headers);

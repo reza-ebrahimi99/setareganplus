@@ -1,3 +1,5 @@
+import { GUIDANCE_PORTAL_LOGIN } from "@/lib/guidance/portal-nav";
+
 /**
  * Public primary navigation — conversion-focused IA.
  * Nested items map to existing public routes (placeholders where pages are pending).
@@ -122,12 +124,12 @@ export const publicNavItems: readonly PublicNavItem[] = [
     ],
   },
   {
-    href: "/portal/login?next=%2Fportal%2Fstudent%2Fservices%2Fguidance",
+    href: GUIDANCE_PORTAL_LOGIN,
     label: "سامانه جامع انتخاب رشته",
     description: "مسیر یکپارچه انتخاب رشته تا پذیرش دانشگاه",
     children: [
       {
-        href: "/portal/login?next=%2Fportal%2Fstudent%2Fservices%2Fguidance",
+        href: GUIDANCE_PORTAL_LOGIN,
         label: "ورود دانش‌آموز",
         description: "داشبورد انتخاب رشته و مسیر همراهی",
       },
@@ -155,6 +157,6 @@ export const publicNavLinks = publicNavItems.map((item) => ({
 
 export const headerCtas = {
   primary: { label: "ثبت‌نام", href: "/pre-registration" },
-  /** Portal entry — placeholder until full portal UX ships. */
-  secondary: { label: "ورود به پرتال", href: "/portal/login" },
+  /** Guidance-aware portal entry — preserves post-login destination. */
+  secondary: { label: "ورود به پرتال", href: GUIDANCE_PORTAL_LOGIN },
 } as const;

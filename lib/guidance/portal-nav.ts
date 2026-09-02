@@ -13,6 +13,12 @@ const GP = "/portal/student/services/guidance";
 /** Post-login home for a Guidance student case. */
 export const GUIDANCE_PLATFORM_HOME = GP;
 
+/** Journey entry — redirects via plan.currentStep / journeyVersion (production-safe). */
+export const GUIDANCE_STEPS_ENTRY = `${GP}/steps`;
+
+/** Public login URL that preserves guidance intent after OTP. */
+export const GUIDANCE_PORTAL_LOGIN = `${"/portal/login"}?next=${encodeURIComponent(GP)}`;
+
 /** Legacy Student Portal sidebar entry into Guidance (services section). */
 export const GUIDANCE_STUDENT_PORTAL_NAV: PortalOsNavItem[] = [
   {

@@ -13374,6 +13374,12 @@ body {
   z-index: 1;
 }
 
+.guidance-command-hero__top {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
 .guidance-command-hero__eyebrow {
   margin: 0;
   font-size: 0.76rem;

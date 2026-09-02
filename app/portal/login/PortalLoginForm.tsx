@@ -16,7 +16,8 @@ const initial: PortalLoginState = { phase: "mobile" };
  * - Visible client validation (native tooltips often hide under soft keyboard)
  * - useFormStatus pending so loading always shows when the request starts
  */
-export function PortalLoginForm() {
+export function PortalLoginForm({ next }: { next?: string | null }) {
+  const safeNext = next?.trim() && next.startsWith("/") ? next.trim() : undefined;
   const [requestState, requestAction] = useActionState(
     requestPortalOtpAction,
     initial,
@@ -65,6 +66,13 @@ export function PortalLoginForm() {
         noValidate
       >
         <input type="hidden" name="mobile" value={requestState.mobile} />
+        {safeNext || requestState.next ? (
+          <input
+            type="hidden"
+            name="next"
+            value={safeNext ?? requestState.next ?? ""}
+          />
+        ) : null}
         <p className="rounded-xl border border-border bg-background px-4 py-3 text-sm leading-7 text-muted">
           {requestState.message ??
             "اگر حساب فعالی برای این شماره وجود داشته باشد، کد ورود ارسال شده است."}
@@ -100,7 +108,7 @@ export function PortalLoginForm() {
           />
         </div>
         <OtpSubmitButton
-          idleLabel="ورود به پرتال"
+          idleLabel="ورود"
           pendingLabel="در حال بررسی…"
         />
       </form>
@@ -114,6 +122,7 @@ export function PortalLoginForm() {
       className="relative z-10 space-y-4"
       noValidate
     >
+      {safeNext ? <input type="hidden" name="next" value={safeNext} /> : null}
       {clientError || serverError ? (
         <p
           role="alert"

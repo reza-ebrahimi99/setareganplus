@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * Guidance package checkout — discount code presentation (UI only).
- * Does not alter payment intent amounts or server checkout logic.
+ * Guidance package checkout — discount code presentation shell.
+ * NOT wired on this branch — production must wrap existing discount server actions.
+ * See deploy/production-discount-ui-merge.md
  */
 
 import { useState } from "react";
