@@ -614,6 +614,11 @@ model Organization {
   guidanceDocuments                    GuidanceDocument[]
   guidanceStepReviews                  GuidanceStepReview[]
   guidanceStepReviewEvents             GuidanceStepReviewEvent[]
+  counselorStudentAssignments          CounselorStudentAssignment[]
+  counselingSessionRecords             CounselingSessionRecord[]
+  counselorNotes                       CounselorNote[]
+  counselorFollowUps                   CounselorFollowUp[]
+  counselorAppointments                CounselorAppointment[]
 
   @@map("organizations")
 }
@@ -715,6 +720,12 @@ model User {
   guidanceStepReviewsApproved  GuidanceStepReview[]       @relation("GuidanceStepReviewApprover")
   guidanceStepReviewsRejected  GuidanceStepReview[]       @relation("GuidanceStepReviewRejector")
   guidanceStepReviewEvents     GuidanceStepReviewEvent[]  @relation("GuidanceStepReviewEventActor")
+  counselorStudentAssignments  CounselorStudentAssignment[] @relation("CounselorAssignmentCounselor")
+  counselorAssignmentsCreated    CounselorStudentAssignment[] @relation("CounselorAssignmentAssignedBy")
+  counselingSessionRecords       CounselingSessionRecord[]    @relation("CounselingSessionCounselor")
+  counselorNotes                 CounselorNote[]              @relation("CounselorNoteAuthor")
+  counselorFollowUps             CounselorFollowUp[]          @relation("CounselorFollowUpCounselor")
+  counselorAppointments          CounselorAppointment[]       @relation("CounselorAppointmentCounselor")
 
   @@index([status])
   @@index([deletedAt])
@@ -2146,6 +2157,8 @@ model BookingReservation {
   rescheduledFrom BookingReservation?  @relation("BookingRescheduleChain", fields: [rescheduledFromId], references: [id], onDelete: Restrict)
   rescheduledTo   BookingReservation[] @relation("BookingRescheduleChain")
   checkIns        BookingCheckIn[]
+  counselorAppointment CounselorAppointment?
+  counselingSessionRecord CounselingSessionRecord?
 
   @@unique([organizationId, trackingCode])
   @@unique([organizationId, id])
@@ -2740,6 +2753,11 @@ model Student {
   guardianRelations  StudentGuardianRelation[]
   portalAccountLinks PortalAccountLink[]
   guidancePlans      GuidancePlan[]
+  counselorStudentAssignments CounselorStudentAssignment[]
+  counselingSessionRecords    CounselingSessionRecord[]
+  counselorNotes              CounselorNote[]
+  counselorFollowUps          CounselorFollowUp[]
+  counselorAppointments       CounselorAppointment[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, kanoonStudentId])
@@ -4727,6 +4745,8 @@ model GuidancePlan {
   choicesApprovedByUser User?                  @relation("GuidancePlanChoicesApprover", fields: [choicesApprovedByUserId], references: [id], onDelete: SetNull)
   documents             GuidanceDocument[]
   stepReviews           GuidanceStepReview[]
+  counselorAppointments CounselorAppointment[]
+  counselingSessionRecords CounselingSessionRecord[]
 
   @@unique([organizationId, publicId])
   @@unique([organizationId, id])
@@ -4847,4 +4867,187 @@ model GuidanceStepReviewEvent {
   @@index([organizationId, reviewId, createdAt])
   @@index([actorUserId])
   @@map("guidance_step_review_events")
+}
+
+// ─── Counselor OS (SetareganPlus) ─────────────────────────────────────────────
+// Additive domain for counselor workflows. Reuses BookingReservation for scheduling.
+
+enum CounselorAssignmentStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CounselorAppointmentStatus {
+  BOOKED
+  CONFIRMED
+  COMPLETED
+  CANCELLED_BY_STUDENT
+  CANCELLED_BY_COUNSELOR
+  NO_SHOW
+}
+
+enum CounselingSessionRecordStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum CounselingSessionType {
+  IN_PERSON
+  PHONE
+  ONLINE
+}
+
+enum CounselorNoteVisibility {
+  GENERAL
+  IMPORTANT
+  PRIVATE
+  FOLLOW_UP
+}
+
+enum CounselorFollowUpStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum CounselorFollowUpPriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+/// Links a staff counselor user to a student for RBAC scoping.
+model CounselorStudentAssignment {
+  id               String                    @id @default(cuid())
+  organizationId   String
+  counselorUserId  String
+  studentId        String
+  branchId         String?
+  status           CounselorAssignmentStatus @default(ACTIVE)
+  assignedAt       DateTime                  @default(now())
+  assignedByUserId String?
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  counselor    User         @relation("CounselorAssignmentCounselor", fields: [counselorUserId], references: [id], onDelete: Restrict)
+  student      Student      @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  assignedBy   User?        @relation("CounselorAssignmentAssignedBy", fields: [assignedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, counselorUserId, studentId])
+  @@index([organizationId, counselorUserId, status])
+  @@index([organizationId, studentId, status])
+  @@map("counselor_student_assignments")
+}
+
+/// Bridges BookingReservation to guidance student context.
+model CounselorAppointment {
+  id                   String                   @id @default(cuid())
+  organizationId       String
+  studentId            String
+  counselorUserId      String
+  guidancePlanId       String?
+  bookingReservationId String                   @unique
+  status               CounselorAppointmentStatus @default(BOOKED)
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+
+  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student              Student            @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  counselor            User               @relation("CounselorAppointmentCounselor", fields: [counselorUserId], references: [id], onDelete: Restrict)
+  guidancePlan         GuidancePlan?      @relation(fields: [organizationId, guidancePlanId], references: [organizationId, id], onDelete: SetNull)
+  bookingReservation   BookingReservation @relation(fields: [organizationId, bookingReservationId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, bookingReservationId])
+  @@index([organizationId, counselorUserId, status])
+  @@index([organizationId, studentId, status])
+  @@index([organizationId, guidancePlanId])
+  @@map("counselor_appointments")
+}
+
+/// Persistent counseling session documentation (institutional knowledge).
+model CounselingSessionRecord {
+  id                   String                      @id @default(cuid())
+  organizationId       String
+  studentId            String
+  counselorUserId      String
+  guidancePlanId       String?
+  bookingReservationId String?                     @unique
+  scheduledAt          DateTime?
+  startedAt            DateTime?
+  endedAt              DateTime?
+  durationMinutes      Int?
+  sessionType          CounselingSessionType       @default(IN_PERSON)
+  status               CounselingSessionRecordStatus @default(SCHEDULED)
+  subject              String?
+  body                 String?                     @db.Text
+  keyPoints            String?                     @db.Text
+  decisions            String?                     @db.Text
+  studentActionItems   String?                     @db.Text
+  counselorActionItems String?                     @db.Text
+  summary              String?                     @db.Text
+  nextFollowUpAt       DateTime?
+  isDraft              Boolean                     @default(false)
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student            Student             @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  counselor          User                @relation("CounselingSessionCounselor", fields: [counselorUserId], references: [id], onDelete: Restrict)
+  guidancePlan       GuidancePlan?       @relation(fields: [organizationId, guidancePlanId], references: [organizationId, id], onDelete: SetNull)
+  bookingReservation BookingReservation? @relation(fields: [organizationId, bookingReservationId], references: [organizationId, id], onDelete: SetNull)
+  followUps          CounselorFollowUp[]
+
+  @@unique([organizationId, bookingReservationId])
+  @@index([organizationId, studentId, status])
+  @@index([organizationId, counselorUserId, scheduledAt])
+  @@index([organizationId, guidancePlanId])
+  @@map("counseling_session_records")
+}
+
+model CounselorNote {
+  id              String                 @id @default(cuid())
+  organizationId  String
+  studentId       String
+  counselorUserId String
+  visibility      CounselorNoteVisibility @default(GENERAL)
+  body            String                 @db.Text
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  deletedAt       DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student      Student      @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  counselor    User         @relation("CounselorNoteAuthor", fields: [counselorUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, studentId, deletedAt])
+  @@index([organizationId, counselorUserId, createdAt])
+  @@map("counselor_notes")
+}
+
+model CounselorFollowUp {
+  id              String                    @id @default(cuid())
+  organizationId  String
+  studentId       String
+  counselorUserId String
+  sessionRecordId String?
+  title           String
+  description     String?                   @db.Text
+  dueAt           DateTime
+  status          CounselorFollowUpStatus   @default(PENDING)
+  priority        CounselorFollowUpPriority @default(NORMAL)
+  completedAt     DateTime?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  organization  Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student       Student                 @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  counselor     User                    @relation("CounselorFollowUpCounselor", fields: [counselorUserId], references: [id], onDelete: Restrict)
+  sessionRecord CounselingSessionRecord? @relation(fields: [sessionRecordId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, counselorUserId, status, dueAt])
+  @@index([organizationId, studentId, status])
+  @@map("counselor_follow_ups")
 }
