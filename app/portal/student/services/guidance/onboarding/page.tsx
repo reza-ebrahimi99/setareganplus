@@ -9,6 +9,7 @@ import { PortraitMark } from "@/components/guidance/office/illustrations";
 import { GuidanceOnboardingForm } from "@/components/guidance/onboarding/GuidanceOnboardingForm";
 import { candidateNeedsGuidanceOnboarding } from "@/lib/guidance/external-candidate";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
+import { GUIDANCE_PLATFORM_HOME } from "@/lib/guidance/portal-nav";
 import { loadGuidanceOnboardingRecord } from "@/lib/guidance/onboarding";
 import { listHighSchoolMajorOptionsForForm } from "@/lib/guidance/onboarding-options";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
@@ -35,7 +36,7 @@ export default async function GuidanceOnboardingPage() {
     studentId,
   });
   if (!needs) {
-    redirect("/ms");
+    redirect(GUIDANCE_PLATFORM_HOME);
   }
 
   const parsed = normalizeIranianMobile(context.user.mobile ?? "");

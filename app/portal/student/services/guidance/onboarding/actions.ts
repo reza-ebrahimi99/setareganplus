@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { readSessionRequestMetadata } from "@/lib/auth/session";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
+import { GUIDANCE_PLATFORM_HOME } from "@/lib/guidance/portal-nav";
 import {
   completeGuidanceCandidateOnboarding,
   saveGuidanceOnboardingDraft,
@@ -112,5 +113,5 @@ export async function submitGuidanceOnboardingAction(
     };
   }
 
-  redirect("/ms");
+  redirect(GUIDANCE_PLATFORM_HOME);
 }

@@ -15,8 +15,8 @@ export default function GuidancePortalError({
     <GuidanceErrorFallback
       error={error}
       retry={unstable_retry ?? reset}
-      homeHref="/ms"
-      homeLabel="بازگشت به دفتر انتخاب رشته"
+      homeHref="/portal/student/services/guidance"
+      homeLabel="بازگشت به داشبورد انتخاب رشته"
     />
   );
 }

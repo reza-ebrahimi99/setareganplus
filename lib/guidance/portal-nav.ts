@@ -7,18 +7,17 @@ import type {
   PortalOsNavItem,
   PortalOsNavSection,
 } from "@/components/portal/nav/types";
-import { MAJOR_OFFICE_HOME } from "@/lib/guidance/office/nav";
 
 const GP = "/portal/student/services/guidance";
 
 /** Post-login home for a Guidance student case. */
-export const GUIDANCE_PLATFORM_HOME = MAJOR_OFFICE_HOME;
+export const GUIDANCE_PLATFORM_HOME = GP;
 
 /** Legacy Student Portal sidebar entry into Guidance (services section). */
 export const GUIDANCE_STUDENT_PORTAL_NAV: PortalOsNavItem[] = [
   {
     id: "guidance",
-    href: MAJOR_OFFICE_HOME,
+    href: GUIDANCE_PLATFORM_HOME,
     label: "انتخاب رشته",
     icon: "route",
     match: "prefix",
@@ -39,7 +38,7 @@ export const GUIDANCE_PLATFORM_NAV_SECTIONS: PortalOsNavSection[] = [
     items: [
       {
         id: "gp-dashboard",
-        href: MAJOR_OFFICE_HOME,
+        href: GUIDANCE_PLATFORM_HOME,
         label: "داشبورد",
         icon: "home",
         match: "exact",
@@ -164,6 +163,6 @@ export const GUIDANCE_PLATFORM_BRAND = {
   goalTitle: "یک قدم تا انتخاب مطمئن‌تر",
   ariaLabel: "ناوبری سامانه انتخاب رشته",
   dockAriaLabel: "میانبرهای انتخاب رشته",
-  exitHref: "/ms",
-  exitLabel: "دفتر انتخاب رشته",
+  exitHref: GUIDANCE_PLATFORM_HOME,
+  exitLabel: "داشبورد انتخاب رشته",
 } as const;

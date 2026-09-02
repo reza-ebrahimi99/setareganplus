@@ -45,7 +45,7 @@ export default async function StudentPortalLayout({
     }
   }
 
-  if (onGuidance) {
+  if (onOnboarding) {
     return children;
   }
 

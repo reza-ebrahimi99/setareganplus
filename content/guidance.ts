@@ -101,7 +101,7 @@ export const guidanceEntryContent = {
     title: "ورود دانش‌آموز",
     hint: "فقط شماره موبایل. از هر شهر. اگر اولین بار است، پرونده همین‌جا تشکیل می‌شود. آزمون رغبت رایگان بعد از ورود در دفتر شما باز است.",
     continue: "ادامه پرونده انتخاب رشته",
-    href: "/ms",
+    href: "/portal/student/services/guidance",
   },
   freeAssessment: {
     title: "آزمون رغبت رایگان",

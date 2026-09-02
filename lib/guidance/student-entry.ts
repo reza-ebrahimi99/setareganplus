@@ -1,6 +1,6 @@
 /**
  * Guidance student entry — post-login and portal hub routing.
- * Keeps legacy /portal/student for non-guidance orgs; guidance cases use /ms.
+ * Guidance-enabled students on the selection host land on the guidance dashboard.
  */
 
 import { PortalAccountType } from "@/generated/prisma/enums";
