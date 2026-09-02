@@ -5,6 +5,7 @@
 
 import { DISCOVER_MAJORS } from "@/lib/guidance/discover/majors";
 import { DISCOVER_PATHWAYS } from "@/lib/guidance/discover/pathways";
+import { DISCOVER_PROGRAMS } from "@/lib/guidance/discover/programs";
 import { DISCOVER_SYSTEMS } from "@/lib/guidance/discover/systems";
 import type {
   DiscoverKind,
@@ -31,6 +32,10 @@ export function systemHref(slug: string): string {
 
 export function pathwayHref(slug: string): string {
   return `/discover/pathways/${slug}`;
+}
+
+export function programHref(slug: string): string {
+  return `/discover/programs/${slug}`;
 }
 
 const CLUSTER_SYSTEMS: Record<string, readonly string[]> = {
@@ -193,6 +198,24 @@ export function searchDiscoverCatalog(query: string): DiscoverSearchHit[] {
       });
     }
   }
+  for (const item of DISCOVER_PROGRAMS) {
+    const text = haystack([
+      item.title,
+      item.summary,
+      item.description,
+      ...item.searchTerms,
+    ]);
+    if (text.toLocaleLowerCase("fa").includes(needle) || item.title.includes(q)) {
+      hits.push({
+        kind: "program",
+        slug: item.slug,
+        title: item.title,
+        href: programHref(item.slug),
+        excerpt: item.summary,
+        groupLabel: "مقطع و دوره",
+      });
+    }
+  }
   return hits;
 }
 
@@ -201,6 +224,7 @@ export function listDiscoverSitemapPaths(): readonly string[] {
     DISCOVER_HOME,
     "/discover/systems",
     "/discover/majors",
+    "/discover/programs",
     "/discover/pathways",
     "/discover/compare",
     "/discover/search",
@@ -211,6 +235,7 @@ export function listDiscoverSitemapPaths(): readonly string[] {
     paths.push(majorHref(item.slug));
     paths.push(careerHref(item.slug));
   }
+  for (const item of DISCOVER_PROGRAMS) paths.push(programHref(item.slug));
   return paths;
 }
 
@@ -226,5 +251,7 @@ export function kindLabel(kind: DiscoverKind): string {
       return "مقطع";
     case "career":
       return "مسیر شغلی";
+    case "program":
+      return "مقطع و دوره";
   }
 }

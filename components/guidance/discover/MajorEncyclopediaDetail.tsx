@@ -1,4 +1,5 @@
 import type { DiscoverMajor } from "@/lib/guidance/discover/types";
+import Link from "next/link";
 import { DiscoverFaq } from "@/components/guidance/discover/DiscoverFaq";
 import { DiscoverInsight } from "@/components/guidance/discover/DiscoverInsight";
 import { MajorEncyclopediaHero } from "@/components/guidance/discover/MajorEncyclopediaHero";
@@ -121,6 +122,10 @@ export function MajorEncyclopediaDetail({ item }: { item: DiscoverMajor }) {
       <div id="faq">
         <DiscoverFaq items={item.faq} />
       </div>
+
+      <p className="major-encyclopedia-explorer__crosslink">
+        <Link href="/discover/programs">دانشنامه مقاطع و دوره‌های دانشگاهی</Link>
+      </p>
 
       <DiscoverInsight insight={item.insight} />
     </article>

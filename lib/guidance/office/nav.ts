@@ -11,6 +11,7 @@ export const MAJOR_OFFICE_INTEREST_RESULTS = "/ms/interest/results";
 export const DISCOVER_CENTER_HOME = "/discover";
 export const DISCOVER_CENTER_SYSTEMS = "/discover/systems";
 export const DISCOVER_CENTER_MAJORS = "/discover/majors";
+export const DISCOVER_CENTER_PROGRAMS = "/discover/programs";
 export const DISCOVER_CENTER_PATHWAYS = "/discover/pathways";
 export const MAJOR_OFFICE_SESSION = "/ms/session";
 export {
@@ -191,6 +192,15 @@ const OFFICE_RAIL_DEFS: readonly OfficeRailSectionDef[] = [
         id: "majors",
         label: "دانشنامه رشته",
         href: DISCOVER_CENTER_MAJORS,
+        live: true,
+        unlock: { kind: "path" },
+        lockReasonBefore: null,
+        lockReasonReached: null,
+      },
+      {
+        id: "programs",
+        label: "مقاطع و دوره‌ها",
+        href: DISCOVER_CENTER_PROGRAMS,
         live: true,
         unlock: { kind: "path" },
         lockReasonBefore: null,

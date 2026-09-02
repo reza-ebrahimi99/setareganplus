@@ -2,9 +2,10 @@ import Link from "next/link";
 
 const ITEMS = [
   { href: "/discover", label: "خانه دانشنامه" },
-  { href: "/discover/systems", label: "نظام دانشگاهی" },
   { href: "/discover/majors", label: "رشته‌ها" },
-  { href: "/discover/pathways", label: "مقاطع" },
+  { href: "/discover/programs", label: "مقاطع و دوره‌ها" },
+  { href: "/discover/systems", label: "نظام دانشگاهی" },
+  { href: "/discover/pathways", label: "مقاطع (قدیمی)" },
   { href: "/discover/compare", label: "مقایسه" },
   { href: "/discover/search", label: "جستجو" },
 ] as const;

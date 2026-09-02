@@ -82,7 +82,51 @@ export type DiscoverMajor = {
   career: DiscoverCareer;
 };
 
-export type DiscoverKind = "system" | "major" | "pathway" | "career";
+export type DiscoverKind = "system" | "major" | "pathway" | "career" | "program";
+
+export type DiscoverProgramCategory =
+  | "DEGREE_LEVEL"
+  | "INSTITUTION_TYPE"
+  | "ADMISSION_METHOD"
+  | "SPECIAL_CONDITION";
+
+export type DiscoverProgramAtAGlance = {
+  degreeLevel?: string;
+  programType?: string;
+  admissionMethod?: string;
+  tuition?: string;
+  continuingEducation?: string;
+  keyNote?: string;
+};
+
+export type DiscoverProgram = {
+  slug: string;
+  title: string;
+  shortTitle: string;
+  category: DiscoverProgramCategory;
+  duration: string;
+  admissionType: string;
+  continuityType: string | null;
+  description: string;
+  summary: string;
+  suitableFor: string;
+  structure: string;
+  admissionNotes: string;
+  continuingEducation: string;
+  careerNotes: string;
+  degreeStatus: string;
+  tuitionNotes: string;
+  advantages: readonly string[];
+  challenges: readonly string[];
+  importantNotes: readonly string[];
+  commonMistakes: readonly string[];
+  beforeYouChoose: readonly string[];
+  relatedPrograms: readonly string[];
+  searchTerms: readonly string[];
+  faq: readonly DiscoverFaq[];
+  insight: DiscoverInsight;
+  atAGlance: DiscoverProgramAtAGlance;
+};
 
 export type DiscoverSearchHit = {
   kind: DiscoverKind;

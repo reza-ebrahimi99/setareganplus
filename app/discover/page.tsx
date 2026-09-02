@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { DiscoverShell } from "@/components/guidance/discover/DiscoverShell";
 import { DISCOVER_MAJORS } from "@/lib/guidance/discover/majors";
+import { DISCOVER_PROGRAMS } from "@/lib/guidance/discover/programs";
 import { DISCOVER_PATHWAYS } from "@/lib/guidance/discover/pathways";
 import { DISCOVER_SYSTEMS } from "@/lib/guidance/discover/systems";
 import { discoverWebPageJsonLd } from "@/lib/guidance/discover/jsonld";
@@ -59,15 +60,20 @@ export default async function DiscoverHomePage() {
         <figcaption>فضای مجموعه ستارگان پلاس — نقطه شروع گفت‌وگوی خانواده با دفتر.</figcaption>
       </figure>
       <nav className="discover-doors" aria-label="ورود به دانشنامه">
+        <Link href="/discover/majors" className="discover-door">
+          <span>دانشنامه رشته</span>
+          <strong>ریاضی تا زبان</strong>
+          <em>{DISCOVER_MAJORS.length} رشته</em>
+        </Link>
+        <Link href="/discover/programs" className="discover-door">
+          <span>مقاطع و دوره‌ها</span>
+          <strong>مقطع تا پذیرش</strong>
+          <em>{DISCOVER_PROGRAMS.length} موضوع</em>
+        </Link>
         <Link href="/discover/systems" className="discover-door">
           <span>نظام دانشگاهی</span>
           <strong>روزانه تا خاص</strong>
           <em>{DISCOVER_SYSTEMS.length} صفحه</em>
-        </Link>
-        <Link href="/discover/majors" className="discover-door">
-          <span>کاوشگر رشته</span>
-          <strong>ریاضی تا زبان</strong>
-          <em>{DISCOVER_MAJORS.length} رشته</em>
         </Link>
         <Link href="/discover/pathways" className="discover-door">
           <span>مقطع تحصیلی</span>

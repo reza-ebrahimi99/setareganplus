@@ -4,6 +4,7 @@
  * Guidance Journey Engine — Step 6: Education Type Preferences.
  */
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { submitGuidanceStep6Action } from "@/app/portal/student/services/guidance/steps/actions/step6";
@@ -104,7 +105,12 @@ export function EducationPreferencesStep({
           </div>
         ) : null}
         <h2 className="gpj-card__title">دوره‌های تحصیلی</h2>
-        <p className="gpj-card__desc">فعال/غیرفعال کن و با فلش‌ها ترتیب اولویت را تغییر بده.</p>
+        <p className="gpj-card__desc">
+          فعال/غیرفعال کن و با فلش‌ها ترتیب اولویت را تغییر بده.{" "}
+          <Link href="/discover/programs" target="_blank" rel="noopener noreferrer">
+            راهنمای مقاطع و دوره‌های دانشگاهی
+          </Link>
+        </p>
         <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
           {items.map((item, index) => (
             <li

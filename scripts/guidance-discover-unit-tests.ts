@@ -5,6 +5,7 @@
 
 import assert from "node:assert/strict";
 import { DISCOVER_MAJORS } from "../lib/guidance/discover/majors";
+import { DISCOVER_PROGRAMS } from "../lib/guidance/discover/programs";
 import { DISCOVER_PATHWAYS } from "../lib/guidance/discover/pathways";
 import { DISCOVER_SYSTEMS } from "../lib/guidance/discover/systems";
 import {
@@ -79,11 +80,30 @@ test("related content never includes the same major", () => {
   assert.ok(related.systems.length > 0);
 });
 
+test("programs encyclopedia has unique slugs and required fields", () => {
+  assert.equal(DISCOVER_PROGRAMS.length, 22);
+  const slugs = DISCOVER_PROGRAMS.map((item) => item.slug);
+  assert.equal(new Set(slugs).size, slugs.length);
+  for (const item of DISCOVER_PROGRAMS) {
+    assert.ok(item.summary.length > 20);
+    assert.ok(item.faq.length >= 2);
+    assert.ok(item.advantages.length >= 2);
+    assert.ok(item.searchTerms.length >= 2);
+    assert.ok(item.relatedPrograms.length >= 2);
+  }
+});
+
+test("search finds programs by synonym", () => {
+  const night = searchDiscoverCatalog("شبانه");
+  assert.ok(night.some((hit) => hit.slug === "night-second-shift" && hit.kind === "program"));
+});
+
 test("sitemap lists discover hub and detail pages", () => {
   const paths = listDiscoverSitemapPaths();
   assert.ok(paths.includes("/discover"));
   assert.ok(paths.includes("/discover/systems/daily"));
   assert.ok(paths.includes("/discover/majors/medicine"));
+  assert.ok(paths.includes("/discover/programs/bachelor-continuous"));
   assert.ok(paths.includes("/discover/careers/medicine"));
   assert.ok(paths.includes("/discover/pathways/bachelor"));
   assert.ok(paths.includes("/discover/compare"));
