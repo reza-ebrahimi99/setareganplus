@@ -5,8 +5,11 @@
  * Majors shown are strictly scoped to the plan's exam group.
  */
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { majorHref } from "@/lib/guidance/discover/catalog";
+import { getDiscoverMajorByCode } from "@/lib/guidance/discover/majors";
 import { submitGuidanceStep8Action } from "@/app/portal/student/services/guidance/steps/actions/step8";
 import { GuidanceStepShell } from "@/components/guidance/steps/GuidanceStepShell";
 import { moveItem } from "@/lib/guidance/journey/preferences/reorder";
@@ -114,7 +117,9 @@ export function MajorPreferencesStep({
         <h2 className="gpj-card__title">رشته‌های موجود برای گروه آزمایشی تو</h2>
         <p className="gpj-card__desc">فعال کن، در صورت نیاز ستاره بزن، و ترتیب اولویت را با فلش‌ها تنظیم کن.</p>
         <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          {items.map((item, index) => (
+          {items.map((item, index) => {
+            const discoverMajor = getDiscoverMajorByCode(item.code);
+            return (
             <li
               key={item.code}
               style={{
@@ -131,6 +136,17 @@ export function MajorPreferencesStep({
                 <input type="checkbox" checked={item.enabled} onChange={() => toggle(item.code)} />
                 <span style={{ fontWeight: 600, fontSize: "0.8437rem" }}>{majorLabels[item.code] ?? item.code}</span>
               </label>
+              {discoverMajor ? (
+                <Link
+                  href={majorHref(discoverMajor.slug)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="gpj-actions__draft"
+                  style={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}
+                >
+                  معرفی رشته
+                </Link>
+              ) : null}
               {item.enabled && (
                 <>
                   <button
@@ -173,7 +189,8 @@ export function MajorPreferencesStep({
                 </button>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       </div>
 
