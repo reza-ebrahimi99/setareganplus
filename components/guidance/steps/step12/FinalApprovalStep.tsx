@@ -104,8 +104,8 @@ export function FinalApprovalStep({
               را بررسی کرده و نهایی می‌کنم.
             </p>
           </div>
-          <div className="gpj-actions gpj-print-hide" style={{ position: "static" }}>
-            <span />
+          <div className="gpj-actions gpj-actions--inline gpj-print-hide">
+            <span className="gpj-actions__spacer" aria-hidden="true" />
             <button type="button" className="gpj-actions__continue" onClick={() => window.print()}>
               چاپ رضایت‌نامه
             </button>
@@ -147,8 +147,8 @@ export function FinalApprovalStep({
           </label>
           {fieldErrors.confirmed && <p className="gpj-field__error">{fieldErrors.confirmed}</p>}
 
-          <div className="gpj-actions" style={{ position: "static", marginTop: "1.5rem" }}>
-            <span />
+          <div className="gpj-actions gpj-actions--inline" style={{ marginTop: "1.5rem" }}>
+            <span className="gpj-actions__spacer" aria-hidden="true" />
             <button type="submit" className="gpj-actions__continue">
               تأیید نهایی
             </button>

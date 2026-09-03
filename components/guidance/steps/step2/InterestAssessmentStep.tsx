@@ -130,8 +130,8 @@ export function InterestAssessmentStep({
       >
         <GuidanceInterestResultsView result={result} answers={submittedAnswers} />
         {stayOnSuccess ? null : (
-          <div className="gpj-actions" style={{ position: "static", marginTop: "1rem" }}>
-            <span />
+          <div className="gpj-actions gpj-actions--inline" style={{ marginTop: "1rem" }}>
+            <span className="gpj-actions__spacer" aria-hidden="true" />
             <button
               type="button"
               className="gpj-actions__continue"
@@ -234,9 +234,9 @@ export function InterestAssessmentStep({
           >
             {savingDraft ? "در حال ذخیره…" : "ذخیره پیش‌نویس"}
           </button>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div className="gpj-actions__group">
             {activeIndex > 0 && (
-              <button type="button" className="gpj-actions__draft" onClick={goBack}>
+              <button type="button" className="gpj-actions__back" onClick={goBack}>
                 بخش قبلی
               </button>
             )}

@@ -127,7 +127,9 @@ export function GuidanceFileUploadField({
 
         {file ? (
           <>
-            <strong className="gp-upload-field__filename">{file.name}</strong>
+            <strong className="gp-upload-field__filename">
+              فایل انتخاب‌شده: {file.name}
+            </strong>
             <span className="gp-upload-field__meta">{formatBytes(file.size)}</span>
             <span className="gp-upload-field__action">تعویض فایل</span>
           </>
@@ -137,6 +139,7 @@ export function GuidanceFileUploadField({
             <span className="gp-upload-field__meta" id={`${inputId}-hint`}>
               {helper}
             </span>
+            <span className="gp-upload-field__state">فایلی انتخاب نشده است</span>
             <span className="gp-upload-field__action">انتخاب فایل</span>
           </>
         )}

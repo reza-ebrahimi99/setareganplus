@@ -162,6 +162,7 @@ export function GuidanceGradesUploadForm({
           type="file"
           required
           accept={acceptPdfOnly ? PDF_ACCEPT : DEFAULT_ACCEPT}
+          className="gp-upload-field__input"
           onChange={(event) => assignFile(event.target.files?.[0] ?? null)}
         />
         {file ? <SealMark /> : <RibbonMark />}
@@ -174,6 +175,9 @@ export function GuidanceGradesUploadForm({
               : acceptPdfOnly
                 ? "PDF رسمی · حداکثر پنج مگابایت"
                 : "PDF یا تصویر · حداکثر پنج مگابایت"}
+        </p>
+        <p className="chamber-deed__state">
+          {file ? `فایل انتخاب‌شده: ${file.name}` : "فایلی انتخاب نشده است"}
         </p>
         {previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element

@@ -9658,6 +9658,72 @@ body {
   transform: none;
 }
 
+/* Journey step footer — shared sizing so every step's controls match.
+   Presentation only: no step component changes its actions or handlers. */
+
+.gpj-actions__continue,
+.gpj-actions__draft,
+.gpj-actions__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  border-radius: 0.75rem;
+  line-height: 1.2;
+}
+
+.gpj-actions__draft,
+.gpj-actions__back {
+  padding-inline: 0.85rem;
+}
+
+.gpj-actions__back:hover,
+.gpj-actions__back:focus-visible,
+.gpj-actions__draft:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gpj-purple) 7%, transparent);
+}
+
+/* Footers rendered inside a card rather than pinned to the viewport. */
+.gpj-actions--inline {
+  position: static;
+}
+
+/* Cluster of secondary + primary controls on one side of the footer. */
+.gpj-actions__group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (max-width: 560px) {
+  .gpj-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .gpj-actions__start,
+  .gpj-actions__group {
+    width: 100%;
+  }
+
+  .gpj-actions__group {
+    flex-direction: column-reverse;
+  }
+
+  .gpj-actions__start > *,
+  .gpj-actions__group > *,
+  .gpj-actions > .gpj-actions__continue {
+    width: 100%;
+  }
+
+  /* Primary action stays visually first on mobile. */
+  .gpj-actions > .gpj-actions__continue {
+    order: -1;
+  }
+}
+
 /* ── Right-hand vertical timeline sidebar ────────────────────────────── */
 
 .gpj-sidebar {
@@ -14014,6 +14080,18 @@ body {
   border: 0;
 }
 
+/* Persian status line so the field never relies on native browser text. */
+.gp-upload-field__state {
+  font-size: 0.75rem;
+  color: var(--quiet, #64748b);
+}
+
+.chamber-deed__state {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: var(--quiet, #64748b);
+}
+
 .gp-upload-field__icon {
   display: grid;
   place-items: center;
@@ -14173,6 +14251,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  min-height: 2.75rem;
   padding: 0.65rem 0.95rem;
   border-radius: 999px;
   border: 1px solid rgb(15 23 42 / 0.1);
@@ -14181,6 +14260,248 @@ body {
   font-weight: 700;
   text-decoration: none;
   color: var(--ink, #0f172a);
+}
+
+/* ── Universities hub — searchable index over the Discover catalog ─── */
+
+.guidance-universities-hub__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin: 0.9rem 0 0;
+}
+
+.guidance-universities-hub__stats dt {
+  font-size: 0.72rem;
+  color: var(--quiet, #64748b);
+}
+
+.guidance-universities-hub__stats dd {
+  margin: 0.15rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #8a6b2e;
+}
+
+.guidance-uni-browser {
+  display: grid;
+  gap: 0.9rem;
+  margin: 1.15rem 0;
+}
+
+.guidance-uni-browser__controls {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.guidance-uni-browser__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.9rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgb(15 23 42 / 0.12);
+  background: #fff;
+  color: var(--quiet, #64748b);
+}
+
+.guidance-uni-browser__search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.9rem;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--ink, #0f172a);
+}
+
+.guidance-uni-browser__search input:focus {
+  outline: none;
+}
+
+.guidance-uni-browser__search:focus-within {
+  border-color: #8a6b2e;
+  box-shadow: 0 0 0 3px rgb(176 141 74 / 0.16);
+}
+
+.guidance-uni-browser__clear {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: var(--quiet, #64748b);
+  padding: 0.35rem;
+}
+
+.guidance-uni-browser__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.guidance-uni-browser__tabs button {
+  min-height: 2.5rem;
+  padding: 0 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgb(15 23 42 / 0.12);
+  background: #fff;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--ink, #0f172a);
+  cursor: pointer;
+}
+
+.guidance-uni-browser__tabs button.is-active {
+  background: #0f172a;
+  border-color: transparent;
+  color: #fff;
+}
+
+.guidance-uni-browser__count {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--quiet, #64748b);
+}
+
+.guidance-uni-browser__empty {
+  padding: 1.5rem 1rem;
+  border-radius: 1rem;
+  border: 1px dashed rgb(15 23 42 / 0.16);
+  background: #fff;
+  text-align: center;
+}
+
+.guidance-uni-browser__empty p {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--quiet, #64748b);
+}
+
+.guidance-uni-browser__empty-cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 1.1rem;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.guidance-uni-browser__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guidance-uni-card {
+  display: grid;
+  gap: 0.3rem;
+  height: 100%;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgb(15 23 42 / 0.1);
+  background: #fff;
+  text-decoration: none;
+  color: var(--ink, #0f172a);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.guidance-uni-card:hover,
+.guidance-uni-card:focus-visible {
+  border-color: color-mix(in srgb, #8a6b2e 45%, #e2e8f0);
+  transform: translateY(-1px);
+}
+
+.guidance-uni-card__badge {
+  justify-self: start;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  background: rgb(176 141 74 / 0.14);
+  color: #8a6b2e;
+}
+
+.guidance-uni-card__badge[data-group="PROGRAM"] {
+  background: rgb(14 116 144 / 0.12);
+  color: #0e7490;
+}
+
+.guidance-uni-card__title {
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.guidance-uni-card__kicker {
+  font-size: 0.75rem;
+  color: #8a6b2e;
+  font-weight: 700;
+}
+
+.guidance-uni-card__lead {
+  font-style: normal;
+  font-size: 0.8125rem;
+  line-height: 1.9;
+  color: var(--quiet, #64748b);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.guidance-uni-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #8a6b2e;
+}
+
+@media (max-width: 560px) {
+  .guidance-uni-browser__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Discover majors explorer — mobile touch-target polish ─────────── */
+
+.major-encyclopedia-explorer__search input,
+.major-encyclopedia-explorer__filters button {
+  min-height: 2.75rem;
+}
+
+.major-encyclopedia-explorer__filters button {
+  padding-inline: 0.9rem;
+}
+
+.major-encyclopedia-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.5rem;
+}
+
+@media (max-width: 560px) {
+  .major-encyclopedia-explorer__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .major-encyclopedia-explorer__toolbar {
+    gap: 0.6rem;
+  }
 }
 
 /* ── Discover systems explorer ─────────────────────────────────────── */
@@ -14465,6 +14786,64 @@ body {
   background: linear-gradient(90deg, #0f172a, #1e293b);
   color: #fff;
   border-color: transparent;
+}
+
+/* ── Yellow guidance dashboard — hierarchy + touch-target polish ────── */
+
+.guidance-command-hero__top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+/* Logout must read as a real control, not a faint link — on every width. */
+.guidance-command-account__logout button {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.guidance-command-checks ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guidance-command-checks li {
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgb(15 23 42 / 0.08);
+  background: #fff;
+  font-size: 0.8125rem;
+  line-height: 1.8;
+}
+
+.guidance-command-checks li.is-done {
+  border-color: rgb(22 163 74 / 0.28);
+  background: #f0fdf4;
+}
+
+.guidance-command-grid {
+  align-items: stretch;
+}
+
+.guidance-command-card {
+  height: 100%;
+}
+
+@media (max-width: 420px) {
+  .guidance-command-account {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .guidance-command-hero__top {
+    justify-content: stretch;
+  }
 }
 
 /* ── Counselor OS (cos-*) ───────────────────────────────────────────── */
