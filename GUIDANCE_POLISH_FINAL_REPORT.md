@@ -56,8 +56,11 @@ ce8b1ab  feat(counselor): complete counselor OS pages and student booking UI
 
 ## GUIDANCE_POLISH_COMMITS
 
+Committed **after** the Counselor OS commits, with a distinct prefix:
+
 ```
-(see git log — prefix fix(guidance-polish) / chore(guidance-polish), committed after 212f5dc)
+f040eca  fix(guidance-polish): persian upload copy, universities index, journey button consistency
+da2a882  chore(guidance-polish): add isolated guidance deployment package and final report
 ```
 
 ---
