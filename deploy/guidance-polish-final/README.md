@@ -2,6 +2,22 @@
 
 Fixes the 10 reported student-facing Guidance/university-selection UI issues.
 
+> **Operators start here: [`RUNBOOK_FINAL.md`](./RUNBOOK_FINAL.md).**
+> It is the single ordered command sheet for both stages, including the
+> Counselor OS non-deployment proof and the rollback path.
+
+## Contents
+
+| File | Role |
+|------|------|
+| `RUNBOOK_FINAL.md` | **The runbook.** Backup → Stage A → inspection → Stage B → CSS merge → tsc → build → restart → smoke tests |
+| `apply-guidance-polish-final-production.sh` | Stage A applier — six-file allowlist with a Counselor OS grep guard |
+| `guidance-polish.css` | The five scoped CSS blocks, generated and verified. Append only |
+| `extract-css-blocks.mjs` | Regenerates `guidance-polish.css` from `app/globals.css` |
+| `PRODUCTION_DEPLOY.md` | Longer-form notes behind the runbook steps |
+| `PRODUCTION_SAFETY.md` | Collision rules and forbidden operations |
+| `SMOKE_TEST.md` | Full per-issue verification checklist |
+
 ## Scope isolation
 
 This package is **completely independent** of `deploy/counselor-os/`.

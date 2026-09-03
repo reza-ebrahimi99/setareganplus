@@ -2,6 +2,9 @@
 
 **No database migration. No Counselor OS activation.**
 
+> These are the notes behind the runbook. For the ordered, copy-pasteable
+> command sheet use [`RUNBOOK_FINAL.md`](./RUNBOOK_FINAL.md) instead.
+
 ## 0. Preconditions
 
 ```bash
@@ -45,7 +48,11 @@ and described in `../../GUIDANCE_POLISH_FINAL_REPORT.md`.
 
 ## 3. Surgical CSS merge — `app/globals.css`
 
-**Append only.** Do not replace the file. Copy these blocks from this branch:
+**Append only.** Do not replace the file. The five blocks are pre-extracted and
+verified in `guidance-polish.css` (regenerate with
+`node deploy/guidance-polish-final/extract-css-blocks.mjs`), so the merge is
+`cat guidance-polish.css >> app/globals.css` after the duplicate check in
+`RUNBOOK_FINAL.md` section 5.1. The blocks are:
 
 | Anchor comment | Purpose |
 |----------------|---------|
