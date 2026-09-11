@@ -97,7 +97,7 @@ export function StarBookSavedOrders() {
     return (
       <p className="text-sm leading-7 text-[var(--sb-muted)]">
         هنوز کد پیگیری ذخیره نکرده‌ای. بعد از پرداخت، کد پیامک را در{" "}
-        <Link href="/shop/track" className="underline">
+        <Link href="/track" className="underline">
           پیگیری سفارش
         </Link>{" "}
         وارد کن.

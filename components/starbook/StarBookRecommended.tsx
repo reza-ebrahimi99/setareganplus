@@ -24,7 +24,7 @@ export function StarBookRecommended({
     <StarBookRail
       title="برای تو"
       subtitle="از روی کتاب‌هایی که دیدی و درس‌هایی که دنبال کردی."
-      href="/shop/browse?sort=featured"
+      href="/browse?sort=featured"
       products={products}
       tone="hero"
     />

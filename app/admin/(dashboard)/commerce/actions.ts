@@ -365,8 +365,10 @@ export async function sendTestOrderSmsAction(
 
 function revalidateStarBookStorefront() {
   revalidatePath("/shop");
-  revalidatePath("/shop/browse");
-  revalidatePath("/shop/collections");
+  revalidatePath("/starbook");
+  revalidatePath("/starbook/browse");
+  revalidatePath("/starbook/book");
+  revalidatePath("/starbook/collections");
   revalidatePath("/admin/commerce");
   revalidatePath("/admin/commerce/categories");
   revalidatePath("/admin/commerce/products");

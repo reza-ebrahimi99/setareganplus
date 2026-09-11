@@ -13,7 +13,7 @@ type StarBookEmptyProps = {
 export function StarBookEmpty({
   title,
   body,
-  href = "/shop/browse",
+  href = "/browse",
   action = "کشف کتاب‌ها",
 }: StarBookEmptyProps) {
   const reduce = useReducedMotion();

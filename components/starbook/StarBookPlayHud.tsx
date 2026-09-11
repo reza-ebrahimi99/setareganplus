@@ -95,12 +95,12 @@ export function StarBookStudentHub() {
   const badges = play.badges.slice(-4);
 
   const tiles = [
-    { href: "/shop/wishlist", title: "کتابخانه من", body: "علاقه‌مندی و ذخیره‌ها", tone: "new" },
-    { href: "/shop/account/orders", title: "سفارش‌ها", body: "کد کوتاه و پیگیری", tone: "exam" },
-    { href: "/shop/track", title: "رهگیری زنده", body: "QR تحویل حضوری", tone: "flash" },
-    { href: "/shop/account/points", title: "دستاوردها", body: "XP، نشان و استریک", tone: "bundle" },
-    { href: "/shop/account/notifications", title: "اعلان‌ها", body: "حراج و موج تازه", tone: "flash" },
-    { href: "/shop/browse?sort=featured", title: "پیشنهاد برای تو", body: "ادامه مسیر کشف", tone: "exam" },
+    { href: "/wishlist", title: "کتابخانه من", body: "علاقه‌مندی و ذخیره‌ها", tone: "new" },
+    { href: "/account/orders", title: "سفارش‌ها", body: "کد کوتاه و پیگیری", tone: "exam" },
+    { href: "/track", title: "رهگیری زنده", body: "QR تحویل حضوری", tone: "flash" },
+    { href: "/account/points", title: "دستاوردها", body: "XP، نشان و استریک", tone: "bundle" },
+    { href: "/account/notifications", title: "اعلان‌ها", body: "حراج و موج تازه", tone: "flash" },
+    { href: "/browse?sort=featured", title: "پیشنهاد برای تو", body: "ادامه مسیر کشف", tone: "exam" },
   ] as const;
 
   return (
@@ -156,7 +156,7 @@ export function StarBookStudentHub() {
             {subjects.map((item) => (
               <Link
                 key={item.name}
-                href={`/shop/subject/${encodeURIComponent(item.name)}`}
+                href={`/subject/${encodeURIComponent(item.name)}`}
                 className="starbook-chip"
               >
                 {item.name} · {toPersianDigits(item.count)}

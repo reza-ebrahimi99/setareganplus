@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "استاربوک | کتاب‌فروشی ستارگان پلاس",
+  title: "فروشگاه محصولات آموزشی | ستارگان پلاس",
   description:
-    "استاربوک، فروشگاه آموزشی ستارگان پلاس برای دانش‌آموزان ۱۰ تا ۱۹ سال؛ کشف کتاب، حراج زنده و خرید حضوری.",
+    "فهرست جزوه‌ها و محصولات آموزشی ستارگان پلاس با امکان مشاهده مشخصات، قیمت و خرید آنلاین.",
 };
 
 export default function ShopLayout({ children }: { children: React.ReactNode }) {

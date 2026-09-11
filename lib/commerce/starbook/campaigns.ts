@@ -19,7 +19,7 @@ export const STARBOOK_CAMPAIGNS: readonly StarBookCampaign[] = [
     title: "حراج شب کنکور",
     subtitle: "جزوه‌های پرتقاضا با تخفیف زنده — تا موجودی شعبه.",
     tone: "flash",
-    href: "/shop/campaigns/flash-konkur",
+    href: "/campaigns/flash-konkur",
   },
   {
     slug: "exam-lab",
@@ -27,7 +27,7 @@ export const STARBOOK_CAMPAIGNS: readonly StarBookCampaign[] = [
     title: "بسته آزمون‌های جمع‌بندی",
     subtitle: "برای پایه دهم تا دوازدهم؛ مناسب شب امتحان و قلم‌چی.",
     tone: "exam",
-    href: "/shop/campaigns/exam-lab",
+    href: "/campaigns/exam-lab",
   },
   {
     slug: "new-wave",
@@ -35,7 +35,7 @@ export const STARBOOK_CAMPAIGNS: readonly StarBookCampaign[] = [
     title: "تازه‌رسیده‌های این ماه",
     subtitle: "جلدهای جدید همان لحظه که منتشر می‌شوند روی استاربوک می‌آیند.",
     tone: "new",
-    href: "/shop/campaigns/new-wave",
+    href: "/campaigns/new-wave",
   },
   {
     slug: "night-pack",
@@ -43,7 +43,7 @@ export const STARBOOK_CAMPAIGNS: readonly StarBookCampaign[] = [
     title: "کالکشن + آزمون، با هم",
     subtitle: "قفسه‌های انتخاب‌شده را مثل پلی‌لیست بردار؛ پرداخت هر کتاب جداست.",
     tone: "bundle",
-    href: "/shop/bundles",
+    href: "/bundles",
   },
 ];
 

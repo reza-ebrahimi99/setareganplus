@@ -7,14 +7,17 @@ import { StarBookDock } from "@/components/starbook/StarBookDock";
 import { StarBookFloatCart } from "@/components/starbook/StarBookFloatCart";
 import { StarBookHeaderActions } from "@/components/starbook/StarBookHeaderActions";
 import { useStarBookCatalog } from "@/components/starbook/StarBookCatalogContext";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/registration/flows/public-url";
+import { getStarBookPublicOrigin } from "@/lib/starbook/host";
+import { starBookHref } from "@/lib/starbook/paths";
 
 const NAV = [
-  { href: "/shop", label: "خانه" },
-  { href: "/shop/browse", label: "کشف کتاب" },
-  { href: "/shop/collections", label: "کالکشن‌ها" },
-  { href: "/shop/bundles", label: "بسته‌ها" },
-  { href: "/shop/campaigns/flash-konkur", label: "حراج" },
-  { href: "/shop/account", label: "پروفایل من" },
+  { href: starBookHref("/"), label: "خانه", home: true },
+  { href: starBookHref("/browse"), label: "کشف کتاب" },
+  { href: starBookHref("/collections"), label: "کالکشن‌ها" },
+  { href: starBookHref("/bundles"), label: "بسته‌ها" },
+  { href: starBookHref("/campaigns/flash-konkur"), label: "حراج" },
+  { href: starBookHref("/account"), label: "پروفایل من" },
 ] as const;
 
 type StarBookShellProps = {
@@ -22,15 +25,19 @@ type StarBookShellProps = {
   activePath?: string;
 };
 
-export function StarBookShell({ children, activePath = "/shop" }: StarBookShellProps) {
+export function StarBookShell({
+  children,
+  activePath = starBookHref("/"),
+}: StarBookShellProps) {
   const catalog = useStarBookCatalog();
   const [searchOpen, setSearchOpen] = useState(false);
+  const homeHref = starBookHref("/");
 
   return (
     <div className="starbook">
       <div className="starbook-shell">
         <header className="starbook-header">
-          <Link href="/shop" className="starbook-brand">
+          <Link href={homeHref} className="starbook-brand">
             <span className="starbook-mark" aria-hidden>
               ✦
             </span>
@@ -47,8 +54,8 @@ export function StarBookShell({ children, activePath = "/shop" }: StarBookShellP
                 key={item.href}
                 href={item.href}
                 data-active={
-                  item.href === "/shop"
-                    ? activePath === "/shop"
+                  "home" in item && item.home
+                    ? activePath === homeHref
                     : activePath.startsWith(item.href)
                 }
               >
@@ -62,9 +69,13 @@ export function StarBookShell({ children, activePath = "/shop" }: StarBookShellP
         <footer className="starbook-footer">
           <p>استاربوک · فروشگاه آموزشی ستارگان پلاس · تحویل حضوری در شعبه</p>
           <p className="mt-2">
-            <Link href="/">بازگشت به سایت ستارگان</Link>
+            <a href={PUBLIC_SITE_ORIGIN}>بازگشت به سایت ستارگان</a>
             {" · "}
-            <Link href="/shop/track">پیگیری سفارش</Link>
+            <Link href={starBookHref("/track")}>پیگیری سفارش</Link>
+            {" · "}
+            <a href={`${PUBLIC_SITE_ORIGIN}/shop`}>فروشگاه جزوه</a>
+            {" · "}
+            <a href={getStarBookPublicOrigin()}>استاربوک</a>
           </p>
         </footer>
         <StarBookDock activePath={activePath} />

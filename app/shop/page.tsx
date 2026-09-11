@@ -1,236 +1,134 @@
-import Link from "next/link";
-import { StarBookEmpty } from "@/components/starbook/StarBookEmpty";
-import { StarBookFrame } from "@/components/starbook/StarBookFrame";
-import { StarBookHeroScene } from "@/components/starbook/StarBookHeroScene";
+import { Button } from "@/components/ui/Button";
+import { Container } from "@/components/ui/Container";
+import { PageHero } from "@/components/ui/PageHero";
+import { SiteShell } from "@/components/layout/SiteShell";
+import { ShopProductCard } from "@/components/shop/ShopProductCard";
 import {
-  StarBookMagnetic,
-  StarBookReveal,
-  StarBookStagger,
-  StarBookStaggerItem,
-} from "@/components/starbook/StarBookMotion";
-import { StarBookPlayHud } from "@/components/starbook/StarBookPlayHud";
-import { StarBookRecentlyViewed } from "@/components/starbook/StarBookRecentlyViewed";
-import { StarBookRecommended } from "@/components/starbook/StarBookRecommended";
-import { StarBookRail } from "@/components/starbook/StarBookRail";
-import { StarBookSearch } from "@/components/starbook/StarBookSearch";
-import { STARBOOK_CAMPAIGNS } from "@/lib/commerce/starbook/campaigns";
-import { loadStarBookHome } from "@/lib/commerce/starbook/merchandising";
+  listPublicCommerceFilters,
+  listPublicCommerceProducts,
+} from "@/lib/commerce/catalog/service";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
 import { getPublicPageMetadata } from "@/lib/seo/public-pages";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
 export const metadata = getPublicPageMetadata("shop");
 
-export default async function StarBookHomePage() {
+type PageProps = {
+  searchParams: Promise<{
+    q?: string;
+    grade?: string;
+    subject?: string;
+  }>;
+};
+
+export default async function ShopPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const q = typeof params.q === "string" ? params.q : "";
+  const grade = typeof params.grade === "string" ? params.grade : "";
+  const subject = typeof params.subject === "string" ? params.subject : "";
+
   const organization = await getCurrentOrganization();
-  const home = await loadStarBookHome(organization.id);
-  const { shelves, products, filters, collections } = home;
-  const teacherPicks = shelves.featured.length ? shelves.featured : shelves.trending;
-  const counselorPicks = shelves.bestsellers;
+  const [products, filters] = await Promise.all([
+    listPublicCommerceProducts({
+      organizationId: organization.id,
+      q,
+      gradeLabel: grade || undefined,
+      subject: subject || undefined,
+    }),
+    listPublicCommerceFilters(organization.id),
+  ]);
 
   return (
-    <StarBookFrame
-      activePath="/shop"
-      products={products}
-      grades={filters.grades}
-      subjects={filters.subjects}
-    >
-      <section className="starbook-hero starbook-hero-immersive">
-        <StarBookHeroScene />
-        <div className="relative z-[1]">
-          <span className="starbook-kicker">استاربوک · ۱۲ تا ۱۹ ساله · زنده مثل پلی‌لیست</span>
-          <h1>کتابی که شب امتحان نجاتت می‌دهد.</h1>
-          <p>
-            فروشگاه آموزشی ستارگان؛ رنگی، سریع و مخصوص تو. جزوه، جمع‌بندی، آزمون و بسته‌ها را مثل
-            استوری کشف کن — بعد حضوری از شعبه بگیر.
-          </p>
-          <div className="starbook-cta-row">
-            <StarBookMagnetic href="/shop/browse">شروع کشف</StarBookMagnetic>
-            <Link href="/shop/campaigns/flash-konkur" className="starbook-btn starbook-btn-ghost">
-              حراج زنده
-            </Link>
-          </div>
-          <StarBookSearch
-            products={products}
-            grades={filters.grades}
-            subjects={filters.subjects}
-          />
-          <StarBookPlayHud />
-        </div>
-      </section>
-
-      <StarBookReveal>
-        <section className="starbook-section">
-          <div className="starbook-section-head">
-            <div>
-              <h2>کمپین‌های در حال پخش</h2>
-              <p>مثل استوری؛ هر کدام یک حال‌وهوا.</p>
-            </div>
-          </div>
-          <StarBookStagger className="starbook-mosaic">
-            {STARBOOK_CAMPAIGNS.map((campaign) => (
-              <StarBookStaggerItem key={campaign.slug}>
-                <Link href={campaign.href} className="starbook-tile starbook-tile-glow" data-tone={campaign.tone}>
-                  <p className="starbook-kicker">{campaign.eyebrow}</p>
-                  <h3 className="mt-3">{campaign.title}</h3>
-                  <p className="mt-2 text-sm leading-7 text-[var(--sb-muted)]">{campaign.subtitle}</p>
-                </Link>
-              </StarBookStaggerItem>
-            ))}
-          </StarBookStagger>
-        </section>
-      </StarBookReveal>
-
-      {products.length === 0 ? (
-        <StarBookEmpty
-          title="قفسه هنوز خالی است"
-          body="به‌محض انتشار کتاب‌های فعال، استاربوک زنده می‌شود."
+    <SiteShell activePath="/shop">
+      <Container className="py-8 sm:py-10">
+        <PageHero
+          eyebrow="فروشگاه آموزشی"
+          title="فروشگاه محصولات آموزشی ستارگان"
+          subtitle="جزوه‌ها و محصولات آموزشی فعال مؤسسه را جستجو کنید، بر اساس پایه و درس فیلتر بزنید و وارد صفحه خرید شوید."
+          breadcrumbs={[
+            { label: "صفحه اصلی", href: "/" },
+            { label: "فروشگاه" },
+          ]}
         />
-      ) : (
-        <>
-          <StarBookReveal>
-            <StarBookRail
-              title="ترند امروز"
-              subtitle="آنچه دانش‌آموزها الان باز می‌کنند."
-              href="/shop/browse"
-              products={shelves.trending}
-              tone="hero"
-            />
-          </StarBookReveal>
-          <StarBookReveal delay={0.05}>
-            <StarBookRail
-              title="پرفروش‌ها"
-              subtitle="قفسه‌ای که زود تمام می‌شود."
-              href="/shop/browse?sort=featured"
-              products={shelves.bestsellers}
-            />
-          </StarBookReveal>
-          <StarBookReveal delay={0.05}>
-            <StarBookRail
-              title="تازه‌رسیده‌ها"
-              subtitle="جلدهای جدید، هنوز گرم از چاپ."
-              href="/shop/browse?sort=newest"
-              products={shelves.newest}
-            />
-          </StarBookReveal>
-          <StarBookReveal>
-            <StarBookRail
-              title="پیشنهاد دبیر"
-              subtitle="انتخاب تحریریه برای کلاس و تکلیف."
-              href="/shop/browse?sort=featured"
-              products={teacherPicks}
-              tone="hero"
-            />
-          </StarBookReveal>
-          <StarBookReveal>
-            <StarBookRail
-              title="پیشنهاد مشاور"
-              subtitle="مسیر جمع‌بندی و شب امتحان."
-              href="/shop/exam"
-              products={counselorPicks}
-            />
-          </StarBookReveal>
-          <StarBookReveal>
-            <StarBookRail
-              title="فصل امتحان"
-              subtitle="آزمون، جمع‌بندی، قلم‌چی."
-              href="/shop/exam"
-              products={shelves.flash.length ? shelves.flash : shelves.trending}
-              tone="sale"
-            />
-          </StarBookReveal>
-          <StarBookReveal>
-            <StarBookRail
-              title="حراج فلش"
-              subtitle="قیمت ویژه تا وقتی موجودی شعبه تمام شود."
-              href="/shop/campaigns/flash-konkur"
-              products={shelves.flash}
-              tone="sale"
-            />
-          </StarBookReveal>
-        </>
-      )}
 
-      {filters.grades.length > 0 ? (
-        <StarBookReveal>
-          <section className="starbook-section">
-            <div className="starbook-section-head">
-              <h2>بر اساس پایه</h2>
+        <section className="rounded-3xl border border-border bg-surface p-4 shadow-sm sm:p-6">
+          <form className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <label className="block text-sm">
+              <span className="mb-1.5 block text-muted">جستجو</span>
+              <input
+                name="q"
+                defaultValue={q}
+                placeholder="نام محصول، مؤلف، درس یا پایه"
+                className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1.5 block text-muted">پایه</span>
+              <select
+                name="grade"
+                defaultValue={grade}
+                className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
+              >
+                <option value="">همه پایه‌ها</option>
+                {filters.grades.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1.5 block text-muted">درس</span>
+              <select
+                name="subject"
+                defaultValue={subject}
+                className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
+              >
+                <option value="">همه درس‌ها</option>
+                {filters.subjects.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="flex items-end gap-2">
+              <button
+                type="submit"
+                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/92"
+              >
+                جستجو و فیلتر
+              </button>
+              <Button href="/shop" variant="outline" className="min-h-11">
+                پاک‌کردن
+              </Button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {filters.grades.map((grade) => (
-                <Link key={grade} href={`/shop/grade/${encodeURIComponent(grade)}`} className="starbook-chip">
-                  {grade}
-                </Link>
-              ))}
-            </div>
-          </section>
-        </StarBookReveal>
-      ) : null}
-
-      {filters.subjects.length > 0 ? (
-        <StarBookReveal>
-          <section className="starbook-section">
-            <div className="starbook-section-head">
-              <h2>بر اساس درس</h2>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {filters.subjects.map((subject) => (
-                <Link
-                  key={subject}
-                  href={`/shop/subject/${encodeURIComponent(subject)}`}
-                  className="starbook-chip"
-                >
-                  {subject}
-                </Link>
-              ))}
-            </div>
-          </section>
-        </StarBookReveal>
-      ) : null}
-
-      <StarBookReveal>
-        <section className="starbook-section">
-          <div className="starbook-section-head">
-            <h2>کالکشن‌ها و بسته‌ها</h2>
-            <Link href="/shop/collections" className="starbook-chip">
-              همه
-            </Link>
-          </div>
-          <StarBookStagger className="starbook-grid">
-            {collections.slice(0, 8).map((collection) => (
-              <StarBookStaggerItem key={collection.id}>
-                <Link
-                  href={`/shop/collections/${collection.slug}`}
-                  className="starbook-tile"
-                  data-tone={collection.isFeatured ? "exam" : "new"}
-                >
-                  <h3>{collection.title}</h3>
-                  <p className="mt-2 text-sm text-[var(--sb-muted)]">
-                    {collection.description || "یک قفسه انتخاب‌شده برای مسیر تو"}
-                  </p>
-                </Link>
-              </StarBookStaggerItem>
-            ))}
-            <StarBookStaggerItem>
-              <Link href="/shop/bundles" className="starbook-tile" data-tone="bundle">
-                <h3>بسته‌های شب امتحان</h3>
-                <p className="mt-2 text-sm text-[var(--sb-muted)]">پلی‌لیست کامل برای یک موج</p>
-              </Link>
-            </StarBookStaggerItem>
-            <StarBookStaggerItem>
-              <Link href="/shop/major" className="starbook-tile" data-tone="exam">
-                <h3>بر اساس رشته</h3>
-                <p className="mt-2 text-sm text-[var(--sb-muted)]">ریاضی، تجربی، انسانی</p>
-              </Link>
-            </StarBookStaggerItem>
-          </StarBookStagger>
+          </form>
         </section>
-      </StarBookReveal>
 
-      <StarBookRecommended catalog={products} />
-      <StarBookRecentlyViewed catalog={products} />
-    </StarBookFrame>
+        {products.length > 0 ? (
+          <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 xl:gap-6">
+            {products.map((product, index) => (
+              <ShopProductCard
+                key={product.id}
+                product={product}
+                priority={index < 3}
+              />
+            ))}
+          </section>
+        ) : (
+          <section className="mt-8 rounded-3xl border border-dashed border-border bg-surface px-6 py-10 text-center shadow-sm">
+            <h2 className="text-xl font-bold text-primary">
+              فعلاً محصول فعالی برای نمایش نداریم
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-muted">
+              به‌محض انتشار جزوه‌ها و محصولات آموزشی جدید، همین صفحه به‌روزرسانی
+              می‌شود.
+            </p>
+          </section>
+        )}
+      </Container>
+    </SiteShell>
   );
 }

@@ -47,7 +47,7 @@ export function StarBookSearch({
     if (query.trim()) params.set("q", query.trim());
     if (grade) params.set("grade", grade);
     if (subject) params.set("subject", subject);
-    router.push(`/shop/browse?${params.toString()}`);
+    router.push(`/browse?${params.toString()}`);
     setOpen(false);
   }
 
@@ -80,7 +80,7 @@ export function StarBookSearch({
         {open ? (
           <div className="starbook-suggest">
             {suggestions.map((item) => (
-              <a key={item.id} href={`/shop/${item.slug}`}>
+              <a key={item.id} href={`/book/${item.slug}`}>
                 {item.title}
               </a>
             ))}

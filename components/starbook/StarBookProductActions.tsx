@@ -64,7 +64,7 @@ export function StarBookProductActions({ product }: StarBookProductActionsProps)
         type="button"
         className="starbook-btn starbook-btn-ghost"
         onClick={async () => {
-          const url = `${window.location.origin}/shop/${product.slug}`;
+          const url = `${window.location.origin}/book/${product.slug}`;
           await navigator.clipboard?.writeText(url);
           setCopied(true);
         }}

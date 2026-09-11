@@ -8,6 +8,7 @@ import {
   readStarBookWishlist,
 } from "@/lib/commerce/starbook/store";
 import { toPersianDigits } from "@/lib/persian";
+import { starBookHref } from "@/lib/starbook/paths";
 
 export function StarBookHeaderActions({ onSearch }: { onSearch?: () => void }) {
   const [cart, setCart] = useState(0);
@@ -27,11 +28,11 @@ export function StarBookHeaderActions({ onSearch }: { onSearch?: () => void }) {
       <button type="button" className="starbook-icon-btn" aria-label="جستجو" onClick={onSearch}>
         ⌕
       </button>
-      <Link href="/shop/wishlist" className="starbook-icon-btn" aria-label="علاقه‌مندی">
+      <Link href={starBookHref("/wishlist")} className="starbook-icon-btn" aria-label="علاقه‌مندی">
         ♥
         {wish > 0 ? <span className="starbook-badge">{toPersianDigits(wish)}</span> : null}
       </Link>
-      <Link href="/shop/cart" className="starbook-icon-btn" aria-label="سبد خرید">
+      <Link href={starBookHref("/cart")} className="starbook-icon-btn" aria-label="سبد خرید">
         ◫
         {cart > 0 ? <span className="starbook-badge">{toPersianDigits(cart)}</span> : null}
       </Link>

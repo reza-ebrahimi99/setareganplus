@@ -33,7 +33,7 @@ export function StarBookFilterPanel({
   category = "",
 }: StarBookFilterPanelProps) {
   return (
-    <form action="/shop/browse" className="starbook-filters">
+    <form action="/browse" className="starbook-filters">
       <input
         name="q"
         defaultValue={q}
@@ -100,7 +100,7 @@ export function StarBookFilterPanel({
       <button type="submit" className="starbook-btn starbook-btn-primary w-full">
         اعمال فیلتر
       </button>
-      <Link href="/shop/browse" className="starbook-btn starbook-btn-ghost w-full">
+      <Link href="/browse" className="starbook-btn starbook-btn-ghost w-full">
         پاک کردن
       </Link>
     </form>

@@ -24,7 +24,7 @@ export function StarBookFloatCart() {
       initial={reduce ? false : { y: 20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
     >
-      <Link href="/shop/cart" className="starbook-float-cart">
+      <Link href="/cart" className="starbook-float-cart">
         سبد زنده
         <span className="starbook-badge relative top-0 left-0">
           {toPersianDigits(count)}

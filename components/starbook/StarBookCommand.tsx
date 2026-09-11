@@ -55,7 +55,7 @@ export function StarBookCommand({
     awardStarBookPlay({ xp: 3 });
     const params = new URLSearchParams();
     if (query.trim()) params.set("q", query.trim());
-    router.push(`/shop/browse?${params.toString()}`);
+    router.push(`/browse?${params.toString()}`);
     onClose();
   }
 
@@ -78,7 +78,7 @@ export function StarBookCommand({
         {suggestions.map((item) => (
           <Link
             key={item.id}
-            href={`/shop/${item.slug}`}
+            href={`/book/${item.slug}`}
             className="block rounded-xl px-2 py-2 hover:bg-[rgb(255_255_255/0.06)]"
             onClick={onClose}
           >
@@ -118,7 +118,7 @@ export function StarBookCommand({
               {grades.slice(0, 4).map((grade) => (
                 <Link
                   key={grade}
-                  href={`/shop/grade/${encodeURIComponent(grade)}`}
+                  href={`/grade/${encodeURIComponent(grade)}`}
                   className="starbook-chip"
                   onClick={onClose}
                 >
@@ -128,7 +128,7 @@ export function StarBookCommand({
               {subjects.slice(0, 4).map((subject) => (
                 <Link
                   key={subject}
-                  href={`/shop/subject/${encodeURIComponent(subject)}`}
+                  href={`/subject/${encodeURIComponent(subject)}`}
                   className="starbook-chip"
                   onClick={onClose}
                 >

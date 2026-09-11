@@ -53,9 +53,9 @@ export function StarBookCart({
         {lines.map((line) => (
           <article key={line.id} className="starbook-panel flex items-center justify-between gap-3">
             <div>
-              <Link href={`/shop/${line.slug}`} className="font-black">
-                {line.title}
-              </Link>
+              <Link href={`/book/${line.slug}`} className="font-black">
+            {line.title}
+          </Link>
               <p className="mt-1 text-sm text-[var(--sb-muted)]">
                 {formatRials(line.priceRials)}
               </p>
@@ -104,7 +104,7 @@ export function StarBookCart({
             ثبت
           </button>
         </div>
-        <Link href={`/shop/${lines[0]!.slug}#checkout`} className="starbook-btn starbook-btn-primary w-full">
+        <Link href={`/book/${lines[0]!.slug}#checkout`} className="starbook-btn starbook-btn-primary w-full">
           تسویه کتاب اول
         </Link>
         <p className="text-xs leading-6 text-[var(--sb-muted)]">

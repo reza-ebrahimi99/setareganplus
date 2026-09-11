@@ -113,8 +113,13 @@ export const publicNavItems: readonly PublicNavItem[] = [
       },
       {
         href: "/shop",
+        label: "کتاب و جزوه",
+        description: "فروشگاه جزوه و محصولات آموزشی",
+      },
+      {
+        href: "https://shop.setareganplus.ir",
         label: "استاربوک",
-        description: "کتاب‌فروشی آموزشی ستارگان",
+        description: "کتاب‌فروشی آموزشی نسل جدید",
       },
       {
         href: "/contact",

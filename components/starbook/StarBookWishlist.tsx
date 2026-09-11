@@ -22,7 +22,7 @@ export function StarBookWishlist({
 
   if (products.length === 0) {
     return (
-      <StarBookEmpty title="لیست علاقه‌مندی خالی است" body="روی هر کتاب، قلب را بزن." href="/shop" />
+      <StarBookEmpty title="لیست علاقه‌مندی خالی است" body="روی هر کتاب، قلب را بزن." href="/" />
     );
   }
 

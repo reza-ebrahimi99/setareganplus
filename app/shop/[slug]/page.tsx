@@ -1,14 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ShopCheckoutForm } from "@/components/shop/ShopCheckoutForm";
-import { StarBookCheckoutChrome } from "@/components/starbook/StarBookCheckoutChrome";
-import { StarBookFrame } from "@/components/starbook/StarBookFrame";
-import { StarBookGallery } from "@/components/starbook/StarBookGallery";
-import { StarBookProductActions } from "@/components/starbook/StarBookProductActions";
-import { StarBookReviews } from "@/components/starbook/StarBookReviews";
-import { StarBookRail } from "@/components/starbook/StarBookRail";
-import { StarBookReveal } from "@/components/starbook/StarBookMotion";
-import { StarBookStickyBuy } from "@/components/starbook/StarBookStickyBuy";
+import { ShopProductCover } from "@/components/shop/ShopProductCover";
+import { PublicFormShell } from "@/components/forms/PublicFormShell";
 import {
   COMMERCE_BINDING_TYPE_LABELS,
   COMMERCE_FORMAT_SIZE_LABELS,
@@ -18,11 +11,7 @@ import {
   type CommerceFormatSizeValue,
   type CommercePrintTypeValue,
 } from "@/lib/commerce/booklet";
-import {
-  getPublicCommerceProductBySlug,
-  listPublicCommerceProducts,
-} from "@/lib/commerce/catalog/service";
-import { relatedStarBookProducts } from "@/lib/commerce/starbook/merchandising";
+import { getPublicCommerceProductBySlug } from "@/lib/commerce/catalog/service";
 import { listCommerceBranchesForOps } from "@/lib/commerce/orders/service";
 import { formatJalaliDateShort } from "@/lib/datetime/jalali";
 import { getCurrentOrganization } from "@/lib/organizations/get-current-organization";
@@ -40,12 +29,12 @@ export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params;
   return createPageMetadata({
     path: `/shop/${slug}`,
-    title: `استاربوک | ${slug}`,
-    description: "خرید کتاب و جزوه آموزشی ستارگان پلاس با تحویل حضوری",
+    title: `فروشگاه | ${slug}`,
+    description: "خرید جزوه فیزیکی با تحویل حضوری از مؤسسه آموزشی ستارگان",
   });
 }
 
-export default async function StarBookProductPage({ params }: PageProps) {
+export default async function ShopProductPage({ params }: PageProps) {
   const { slug } = await params;
   let organization;
   try {
@@ -54,211 +43,189 @@ export default async function StarBookProductPage({ params }: PageProps) {
     notFound();
   }
 
-  const [product, branches, catalog] = await Promise.all([
+  const [product, branches] = await Promise.all([
     getPublicCommerceProductBySlug({
       organizationId: organization.id,
       slug,
     }),
     listCommerceBranchesForOps({ organizationId: organization.id }),
-    listPublicCommerceProducts({ organizationId: organization.id, limit: 40 }),
   ]);
   if (!product) notFound();
 
-  const related = relatedStarBookProducts(product, catalog);
-  const together = related.slice(0, 3);
   const { pricing } = product;
-  const audience =
-    [product.gradeLabel, product.subject].filter(Boolean).join(" · ") || "دانش‌آموز ستارگان";
-  const examHint = product.pricing.isOnSale
-    ? "مناسب موج حراج و شب امتحان"
-    : product.subject
-      ? `مرتبط با مسیر ${product.subject}`
-      : "مرتبط با مسیر تحصیلی تو";
 
   const specs: Array<{ label: string; value: string }> = [
-    { label: "مؤلف", value: product.authors || "ستارگان پلاس" },
+    { label: "مؤلف", value: product.authors || "—" },
     {
       label: "صفحات",
-      value: product.pageCount != null ? toPersianDigits(product.pageCount) : "—",
+      value:
+        product.pageCount != null
+          ? toPersianDigits(String(product.pageCount))
+          : "—",
     },
     {
-      label: "چاپ",
+      label: "نوع چاپ",
       value: product.printType
-        ? COMMERCE_PRINT_TYPE_LABELS[product.printType as CommercePrintTypeValue]
+        ? COMMERCE_PRINT_TYPE_LABELS[
+            product.printType as CommercePrintTypeValue
+          ]
         : "—",
     },
     {
       label: "صحافی",
       value: product.bindingType
-        ? COMMERCE_BINDING_TYPE_LABELS[product.bindingType as CommerceBindingTypeValue]
+        ? COMMERCE_BINDING_TYPE_LABELS[
+            product.bindingType as CommerceBindingTypeValue
+          ]
         : "—",
     },
     {
       label: "قطع",
       value: product.formatSize
-        ? COMMERCE_FORMAT_SIZE_LABELS[product.formatSize as CommerceFormatSizeValue]
+        ? COMMERCE_FORMAT_SIZE_LABELS[
+            product.formatSize as CommerceFormatSizeValue
+          ]
         : "—",
+    },
+    {
+      label: "سال ویرایش",
+      value:
+        product.editionYear != null
+          ? toPersianDigits(String(product.editionYear))
+          : "—",
     },
   ];
 
   return (
-    <StarBookFrame
-      activePath="/shop/browse"
-      products={catalog}
-      grades={[]}
-      subjects={[]}
-    >
-      <article className="starbook-section grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-        <StarBookReveal>
-          <StarBookGallery
-            imageUrl={product.imageUrl}
-            imageAlt={product.imageAlt ?? product.title}
-            title={product.title}
-            pageCount={product.pageCount}
-          />
-        </StarBookReveal>
-        <StarBookReveal delay={0.08}>
-          <div className="starbook-panel starbook-glass space-y-4">
-            <p className="starbook-kicker">
-              {[product.gradeLabel, product.subject, product.categoryTitle]
-                .filter(Boolean)
-                .join(" · ") || "کتاب آموزشی"}
-            </p>
-            <h1 className="text-3xl font-black leading-tight sm:text-4xl">{product.title}</h1>
-            <p className="text-[var(--sb-muted)]">مؤلف: {product.authors || "ستارگان پلاس"}</p>
-            <div className="starbook-price text-3xl">
-              {formatRials(pricing.finalPriceRials)}
-              {pricing.isOnSale ? <s>{formatRials(pricing.basePriceRials)}</s> : null}
-            </div>
-            {pricing.saleEndsAt ? (
-              <p className="text-sm text-[var(--sb-amber)]">
-                پایان فلش: {formatJalaliDateShort(pricing.saleEndsAt)}
-              </p>
+    <PublicFormShell>
+      <article className="mx-auto max-w-lg space-y-5 pb-10">
+        <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-[0_16px_48px_rgb(15_23_42_/_0.08)]">
+          <div className="relative aspect-[3/4] w-full bg-gradient-to-b from-slate-100 to-slate-200">
+            {product.imageUrl ? (
+              <ShopProductCover
+                imageUrl={product.imageUrl}
+                imageAlt={product.imageAlt ?? product.title}
+                sizes="(max-width: 640px) 100vw, 512px"
+                priority
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted">
+                بدون تصویر جلد
+              </div>
+            )}
+            {!product.inStock ? (
+              <span className="absolute left-3 top-3 rounded-lg bg-red-600 px-3 py-1 text-xs font-bold text-white">
+                ناموجود
+              </span>
             ) : null}
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="rounded-2xl bg-[rgb(61_123_255/0.12)] px-4 py-3 text-sm">
-                <p className="text-[var(--sb-muted)]">مخاطب هدف</p>
-                <p className="mt-1 font-bold">{audience}</p>
-              </div>
-              <div className="rounded-2xl bg-[rgb(255_77_184/0.12)] px-4 py-3 text-sm">
-                <p className="text-[var(--sb-muted)]">ارتباط با امتحان</p>
-                <p className="mt-1 font-bold">{examHint}</p>
-              </div>
-            </div>
-            <p className="text-sm text-[var(--sb-muted)]">
-              موجودی شعبه:{" "}
-              {product.stockQuantity == null
-                ? "آماده تحویل"
-                : `${toPersianDigits(product.stockQuantity)} نسخه`}
-            </p>
-            <p className="rounded-2xl bg-[rgb(255_200_87/0.12)] px-4 py-3 text-sm leading-7">
-              {PICKUP_ONSITE_NOTICE}
-            </p>
-            <p className="text-sm leading-8 text-[var(--sb-muted)]">
-              زمان آماده‌سازی معمول: ۱ تا ۲ روز کاری بعد از پرداخت. تحویل فقط حضوری.
-            </p>
-            <StarBookProductActions product={product} />
-            <StarBookStickyBuy product={product} />
           </div>
-        </StarBookReveal>
-      </article>
 
-      <StarBookReveal>
-        <section className="starbook-section grid gap-4 lg:grid-cols-2">
-          <div className="starbook-panel starbook-glass">
-            <h2 className="mb-3 text-xl font-black">داستان این کتاب</h2>
-            <p className="whitespace-pre-wrap text-sm leading-8 text-[var(--sb-muted)]">
-              {product.description ||
-                product.shortDescription ||
-                "این منبع برای مسیر تحصیلی ستارگان انتخاب شده است."}
-            </p>
-            {product.features.length > 0 ? (
-              <ul className="mt-4 space-y-2 text-sm">
-                {product.features.map((feature) => (
-                  <li key={feature}>✦ {feature}</li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-          <div className="starbook-panel starbook-glass">
-            <h2 className="mb-3 text-xl font-black">مسیر مطالعه</h2>
-            <ol className="space-y-3 text-sm leading-7">
-              <li>
-                <strong>۱ · شروع:</strong> فصل‌های پایه را در هفته اول مرور کن.
-              </li>
-              <li>
-                <strong>۲ · تمرین:</strong> هر دو روز یک مجموعه تست کوتاه.
-              </li>
-              <li>
-                <strong>۳ · جمع‌بندی:</strong> شب امتحان فقط نکات هایلایت‌شده.
-              </li>
-            </ol>
-            <div className="mt-5 space-y-3 text-sm leading-7">
-              <p>
-                <strong>پیشنهاد دبیر:</strong> برای کلاس و تکلیف هفتگی همین جلد کافی است.
+          <div className="space-y-4 px-5 py-6">
+            <div>
+              <p className="text-xs text-muted">
+                {[product.gradeLabel, product.subject, product.categoryTitle]
+                  .filter(Boolean)
+                  .join(" · ") || "جزوه آموزشی"}
               </p>
-              <p>
-                <strong>پیشنهاد مشاور:</strong> اگر هدفت جمع‌بندی است، این کتاب را با یک آزمون هم‌پایه
-                جفت کن.
-              </p>
+              <h1 className="mt-2 text-2xl font-bold leading-9 text-foreground">
+                {product.title}
+              </h1>
+              {product.authors ? (
+                <p className="mt-2 text-sm text-muted">مؤلف: {product.authors}</p>
+              ) : null}
             </div>
-            <dl className="mt-5 space-y-2 text-sm">
-              {specs.map((row) => (
-                <div
-                  key={row.label}
-                  className="flex justify-between gap-4 border-b border-[var(--sb-line)] py-2"
-                >
-                  <dt className="text-[var(--sb-muted)]">{row.label}</dt>
-                  <dd>{row.value}</dd>
+
+            <div className="rounded-2xl bg-background px-4 py-3">
+              {pricing.isOnSale ? (
+                <div className="flex flex-wrap items-end gap-3">
+                  <span className="text-sm text-muted line-through">
+                    {formatRials(pricing.basePriceRials)}
+                  </span>
+                  <span className="text-2xl font-bold text-primary">
+                    {formatRials(pricing.finalPriceRials)}
+                  </span>
+                  {pricing.discountPercent != null ? (
+                    <span className="rounded-md bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-700">
+                      {toPersianDigits(String(pricing.discountPercent))}٪ تخفیف
+                    </span>
+                  ) : null}
                 </div>
-              ))}
-            </dl>
-          </div>
-        </section>
-      </StarBookReveal>
-
-      {together.length > 0 ? (
-        <StarBookReveal>
-          <section className="starbook-section">
-            <div className="starbook-panel starbook-glass">
-              <h2 className="text-xl font-black">معمولاً با هم می‌خرند</h2>
-              <p className="mt-2 text-sm text-[var(--sb-muted)]">
-                سبد را کامل‌تر کن؛ پرداخت هر کتاب جدا و سریع است.
+              ) : (
+                <p className="text-2xl font-bold text-primary">
+                  {formatRials(pricing.finalPriceRials)}
+                </p>
+              )}
+              {pricing.saleEndsAt ? (
+                <p className="mt-2 text-xs text-muted">
+                  پایان تخفیف: {formatJalaliDateShort(pricing.saleEndsAt)}
+                </p>
+              ) : null}
+              <p className="mt-2 text-sm text-muted">
+                موجودی:{" "}
+                {product.stockQuantity == null
+                  ? "نامحدود"
+                  : toPersianDigits(String(product.stockQuantity))}
               </p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                {together.map((item) => (
-                  <Link key={item.id} href={`/shop/${item.slug}`} className="starbook-chip">
-                    {item.title}
-                  </Link>
-                ))}
-              </div>
             </div>
-          </section>
-        </StarBookReveal>
-      ) : null}
 
-      <StarBookReveal>
-        <section className="starbook-section">
-          <StarBookReviews skuId={product.id} title={product.title} />
-        </section>
-      </StarBookReveal>
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-7 text-amber-950">
+              {PICKUP_ONSITE_NOTICE}
+            </div>
 
-      <StarBookRail title="کتاب‌های نزدیک به سلیقه تو" products={related} />
+            {product.shortDescription ? (
+              <p className="text-sm leading-7 text-foreground/90">
+                {product.shortDescription}
+              </p>
+            ) : null}
 
-      <section className="starbook-section" id="checkout">
-        <StarBookCheckoutChrome>
-          <ShopCheckoutForm
-            itemId={product.id}
-            disabled={!product.inStock}
-            finalPriceLabel={formatRials(pricing.finalPriceRials)}
-            branches={branches.map((branch) => ({
-              id: branch.id,
-              name: branch.shortName || branch.name,
-              address: branch.address,
-            }))}
-          />
-        </StarBookCheckoutChrome>
-      </section>
-    </StarBookFrame>
+            <section>
+              <h2 className="mb-2 text-sm font-bold">مشخصات</h2>
+              <dl className="overflow-hidden rounded-2xl border border-border">
+                {specs.map((row) => (
+                  <div
+                    key={row.label}
+                    className="flex justify-between gap-3 border-b border-border px-3 py-2.5 text-sm last:border-b-0"
+                  >
+                    <dt className="text-muted">{row.label}</dt>
+                    <dd className="font-medium">{row.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+
+            {product.features.length > 0 ? (
+              <section>
+                <h2 className="mb-2 text-sm font-bold">سرفصل‌ها و ویژگی‌ها</h2>
+                <ul className="list-disc space-y-1.5 pr-5 text-sm leading-7">
+                  {product.features.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {product.description ? (
+              <section>
+                <h2 className="mb-2 text-sm font-bold">توضیحات</h2>
+                <p className="whitespace-pre-wrap text-sm leading-7 text-foreground/90">
+                  {product.description}
+                </p>
+              </section>
+            ) : null}
+          </div>
+        </div>
+
+        <ShopCheckoutForm
+          itemId={product.id}
+          disabled={!product.inStock}
+          finalPriceLabel={formatRials(pricing.finalPriceRials)}
+          branches={branches.map((branch) => ({
+            id: branch.id,
+            name: branch.shortName || branch.name,
+            address: branch.address,
+          }))}
+        />
+      </article>
+    </PublicFormShell>
   );
 }

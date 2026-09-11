@@ -47,7 +47,7 @@ export function StarBookCard({
       className="starbook-card-wrap"
     >
       <article className="starbook-card starbook-card-collectible" data-tone={tone}>
-        <Link href={`/shop/${product.slug}`} className="block">
+        <Link href={`/book/${product.slug}`} className="block">
           <div className="starbook-cover">
             <ShopProductCover
               imageUrl={product.imageUrl}
@@ -98,7 +98,7 @@ export function StarBookCard({
           </div>
         </Link>
         <div className="starbook-card-actions">
-          <Link href={`/shop/${product.slug}`} className="starbook-mini" aria-label="پیش‌نمایش">
+          <Link href={`/book/${product.slug}`} className="starbook-mini" aria-label="پیش‌نمایش">
             ◉
           </Link>
           <button
