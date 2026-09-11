@@ -119,7 +119,7 @@ export async function buildBookletReceiptView(params: {
     items: Array<{
       titleSnapshot: string;
       quantity: number;
-      item: { authors: string } | null;
+      bookSku: { authors: string } | null;
     }>;
   };
   intent: {
@@ -168,7 +168,7 @@ export async function buildBookletReceiptView(params: {
       order.paymentStatus,
     lines: order.items.map((item) => ({
       title: item.titleSnapshot,
-      instructor: item.item?.authors?.trim() || null,
+      instructor: item.bookSku?.authors?.trim() || null,
       quantity: item.quantity,
     })),
     pickupBranch: order.pickupBranch ? toCommerceBranchBadge(order.pickupBranch) : null,

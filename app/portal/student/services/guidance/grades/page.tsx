@@ -32,7 +32,7 @@ export default async function GuidanceGradesUploadPage() {
   });
 
   if (!plan) {
-    redirect("/guidance/pre-register");
+    redirect("/portal/student/services/guidance");
   }
 
   const pendingReview =

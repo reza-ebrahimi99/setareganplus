@@ -1,5 +1,6 @@
 /**
- * CommerceItem (catalog) validation — pure helpers.
+ * Shop BookSku listing validation — pure helpers.
+ * Kept export names so existing foundation tests stay green.
  */
 
 import {

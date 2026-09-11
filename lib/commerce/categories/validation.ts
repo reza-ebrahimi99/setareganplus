@@ -2,6 +2,8 @@
  * Category tree validation helpers (pure — no DB).
  */
 
+import { slugifyBookSku } from "@/lib/books/catalog/slug";
+
 export type CategoryNodeLike = {
   id: string;
   parentId: string | null;
@@ -129,4 +131,33 @@ export function planCategorySeedInserts(params: {
   }
 
   return planned;
+}
+
+export function normalizeCommerceCategoryInput(params: {
+  title: string;
+  slug?: string;
+  parentId?: string | null;
+  sortOrder?: string | number | null;
+  description?: string;
+}) {
+  const title = params.title.trim();
+  if (!title) {
+    throw new CommerceCategoryValidationError("عنوان دسته الزامی است.");
+  }
+  const slug = slugifyBookSku(params.slug?.trim() || title);
+  if (!slug) {
+    throw new CommerceCategoryValidationError("اسلاگ دسته‌بندی معتبر نیست.");
+  }
+  const sortRaw =
+    typeof params.sortOrder === "number"
+      ? params.sortOrder
+      : Number(String(params.sortOrder ?? "").trim() || "0");
+  const sortOrder = Number.isInteger(sortRaw) ? sortRaw : 0;
+  return {
+    title,
+    slug,
+    parentId: params.parentId?.trim() || null,
+    sortOrder,
+    description: (params.description ?? "").trim(),
+  };
 }

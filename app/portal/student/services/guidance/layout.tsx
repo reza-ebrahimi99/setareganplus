@@ -1,9 +1,6 @@
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import {
-  GUIDANCE_ONBOARDING_PATH,
-  candidateNeedsGuidanceOnboarding,
-} from "@/lib/guidance/external-candidate";
+import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
 
@@ -27,14 +24,6 @@ export default async function GuidanceOsLayout({
     redirect("/portal/select-account");
   }
 
-  const needs = await candidateNeedsGuidanceOnboarding({
-    organizationId: context.organization.id,
-    userId: context.user.id,
-    studentId,
-  });
-  if (needs) {
-    redirect(GUIDANCE_ONBOARDING_PATH);
-  }
-
+  // No onboarding gate here either — see app/portal/student/layout.tsx.
   return children;
 }

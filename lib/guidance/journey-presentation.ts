@@ -213,7 +213,7 @@ export function buildGuidanceEmptyJourneyHero(): PortalJourneyHero {
     accent: "gold",
     icon: "route",
     cta: {
-      href: "/guidance/pre-register",
+      href: "/portal/student/services/guidance",
       label: "شروع پیش‌ثبت‌نام",
     },
   };

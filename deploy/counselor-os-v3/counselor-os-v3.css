@@ -1,0 +1,216 @@
+/* ===== COUNSELOR OS V3 ===== */
+.cos-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.75rem;
+}
+.cos-form-stack label,
+.cos-form-grid label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+.cos-form-stack input,
+.cos-form-stack select,
+.cos-form-stack textarea,
+.cos-form-grid input,
+.cos-form-grid select,
+.cos-form-grid textarea {
+  min-height: 2.5rem;
+  border: 1px solid var(--cos-border);
+  border-radius: 0.65rem;
+  padding: 0.4rem 0.65rem;
+  font: inherit;
+}
+.cos-check {
+  display: flex !important;
+  align-items: center;
+  gap: 0.45rem;
+}
+.cos-counselor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 0.85rem;
+  list-style: none;
+  margin: 0.85rem 0 0;
+  padding: 0;
+}
+.cos-counselor-card {
+  background: var(--cos-panel);
+  border: 1px solid var(--cos-border);
+  border-radius: 0.9rem;
+  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+.cos-counselor-card__identity {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.cos-counselor-card__identity img,
+.cos-counselor-photo,
+.cos-avatar {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 999px;
+  object-fit: cover;
+  background: #eef2ff;
+}
+.cos-avatar {
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+}
+.cos-counselor-card dl {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.4rem 0.75rem;
+  margin: 0;
+}
+.cos-counselor-card dt {
+  color: var(--cos-muted);
+  font-size: 0.75rem;
+}
+.cos-counselor-card dd {
+  margin: 0;
+  font-weight: 700;
+}
+.cos-counselor-card__money {
+  margin: 0;
+  font-weight: 700;
+}
+.cos-holland-panel__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.cos-holland-code {
+  border: 1px solid var(--cos-border);
+  border-radius: 0.85rem;
+  padding: 0.85rem 1rem;
+  margin: 0.85rem 0;
+}
+.cos-holland-code strong {
+  display: block;
+  font-size: 2rem;
+  letter-spacing: 0.12em;
+  margin: 0.25rem 0 0.5rem;
+}
+.cos-holland-code ul {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cos-holland-chart {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1rem 0;
+}
+.cos-holland-chart__row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 11rem) 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+}
+.cos-holland-chart__label {
+  display: grid;
+  gap: 0.1rem;
+}
+.cos-holland-chart__label span {
+  color: var(--cos-muted);
+  font-size: 0.75rem;
+}
+.cos-holland-chart__track {
+  height: 0.85rem;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+}
+.cos-holland-chart__fill {
+  display: block;
+  height: 100%;
+  background: #5b21b6;
+  min-width: 2px;
+}
+.cos-holland-chart__value {
+  font-size: 0.9rem;
+}
+.cos-holland-profiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 0.75rem;
+}
+.cos-holland-profile {
+  border: 1px solid var(--cos-border);
+  border-radius: 0.85rem;
+  padding: 0.85rem;
+}
+.cos-holland-profile h4 {
+  margin: 0.2rem 0;
+}
+.cos-holland-interpret {
+  white-space: pre-wrap;
+  line-height: 1.9;
+}
+.counselor-holland-report__code-large {
+  font-size: 2.4rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  margin: 0.25rem 0 0.6rem;
+}
+.counselor-report__table--repeat thead {
+  display: table-header-group;
+}
+.counselor-report__notespace--large {
+  min-height: 12rem;
+}
+.counselor-report__lines--tall {
+  display: grid;
+  min-height: 12rem;
+}
+.counselor-report__lines--tall span {
+  display: block;
+  min-height: 1.7rem;
+  border-bottom: 1px solid #94a3b8;
+}
+
+@media print {
+  .counselor-report .counselor-report__print,
+  .counselor-report .counselor-report__hint,
+  .counselor-report .cos-inline-actions,
+  .counselor-report .cos-btn {
+    display: none !important;
+  }
+  .counselor-report header.counselor-report__letterhead {
+    display: block !important;
+  }
+  .cos-holland-chart__fill {
+    background: #4c1d95 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .cos-holland-chart__track {
+    background: #e2e8f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .counselor-report__step {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .counselor-report__step--flow {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+  .counselor-holland-report {
+    color: #111;
+  }
+}
+/* ===== END COUNSELOR OS V3 ===== */

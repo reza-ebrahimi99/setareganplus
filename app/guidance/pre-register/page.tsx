@@ -1,49 +1,17 @@
 /**
- * Guidance ERP — public pre-registration page (/guidance/pre-register).
+ * Legacy guidance pre-registration (/guidance/pre-register).
+ *
+ * Compatibility redirect only. Pre-registration is no longer a competing
+ * entry experience — a guidance case is created automatically on first
+ * authenticated visit to the dashboard. The server actions in ./actions.ts
+ * are intentionally left in place; other code still imports them.
  */
 
-import { InnerPageLayout } from "@/components/layout/InnerPageLayout";
-import { GuidancePreRegisterForm } from "@/components/guidance/PreRegisterForm";
-import { assertGuidancePublicEnabledOrNotFound } from "@/lib/guidance/require-public";
-import { createPageMetadata } from "@/lib/seo/create-page-metadata";
-import { getPublicOrganizationBySlug } from "@/lib/organizations/get-current-organization";
-import {
-  ensureDefaultStudentGrades,
-  listPublicStudentGrades,
-} from "@/lib/website/student-grades";
+import { redirect } from "next/navigation";
+import { GUIDANCE_CANONICAL_DASHBOARD } from "@/lib/guidance/canonical-entry";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = createPageMetadata({
-  path: "/guidance/pre-register",
-  title: "پیش‌ثبت‌نام انتخاب رشته | ستارگان پلاس",
-  description:
-    "پیش‌ثبت‌نام در سامانه جامع انتخاب رشته ستارگان پلاس؛ تشکیل پرونده و تأیید موبایل.",
-  keywords: ["پیش ثبت نام انتخاب رشته", "ستارگان پلاس", "کنکور"],
-  robots: { index: false, follow: false },
-});
-
 export default async function GuidancePreRegisterPage() {
-  await assertGuidancePublicEnabledOrNotFound();
-  const organization = await getPublicOrganizationBySlug();
-  await ensureDefaultStudentGrades(organization.id);
-  const grades = await listPublicStudentGrades(organization.id);
-
-  return (
-    <InnerPageLayout
-      activePath="/guidance"
-      breadcrumbs={[
-        { label: "صفحه اصلی", href: "/" },
-        { label: "سامانه جامع انتخاب رشته", href: "/guidance" },
-        { label: "پیش‌ثبت‌نام" },
-      ]}
-      title="پیش‌ثبت‌نام انتخاب رشته"
-      subtitle="اطلاعات پایه و گروه آزمایشی را وارد کنید؛ پس از تأیید موبایل، پرونده شما تشکیل می‌شود."
-      eyebrow="گام اول"
-    >
-      <div className="mx-auto max-w-xl">
-        <GuidancePreRegisterForm grades={grades} />
-      </div>
-    </InnerPageLayout>
-  );
+  redirect(GUIDANCE_CANONICAL_DASHBOARD);
 }

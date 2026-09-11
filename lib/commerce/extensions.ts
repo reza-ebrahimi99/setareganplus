@@ -1,10 +1,10 @@
 /**
  * Extension points (Phase 1 — documented, not implemented).
  *
- * Variants: later add CommerceVariant { itemId, sku, title, price overrides, validated attributes }
- * then optional CommerceOrderItem.variantId. Do not bury variants in unvalidated CommerceItem JSON.
+ * Variants: later add BookSkuVariant { skuId, title, price overrides, validated attributes }
+ * then optional CommerceOrderItem.variantId. Do not bury variants in unvalidated BookSku JSON.
  *
- * Gallery: later add CommerceItemMedia join; keep primaryImageAssetId.
+ * Gallery: later add BookSkuMedia join; keep primaryImageAssetId.
  *
  * Customer: historical orders keep buyer snapshots; future Customer links via nullable customerId.
  */

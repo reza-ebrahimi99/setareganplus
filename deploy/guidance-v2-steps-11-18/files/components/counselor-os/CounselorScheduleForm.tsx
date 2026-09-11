@@ -1,0 +1,346 @@
+"use client";
+
+import { useActionState, useMemo, useState } from "react";
+import type { CounselorActionState } from "@/app/admin/counselor/actions";
+import { JalaliDateField } from "@/components/datetime/JalaliDateField";
+import { PersianTimePicker } from "@/components/datetime/PersianTimePicker";
+import { PERSIAN_WEEKDAYS } from "@/lib/datetime/jalali";
+import { toPersianDigits } from "@/lib/persian";
+import type {
+  CounselorExceptionView,
+  WeeklyDayProgram,
+} from "@/lib/counselor-os/schedule";
+
+type DayDraft = {
+  enabled: boolean;
+  windows: Array<{ start: string; end: string }>;
+};
+
+function daysFromProgram(program: WeeklyDayProgram[]): DayDraft[] {
+  return Array.from({ length: 7 }, (_, weekday) => {
+    const found = program.find((day) => day.weekday === weekday);
+    const windows = found?.windows.length
+      ? found.windows.map((w) => ({
+          start: w.startLocalTime,
+          end: w.endLocalTime,
+        }))
+      : [{ start: "09:00", end: "12:00" }];
+    return {
+      enabled: found?.enabled === true,
+      windows,
+    };
+  });
+}
+
+export function CounselorScheduleForm(props: {
+  saveAction: (
+    state: CounselorActionState,
+    formData: FormData,
+  ) => Promise<CounselorActionState>;
+  exceptionAction: (
+    state: CounselorActionState,
+    formData: FormData,
+  ) => Promise<CounselorActionState>;
+  deleteExceptionAction: (
+    state: CounselorActionState,
+    formData: FormData,
+  ) => Promise<CounselorActionState>;
+  firstSessionMinutes: number;
+  secondSessionMinutes: number;
+  validFromYmd: string;
+  validUntilYmd: string;
+  days: WeeklyDayProgram[];
+  exceptions: CounselorExceptionView[];
+}) {
+  const [saveState, saveForm, savePending] = useActionState(props.saveAction, {});
+  const [exState, exForm, exPending] = useActionState(props.exceptionAction, {});
+  const [delState, delForm, delPending] = useActionState(
+    props.deleteExceptionAction,
+    {},
+  );
+  const [days, setDays] = useState<DayDraft[]>(() => daysFromProgram(props.days));
+  const [exceptionKind, setExceptionKind] = useState<"blocked" | "special">(
+    "blocked",
+  );
+  const [specialStart, setSpecialStart] = useState<string | null>("17:00");
+  const [specialEnd, setSpecialEnd] = useState<string | null>("20:00");
+
+  const windowsJson = useMemo(
+    () =>
+      JSON.stringify(
+        days.map((day, weekday) => ({
+          weekday,
+          enabled: day.enabled,
+          windows: day.windows.map((window) => ({
+            startLocalTime: window.start,
+            endLocalTime: window.end,
+          })),
+        })),
+      ),
+    [days],
+  );
+
+  function updateWindow(
+    weekday: number,
+    index: number,
+    key: "start" | "end",
+    value: string | null,
+  ) {
+    setDays((prev) =>
+      prev.map((day, i) => {
+        if (i !== weekday) return day;
+        return {
+          ...day,
+          windows: day.windows.map((window, w) =>
+            w === index ? { ...window, [key]: value ?? "" } : window,
+          ),
+        };
+      }),
+    );
+  }
+
+  return (
+    <div className="cos-sched" dir="rtl">
+      <form action={saveForm} className="cos-sched__block">
+        <h3>مدت جلسات</h3>
+        <div className="cos-sched__grid">
+          <label>
+            جلسه اول
+            <input
+              name="firstSessionMinutes"
+              type="number"
+              min={15}
+              max={180}
+              step={5}
+              defaultValue={props.firstSessionMinutes}
+              required
+            />
+            <small>دقیقه</small>
+          </label>
+          <label>
+            جلسه دوم
+            <input
+              name="secondSessionMinutes"
+              type="number"
+              min={15}
+              max={180}
+              step={5}
+              defaultValue={props.secondSessionMinutes}
+              required
+            />
+            <small>دقیقه</small>
+          </label>
+        </div>
+
+        <h3>بازه فعال رزرو</h3>
+        <div className="cos-sched__grid">
+          <div>
+            <p className="cos-sched__field-label">از تاریخ</p>
+            <JalaliDateField
+              id="sched-from"
+              name="validFrom"
+              defaultValue={props.validFromYmd || null}
+              required
+            />
+          </div>
+          <div>
+            <p className="cos-sched__field-label">تا تاریخ</p>
+            <JalaliDateField
+              id="sched-until"
+              name="validUntil"
+              defaultValue={props.validUntilYmd || null}
+              required
+            />
+          </div>
+        </div>
+
+        <h3>برنامه هفتگی</h3>
+        <p className="cos-muted">
+          هر روز را جداگانه فعال کنید. می‌توانید چند بازه در یک روز داشته باشید.
+        </p>
+        <input type="hidden" name="windowsJson" value={windowsJson} />
+        <div className="cos-sched__days">
+          {PERSIAN_WEEKDAYS.map((label, weekday) => {
+            const day = days[weekday];
+            return (
+              <article key={label} className="cos-sched__day">
+                <label className="cos-sched__day-toggle">
+                  <input
+                    type="checkbox"
+                    checked={day.enabled}
+                    onChange={(event) => {
+                      const enabled = event.target.checked;
+                      setDays((prev) =>
+                        prev.map((item, i) =>
+                          i === weekday ? { ...item, enabled } : item,
+                        ),
+                      );
+                    }}
+                  />
+                  <strong>{label}</strong>
+                </label>
+                {day.enabled
+                  ? day.windows.map((window, index) => (
+                      <div key={`${weekday}-${index}`} className="cos-sched__window">
+                        <PersianTimePicker
+                          id={`w-${weekday}-${index}-start`}
+                          label="از ساعت"
+                          value={window.start || null}
+                          onChange={(value) =>
+                            updateWindow(weekday, index, "start", value)
+                          }
+                          required
+                        />
+                        <PersianTimePicker
+                          id={`w-${weekday}-${index}-end`}
+                          label="تا ساعت"
+                          value={window.end || null}
+                          onChange={(value) =>
+                            updateWindow(weekday, index, "end", value)
+                          }
+                          required
+                        />
+                        {day.windows.length > 1 ? (
+                          <button
+                            type="button"
+                            className="cos-btn"
+                            onClick={() =>
+                              setDays((prev) =>
+                                prev.map((item, i) =>
+                                  i === weekday
+                                    ? {
+                                        ...item,
+                                        windows: item.windows.filter(
+                                          (_, w) => w !== index,
+                                        ),
+                                      }
+                                    : item,
+                                ),
+                              )
+                            }
+                          >
+                            حذف بازه
+                          </button>
+                        ) : null}
+                      </div>
+                    ))
+                  : (
+                    <p className="cos-muted">این روز غیرفعال است.</p>
+                  )}
+                {day.enabled ? (
+                  <button
+                    type="button"
+                    className="cos-btn"
+                    onClick={() =>
+                      setDays((prev) =>
+                        prev.map((item, i) =>
+                          i === weekday
+                            ? {
+                                ...item,
+                                windows: [
+                                  ...item.windows,
+                                  { start: "16:00", end: "19:00" },
+                                ],
+                              }
+                            : item,
+                        ),
+                      )
+                    }
+                  >
+                    + افزودن بازه
+                  </button>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+
+        {saveState.error ? <p className="cos-error">{saveState.error}</p> : null}
+        {saveState.success ? <p className="cos-success">{saveState.success}</p> : null}
+        <button type="submit" className="cos-btn cos-btn--primary" disabled={savePending}>
+          {savePending ? "در حال ذخیره…" : "ذخیره برنامه"}
+        </button>
+      </form>
+
+      <section className="cos-sched__block">
+        <h3>استثناهای تقویم</h3>
+        {props.exceptions.length === 0 ? (
+          <p className="cos-empty">استثنایی ثبت نشده است.</p>
+        ) : (
+          <ul className="cos-sched__exceptions">
+            {props.exceptions.map((item) => (
+              <li key={item.id}>
+                <div>
+                  <strong>{item.dateLabel}</strong>
+                  <span>
+                    {item.kind === "blocked"
+                      ? "در این تاریخ مشاور حضور ندارد"
+                      : `${toPersianDigits(item.startLocalTime ?? "")} تا ${toPersianDigits(item.endLocalTime ?? "")} زمان ویژه`}
+                  </span>
+                  {item.reason ? <em>{item.reason}</em> : null}
+                </div>
+                <form action={delForm}>
+                  <input type="hidden" name="exceptionId" value={item.id} />
+                  <button type="submit" className="cos-btn" disabled={delPending}>
+                    حذف
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+        {delState.error ? <p className="cos-error">{delState.error}</p> : null}
+
+        <form action={exForm} className="cos-sched__exception-form">
+          <h4>افزودن استثنا</h4>
+          <label>
+            نوع
+            <select
+              name="kind"
+              value={exceptionKind}
+              onChange={(event) =>
+                setExceptionKind(event.target.value === "special" ? "special" : "blocked")
+              }
+            >
+              <option value="blocked">تعطیل کردن یک تاریخ</option>
+              <option value="special">افزودن زمان ویژه</option>
+            </select>
+          </label>
+          <div>
+            <p className="cos-sched__field-label">تاریخ</p>
+            <JalaliDateField id="sched-ex-date" name="localDate" required />
+          </div>
+          {exceptionKind === "special" ? (
+            <div className="cos-sched__grid">
+              <PersianTimePicker
+                id="sched-ex-start"
+                label="از ساعت"
+                value={specialStart}
+                onChange={setSpecialStart}
+                required
+              />
+              <PersianTimePicker
+                id="sched-ex-end"
+                label="تا ساعت"
+                value={specialEnd}
+                onChange={setSpecialEnd}
+                required
+              />
+              <input type="hidden" name="startLocalTime" value={specialStart ?? ""} />
+              <input type="hidden" name="endLocalTime" value={specialEnd ?? ""} />
+            </div>
+          ) : null}
+          <label>
+            توضیح (اختیاری)
+            <input name="reason" placeholder="مثلاً تعطیل رسمی" />
+          </label>
+          {exState.error ? <p className="cos-error">{exState.error}</p> : null}
+          {exState.success ? <p className="cos-success">{exState.success}</p> : null}
+          <button type="submit" className="cos-btn cos-btn--primary" disabled={exPending}>
+            {exPending ? "در حال ثبت…" : "ثبت استثنا"}
+          </button>
+        </form>
+      </section>
+    </div>
+  );
+}

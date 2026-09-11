@@ -1,6 +1,6 @@
 /**
  * Commerce RBAC permission constants.
- * Permission keys use «products» for admin UX; domain entity is CommerceItem.
+ * Permission keys use «products» for admin UX; domain entity is BookSku.
  */
 
 export const COMMERCE_PERMISSIONS = {

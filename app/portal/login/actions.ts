@@ -7,8 +7,6 @@ import { consumeOtp, requestOtp, verifyOtp } from "@/lib/communication/otp";
 import { normalizeIranianMobile } from "@/lib/forms/normalize-mobile";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
 import {
-  GUIDANCE_ONBOARDING_PATH,
-  candidateNeedsGuidanceOnboarding,
   ensureGuidanceCase,
   provisionExternalGuidanceCandidate,
 } from "@/lib/guidance/external-candidate";
@@ -124,19 +122,15 @@ async function resolvePostLoginRedirect(params: {
     });
   }
 
-  const needs = await candidateNeedsGuidanceOnboarding({
-    organizationId: params.organizationId,
-    userId: params.userId,
-    studentId: link.studentId,
-  });
-  if (needs) return GUIDANCE_ONBOARDING_PATH;
+  // Guidance students always land on the dashboard. Onboarding is no longer a
+  // post-login destination, so there is nothing to check here.
   return guidanceOn ? GUIDANCE_PLATFORM_HOME : "/portal";
 }
 
 /**
  * Verify OTP. Existing portal users log in normally.
- * Unknown mobiles (Guidance enabled) become external candidates and
- * are redirected to Guidance onboarding.
+ * Unknown mobiles (Guidance enabled) become external candidates and land on
+ * the canonical guidance dashboard — the same screen as everyone else.
  */
 export async function verifyPortalOtpAction(
   _state: PortalLoginState,
@@ -218,7 +212,9 @@ export async function verifyPortalOtpAction(
     }
     userId = provisioned.userId;
     membershipId = provisioned.membershipId;
-    redirectPath = GUIDANCE_ONBOARDING_PATH;
+    redirectPath = isSafeRelativePath(requestedNext)
+      ? requestedNext.trim()
+      : GUIDANCE_PLATFORM_HOME;
   }
 
   const { token, expiresAt } = await createPortalSession({

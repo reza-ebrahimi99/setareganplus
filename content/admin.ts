@@ -163,6 +163,26 @@ export const adminNavGroups: ReadonlyArray<{
             label: "پرداخت‌ها",
             permission: "commerce.payments.view",
           },
+          {
+            href: "/admin/commerce/merch",
+            label: "ویترین و کمپین",
+            permission: "commerce.products.manage",
+          },
+          {
+            href: "/admin/commerce/seo",
+            label: "سئو",
+            permission: "commerce.products.manage",
+          },
+          {
+            href: "/admin/commerce/coupons",
+            label: "کوپن‌ها",
+            permission: "commerce.products.manage",
+          },
+          {
+            href: "/admin/commerce/reports",
+            label: "گزارش استاربوک",
+            permission: "commerce.reports.view",
+          },
         ],
       },
     ],
@@ -172,11 +192,18 @@ export const adminNavGroups: ReadonlyArray<{
     items: [
       { label: "دانش‌آموزان", icon: "students", enabled: false },
       {
-        href: "/admin/guidance",
-        label: "میز کار مشاور",
+        href: "/admin/counselor",
+        label: "سامانه مشاور",
         icon: "students",
         enabled: true,
         permission: "guidance.view",
+      },
+      {
+        href: "/admin/guidance/discounts",
+        label: "کدهای تخفیف انتخاب رشته",
+        icon: "finance",
+        enabled: true,
+        permission: "settings.manage",
       },
       { label: "کلاس‌ها و دوره‌ها", icon: "courses", enabled: false },
       { label: "آزمون‌ها", icon: "exams", enabled: false },
@@ -483,6 +510,31 @@ export const adminBreadcrumbs = {
     { label: "مدیریت", href: "/admin" },
     { label: "فروشگاه", href: "/admin/commerce" },
     { label: "پرداخت‌ها" },
+  ],
+  commerceMerch: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "ویترین و کمپین" },
+  ],
+  commerceCoupons: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "کوپن‌ها" },
+  ],
+  commerceSeo: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "سئو" },
+  ],
+  commerceReviews: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "نظرات" },
+  ],
+  commerceReports: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه", href: "/admin/commerce" },
+    { label: "گزارش استاربوک" },
   ],
   bookingServices: [
     { label: "مدیریت", href: "/admin" },

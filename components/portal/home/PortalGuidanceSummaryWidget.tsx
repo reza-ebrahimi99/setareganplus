@@ -32,7 +32,7 @@ export function PortalGuidanceSummaryWidget({
         empty
         emptyTitle="مسیر هنوز شروع نشده"
         emptyDescription="با پیش‌ثبت‌نام، نقشه راه انتخاب رشته برای تو فعال می‌شود."
-        action={{ href: "/guidance/pre-register", label: "شروع مسیر" }}
+        action={{ href: "/portal/student/services/guidance", label: "شروع مسیر" }}
         className="portal-bento__guidance"
       />
     );

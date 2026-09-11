@@ -1,0 +1,23 @@
+model GuidanceDiscountCode {
+  id             String    @id @default(cuid())
+  organizationId String
+  code           String
+  type           String
+  value          Int
+  packageScope   String    @default("ALL")
+  startsAt       DateTime?
+  endsAt         DateTime?
+  maxUses        Int?
+  usageCount     Int       @default(0)
+  isActive       Boolean   @default(true)
+  archivedAt     DateTime?
+  note           String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, code], map: "gdc_org_code_uid")
+  @@index([organizationId, isActive], map: "gdc_org_active_idx")
+  @@map("guidance_discount_codes")
+}

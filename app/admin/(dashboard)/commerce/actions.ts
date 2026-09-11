@@ -2,7 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { upsertCommerceItemFromForm } from "@/lib/commerce/catalog/service";
+import {
+  setBookSkuMerchFlag,
+  upsertCommerceItemFromForm,
+} from "@/lib/commerce/catalog/service";
+import {
+  archiveCommerceCategory,
+  setCommerceCategoryFlag,
+  upsertCommerceCategoryFromForm,
+} from "@/lib/commerce/categories/service";
 import {
   addCommerceOrderNote,
   advanceCommerceOrderStage,
@@ -28,6 +36,11 @@ import {
 } from "@/lib/auth/require-admin";
 
 export type CommerceProductActionState = {
+  formError?: string;
+  successMessage?: string;
+};
+
+export type CommerceCategoryActionState = {
   formError?: string;
   successMessage?: string;
 };
@@ -348,6 +361,93 @@ export async function sendTestOrderSmsAction(
   });
   if (!result.ok) return { formError: result.error.message };
   return { successMessage: "پیامک آزمایشی ارسال شد." };
+}
+
+function revalidateStarBookStorefront() {
+  revalidatePath("/shop");
+  revalidatePath("/shop/browse");
+  revalidatePath("/shop/collections");
+  revalidatePath("/admin/commerce");
+  revalidatePath("/admin/commerce/categories");
+  revalidatePath("/admin/commerce/products");
+  revalidatePath("/admin/commerce/merch");
+  revalidatePath("/admin/commerce/seo");
+}
+
+export async function createCommerceCategoryAction(
+  _prev: CommerceCategoryActionState,
+  formData: FormData,
+): Promise<CommerceCategoryActionState> {
+  const session = await requirePermission("commerce.categories.manage");
+  const result = await upsertCommerceCategoryFromForm({
+    organizationId: session.organization.id,
+    formData,
+  });
+  if (!result.ok) return { formError: result.error };
+  revalidateStarBookStorefront();
+  redirect("/admin/commerce/categories");
+}
+
+export async function updateCommerceCategoryAction(
+  _prev: CommerceCategoryActionState,
+  formData: FormData,
+): Promise<CommerceCategoryActionState> {
+  const session = await requirePermission("commerce.categories.manage");
+  const categoryId = String(formData.get("categoryId") ?? "").trim();
+  if (!categoryId) return { formError: "شناسه دسته نامعتبر است." };
+  const result = await upsertCommerceCategoryFromForm({
+    organizationId: session.organization.id,
+    categoryId,
+    formData,
+  });
+  if (!result.ok) return { formError: result.error };
+  revalidateStarBookStorefront();
+  return { successMessage: "دسته ذخیره شد." };
+}
+
+export async function archiveCommerceCategoryAction(
+  formData: FormData,
+): Promise<void> {
+  const session = await requirePermission("commerce.categories.manage");
+  const categoryId = String(formData.get("categoryId") ?? "").trim();
+  if (!categoryId) return;
+  await archiveCommerceCategory({
+    organizationId: session.organization.id,
+    categoryId,
+  });
+  revalidateStarBookStorefront();
+}
+
+export async function toggleCommerceCategoryFlagAction(formData: FormData) {
+  const session = await requirePermission("commerce.categories.manage");
+  const categoryId = String(formData.get("categoryId") ?? "").trim();
+  const fieldRaw = String(formData.get("field") ?? "").trim();
+  const field = fieldRaw === "isVisible" ? "isVisible" : "isFeatured";
+  const value = String(formData.get("value") ?? "") === "true";
+  if (!categoryId) return;
+  await setCommerceCategoryFlag({
+    organizationId: session.organization.id,
+    categoryId,
+    field,
+    value,
+  });
+  revalidateStarBookStorefront();
+}
+
+export async function toggleBookSkuMerchFlagAction(formData: FormData) {
+  const session = await requirePermission("commerce.products.manage");
+  const skuId = String(formData.get("skuId") ?? "").trim();
+  const fieldRaw = String(formData.get("field") ?? "").trim();
+  const field = fieldRaw === "isVisible" ? "isVisible" : "isFeatured";
+  const value = String(formData.get("value") ?? "") === "true";
+  if (!skuId) return;
+  await setBookSkuMerchFlag({
+    organizationId: session.organization.id,
+    skuId,
+    field,
+    value,
+  });
+  revalidateStarBookStorefront();
 }
 
 export async function markCommerceOpsNotificationsReadAction(): Promise<CommerceOrderActionState> {

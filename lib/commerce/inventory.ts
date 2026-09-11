@@ -1,9 +1,9 @@
 /**
- * Commerce inventory mutations — transactional, idempotent-friendly.
+ * Canonical BookSku inventory mutations — transactional, idempotent-friendly.
  */
 
 import type { Prisma } from "@/generated/prisma/client";
-import { CommerceItemStatus } from "@/generated/prisma/enums";
+import { BookSkuStatus } from "@/generated/prisma/enums";
 
 export async function decrementCommerceItemStock(params: {
   tx: Prisma.TransactionClient;
@@ -16,7 +16,7 @@ export async function decrementCommerceItemStock(params: {
     return { ok: false, error: "تعداد کاهش موجودی نامعتبر است." };
   }
 
-  const item = await params.tx.commerceItem.findFirst({
+  const item = await params.tx.bookSku.findFirst({
     where: {
       id: params.itemId,
       organizationId: params.organizationId,
@@ -39,7 +39,7 @@ export async function decrementCommerceItemStock(params: {
     return { ok: true, remaining: null };
   }
 
-  const updated = await params.tx.commerceItem.updateMany({
+  const updated = await params.tx.bookSku.updateMany({
     where: {
       id: item.id,
       organizationId: params.organizationId,
@@ -56,7 +56,7 @@ export async function decrementCommerceItemStock(params: {
     return { ok: false, error: "موجودی کافی نیست." };
   }
 
-  const fresh = await params.tx.commerceItem.findFirst({
+  const fresh = await params.tx.bookSku.findFirst({
     where: { id: item.id, organizationId: params.organizationId },
     select: { stockQuantity: true, status: true },
   });
@@ -65,12 +65,12 @@ export async function decrementCommerceItemStock(params: {
   if (
     remaining <= 0 &&
     fresh &&
-    fresh.status !== CommerceItemStatus.ARCHIVED &&
-    fresh.status !== CommerceItemStatus.DRAFT
+    fresh.status !== BookSkuStatus.DISCONTINUED &&
+    fresh.status !== BookSkuStatus.INACTIVE
   ) {
-    await params.tx.commerceItem.update({
+    await params.tx.bookSku.update({
       where: { id: item.id },
-      data: { status: CommerceItemStatus.OUT_OF_STOCK, stockQuantity: 0 },
+      data: { stockQuantity: 0 },
     });
   }
 

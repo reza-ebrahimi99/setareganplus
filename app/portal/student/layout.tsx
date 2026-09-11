@@ -2,10 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { StudentPortalShell } from "@/components/portal/StudentPortalShell";
 import { buildStudentPortalNavSections } from "@/components/portal/nav/types";
-import {
-  GUIDANCE_ONBOARDING_PATH,
-  candidateNeedsGuidanceOnboarding,
-} from "@/lib/guidance/external-candidate";
+import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
 import {
   GUIDANCE_PLATFORM_NAV_SECTIONS,
   GUIDANCE_STUDENT_PORTAL_NAV,
@@ -34,16 +31,10 @@ export default async function StudentPortalLayout({
   const onOnboarding = pathname.startsWith(GUIDANCE_ONBOARDING_PATH);
   const studentId = context.activeLink.studentId;
 
-  if (guidanceEnabled && studentId && pathname && !onOnboarding) {
-    const needsOnboarding = await candidateNeedsGuidanceOnboarding({
-      organizationId: context.organization.id,
-      userId: context.user.id,
-      studentId,
-    });
-    if (needsOnboarding) {
-      redirect(GUIDANCE_ONBOARDING_PATH);
-    }
-  }
+  // Onboarding is no longer a prerequisite for any student screen. Gating here
+  // would bounce the dashboard to /onboarding, which now redirects straight
+  // back to the dashboard — an infinite loop.
+  void studentId;
 
   if (onOnboarding) {
     return children;

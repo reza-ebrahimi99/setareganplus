@@ -19,7 +19,7 @@ export const guidanceLandingContent = {
   ],
   primaryCta: {
     label: "شروع پیش‌ثبت‌نام",
-    href: "/guidance/pre-register",
+    href: "/portal/student/services/guidance",
   },
   comingSoonCards: [
     {

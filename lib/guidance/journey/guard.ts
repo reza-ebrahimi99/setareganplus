@@ -9,6 +9,7 @@
  */
 
 import { notFound, redirect } from "next/navigation";
+import { GUIDANCE_CANONICAL_DASHBOARD } from "@/lib/guidance/canonical-entry";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
 import { loadGuidanceJourneyPlan } from "@/lib/guidance/journey/plan";
 import {
@@ -28,7 +29,8 @@ export type GuidanceJourneyStepAccess = {
  * Enforces the step lock for a Journey Engine page.
  * - Redirects to login/account-select when portal auth is missing.
  * - 404s when the Guidance org flag is off.
- * - Redirects to /guidance/pre-register when no plan exists yet.
+ * - Redirects to the canonical dashboard when no plan exists yet; the
+ *   dashboard creates the case, so the student never sees pre-registration.
  * - Redirects to the student's true currentStep when the URL step differs.
  *
  * Every one of these is a `redirect()`/`notFound()` (throws), so callers can
@@ -56,7 +58,7 @@ export async function requireGuidanceJourneyStepAccess(
   });
 
   if (!plan) {
-    redirect("/guidance/pre-register");
+    redirect(GUIDANCE_CANONICAL_DASHBOARD);
   }
 
   if (stepId !== plan.currentStep) {
@@ -87,7 +89,7 @@ export async function loadGuidanceJourneyEntry(): Promise<GuidanceJourneyStepAcc
   });
 
   if (!plan) {
-    redirect("/guidance/pre-register");
+    redirect(GUIDANCE_CANONICAL_DASHBOARD);
   }
 
   return { context, plan };

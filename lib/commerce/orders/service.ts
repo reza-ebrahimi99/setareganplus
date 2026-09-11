@@ -8,7 +8,7 @@ import {
   CommerceBookletPaymentMethod,
   CommerceDeliveryMethod,
   CommerceFulfillmentStatus,
-  CommerceItemStatus,
+  BookSkuStatus,
   CommerceOpsStage,
   CommerceOrderEventType,
   CommerceOrderPaymentStatus,
@@ -43,6 +43,7 @@ import { parseCommerceOrderQrInput } from "@/lib/commerce/orders/qr";
 import { generateCommerceOrderShortCode } from "@/lib/commerce/orders/short-code";
 import { parseBookletOrderProfile } from "@/lib/commerce/orders/profile";
 import { recordCommerceOrderEvent } from "@/lib/commerce/orders/timeline";
+import { toShopPriceInput } from "@/lib/books/catalog/price";
 import { resolveCommercePrice } from "@/lib/commerce/pricing";
 import {
   buildCommerceOrderNumber,
@@ -96,28 +97,33 @@ export async function createSingleItemCommerceOrder(
   if (!parsed.ok) return parsed;
   const profile = parsed.profile;
 
-  const item = await prisma.commerceItem.findFirst({
+  const item = await prisma.bookSku.findFirst({
     where: {
       id: input.itemId,
       organizationId: input.organizationId,
       deletedAt: null,
       isVisible: true,
-      status: CommerceItemStatus.ACTIVE,
+      status: BookSkuStatus.ACTIVE,
     },
     select: {
       id: true,
-      title: true,
-      sku: true,
+      internalCode: true,
       systemKind: true,
-      basePriceRials: true,
-      salePriceRials: true,
-      priceStartsAt: true,
-      priceEndsAt: true,
       trackInventory: true,
       unlimitedStock: true,
       stockQuantity: true,
       status: true,
       branchId: true,
+      title: { select: { title: true } },
+      prices: {
+        select: {
+          id: true,
+          kind: true,
+          amountRials: true,
+          effectiveFrom: true,
+          effectiveTo: true,
+        },
+      },
     },
   });
 
@@ -161,12 +167,7 @@ export async function createSingleItemCommerceOrder(
     return { ok: false, error: "شعبه محصول معتبر نیست." };
   }
 
-  const pricing = resolveCommercePrice({
-    basePriceRials: item.basePriceRials,
-    salePriceRials: item.salePriceRials,
-    priceStartsAt: item.priceStartsAt,
-    priceEndsAt: item.priceEndsAt,
-  });
+  const pricing = resolveCommercePrice(toShopPriceInput(item.prices));
 
   let totals;
   try {
@@ -174,8 +175,8 @@ export async function createSingleItemCommerceOrder(
       lines: [
         {
           itemId: item.id,
-          titleSnapshot: item.title,
-          skuSnapshot: item.sku,
+          titleSnapshot: item.title.title,
+          skuSnapshot: item.internalCode,
           systemKindSnapshot: item.systemKind as
             | "PHYSICAL"
             | "DIGITAL"
@@ -275,7 +276,7 @@ export async function createSingleItemCommerceOrder(
             data: totals.lines.map((line) => ({
               organizationId: input.organizationId,
               orderId: order.id,
-              itemId: line.itemId,
+              bookSkuId: line.itemId,
               titleSnapshot: line.titleSnapshot,
               skuSnapshot: line.skuSnapshot,
               systemKindSnapshot: line.systemKindSnapshot as CommerceSystemKind,
@@ -591,7 +592,7 @@ export function buildAdminCommerceOrderWhere(
     and.push({
       items: {
         some: {
-          ...(itemId ? { itemId } : {}),
+          ...(itemId ? { bookSkuId: itemId } : {}),
           ...(productQuery
             ? {
                 titleSnapshot: {
@@ -926,17 +927,23 @@ export type CommerceItemOption = {
 export async function listCommerceItemOptionsForOps(
   organizationId: string,
 ): Promise<CommerceItemOption[]> {
-  return prisma.commerceItem.findMany({
+  return prisma.bookSku.findMany({
     where: {
       organizationId,
       deletedAt: null,
       isVisible: true,
-      status: CommerceItemStatus.ACTIVE,
+      status: BookSkuStatus.ACTIVE,
     },
-    orderBy: { title: "asc" },
+    orderBy: { title: { title: "asc" } },
     take: 300,
-    select: { id: true, title: true, branchId: true },
-  });
+    select: { id: true, branchId: true, title: { select: { title: true } } },
+  }).then((rows) =>
+    rows.map((row) => ({
+      id: row.id,
+      title: row.title.title,
+      branchId: row.branchId,
+    })),
+  );
 }
 
 export type AdminCommerceOrderEventRow = {

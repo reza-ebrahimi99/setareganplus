@@ -1,0 +1,3 @@
+app/portal/student/services/guidance/page.tsx
+components/guidance/platform/GuidancePlatformDashboard.tsx
+lib/guidance/brand/dashboard-greeting.ts

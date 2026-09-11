@@ -1,0 +1,90 @@
+/// V2 Steps 13–17 — versioned counselor choice arrangement (INITIAL then FINAL).
+/// Official Sanjesh/university codes stay null unless a real value is known.
+model GuidanceChoiceList {
+  id               String    @id @default(cuid())
+  organizationId   String
+  planId           String
+  studentId        String
+  /// INITIAL | FINAL
+  kind             String
+  version          Int
+  /// DRAFT | READY | SUPERSEDED | CONFIRMED
+  status           String
+  counselorUserId  String
+  readyAt          DateTime?
+  readyByUserId    String?
+  confirmedAt      DateTime?
+  confirmationHash String?
+  ackVersion       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization Organization             @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  plan         GuidancePlan             @relation(fields: [organizationId, planId], references: [organizationId, id], onDelete: Restrict)
+  student      Student                  @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  counselor    User                     @relation("GuidanceChoiceListCounselor", fields: [counselorUserId], references: [id], onDelete: Restrict)
+  readyBy      User?                    @relation("GuidanceChoiceListReadyBy", fields: [readyByUserId], references: [id], onDelete: SetNull)
+  items        GuidanceChoiceItem[]
+  feedback     GuidanceChoiceFeedback[]
+
+  @@unique([organizationId, planId, kind, version], map: "gcl_org_plan_kind_ver")
+  @@index([organizationId, planId, kind, status], map: "gcl_org_plan_kind_st")
+  @@index([organizationId, studentId], map: "gcl_org_stu_idx")
+  @@index([readyByUserId], map: "gcl_ready_by_idx")
+  @@map("guidance_choice_lists")
+}
+
+model GuidanceChoiceItem {
+  id             String   @id @default(cuid())
+  organizationId String
+  listId         String
+  sortOrder      Int
+  major          String
+  university     String
+  city           String?
+  province       String?
+  educationType  String?
+  admissionType  String?
+  /// Real official code only. Never fabricated — leave null when unknown.
+  officialCode   String?
+  /// optimistic | balanced | likely | conservative
+  band           String?
+  notes          String?  @db.Text
+  rationale      String?  @db.Text
+  isActive       Boolean  @default(true)
+  source         String   @default("MANUAL")
+  sourceItemId   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization             @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  list         GuidanceChoiceList       @relation(fields: [listId], references: [id], onDelete: Restrict)
+  feedback     GuidanceChoiceFeedback[]
+
+  @@index([organizationId, listId], map: "gci_org_list_idx")
+  @@index([listId, sortOrder], map: "gci_list_order_idx")
+  @@index([listId, isActive], map: "gci_list_active_idx")
+  @@map("guidance_choice_items")
+}
+
+model GuidanceChoiceFeedback {
+  id             String   @id @default(cuid())
+  organizationId String
+  listId         String
+  itemId         String
+  studentUserId  String
+  /// approved | needs_review | less | more | remove
+  verdict        String
+  note           String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  list         GuidanceChoiceList @relation(fields: [listId], references: [id], onDelete: Restrict)
+  item         GuidanceChoiceItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  studentUser  User               @relation("GuidanceChoiceFeedbackStudent", fields: [studentUserId], references: [id], onDelete: Restrict)
+
+  @@unique([listId, itemId, studentUserId], map: "gcf_list_item_stu")
+  @@index([organizationId, listId], map: "gcf_org_list_idx")
+  @@map("guidance_choice_feedback")
+}

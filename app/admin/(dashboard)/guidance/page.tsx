@@ -76,6 +76,12 @@ export default async function AdminGuidanceQueuePage({
       <p className="counselor-workspace__phase-note">
         جستجو با نام، کد ملی، موبایل، شناسه پرونده یا شماره قلم‌چی.
         {canReview ? "" : " · دسترسی شما فقط مشاهده است."}
+        {hasPermission(session, "settings.manage") ? (
+          <>
+            {" · "}
+            <Link href="/admin/guidance/discounts">مدیریت کدهای تخفیف</Link>
+          </>
+        ) : null}
       </p>
 
       <form className="counselor-workspace__search" method="get">

@@ -1,6 +1,6 @@
 /**
  * Commerce Foundation types.
- * Catalog entity is CommerceItem; admin UX label remains «محصولات».
+ * Canonical catalog entity is BookSku; admin UX label remains «محصولات».
  */
 
 export const PAYMENT_PAYABLE_TYPES = [

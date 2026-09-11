@@ -1,0 +1,11 @@
+.gjv2-nav__spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgb(255 255 255 / 0.35);
+  border-top-color: #fff;
+  border-radius: 999px;
+  animation: gjv2-spin 0.7s linear infinite;
+}
+@keyframes gjv2-spin {
+  to { transform: rotate(360deg); }
+}

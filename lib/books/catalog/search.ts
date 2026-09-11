@@ -10,6 +10,9 @@ export function buildSkuSearchText(input: {
   editionLabel?: string | null;
   keywords?: string | null;
   publisherName?: string | null;
+  authors?: string | null;
+  subject?: string | null;
+  gradeLabel?: string | null;
 }): string {
   return [
     input.internalCode,
@@ -18,6 +21,9 @@ export function buildSkuSearchText(input: {
     input.editionLabel ?? "",
     input.keywords ?? "",
     input.publisherName ?? "",
+    input.authors ?? "",
+    input.subject ?? "",
+    input.gradeLabel ?? "",
   ]
     .filter(Boolean)
     .join(" ")

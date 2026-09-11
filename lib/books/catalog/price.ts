@@ -45,3 +45,33 @@ export function formatRials(amount: number): string {
 export function priceKindLabel(kind: BookPriceKind): string {
   return kind === BookPriceKind.SALE ? "قیمت فروش ویژه" : "قیمت فهرست";
 }
+
+export function toShopPriceInput(
+  prices: readonly PriceRow[],
+  now: Date = new Date(),
+): {
+  basePriceRials: number;
+  salePriceRials: number | null;
+  priceStartsAt: Date | null;
+  priceEndsAt: Date | null;
+} {
+  const list = resolveCurrentPrice(prices, BookPriceKind.LIST, now);
+  const sale = resolveCurrentPrice(prices, BookPriceKind.SALE, now);
+  return {
+    basePriceRials: list?.amountRials ?? 0,
+    salePriceRials: sale?.amountRials ?? null,
+    priceStartsAt: sale?.effectiveFrom ?? null,
+    priceEndsAt: sale?.effectiveTo ?? null,
+  };
+}
+
+export function latestOpenPrice(
+  prices: readonly PriceRow[],
+  kind: BookPriceKind,
+): PriceRow | null {
+  const open = prices.filter((row) => row.kind === kind && row.effectiveTo == null);
+  if (open.length === 0) return null;
+  return open.reduce((latest, row) =>
+    row.effectiveFrom.getTime() > latest.effectiveFrom.getTime() ? row : latest,
+  );
+}

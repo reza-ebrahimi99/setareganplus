@@ -1,0 +1,191 @@
+/* ===== COUNSELOR OS V2 ===== */
+@page {
+  size: A4;
+  margin: 14mm 12mm 16mm;
+}
+
+.counselor-report__hint {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem;
+}
+.cos-shell__header-role {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--cos-muted);
+}
+
+.cos-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0.55rem;
+  margin: 0 0 1rem;
+}
+
+.cos-filters input,
+.cos-filters select {
+  min-height: 2.5rem;
+  border: 1px solid var(--cos-border);
+  border-radius: 0.65rem;
+  padding: 0.4rem 0.65rem;
+  font: inherit;
+  background: #fff;
+}
+
+.cos-table--wide {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cos-table--wide th,
+.cos-table--wide td {
+  padding: 0.55rem 0.45rem;
+  border-bottom: 1px solid var(--cos-border);
+  text-align: right;
+  font-size: 0.82rem;
+  vertical-align: top;
+}
+
+.cos-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  background: #f1f5f9;
+  font-size: 0.75rem;
+}
+
+.cos-badge--ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.cos-badge--warn {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.cos-progress {
+  font-weight: 700;
+}
+
+.cos-finance-grid,
+.cos-work-queue,
+.cos-activity,
+.cos-doc-list,
+.cos-audit-list {
+  display: grid;
+  gap: 0.65rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cos-finance-card,
+.cos-work-queue a,
+.cos-activity li {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem;
+  border: 1px solid var(--cos-border);
+  border-radius: 0.75rem;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+}
+
+.cos-dl--grid {
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+
+.cos-field-mini {
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--cos-muted);
+  font-size: 0.78rem;
+}
+
+.cos-edit-box {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--cos-border);
+}
+
+.cos-schedule article {
+  margin-bottom: 1rem;
+}
+
+.cos-schedule ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.cos-subhead {
+  margin: 0.85rem 0 0.4rem;
+  font-size: 0.85rem;
+}
+
+.cos-pager {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.cos-mobile-only {
+  display: none;
+}
+
+.counselor-report__notespace {
+  min-height: 7rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.counselor-report__lines {
+  height: 5rem;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 1.3rem,
+    #e2e8f0 1.3rem,
+    #e2e8f0 1.35rem
+  );
+}
+
+@media (max-width: 900px) {
+  .cos-desktop-only {
+    display: none;
+  }
+
+  .cos-mobile-only {
+    display: grid;
+    gap: 0.75rem;
+  }
+}
+
+@media print {
+  .cos-shell {
+    display: block;
+    background: #fff;
+  }
+
+  .cos-shell__sidebar,
+  .cos-shell__header,
+  .cos-shell__mobile-nav {
+    display: none !important;
+  }
+
+  .cos-shell__content {
+    padding: 0;
+  }
+
+  .counselor-report {
+    max-width: none;
+  }
+}
+/* ===== END COUNSELOR OS V2 ===== */

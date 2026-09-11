@@ -1,0 +1,10 @@
+/// Counselor OS v3 — additive BookingAdvisor profile fields.
+/// Applied surgically by merge_schema.py; do not wholesale-replace schema.prisma.
+/// Never rewrite GuidancePlan. Production already has journeyVersion.
+
+model BookingAdvisorV3Fields {
+  title        String?
+  specialty    String?
+  capacity     Int?
+  photoMediaId String?
+}

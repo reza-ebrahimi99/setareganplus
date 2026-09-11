@@ -43,6 +43,7 @@ export {
 export {
   assertUniqueCategorySlug,
   assertValidCategoryParent,
+  normalizeCommerceCategoryInput,
   planCategorySeedInserts,
   CommerceCategoryValidationError,
 } from "@/lib/commerce/categories/validation";

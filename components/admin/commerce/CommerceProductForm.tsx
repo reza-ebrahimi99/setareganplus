@@ -48,6 +48,9 @@ export type CommerceProductFormDefaults = {
   stockQuantity: string;
   status: string;
   isVisible: boolean;
+  isFeatured: boolean;
+  metaTitle: string;
+  metaDescription: string;
   categoryId: string;
   primaryImageAssetId: string | null;
   imageUrl: string | null;
@@ -274,6 +277,31 @@ export function CommerceProductForm({ mode, categories, defaults }: Props) {
           />
           نمایش در فروشگاه
         </label>
+        <label className="flex items-center gap-2 self-end pb-2 text-sm">
+          <input
+            type="checkbox"
+            name="isFeatured"
+            value="true"
+            defaultChecked={defaults?.isFeatured ?? false}
+            className="size-4 rounded border-border"
+          />
+          ویژه خانه استاربوک
+        </label>
+        <Field label="عنوان سئو" className="sm:col-span-2">
+          <input
+            name="metaTitle"
+            defaultValue={defaults?.metaTitle ?? ""}
+            className="min-h-11 w-full rounded-xl border border-border bg-white px-3 py-2.5"
+          />
+        </Field>
+        <Field label="توضیح سئو" className="sm:col-span-2">
+          <textarea
+            name="metaDescription"
+            rows={2}
+            defaultValue={defaults?.metaDescription ?? ""}
+            className="w-full rounded-xl border border-border bg-white px-3 py-2.5"
+          />
+        </Field>
         <div className="sm:col-span-2">
           <MediaPickerField
             key={`cover-${defaults?.primaryImageAssetId ?? "none"}`}

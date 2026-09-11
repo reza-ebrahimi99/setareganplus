@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import ExcelJS from "exceljs";
-import { BookPriceKind } from "../generated/prisma/enums";
+import { BookPriceKind, BookSkuStatus } from "../generated/prisma/enums";
 import { resolveBooksFlag } from "../lib/books/flags";
 import {
   formatRials,
@@ -20,13 +20,29 @@ import {
   findCatalogHeaderRowNumber,
   validateMappedCatalogRows,
 } from "../lib/books/catalog/import-parser";
+import { allocateUniqueBookSkuSlug, slugifyBookSku } from "../lib/books/catalog/slug";
+import {
+  bookSkuStatusFromShopStatus,
+  shopStatusFromBookSku,
+} from "../lib/commerce/catalog/shop-status";
+import {
+  partitionStarBookShelves,
+  recommendStarBookProducts,
+} from "../lib/commerce/starbook/shelves";
+import type { PublicCommerceProduct } from "../lib/commerce/catalog/service";
 
 let passed = 0;
+const pending: Promise<void>[] = [];
 
-function test(name: string, fn: () => void) {
-  fn();
-  passed += 1;
-  console.log(`✓ ${name}`);
+function test(name: string, fn: () => void | Promise<void>) {
+  pending.push(
+    Promise.resolve()
+      .then(() => fn())
+      .then(() => {
+        passed += 1;
+        console.log(`✓ ${name}`);
+      }),
+  );
 }
 
 test("bookCommerce flag defaults off when no org row exists", () => {
@@ -211,4 +227,163 @@ test("findCatalogHeaderRowNumber does not drop the first data row when the heade
   assert.equal(rawRows[1]?.values.internalCode, "BA-1002");
 });
 
-console.log(`\n${passed} tests passed`);
+test("unified catalog slugify keeps persian letters and collapses spaces", () => {
+  assert.equal(slugifyBookSku("ریاضی  هفتم"), "ریاضی-هفتم");
+  assert.equal(slugifyBookSku("  BA 001  "), "ba-001");
+});
+
+test("allocateUniqueBookSkuSlug suffixes when the desired slug is taken", async () => {
+  const taken = new Set(["riazi"]);
+  const slug = await allocateUniqueBookSkuSlug({
+    organizationId: "org",
+    desired: "riazi",
+    exists: async (candidate) => taken.has(candidate),
+  });
+  assert.equal(slug, "riazi-2");
+});
+
+test("shop listing status is derived from BookSku + inventory, not a second catalog enum", () => {
+  assert.equal(
+    shopStatusFromBookSku({
+      status: BookSkuStatus.ACTIVE,
+      trackInventory: true,
+      unlimitedStock: false,
+      stockQuantity: 0,
+    }),
+    "OUT_OF_STOCK",
+  );
+  assert.equal(
+    shopStatusFromBookSku({
+      status: BookSkuStatus.INACTIVE,
+      trackInventory: false,
+      unlimitedStock: true,
+      stockQuantity: null,
+    }),
+    "DRAFT",
+  );
+  assert.equal(bookSkuStatusFromShopStatus("ARCHIVED"), BookSkuStatus.DISCONTINUED);
+  assert.equal(bookSkuStatusFromShopStatus("ACTIVE"), BookSkuStatus.ACTIVE);
+});
+
+test("StarBook shelves are derived from BookSku fields, not a second catalog", () => {
+  const book = (partial: Partial<PublicCommerceProduct>): PublicCommerceProduct => ({
+    id: "1",
+    title: "ریاضی",
+    slug: "riazi",
+    shortDescription: "",
+    description: "",
+    authors: "الف",
+    subject: "ریاضی",
+    gradeLabel: "دهم",
+    pageCount: 10,
+    editionYear: 1404,
+    printType: null,
+    bindingType: null,
+    formatSize: null,
+    features: [],
+    stockQuantity: 3,
+    status: "ACTIVE",
+    inStock: true,
+    imageUrl: null,
+    imageAlt: null,
+    categoryTitle: null,
+    categorySlug: null,
+    isFeatured: false,
+    updatedAt: new Date("2026-09-01"),
+    branchId: null,
+    pricing: {
+      basePriceRials: 1000,
+      finalPriceRials: 1000,
+      discountRials: 0,
+      discountPercent: null,
+      isOnSale: false,
+      saleEndsAt: null,
+    },
+    ...partial,
+  });
+  const shelves = partitionStarBookShelves([
+    book({ id: "a", isFeatured: true, title: "ویژه" }),
+    book({
+      id: "b",
+      title: "حراج",
+      pricing: {
+        basePriceRials: 2000,
+        finalPriceRials: 1000,
+        discountRials: 1000,
+        discountPercent: 50,
+        isOnSale: true,
+        saleEndsAt: null,
+      },
+    }),
+    book({ id: "c", title: "تازه", updatedAt: new Date("2026-09-10") }),
+  ]);
+  assert.equal(shelves.featured[0]?.id, "a");
+  assert.equal(shelves.flash[0]?.id, "b");
+  assert.equal(shelves.newest[0]?.id, "c");
+});
+
+test("StarBook recommends from recent subject without a second catalog", () => {
+  const book = (partial: Partial<PublicCommerceProduct>): PublicCommerceProduct => ({
+    id: "1",
+    title: "ریاضی",
+    slug: "riazi",
+    shortDescription: "",
+    description: "",
+    authors: "الف",
+    subject: "ریاضی",
+    gradeLabel: "دهم",
+    pageCount: 10,
+    editionYear: 1404,
+    printType: null,
+    bindingType: null,
+    formatSize: null,
+    features: [],
+    stockQuantity: 3,
+    status: "ACTIVE",
+    inStock: true,
+    imageUrl: null,
+    imageAlt: null,
+    categoryTitle: null,
+    categorySlug: null,
+    isFeatured: false,
+    updatedAt: new Date("2026-09-01"),
+    branchId: null,
+    pricing: {
+      basePriceRials: 1000,
+      finalPriceRials: 1000,
+      discountRials: 0,
+      discountPercent: null,
+      isOnSale: false,
+      saleEndsAt: null,
+    },
+    ...partial,
+  });
+  const math = book({
+    id: "m1",
+    subject: "ریاضی",
+    gradeLabel: "دهم",
+    title: "دیده شده",
+  });
+  const sibling = book({
+    id: "m2",
+    subject: "ریاضی",
+    gradeLabel: "دهم",
+    title: "پیشنهاد",
+  });
+  const other = book({ id: "p1", subject: "فیزیک", title: "دیگر" });
+  const picked = recommendStarBookProducts(["m1"], [math, sibling, other], 2);
+  assert.equal(picked[0]?.id, "m2");
+  assert.equal(
+    picked.some((item) => item.id === "m1"),
+    false,
+  );
+});
+
+void Promise.all(pending)
+  .then(() => {
+    console.log(`\n${passed} tests passed`);
+  })
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });

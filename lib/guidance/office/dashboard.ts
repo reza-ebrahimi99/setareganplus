@@ -18,11 +18,10 @@ import {
 } from "@/lib/guidance/office/first-session";
 import { loadFinalExamScores } from "@/lib/guidance/office/final-exam-store";
 import {
-  nextOfficeIntakeHref,
   officeIntakeContinueLabel,
   officeIntakeProgressPercent,
 } from "@/lib/guidance/office/intake-href";
-import { MAJOR_OFFICE_INTEREST, MAJOR_OFFICE_JOURNEY, MAJOR_OFFICE_SESSION } from "@/lib/guidance/office/nav";
+import { GUIDANCE_CANONICAL_JOURNEY_ENTRY } from "@/lib/guidance/canonical-entry";
 import { loadGuidanceOnboardingRecord } from "@/lib/guidance/onboarding";
 import {
   draftHasAcademic,
@@ -161,7 +160,6 @@ export async function loadOfficeDashboard(params: {
     hasTranscript: Boolean(transcript),
   };
   const intakePercent = officeIntakeProgressPercent(intakeFlags);
-  const intakeHref = nextOfficeIntakeHref(intakeFlags);
   const latestWithMessage = [...reviews]
     .reverse()
     .find((row) => row.studentMessage);
@@ -182,11 +180,13 @@ export async function loadOfficeDashboard(params: {
           }
         : null;
 
+  // Every "today task" routes through the canonical journey resolver so the
+  // dashboard can never send a student back into the legacy Major Office.
   const todayTask: OfficeTodayTask = booked && countdown?.upcoming
     ? {
         title: "آمادگی جلسه اول",
         body: countdown.label,
-        href: MAJOR_OFFICE_SESSION,
+        href: GUIDANCE_CANONICAL_JOURNEY_ENTRY,
         label: "مدارک جلسه",
       }
     : !intakeFlags.hasIdentityProfile ||
@@ -196,18 +196,13 @@ export async function loadOfficeDashboard(params: {
       ? {
           title: officeIntakeContinueLabel(intakeFlags),
           body: pulse.waitingBody,
-          href: intakeHref,
+          href: GUIDANCE_CANONICAL_JOURNEY_ENTRY,
           label: officeIntakeContinueLabel(intakeFlags),
         }
       : {
           title: pulse.waitingTitle,
           body: pulse.waitingBody,
-          href:
-            plan.currentStep === 2
-              ? MAJOR_OFFICE_INTEREST
-              : plan.currentStep === 4
-                ? MAJOR_OFFICE_SESSION
-                : MAJOR_OFFICE_JOURNEY,
+          href: GUIDANCE_CANONICAL_JOURNEY_ENTRY,
           label: "ادامه مسیر",
         };
 

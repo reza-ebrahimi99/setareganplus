@@ -118,7 +118,7 @@ function mapPickupOrder(order: {
   items: Array<{
     titleSnapshot: string;
     quantity: number;
-    item: { authors: string } | null;
+    bookSku: { authors: string } | null;
   }>;
   branch: Parameters<typeof toCommerceBranchBadge>[0] | null;
   pickupBranch: Parameters<typeof toCommerceBranchBadge>[0] | null;
@@ -140,7 +140,7 @@ function mapPickupOrder(order: {
       : (order.items[0]?.titleSnapshot ?? "—");
   const instructor =
     order.items
-      .map((item) => item.item?.authors?.trim())
+      .map((item) => item.bookSku?.authors?.trim())
       .filter((value): value is string => Boolean(value))
       .join("، ") || null;
   const rollbackCount = order.events.filter((event) => event.eventType === "ROLLBACK").length;
@@ -217,7 +217,7 @@ const PICKUP_INCLUDE = {
     select: {
       titleSnapshot: true,
       quantity: true,
-      item: { select: { authors: true } },
+      bookSku: { select: { authors: true } },
     },
   },
   branch: { select: BRANCH_SELECT },

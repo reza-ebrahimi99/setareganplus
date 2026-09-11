@@ -1,0 +1,89 @@
+/* ===== DISCOVER DETAIL CLEANUP ===== */
+
+.program-encyclopedia-back {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  margin: 0 0 0.85rem;
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
+.program-encyclopedia-back a {
+  color: #0e7490;
+  text-decoration: none;
+}
+
+.program-encyclopedia-hero--compact .program-encyclopedia-hero__visual {
+  min-height: 5.5rem;
+}
+
+.program-encyclopedia-hero__icon {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  color: rgb(255 255 255 / 0.92);
+}
+
+.program-encyclopedia-hero__icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.program-encyclopedia-hero__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.program-encyclopedia-hero__chips a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgb(14 116 144 / 0.18);
+  background: rgb(14 116 144 / 0.07);
+  color: #0e7490;
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.discover-cover--mark {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+  padding: 0.7rem 0.9rem;
+  max-width: 28rem;
+  border: 1px solid #e7e0d2;
+  border-radius: 1rem;
+  background: #fffdf8;
+  color: #0e7490;
+}
+
+.discover-cover--mark svg {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+}
+
+.discover-cover--mark span {
+  font-size: 0.82rem;
+  font-weight: 750;
+  color: #64748b;
+}
+
+.discover-hero h1 {
+  font-size: clamp(1.65rem, 4vw, 2.35rem);
+}
+
+.discover-cover:not(.discover-cover--mark) {
+  margin: 1rem 0 1.25rem;
+}
+
+/* ===== END DISCOVER DETAIL CLEANUP ===== */

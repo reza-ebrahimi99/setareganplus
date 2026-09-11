@@ -8,6 +8,10 @@ import {
   COUNSELOR_OS_ENTRY_PATH,
   isCounselorHost,
 } from "@/lib/counselor-os/host";
+import {
+  GUIDANCE_CANONICAL_DASHBOARD,
+  isGuidanceCanonicalHost,
+} from "@/lib/guidance/canonical-entry";
 
 /**
  * Cookie-presence gates for /admin and /portal.
@@ -37,6 +41,16 @@ export function middleware(request: NextRequest) {
       target.pathname = COUNSELOR_OS_ENTRY_PATH;
       return NextResponse.redirect(target);
     }
+  }
+
+  // Canonical guidance host: "/" is the dashboard. The /portal branch below
+  // then handles authentication and sets next=<dashboard>, so an anonymous
+  // visitor reaches login and returns to the dashboard — never a journey step.
+  if (isGuidanceCanonicalHost(host) && (pathname === "/" || pathname === "")) {
+    const target = request.nextUrl.clone();
+    target.pathname = GUIDANCE_CANONICAL_DASHBOARD;
+    target.search = "";
+    return NextResponse.redirect(target);
   }
 
   if (pathname.startsWith("/admin")) {

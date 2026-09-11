@@ -1,0 +1,23 @@
+/// Counselor OS v2 — explicit correction audit for student-entered guidance data.
+/// Does not mutate payment history. Original uploaded evidence is never replaced here.
+model CounselorCaseCorrection {
+  id              String   @id @default(cuid())
+  organizationId  String
+  studentId       String
+  counselorUserId String
+  section         String
+  fieldKey        String
+  fieldLabel      String
+  previousValue   String   @db.Text
+  newValue        String   @db.Text
+  reason          String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student      Student      @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  counselor    User         @relation("CounselorCaseCorrectionActor", fields: [counselorUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, studentId, createdAt], map: "cos_corr_org_stu_at_idx")
+  @@index([organizationId, counselorUserId], map: "cos_corr_org_user_idx")
+  @@map("counselor_case_corrections")
+}

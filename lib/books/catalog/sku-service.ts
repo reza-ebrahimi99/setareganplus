@@ -1,6 +1,7 @@
 import { BookPriceKind, BookSkuStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { buildSkuSearchText } from "@/lib/books/catalog/search";
+import { allocateUniqueBookSkuSlug } from "@/lib/books/catalog/slug";
 import { resolveOrCreateTags, replaceSkuTags } from "@/lib/books/catalog/tags";
 
 export class BookCatalogError extends Error {
@@ -100,6 +101,38 @@ async function assertCodesAvailable(params: {
   }
 }
 
+async function nextUniqueSlug(
+  organizationId: string,
+  desired: string,
+  excludeSkuId?: string,
+): Promise<string> {
+  return allocateUniqueBookSkuSlug({
+    organizationId,
+    desired,
+    excludeSkuId,
+    exists: async (slug) => {
+      const row = await prisma.bookSku.findFirst({
+        where: {
+          organizationId,
+          slug,
+          deletedAt: null,
+          ...(excludeSkuId ? { id: { not: excludeSkuId } } : {}),
+        },
+        select: { id: true },
+      });
+      return Boolean(row);
+    },
+  });
+}
+
+export async function allocateOrgBookSkuSlug(
+  organizationId: string,
+  desired: string,
+  excludeSkuId?: string,
+): Promise<string> {
+  return nextUniqueSlug(organizationId, desired, excludeSkuId);
+}
+
 export async function createBookSku(params: {
   organizationId: string;
   actorUserId: string;
@@ -117,6 +150,7 @@ export async function createBookSku(params: {
     : null;
 
   const now = new Date();
+  const slug = await nextUniqueSlug(organizationId, internalCode);
   const sku = await prisma.bookSku.create({
     data: {
       organizationId,
@@ -126,6 +160,10 @@ export async function createBookSku(params: {
       editionLabel: input.editionLabel?.trim() || null,
       editionYear: input.editionYear?.trim() || null,
       status: input.status ?? BookSkuStatus.ACTIVE,
+      slug,
+      isVisible: false,
+      unlimitedStock: true,
+      trackInventory: false,
       searchText: buildSkuSearchText({
         internalCode,
         barcode,

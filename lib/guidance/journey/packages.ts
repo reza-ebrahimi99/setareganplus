@@ -2,7 +2,7 @@
  * Guidance Journey Engine Step 3 — guidance package catalog.
  * Static reference data (same convention as onboarding-options.ts) — no
  * commerce catalog coupling; these are consulting packages, not physical
- * goods, so CommerceItem is not a good fit here.
+ * goods, so a separate BookSku listing is not a good fit here.
  */
 
 export type GuidancePackageDefinition = {

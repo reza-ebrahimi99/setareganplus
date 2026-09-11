@@ -30,7 +30,11 @@ import {
   zibalStartUrl,
   ZIBAL_GATEWAY_BASE,
 } from "../lib/payment/providers/zibal-http";
-import { ZibalPaymentProvider } from "../lib/payment/providers/zibal";
+import {
+  buildZibalCallbackUrl,
+  isZibalCallbackForPath,
+  ZibalPaymentProvider,
+} from "../lib/payment/providers/zibal";
 import { MockPaymentProvider } from "../lib/payment/providers/mock";
 import { isTerminalPaymentStatus } from "../lib/payment/status-machine";
 
@@ -424,6 +428,121 @@ async function main() {
         }
         setZibalFetchForTests(null);
       },
+    );
+  });
+
+  await check("explicit callbackPath wins over ZIBAL_CALLBACK_URL", async () => {
+    await withEnv(
+      {
+        ZIBAL_MERCHANT_ID: "zibal",
+        ZIBAL_CALLBACK_URL: "https://setareganplus.ir/payments/callback/zibal",
+      },
+      async () => {
+        let captured = "";
+        setZibalFetchForTests(async (_url, init) => {
+          const body = JSON.parse(String(init?.body ?? "{}")) as Record<
+            string,
+            unknown
+          >;
+          captured = String(body.callbackUrl ?? "");
+          return jsonResponse({ result: 100, trackId: 9090 });
+        });
+        const provider = new ZibalPaymentProvider();
+        const result = await provider.requestPayment({
+          organizationId: "org",
+          paymentIntentId: "pi_guidance",
+          amountRials: 43_000_000,
+          currency: "IRR",
+          description: "guidance",
+          callbackPath: "/payments/callback/guidance",
+          callbackToken: "guidancetok",
+        });
+        assert.equal(result.ok, true);
+        const parsed = new URL(captured);
+        assert.equal(parsed.pathname, "/payments/callback/guidance");
+        assert.equal(parsed.searchParams.get("token"), "guidancetok");
+        assert.notEqual(parsed.pathname, "/payments/callback/zibal");
+        if (result.ok) {
+          assert.equal(result.raw.callbackPath, "/payments/callback/guidance");
+          assert.equal(JSON.stringify(result.raw).includes("guidancetok"), false);
+        }
+        setZibalFetchForTests(null);
+      },
+    );
+  });
+
+  await check("registration callbackPath stays on generic zibal callback", async () => {
+    await withEnv(
+      {
+        ZIBAL_MERCHANT_ID: "zibal",
+        ZIBAL_CALLBACK_URL: "https://setareganplus.ir/payments/callback/zibal",
+      },
+      async () => {
+        let captured = "";
+        setZibalFetchForTests(async (_url, init) => {
+          const body = JSON.parse(String(init?.body ?? "{}")) as Record<
+            string,
+            unknown
+          >;
+          captured = String(body.callbackUrl ?? "");
+          return jsonResponse({ result: 100, trackId: 8080 });
+        });
+        const provider = new ZibalPaymentProvider();
+        const result = await provider.requestPayment({
+          organizationId: "org",
+          paymentIntentId: "pi_reg",
+          amountRials: 50_000,
+          currency: "IRR",
+          description: "registration",
+          callbackPath: "/payments/callback/zibal",
+          callbackToken: "regtok",
+        });
+        assert.equal(result.ok, true);
+        const parsed = new URL(captured);
+        assert.equal(parsed.pathname, "/payments/callback/zibal");
+        assert.equal(parsed.searchParams.get("token"), "regtok");
+        setZibalFetchForTests(null);
+      },
+    );
+  });
+
+  await check("empty callbackPath falls back to ZIBAL_CALLBACK_URL", () => {
+    return withEnv(
+      {
+        ZIBAL_CALLBACK_URL: "https://setareganplus.ir/payments/callback/zibal",
+      },
+      () => {
+        const url = buildZibalCallbackUrl({
+          callbackPath: "   ",
+          callbackToken: "fallbacktok",
+        });
+        assert.ok(url);
+        const parsed = new URL(url!);
+        assert.equal(parsed.pathname, "/payments/callback/zibal");
+        assert.equal(parsed.searchParams.get("token"), "fallbacktok");
+        assert.equal(
+          isZibalCallbackForPath(url!, "/payments/callback/guidance"),
+          false,
+        );
+        assert.equal(
+          isZibalCallbackForPath(url!, "/payments/callback/zibal"),
+          true,
+        );
+      },
+    );
+  });
+
+  await check("guidance checkout safety rejects generic callback URL", () => {
+    const generic = "https://setareganplus.ir/payments/callback/zibal?token=abc";
+    const dedicated =
+      "https://setareganplus.ir/payments/callback/guidance?token=abc";
+    assert.equal(
+      isZibalCallbackForPath(generic, "/payments/callback/guidance"),
+      false,
+    );
+    assert.equal(
+      isZibalCallbackForPath(dedicated, "/payments/callback/guidance"),
+      true,
     );
   });
 

@@ -577,9 +577,7 @@ model Organization {
   registrationFlowItems                RegistrationFlowItem[]
   registrationFlowItemVariants         RegistrationFlowItemVariant[]
   commerceCategories                   CommerceCategory[]
-  commerceBusinessTypes                CommerceBusinessType[]
-  commerceItems                        CommerceItem[]
-  commerceItemCategories               CommerceItemCategory[]
+  bookSkuCategories                    BookSkuCategory[]
   commerceOrders                       CommerceOrder[]
   commerceOrderItems                   CommerceOrderItem[]
   commerceOrderEvents                  CommerceOrderEvent[]
@@ -619,6 +617,11 @@ model Organization {
   counselorNotes                       CounselorNote[]
   counselorFollowUps                   CounselorFollowUp[]
   counselorAppointments                CounselorAppointment[]
+  counselorCaseCorrections             CounselorCaseCorrection[]
+  guidanceChoiceLists                  GuidanceChoiceList[]
+  guidanceChoiceItems                  GuidanceChoiceItem[]
+  guidanceChoiceFeedback               GuidanceChoiceFeedback[]
+  guidanceDiscountCodes                GuidanceDiscountCode[]
 
   @@map("organizations")
 }
@@ -657,7 +660,7 @@ model Branch {
   crmLeadImportReports CrmLeadImportReport[]
   registrations        Registration[]
   commerceCategories   CommerceCategory[]
-  commerceItems        CommerceItem[]
+  bookSkus             BookSku[]
   commerceOrders       CommerceOrder[]
   commercePickupOrders CommerceOrder[]       @relation("CommerceOrderPickupBranch")
 
@@ -687,45 +690,50 @@ model User {
   deletedAt        DateTime?
 
   memberships                  OrganizationMembership[]
-  auditLogs                    AuditLog[]                 @relation("AuditLogActor")
+  auditLogs                    AuditLog[]                   @relation("AuditLogActor")
   adminSessions                AdminSession[]
-  mediaAssets                  MediaAsset[]               @relation("MediaAssetCreator")
+  mediaAssets                  MediaAsset[]                 @relation("MediaAssetCreator")
   bookingAdvisors              BookingAdvisor[]
   bookingCheckIns              BookingCheckIn[]
-  ownedLeads                   Lead[]                     @relation("LeadOwner")
-  assignedCrmTasks             CrmTask[]                  @relation("CrmTaskAssignee")
-  createdCrmTasks              CrmTask[]                  @relation("CrmTaskCreator")
-  crmActivities                CrmActivity[]              @relation("CrmActivityActor")
-  crmLeadImportReports         CrmLeadImportReport[]      @relation("CrmLeadImportActor")
+  ownedLeads                   Lead[]                       @relation("LeadOwner")
+  assignedCrmTasks             CrmTask[]                    @relation("CrmTaskAssignee")
+  createdCrmTasks              CrmTask[]                    @relation("CrmTaskCreator")
+  crmActivities                CrmActivity[]                @relation("CrmActivityActor")
+  crmLeadImportReports         CrmLeadImportReport[]        @relation("CrmLeadImportActor")
   portalAccountLinks           PortalAccountLink[]
-  registrationDocumentReviews  RegistrationDocument[]     @relation("RegistrationDocumentReviewer")
-  registrationNotes            RegistrationNote[]         @relation("RegistrationNoteActor")
-  registrationActivities       RegistrationActivity[]     @relation("RegistrationActivityActor")
-  commerceOrdersDelivered      CommerceOrder[]            @relation("CommerceOrderDeliveredBy")
-  commerceOrdersReadyForPickup CommerceOrder[]            @relation("CommerceOrderReadyForPickupBy")
-  commerceOrdersHandover       CommerceOrder[]            @relation("CommerceOrderHandoverStaff")
-  commerceOrderEvents          CommerceOrderEvent[]       @relation("CommerceOrderEventActor")
-  leadOwnershipHistoryAsOwner  LeadOwnershipHistory[]     @relation("LeadOwnershipHistoryOwner")
-  leadOwnershipHistoryAsActor  LeadOwnershipHistory[]     @relation("LeadOwnershipHistoryActor")
-  attributedSnapshots          AttributionSnapshot[]      @relation("AttributionSnapshotUser")
+  registrationDocumentReviews  RegistrationDocument[]       @relation("RegistrationDocumentReviewer")
+  registrationNotes            RegistrationNote[]           @relation("RegistrationNoteActor")
+  registrationActivities       RegistrationActivity[]       @relation("RegistrationActivityActor")
+  commerceOrdersDelivered      CommerceOrder[]              @relation("CommerceOrderDeliveredBy")
+  commerceOrdersReadyForPickup CommerceOrder[]              @relation("CommerceOrderReadyForPickupBy")
+  commerceOrdersHandover       CommerceOrder[]              @relation("CommerceOrderHandoverStaff")
+  commerceOrderEvents          CommerceOrderEvent[]         @relation("CommerceOrderEventActor")
+  leadOwnershipHistoryAsOwner  LeadOwnershipHistory[]       @relation("LeadOwnershipHistoryOwner")
+  leadOwnershipHistoryAsActor  LeadOwnershipHistory[]       @relation("LeadOwnershipHistoryActor")
+  attributedSnapshots          AttributionSnapshot[]        @relation("AttributionSnapshotUser")
   staffNotifications           StaffNotification[]
   experienceProfiles           ExperienceProfile[]
   experienceTimelineEvents     ExperienceTimelineEvent[]
   experienceWidgetSnapshots    ExperienceWidgetSnapshot[]
-  bookSkuPricesCreated         BookSkuPrice[]             @relation("BookSkuPriceCreator")
-  bookImportJobsCreated        BookImportJob[]            @relation("BookImportJobCreator")
-  guidancePlans                GuidancePlan[]             @relation("GuidancePlanUser")
-  guidanceDocumentsVerified    GuidanceDocument[]         @relation("GuidanceDocumentVerifier")
-  guidancePlanChoicesApproved  GuidancePlan[]             @relation("GuidancePlanChoicesApprover")
-  guidanceStepReviewsApproved  GuidanceStepReview[]       @relation("GuidanceStepReviewApprover")
-  guidanceStepReviewsRejected  GuidanceStepReview[]       @relation("GuidanceStepReviewRejector")
-  guidanceStepReviewEvents     GuidanceStepReviewEvent[]  @relation("GuidanceStepReviewEventActor")
+  bookSkuPricesCreated         BookSkuPrice[]               @relation("BookSkuPriceCreator")
+  bookImportJobsCreated        BookImportJob[]              @relation("BookImportJobCreator")
+  guidancePlans                GuidancePlan[]               @relation("GuidancePlanUser")
+  guidanceDocumentsVerified    GuidanceDocument[]           @relation("GuidanceDocumentVerifier")
+  guidancePlanChoicesApproved  GuidancePlan[]               @relation("GuidancePlanChoicesApprover")
+  guidanceStepReviewsApproved  GuidanceStepReview[]         @relation("GuidanceStepReviewApprover")
+  guidanceStepReviewsRejected  GuidanceStepReview[]         @relation("GuidanceStepReviewRejector")
+  guidanceStepReviewEvents     GuidanceStepReviewEvent[]    @relation("GuidanceStepReviewEventActor")
   counselorStudentAssignments  CounselorStudentAssignment[] @relation("CounselorAssignmentCounselor")
-  counselorAssignmentsCreated    CounselorStudentAssignment[] @relation("CounselorAssignmentAssignedBy")
-  counselingSessionRecords       CounselingSessionRecord[]    @relation("CounselingSessionCounselor")
-  counselorNotes                 CounselorNote[]              @relation("CounselorNoteAuthor")
-  counselorFollowUps             CounselorFollowUp[]          @relation("CounselorFollowUpCounselor")
-  counselorAppointments          CounselorAppointment[]       @relation("CounselorAppointmentCounselor")
+  counselorAssignmentsCreated  CounselorStudentAssignment[] @relation("CounselorAssignmentAssignedBy")
+  counselingSessionRecords     CounselingSessionRecord[]    @relation("CounselingSessionCounselor")
+  counselorNotes               CounselorNote[]              @relation("CounselorNoteAuthor")
+  counselorFollowUps           CounselorFollowUp[]          @relation("CounselorFollowUpCounselor")
+  counselorAppointments        CounselorAppointment[]       @relation("CounselorAppointmentCounselor")
+  counselorCaseCorrections     CounselorCaseCorrection[]    @relation("CounselorCaseCorrectionActor")
+  guidanceChoiceListsAuthored  GuidanceChoiceList[]         @relation("GuidanceChoiceListCounselor")
+  guidanceChoiceListsReadyBy   GuidanceChoiceList[]         @relation("GuidanceChoiceListReadyBy")
+  guidancePlansSanjeshVerified GuidancePlan[]               @relation("GuidancePlanSanjeshVerifier")
+  guidanceChoiceFeedback       GuidanceChoiceFeedback[]     @relation("GuidanceChoiceFeedbackStudent")
 
   @@index([status])
   @@index([deletedAt])
@@ -1354,10 +1362,11 @@ model MediaAsset {
   registrationFlowGalleryItems RegistrationFlowGalleryItem[]
   registrationFlowItemImages   RegistrationFlowItem[]        @relation("RegistrationFlowItemImage")
   commerceCategoryImages       CommerceCategory[]            @relation("CommerceCategoryImage")
-  commerceItemPrimaryImages    CommerceItem[]                @relation("CommerceItemPrimaryImage")
+  bookSkuPrimaryImages         BookSku[]                     @relation("BookSkuPrimaryImage")
   bookAgencyProfileLogos       BookAgencyProfile[]           @relation("BookAgencyProfileLogo")
   bookImportJobReports         BookImportJob[]               @relation("BookImportJobReport")
   guidanceDocuments            GuidanceDocument[]
+  bookingAdvisorPhotos         BookingAdvisor[]              @relation("BookingAdvisorPhoto")
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])
@@ -2012,6 +2021,13 @@ model BookingAdvisor {
   userId         String?
   displayName    String
   description    String?
+  /// Counselor OS canonical profile — professional title (e.g. مشاور انتخاب رشته).
+  title          String?
+  /// Counselor OS canonical profile — specialty / focus area.
+  specialty      String?
+  /// Max active assigned students. null = unlimited; 0 = no new assignments.
+  capacity       Int?
+  photoMediaId   String?
   colorKey       String?
   isActive       Boolean   @default(true)
   createdAt      DateTime  @default(now())
@@ -2021,6 +2037,7 @@ model BookingAdvisor {
   organization      Organization                   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   branch            Branch?                        @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
   user              User?                          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  photoMedia        MediaAsset?                    @relation("BookingAdvisorPhoto", fields: [photoMediaId], references: [id], onDelete: SetNull)
   serviceLinks      BookingAdvisorService[]
   availabilityRules BookingAvailabilityRule[]
   exceptions        BookingAvailabilityException[]
@@ -2030,6 +2047,7 @@ model BookingAdvisor {
   @@index([organizationId, isActive])
   @@index([organizationId, deletedAt])
   @@index([organizationId, userId])
+  @@index([photoMediaId], map: "bk_adv_photo_idx")
   @@map("booking_advisors")
 }
 
@@ -2150,14 +2168,14 @@ model BookingReservation {
   updatedAt            DateTime           @updatedAt
   deletedAt            DateTime?
 
-  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  slot            BookingSlot          @relation(fields: [organizationId, slotId], references: [organizationId, id], onDelete: Restrict)
-  formSubmission  FormSubmission?      @relation(fields: [organizationId, formSubmissionId], references: [organizationId, id], onDelete: Restrict)
-  lead            Lead?                @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
-  rescheduledFrom BookingReservation?  @relation("BookingRescheduleChain", fields: [rescheduledFromId], references: [id], onDelete: Restrict)
-  rescheduledTo   BookingReservation[] @relation("BookingRescheduleChain")
-  checkIns        BookingCheckIn[]
-  counselorAppointment CounselorAppointment?
+  organization            Organization             @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  slot                    BookingSlot              @relation(fields: [organizationId, slotId], references: [organizationId, id], onDelete: Restrict)
+  formSubmission          FormSubmission?          @relation(fields: [organizationId, formSubmissionId], references: [organizationId, id], onDelete: Restrict)
+  lead                    Lead?                    @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
+  rescheduledFrom         BookingReservation?      @relation("BookingRescheduleChain", fields: [rescheduledFromId], references: [id], onDelete: Restrict)
+  rescheduledTo           BookingReservation[]     @relation("BookingRescheduleChain")
+  checkIns                BookingCheckIn[]
+  counselorAppointment    CounselorAppointment?
   counselingSessionRecord CounselingSessionRecord?
 
   @@unique([organizationId, trackingCode])
@@ -2744,20 +2762,22 @@ model Student {
   archivedAt       DateTime?
   deletedAt        DateTime?
 
-  organization       Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  grade              StudentGrade              @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
-  major              StudentMajor?             @relation(fields: [organizationId, majorId], references: [organizationId, id], onDelete: Restrict)
-  portraitMedia      MediaAsset?               @relation("StudentPortrait", fields: [portraitMediaId], references: [id], onDelete: SetNull)
-  achievements       Achievement[]
-  assessmentResults  AssessmentResult[]
-  guardianRelations  StudentGuardianRelation[]
-  portalAccountLinks PortalAccountLink[]
-  guidancePlans      GuidancePlan[]
+  organization                Organization                 @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  grade                       StudentGrade                 @relation(fields: [organizationId, gradeId], references: [organizationId, id], onDelete: Restrict)
+  major                       StudentMajor?                @relation(fields: [organizationId, majorId], references: [organizationId, id], onDelete: Restrict)
+  portraitMedia               MediaAsset?                  @relation("StudentPortrait", fields: [portraitMediaId], references: [id], onDelete: SetNull)
+  achievements                Achievement[]
+  assessmentResults           AssessmentResult[]
+  guardianRelations           StudentGuardianRelation[]
+  portalAccountLinks          PortalAccountLink[]
+  guidancePlans               GuidancePlan[]
   counselorStudentAssignments CounselorStudentAssignment[]
   counselingSessionRecords    CounselingSessionRecord[]
   counselorNotes              CounselorNote[]
   counselorFollowUps          CounselorFollowUp[]
   counselorAppointments       CounselorAppointment[]
+  counselorCaseCorrections    CounselorCaseCorrection[]
+  guidanceChoiceLists         GuidanceChoiceList[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, kanoonStudentId])
@@ -3587,6 +3607,9 @@ enum PaymentPayableType {
   /// (own callback route) — never routed through the shared
   /// verifyPaymentCallback() used by Registration/Commerce.
   GUIDANCE_PACKAGE
+  /// Holland standalone report checkout — dedicated holland/payment.ts flow.
+  /// Not routed through shared verifyPaymentCallback() for Registration/Commerce.
+  GUIDANCE_HOLLAND_REPORT
   /// Reserved for future domains — do not create intents with these until wired.
   BOOKING
   TUITION
@@ -3752,9 +3775,9 @@ model RegistrationActivity {
 }
 
 // ─── Commerce Foundation ──────────────────────────────────────────────────────
-// Sellable catalog entity is CommerceItem (goods + services + events + ظخ).
-// Admin UX label remains ┬س┘à╪ص╪╡┘ê┘╪د╪ز┬╗; do not confuse with RegistrationProductType.
-// Variants are deferred ظ¤ extend later with CommerceVariant + OrderItem.variantId.
+// Canonical sellable catalog is BookSku (see Book Commerce ERP section).
+// CommerceCategory is merchandising only. Orders snapshot lines and reference BookSku.
+// Admin UX label remains «محصولات»; do not confuse with RegistrationProductType.
 
 /// Technical fulfillment kind (stable; extend with ADD VALUE when needed).
 enum CommerceSystemKind {
@@ -3766,13 +3789,6 @@ enum CommerceSystemKind {
   CONSULTING
   SERVICE
   CUSTOM
-}
-
-enum CommerceItemStatus {
-  DRAFT
-  ACTIVE
-  OUT_OF_STOCK
-  ARCHIVED
 }
 
 enum CommerceOrderStatus {
@@ -3921,7 +3937,7 @@ model CommerceCategory {
   parent       CommerceCategory?      @relation("CommerceCategoryTree", fields: [organizationId, parentId], references: [organizationId, id], onDelete: Restrict)
   children     CommerceCategory[]     @relation("CommerceCategoryTree")
   imageAsset   MediaAsset?            @relation("CommerceCategoryImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
-  itemLinks    CommerceItemCategory[]
+  skuLinks     BookSkuCategory[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, id])
@@ -3933,105 +3949,11 @@ model CommerceCategory {
   @@map("commerce_categories")
 }
 
-/// Editable business-facing type labels (╪ش╪▓┘ê┘ç╪î ┘ê╪ذ█î┘╪د╪▒╪î ظخ) ظ¤ no Prisma migration to rename.
-model CommerceBusinessType {
-  id             String    @id @default(cuid())
-  organizationId String
-  title          String
-  slug           String
-  description    String    @default("")
-  sortOrder      Int       @default(0)
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  deletedAt      DateTime?
-
-  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  items        CommerceItem[]
-
-  @@unique([organizationId, slug])
-  @@unique([organizationId, id])
-  @@index([organizationId, isActive, deletedAt, sortOrder])
-  @@map("commerce_business_types")
-}
-
-/// Universal sellable catalog entity (physical goods, digital, courses, events, services, …).
-model CommerceItem {
-  id                  String               @id @default(cuid())
-  organizationId      String
-  /// Optional branch ownership; null = organization-wide catalog item.
-  branchId            String?
-  title               String
-  slug                String
-  shortDescription    String               @default("")
-  description         String               @default("")
-  status              CommerceItemStatus   @default(DRAFT)
-  systemKind          CommerceSystemKind   @default(CUSTOM)
-  businessTypeId      String?
-  basePriceRials      Int                  @default(0)
-  salePriceRials      Int?
-  currency            String               @default("IRR")
-  /// Pricing schedule readiness (null = always-on pricing).
-  priceStartsAt       DateTime?
-  priceEndsAt         DateTime?
-  primaryImageAssetId String?
-  sku                 String?
-  barcode             String?
-  trackInventory      Boolean              @default(false)
-  stockQuantity       Int?
-  unlimitedStock      Boolean              @default(true)
-  /// Fulfillment hints (derived defaults from systemKind; overridable).
-  requiresShipping    Boolean              @default(false)
-  grantsDigitalAccess Boolean              @default(false)
-  requiresScheduling  Boolean              @default(false)
-  requiresEnrollment  Boolean              @default(false)
-  /// Soft visibility toggle (independent from lifecycle status).
-  isVisible           Boolean              @default(true)
-  /// Booklet / physical catalog attributes (MVP).
-  authors             String               @default("")
-  subject             String?
-  gradeLabel          String?
-  pageCount           Int?
-  editionYear         Int?
-  printType           CommercePrintType?
-  bindingType         CommerceBindingType?
-  formatSize          CommerceFormatSize?
-  /// Managed feature / TOC list (JSON string array).
-  features            Json?
-  metaTitle           String?
-  metaDescription     String?
-  isFeatured          Boolean              @default(false)
-  sortOrder           Int                  @default(0)
-  metadata            Json?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  deletedAt           DateTime?
-
-  organization  Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch        Branch?                @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  businessType  CommerceBusinessType?  @relation(fields: [organizationId, businessTypeId], references: [organizationId, id], onDelete: Restrict)
-  primaryImage  MediaAsset?            @relation("CommerceItemPrimaryImage", fields: [primaryImageAssetId], references: [id], onDelete: SetNull)
-  categoryLinks CommerceItemCategory[]
-  orderItems    CommerceOrderItem[]
-
-  @@unique([organizationId, slug])
-  @@unique([organizationId, id])
-  @@index([organizationId, status, deletedAt])
-  @@index([organizationId, systemKind, deletedAt])
-  @@index([organizationId, businessTypeId])
-  @@index([organizationId, branchId])
-  @@index([organizationId, isFeatured, sortOrder])
-  @@index([organizationId, isVisible, status, deletedAt])
-  @@index([organizationId, sku])
-  @@index([primaryImageAssetId])
-  @@map("commerce_items")
-}
-
-/// Explicit M2M join for catalog merchandising.
-model CommerceItemCategory {
+/// Explicit M2M join: merchandising category ↔ canonical BookSku.
+model BookSkuCategory {
   id             String   @id @default(cuid())
   organizationId String
-  itemId         String
+  skuId          String
   categoryId     String
   sortOrder      Int      @default(0)
   isFeatured     Boolean  @default(false)
@@ -4039,14 +3961,14 @@ model CommerceItemCategory {
   updatedAt      DateTime @updatedAt
 
   organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  item         CommerceItem     @relation(fields: [organizationId, itemId], references: [organizationId, id], onDelete: Restrict)
+  sku          BookSku          @relation(fields: [organizationId, skuId], references: [organizationId, id], onDelete: Restrict)
   category     CommerceCategory @relation(fields: [organizationId, categoryId], references: [organizationId, id], onDelete: Restrict)
 
-  @@unique([itemId, categoryId])
+  @@unique([skuId, categoryId])
   @@unique([organizationId, id])
   @@index([organizationId, categoryId, sortOrder])
-  @@index([organizationId, itemId])
-  @@map("commerce_item_categories")
+  @@index([organizationId, skuId])
+  @@map("book_sku_categories")
 }
 
 /// Org-level SMS recipients for paid commerce order alerts (additive; not breaking).
@@ -4179,7 +4101,8 @@ model CommerceOrderItem {
   id                 String             @id @default(cuid())
   organizationId     String
   orderId            String
-  itemId             String?
+  /// Canonical catalog FK — BookSku.id (migrated from CommerceItem.id).
+  bookSkuId          String?
   /// Immutable line snapshots (survive catalog edits / soft-delete).
   titleSnapshot      String
   skuSnapshot        String?
@@ -4194,11 +4117,11 @@ model CommerceOrderItem {
 
   organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   order        CommerceOrder @relation(fields: [organizationId, orderId], references: [organizationId, id], onDelete: Restrict)
-  item         CommerceItem? @relation(fields: [organizationId, itemId], references: [organizationId, id], onDelete: Restrict)
+  bookSku      BookSku?      @relation(fields: [organizationId, bookSkuId], references: [organizationId, id], onDelete: Restrict)
 
   @@unique([organizationId, id])
   @@index([organizationId, orderId])
-  @@index([organizationId, itemId])
+  @@index([organizationId, bookSkuId])
   @@map("commerce_order_items")
 }
 
@@ -4238,17 +4161,14 @@ enum ExperienceWidgetKey {
   RECENT_FEED
 }
 
-// ─── Book Commerce ERP — Pen Book Agency (Phase A: Foundation, Phase B: Catalog) ──
+// ─── Book Commerce ERP — canonical catalog (BookTitle + BookSku) ─────────────
 // Additive-only StarOS module. Never rewrites booking, CRM, SMS, auth, or RBAC.
 // Flag: OrganizationFeatureFlag key "bookCommerce". No row = OFF. Hard-off env
 // STAROS_BOOKS_ERP_HARD_OFF wins over an enabled per-org flag.
-// See docs/architecture/book-commerce-erp/ for the full contract (v2 pack).
-// This slice ships Foundation (flag table, AgencyProfile, DocumentSequence) and
-// Catalog (publisher/type/title/SKU, temporal price history, tag reuse, Excel
-// import). Warehouse ledger, sales/reservations, procurement, treasury,
-// marketing, commission, partner portals, and reporting are later approved
-// phases — do not add those tables in this section without a new approval.
-// No scalar stock column exists anywhere in this section on purpose.
+// BookSku is the single sellable product for ERP, admin shop, public shop,
+// orders, search, and scalar inventory. CommerceItem was folded into BookSku.
+// A warehouse movement ledger remains a later phase; shop still uses scalar
+// stockQuantity on BookSku until that ledger ships.
 
 enum BookSkuStatus {
   ACTIVE
@@ -4517,34 +4437,69 @@ model BookTitle {
   @@map("book_titles")
 }
 
-/// Sellable edition. No scalar stock column — quantity lives only in the
-/// warehouse ledger of a later phase. `searchText` is a denormalized lowercase
-/// projection (title + internalCode + barcode + keywords) for staff search.
+/// Canonical sellable edition (ERP + shop + orders + inventory).
+/// `searchText` is a denormalized lowercase haystack for staff and storefront search.
 model BookSku {
-  id             String        @id @default(cuid())
-  organizationId String
-  titleId        String
-  internalCode   String
-  barcode        String?
-  editionLabel   String?
-  editionYear    String?
-  status         BookSkuStatus @default(ACTIVE)
-  searchText     String        @default("")
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  deletedAt      DateTime?
+  id                  String               @id @default(cuid())
+  organizationId      String
+  titleId             String
+  internalCode        String
+  barcode             String?
+  editionLabel        String?
+  editionYear         String?
+  status              BookSkuStatus        @default(ACTIVE)
+  searchText          String               @default("")
+  /// Public shop URL key. Unique per org. ERP-only rows use an `erp-` prefix.
+  slug                String
+  shortDescription    String               @default("")
+  authors             String               @default("")
+  subject             String?
+  gradeLabel          String?
+  pageCount           Int?
+  printType           CommercePrintType?
+  bindingType         CommerceBindingType?
+  formatSize          CommerceFormatSize?
+  features            Json?
+  metaTitle           String?
+  metaDescription     String?
+  isVisible           Boolean              @default(false)
+  isFeatured          Boolean              @default(false)
+  sortOrder           Int                  @default(0)
+  primaryImageAssetId String?
+  branchId            String?
+  trackInventory      Boolean              @default(false)
+  stockQuantity       Int?
+  unlimitedStock      Boolean              @default(true)
+  systemKind          CommerceSystemKind   @default(PHYSICAL)
+  requiresShipping    Boolean              @default(false)
+  grantsDigitalAccess Boolean              @default(false)
+  requiresScheduling  Boolean              @default(false)
+  requiresEnrollment  Boolean              @default(false)
+  currency            String               @default("IRR")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  deletedAt           DateTime?
 
-  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  title        BookTitle             @relation(fields: [organizationId, titleId], references: [organizationId, id], onDelete: Restrict)
-  prices       BookSkuPrice[]
-  tags         BookSkuTag[]
-  importRows   BookImportRowResult[]
+  organization  Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  title         BookTitle              @relation(fields: [organizationId, titleId], references: [organizationId, id], onDelete: Restrict)
+  branch        Branch?                @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  primaryImage  MediaAsset?            @relation("BookSkuPrimaryImage", fields: [primaryImageAssetId], references: [id], onDelete: SetNull)
+  prices        BookSkuPrice[]
+  tags          BookSkuTag[]
+  importRows    BookImportRowResult[]
+  categoryLinks BookSkuCategory[]
+  orderItems    CommerceOrderItem[]
 
   @@unique([organizationId, internalCode])
+  @@unique([organizationId, slug])
   @@unique([organizationId, id])
   @@index([organizationId, titleId])
   @@index([organizationId, status, deletedAt])
   @@index([organizationId, barcode])
+  @@index([organizationId, isVisible, status, deletedAt])
+  @@index([organizationId, isFeatured, sortOrder])
+  @@index([organizationId, branchId])
+  @@index([primaryImageAssetId])
   @@map("book_skus")
 }
 
@@ -4666,6 +4621,12 @@ enum GuidancePlanStatus {
   STEP10_COMPLETED
   STEP11_COMPLETED
   STEP12_COMPLETED
+  STEP13_COMPLETED
+  STEP14_COMPLETED
+  STEP15_COMPLETED
+  STEP16_COMPLETED
+  STEP17_COMPLETED
+  STEP18_COMPLETED
 }
 
 enum GuidanceExamGroup {
@@ -4680,6 +4641,8 @@ enum GuidanceDocumentType {
   FINAL_GRADES
   /// Journey Engine Step 5 — official Sanjesh exam result upload.
   EXAM_RESULT
+  /// V2 Step 18 — official Sanjesh submission receipt (screenshot/PDF).
+  SANJESH_RECEIPT
 }
 
 enum GuidanceDocumentVerificationStatus {
@@ -4721,6 +4684,8 @@ model GuidancePlan {
   /// Sorted array of completed step numbers, e.g. [1,2,3]. Json for portability.
   completedSteps          Json           @default("[]")
   completionPercentage    Int            @default(0)
+  /// Production V2 marker. 1 = legacy journey; 2 = Guidance V2. Already present in production.
+  journeyVersion          Int            @default(1)
   /// Step 1 — fields not already covered by Student/User records.
   quota                   GuidanceQuota?
   highSchoolAverage       Float?
@@ -4734,27 +4699,47 @@ model GuidancePlan {
   /// Step 12 — final student digital approval (journey completion).
   finalApprovedAt         DateTime?
 
+  /// V2 Step 17 — acknowledgment copy version (e.g. informed-v1).
+  v2InformedAckVersion      String?
+  /// V2 Step 17 — confirmed GuidanceChoiceList id (FINAL revision).
+  v2InformedRevisionId      String?
+  /// V2 Step 18 — official Sanjesh submission tracking (not an API integration).
+  v2SanjeshStatus           String?
+  v2SanjeshDeclaredAt       DateTime?
+  v2SanjeshReference        String?
+  v2SanjeshNote             String?   @db.Text
+  v2SanjeshVerifiedAt       DateTime?
+  v2SanjeshVerifiedByUserId String?
+  /// Student edited a completed earlier step after counselor work began.
+  v2NeedsReviewAt           DateTime?
+  v2NeedsReviewStep         Int?
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  organization          Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization             Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   // Composite FK: student must belong to the same organization.
-  student               Student            @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
-  user                  User               @relation("GuidancePlanUser", fields: [userId], references: [id], onDelete: Restrict)
-  choicesApprovedByUser User?                  @relation("GuidancePlanChoicesApprover", fields: [choicesApprovedByUserId], references: [id], onDelete: SetNull)
-  documents             GuidanceDocument[]
-  stepReviews           GuidanceStepReview[]
-  counselorAppointments CounselorAppointment[]
+  student                  Student                   @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  user                     User                      @relation("GuidancePlanUser", fields: [userId], references: [id], onDelete: Restrict)
+  choicesApprovedByUser    User?                     @relation("GuidancePlanChoicesApprover", fields: [choicesApprovedByUserId], references: [id], onDelete: SetNull)
+  sanjeshVerifiedByUser    User?                     @relation("GuidancePlanSanjeshVerifier", fields: [v2SanjeshVerifiedByUserId], references: [id], onDelete: SetNull)
+  documents                GuidanceDocument[]
+  stepReviews              GuidanceStepReview[]
+  counselorAppointments    CounselorAppointment[]
   counselingSessionRecords CounselingSessionRecord[]
+  choiceLists              GuidanceChoiceList[]
 
   @@unique([organizationId, publicId])
   @@unique([organizationId, id])
   @@index([organizationId, status, deletedAt])
   @@index([organizationId, studentId, deletedAt])
   @@index([organizationId, userId, deletedAt])
+  @@index([organizationId, currentStep, deletedAt], map: "gp_org_curstep_idx")
   @@index([userId])
   @@index([choicesApprovedByUserId])
+  @@index([v2SanjeshVerifiedByUserId], map: "gp_sanjesh_ver_idx")
+  @@index([organizationId, v2NeedsReviewAt], map: "gp_need_rev_idx")
   @@map("guidance_plans")
 }
 
@@ -4777,6 +4762,8 @@ model GuidanceDocument {
   verificationStatus GuidanceDocumentVerificationStatus @default(PENDING)
   verifiedByUserId   String?
   verifiedAt         DateTime?
+  /// Counselor comment shown to the student on approve / needs-correction.
+  reviewNote         String?
   createdAt          DateTime                           @default(now())
   updatedAt          DateTime                           @updatedAt
   deletedAt          DateTime?
@@ -4817,21 +4804,21 @@ enum GuidanceStepReviewEventKind {
 }
 
 model GuidanceStepReview {
-  id                   String                    @id @default(cuid())
-  organizationId       String
-  planId               String
-  stepNumber           Int
-  status               GuidanceStepReviewStatus  @default(PENDING)
-  privateNote          String?
-  studentMessage       String?
-  rejectReason         String?
-  approvedAt           DateTime?
-  approvedByUserId     String?
-  rejectedAt           DateTime?
-  rejectedByUserId     String?
-  revisionRequestedAt  DateTime?
-  createdAt            DateTime                  @default(now())
-  updatedAt            DateTime                  @updatedAt
+  id                  String                   @id @default(cuid())
+  organizationId      String
+  planId              String
+  stepNumber          Int
+  status              GuidanceStepReviewStatus @default(PENDING)
+  privateNote         String?
+  studentMessage      String?
+  rejectReason        String?
+  approvedAt          DateTime?
+  approvedByUserId    String?
+  rejectedAt          DateTime?
+  rejectedByUserId    String?
+  revisionRequestedAt DateTime?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
 
   organization Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   plan         GuidancePlan              @relation(fields: [organizationId, planId], references: [organizationId, id], onDelete: Restrict)
@@ -4848,7 +4835,7 @@ model GuidanceStepReview {
 }
 
 model GuidanceStepReviewEvent {
-  id             String                       @id @default(cuid())
+  id             String                      @id @default(cuid())
   organizationId String
   reviewId       String
   kind           GuidanceStepReviewEventKind
@@ -4858,7 +4845,7 @@ model GuidanceStepReviewEvent {
   rejectReason   String?
   actorUserId    String?
   metadata       Json?
-  createdAt      DateTime                     @default(now())
+  createdAt      DateTime                    @default(now())
 
   organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   review       GuidanceStepReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
@@ -4944,54 +4931,57 @@ model CounselorStudentAssignment {
 
 /// Bridges BookingReservation to guidance student context.
 model CounselorAppointment {
-  id                   String                   @id @default(cuid())
+  id                   String                     @id @default(cuid())
   organizationId       String
   studentId            String
   counselorUserId      String
   guidancePlanId       String?
-  bookingReservationId String                   @unique
+  bookingReservationId String                     @unique
   status               CounselorAppointmentStatus @default(BOOKED)
-  createdAt            DateTime                 @default(now())
-  updatedAt            DateTime                 @updatedAt
+  /// V2 session purpose: FIRST_SESSION | SECOND_SESSION. Null = generic counseling booking.
+  purpose              String?
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
 
-  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  student              Student            @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
-  counselor            User               @relation("CounselorAppointmentCounselor", fields: [counselorUserId], references: [id], onDelete: Restrict)
-  guidancePlan         GuidancePlan?      @relation(fields: [organizationId, guidancePlanId], references: [organizationId, id], onDelete: SetNull)
-  bookingReservation   BookingReservation @relation(fields: [organizationId, bookingReservationId], references: [organizationId, id], onDelete: Restrict)
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student            Student            @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  counselor          User               @relation("CounselorAppointmentCounselor", fields: [counselorUserId], references: [id], onDelete: Restrict)
+  guidancePlan       GuidancePlan?      @relation(fields: [organizationId, guidancePlanId], references: [organizationId, id], onDelete: SetNull)
+  bookingReservation BookingReservation @relation(fields: [organizationId, bookingReservationId], references: [organizationId, id], onDelete: Restrict)
 
   @@unique([organizationId, bookingReservationId])
   @@index([organizationId, counselorUserId, status])
   @@index([organizationId, studentId, status])
   @@index([organizationId, guidancePlanId])
+  @@index([organizationId, studentId, purpose, status], map: "cos_appt_stu_purp_idx")
   @@map("counselor_appointments")
 }
 
 /// Persistent counseling session documentation (institutional knowledge).
 model CounselingSessionRecord {
-  id                   String                      @id @default(cuid())
+  id                   String                        @id @default(cuid())
   organizationId       String
   studentId            String
   counselorUserId      String
   guidancePlanId       String?
-  bookingReservationId String?                     @unique
+  bookingReservationId String?                       @unique
   scheduledAt          DateTime?
   startedAt            DateTime?
   endedAt              DateTime?
   durationMinutes      Int?
-  sessionType          CounselingSessionType       @default(IN_PERSON)
+  sessionType          CounselingSessionType         @default(IN_PERSON)
   status               CounselingSessionRecordStatus @default(SCHEDULED)
   subject              String?
-  body                 String?                     @db.Text
-  keyPoints            String?                     @db.Text
-  decisions            String?                     @db.Text
-  studentActionItems   String?                     @db.Text
-  counselorActionItems String?                     @db.Text
-  summary              String?                     @db.Text
+  body                 String?                       @db.Text
+  keyPoints            String?                       @db.Text
+  decisions            String?                       @db.Text
+  studentActionItems   String?                       @db.Text
+  counselorActionItems String?                       @db.Text
+  summary              String?                       @db.Text
   nextFollowUpAt       DateTime?
-  isDraft              Boolean                     @default(false)
-  createdAt            DateTime                    @default(now())
-  updatedAt            DateTime                    @updatedAt
+  isDraft              Boolean                       @default(false)
+  createdAt            DateTime                      @default(now())
+  updatedAt            DateTime                      @updatedAt
 
   organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   student            Student             @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
@@ -5008,14 +4998,14 @@ model CounselingSessionRecord {
 }
 
 model CounselorNote {
-  id              String                 @id @default(cuid())
+  id              String                  @id @default(cuid())
   organizationId  String
   studentId       String
   counselorUserId String
   visibility      CounselorNoteVisibility @default(GENERAL)
-  body            String                 @db.Text
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
+  body            String                  @db.Text
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
   deletedAt       DateTime?
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
@@ -5042,12 +5032,156 @@ model CounselorFollowUp {
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
 
-  organization  Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  student       Student                 @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
-  counselor     User                    @relation("CounselorFollowUpCounselor", fields: [counselorUserId], references: [id], onDelete: Restrict)
+  organization  Organization             @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student       Student                  @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  counselor     User                     @relation("CounselorFollowUpCounselor", fields: [counselorUserId], references: [id], onDelete: Restrict)
   sessionRecord CounselingSessionRecord? @relation(fields: [sessionRecordId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, counselorUserId, status, dueAt])
   @@index([organizationId, studentId, status])
   @@map("counselor_follow_ups")
+}
+
+/// Counselor OS — explicit correction audit for student-entered guidance data.
+/// Does not mutate payment history. Original uploaded evidence is never replaced here.
+model CounselorCaseCorrection {
+  id              String   @id @default(cuid())
+  organizationId  String
+  studentId       String
+  counselorUserId String
+  section         String
+  fieldKey        String
+  fieldLabel      String
+  previousValue   String   @db.Text
+  newValue        String   @db.Text
+  reason          String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student      Student      @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  counselor    User         @relation("CounselorCaseCorrectionActor", fields: [counselorUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, studentId, createdAt], map: "cos_corr_org_stu_at_idx")
+  @@index([organizationId, counselorUserId], map: "cos_corr_org_user_idx")
+  @@map("counselor_case_corrections")
+}
+
+/// V2 Steps 13–17 — versioned counselor choice arrangement (INITIAL then FINAL).
+/// Official Sanjesh/university codes stay null unless a real value is known.
+model GuidanceChoiceList {
+  id               String    @id @default(cuid())
+  organizationId   String
+  planId           String
+  studentId        String
+  /// INITIAL | FINAL
+  kind             String
+  version          Int
+  /// DRAFT | READY | SUPERSEDED | CONFIRMED
+  status           String
+  counselorUserId  String
+  readyAt          DateTime?
+  readyByUserId    String?
+  confirmedAt      DateTime?
+  confirmationHash String?
+  ackVersion       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization Organization             @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  plan         GuidancePlan             @relation(fields: [organizationId, planId], references: [organizationId, id], onDelete: Restrict)
+  student      Student                  @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  counselor    User                     @relation("GuidanceChoiceListCounselor", fields: [counselorUserId], references: [id], onDelete: Restrict)
+  readyBy      User?                    @relation("GuidanceChoiceListReadyBy", fields: [readyByUserId], references: [id], onDelete: SetNull)
+  items        GuidanceChoiceItem[]
+  feedback     GuidanceChoiceFeedback[]
+
+  @@unique([organizationId, planId, kind, version], map: "gcl_org_plan_kind_ver")
+  @@index([organizationId, planId, kind, status], map: "gcl_org_plan_kind_st")
+  @@index([organizationId, studentId], map: "gcl_org_stu_idx")
+  @@index([readyByUserId], map: "gcl_ready_by_idx")
+  @@map("guidance_choice_lists")
+}
+
+model GuidanceChoiceItem {
+  id             String   @id @default(cuid())
+  organizationId String
+  listId         String
+  sortOrder      Int
+  major          String
+  university     String
+  city           String?
+  province       String?
+  educationType  String?
+  admissionType  String?
+  /// Real official code only. Never fabricated — leave null when unknown.
+  officialCode   String?
+  /// optimistic | balanced | likely | conservative
+  band           String?
+  notes          String?  @db.Text
+  rationale      String?  @db.Text
+  isActive       Boolean  @default(true)
+  source         String   @default("MANUAL")
+  sourceItemId   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization             @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  list         GuidanceChoiceList       @relation(fields: [listId], references: [id], onDelete: Restrict)
+  feedback     GuidanceChoiceFeedback[]
+
+  @@index([organizationId, listId], map: "gci_org_list_idx")
+  @@index([listId, sortOrder], map: "gci_list_order_idx")
+  @@index([listId, isActive], map: "gci_list_active_idx")
+  @@map("guidance_choice_items")
+}
+
+model GuidanceChoiceFeedback {
+  id             String   @id @default(cuid())
+  organizationId String
+  listId         String
+  itemId         String
+  studentUserId  String
+  /// approved | needs_review | less | more | remove
+  verdict        String
+  note           String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  list         GuidanceChoiceList @relation(fields: [listId], references: [id], onDelete: Restrict)
+  item         GuidanceChoiceItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  studentUser  User               @relation("GuidanceChoiceFeedbackStudent", fields: [studentUserId], references: [id], onDelete: Restrict)
+
+  @@unique([listId, itemId, studentUserId], map: "gcf_list_item_stu")
+  @@index([organizationId, listId], map: "gcf_org_list_idx")
+  @@map("guidance_choice_feedback")
+}
+
+/// Admin-managed guidance package discount codes. Checkout still uses PaymentIntent amounts.
+model GuidanceDiscountCode {
+  id             String    @id @default(cuid())
+  organizationId String
+  /// Canonical uppercase ASCII code, unique per organization.
+  code           String
+  /// FIXED_AMOUNT | PERCENTAGE
+  type           String
+  /// FIXED_AMOUNT: rials. PERCENTAGE: integer 1–100.
+  value          Int
+  /// ALL or comma-separated package codes (SMART,SPECIALIZED,PREMIUM).
+  packageScope   String    @default("ALL")
+  startsAt       DateTime?
+  endsAt         DateTime?
+  maxUses        Int?
+  usageCount     Int       @default(0)
+  isActive       Boolean   @default(true)
+  archivedAt     DateTime?
+  note           String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, code], map: "gdc_org_code_uid")
+  @@index([organizationId, isActive], map: "gdc_org_active_idx")
+  @@map("guidance_discount_codes")
 }

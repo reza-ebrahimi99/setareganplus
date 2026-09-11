@@ -91,7 +91,7 @@ const PUBLIC_ORDER_INCLUDE = {
       quantity: true,
       unitPriceRials: true,
       totalRials: true,
-      item: { select: { authors: true } },
+      bookSku: { select: { authors: true } },
     },
   },
   pickupBranch: {
@@ -162,7 +162,7 @@ async function buildPublicBookletTicket(
     order.items.map((item) => item.titleSnapshot).filter(Boolean).join("، ") || "—";
   const instructor =
     order.items
-      .map((item) => item.item?.authors?.trim())
+      .map((item) => item.bookSku?.authors?.trim())
       .filter((value): value is string => Boolean(value))
       .join("، ") || null;
 

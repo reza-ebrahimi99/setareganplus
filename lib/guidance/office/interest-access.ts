@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
+import { GUIDANCE_CANONICAL_DASHBOARD } from "@/lib/guidance/canonical-entry";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
 import { loadGuidanceJourneyPlan } from "@/lib/guidance/journey/plan";
 import type { GuidanceJourneyPlanSnapshot } from "@/lib/guidance/journey/types";
@@ -23,7 +23,7 @@ export async function requireOfficeGuidancePlan(): Promise<{
     userId: context.user.id,
     studentId,
   });
-  if (!plan) redirect(GUIDANCE_ONBOARDING_PATH);
+  if (!plan) redirect(GUIDANCE_CANONICAL_DASHBOARD);
 
   return { context, plan, studentId };
 }

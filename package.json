@@ -32,6 +32,7 @@
     "guidance:set-flag": "tsx --env-file=.env scripts/guidance-set-org-flag.ts",
     "guidance:journey-e2e-seed": "tsx --env-file=.env scripts/guidance-journey-e2e-seed.ts",
     "test:guidance-workspace": "tsx scripts/guidance-workspace-unit-tests.ts",
+    "test:guidance-prelaunch": "tsx scripts/guidance-prelaunch-master-unit-tests.ts",
     "test:guidance-assessment": "tsx scripts/guidance-assessment-unit-tests.ts",
     "test:guidance-discover": "tsx scripts/guidance-discover-unit-tests.ts",
     "test:sxp": "tsx scripts/sxp-unit-tests.ts",
@@ -57,6 +58,7 @@
     "test:staff-smoke": "prisma generate && tsx scripts/staff-rbac-smoke.ts",
     "test:staff": "tsx --env-file=scripts/staff-test.env --env-file=.env scripts/staff-integration-tests.ts",
     "test:books-catalog": "tsx scripts/books-catalog-unit-tests.ts",
+    "test:starbook-play": "tsx scripts/starbook-play-unit-tests.ts",
     "books:set-flag": "tsx --env-file=.env scripts/books-set-org-flag.ts"
   },
   "dependencies": {

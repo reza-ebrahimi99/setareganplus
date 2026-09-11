@@ -789,23 +789,23 @@ export async function verifyPaymentCallback(params: {
             where: {
               organizationId: params.organizationId,
               orderId: intent.payableId,
-              itemId: { not: null },
+              bookSkuId: { not: null },
             },
-            select: { itemId: true, quantity: true },
+            select: { bookSkuId: true, quantity: true },
           });
 
           for (const line of lines) {
-            if (!line.itemId) continue;
+            if (!line.bookSkuId) continue;
             const stock = await decrementCommerceItemStock({
               tx,
               organizationId: params.organizationId,
-              itemId: line.itemId,
+              itemId: line.bookSkuId,
               quantity: line.quantity,
             });
             if (!stock.ok) {
               console.error("[payment] commerce stock decrement failed", {
                 orderId: intent.payableId,
-                itemId: line.itemId,
+                itemId: line.bookSkuId,
                 error: stock.error,
               });
             }
@@ -1125,7 +1125,7 @@ export async function getPaymentIntentPublicView(
             quantity: true,
             unitPriceRials: true,
             totalRials: true,
-            item: { select: { authors: true } },
+            bookSku: { select: { authors: true } },
           },
         },
         pickupBranch: {

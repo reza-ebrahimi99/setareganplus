@@ -1,0 +1,66 @@
+/* ===== COUNSELOR SCHEDULING FIX ===== */
+.cos-calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(22rem, 1.15fr) minmax(18rem, 0.85fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.cos-counselor-select {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 800;
+  max-width: 22rem;
+}
+
+.cos-counselor-select select {
+  min-height: 2.75rem;
+  border: 1px solid var(--cos-border);
+  border-radius: 0.75rem;
+  padding: 0.45rem 0.75rem;
+  font: inherit;
+  background: #fff;
+}
+
+.cos-slot-days {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.cos-slot-day h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.98rem;
+}
+
+.cos-slot-day ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.cos-slot-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.7rem;
+  border: 1px solid #efe4c4;
+}
+
+.cos-slot-row--free {
+  background: #f3faf4;
+}
+
+.cos-slot-row--booked {
+  background: #fff7ed;
+}
+
+@media (max-width: 860px) {
+  .cos-calendar-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* ===== END COUNSELOR SCHEDULING FIX ===== */

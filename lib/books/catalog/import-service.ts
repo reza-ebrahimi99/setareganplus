@@ -2,6 +2,7 @@ import { BookImportRowAction, BookImportJobStatus, BookPriceKind } from "@/gener
 import { prisma } from "@/lib/prisma";
 import { BOOKS_IMPORT_CHUNK_SIZE } from "@/lib/books/constants";
 import { buildSkuSearchText } from "@/lib/books/catalog/search";
+import { allocateOrgBookSkuSlug } from "@/lib/books/catalog/sku-service";
 import { resolveOrCreateTags, replaceSkuTags } from "@/lib/books/catalog/tags";
 import type { ValidCatalogRow } from "@/lib/books/catalog/import-parser";
 
@@ -240,6 +241,7 @@ async function processOneRow(params: {
     ).id;
 
     const publisherName = row.publisherName;
+    const slug = await allocateOrgBookSkuSlug(organizationId, row.internalCode);
     const sku = await prisma.bookSku.create({
       data: {
         organizationId,
@@ -248,6 +250,10 @@ async function processOneRow(params: {
         barcode: row.barcode,
         editionLabel: row.editionLabel,
         editionYear: row.editionYear,
+        slug,
+        isVisible: false,
+        unlimitedStock: true,
+        trackInventory: false,
         searchText: buildSkuSearchText({
           internalCode: row.internalCode,
           barcode: row.barcode,

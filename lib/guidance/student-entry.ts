@@ -4,10 +4,6 @@
  */
 
 import { PortalAccountType } from "@/generated/prisma/enums";
-import {
-  GUIDANCE_ONBOARDING_PATH,
-  candidateNeedsGuidanceOnboarding,
-} from "@/lib/guidance/external-candidate";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
 import { GUIDANCE_PLATFORM_HOME } from "@/lib/guidance/portal-nav";
 import type { PortalContext } from "@/lib/portal/auth/types";
@@ -60,14 +56,6 @@ export async function resolveGuidanceStudentHomePath(
     return "/portal/student";
   }
 
-  const needsOnboarding = await candidateNeedsGuidanceOnboarding({
-    organizationId: context.organization.id,
-    userId: context.user.id,
-    studentId,
-  });
-  if (needsOnboarding) {
-    return GUIDANCE_ONBOARDING_PATH;
-  }
-
+  // Always the dashboard. Onboarding is no longer an entry destination.
   return GUIDANCE_PLATFORM_HOME;
 }

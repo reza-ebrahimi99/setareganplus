@@ -113,8 +113,8 @@ export const publicNavItems: readonly PublicNavItem[] = [
       },
       {
         href: "/shop",
-        label: "کتاب و جزوه",
-        description: "منابع آموزشی و فروشگاه",
+        label: "استاربوک",
+        description: "کتاب‌فروشی آموزشی ستارگان",
       },
       {
         href: "/contact",

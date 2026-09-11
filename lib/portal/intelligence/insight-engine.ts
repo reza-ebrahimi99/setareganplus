@@ -95,7 +95,7 @@ export const StudentInsightEngine = {
         emptyHero: buildGuidanceEmptyJourneyHero(),
         progress: null,
         status: "needs_attention",
-        nextActionHref: "/guidance/pre-register",
+        nextActionHref: "/portal/student/services/guidance",
         nextActionLabel: "شروع پیش‌ثبت‌نام",
       };
     }

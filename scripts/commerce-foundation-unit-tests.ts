@@ -8,6 +8,7 @@ import {
   assertSameOrganization,
   assertUniqueCategorySlug,
   assertValidCategoryParent,
+  normalizeCommerceCategoryInput,
   buildCommerceOrderNumber,
   buildOrderLineSnapshot,
   calculateOrderTotals,
@@ -132,6 +133,19 @@ check("category: circular nesting prevented", () => {
         parentId: "leaf",
         existing,
       }),
+    CommerceCategoryValidationError,
+  );
+});
+
+check("category: normalize title to slug", () => {
+  const row = normalizeCommerceCategoryInput({ title: "  شب امتحان  " });
+  assert.equal(row.title, "شب امتحان");
+  assert.ok(row.slug.length > 0);
+});
+
+check("category: empty title rejected", () => {
+  assert.throws(
+    () => normalizeCommerceCategoryInput({ title: "   " }),
     CommerceCategoryValidationError,
   );
 });
@@ -492,7 +506,7 @@ check("nav: commerce children filter by specific permission", () => {
   const financeChildren = filterAdminNavChildren(commerce.children, financePerms);
   assert.deepEqual(
     financeChildren.map((c) => c.href),
-    ["/admin/commerce", "/admin/commerce/orders", "/admin/commerce/production", "/admin/commerce/performance", "/admin/commerce/pickup", "/admin/commerce/payments"],
+    ["/admin/commerce", "/admin/commerce/orders", "/admin/commerce/production", "/admin/commerce/performance", "/admin/commerce/pickup", "/admin/commerce/payments", "/admin/commerce/reports"],
   );
   assert.equal(
     financeChildren.some((c) => c.href === "/admin/commerce/products"),
@@ -506,7 +520,12 @@ check("nav: commerce children filter by specific permission", () => {
   assert.equal(productsOnly.href, "/admin/commerce/products");
   assert.deepEqual(
     productsOnly.children.map((c) => c.href),
-    ["/admin/commerce/products"],
+    [
+      "/admin/commerce/products",
+      "/admin/commerce/merch",
+      "/admin/commerce/seo",
+      "/admin/commerce/coupons",
+    ],
   );
 
   const none = resolveEnabledAdminNavItem(commerce, ["crm.view_assigned"]);

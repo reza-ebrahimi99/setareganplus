@@ -1,47 +1,14 @@
-import type { Metadata } from "next";
+/**
+ * Legacy Major Office grades room (/ms/grades).
+ * Compatibility redirect only — no Major Office UI is reachable.
+ * ./actions.ts stays in place; shared forms still import it.
+ */
+
 import { redirect } from "next/navigation";
-import { ChamberPage } from "@/components/guidance/office/ChamberPage";
-import { ScoresMark } from "@/components/guidance/office/illustrations";
-import { FinalExamForm } from "@/components/guidance/office/FinalExamForm";
-import { GUIDANCE_ONBOARDING_PATH } from "@/lib/guidance/external-candidate";
-import { loadGuidanceJourneyPlan } from "@/lib/guidance/journey/plan";
-import { loadFinalExamScores } from "@/lib/guidance/office/final-exam-store";
-import { requireStudentPortalAccess } from "@/lib/portal/auth";
+import { GUIDANCE_CANONICAL_DASHBOARD } from "@/lib/guidance/canonical-entry";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = {
-  title: "شناخت توانایی‌های شما",
-  robots: { index: false, follow: false },
-};
 
-export default async function OfficeGradesPage() {
-  const context = await requireStudentPortalAccess();
-  const studentId = context.activeLink.studentId;
-  if (!studentId) redirect("/portal/select-account");
-
-  const plan = await loadGuidanceJourneyPlan({
-    organizationId: context.organization.id,
-    userId: context.user.id,
-    studentId,
-  });
-  if (!plan) redirect(GUIDANCE_ONBOARDING_PATH);
-
-  const stored = await loadFinalExamScores({
-    organizationId: context.organization.id,
-    planPublicId: plan.publicId,
-    examGroup: plan.examGroup,
-  });
-
-  return (
-    <ChamberPage
-      kicker="اتاق توانایی‌ها"
-      title="شناخت توانایی‌های شما"
-      lead="هر درس یک قطعه است، نه یک ردیف فرم. نمره را بنویسید و بروید؛ معدل خودش شکل می‌گیرد. سند PDF بعد از کامل شدن تصویر باز می‌شود."
-      now="پس از نمرات، آخرین قطعه تصویر تحصیلی"
-      art={<ScoresMark />}
-      artCaption="نقشه توانایی‌ها"
-    >
-      <FinalExamForm examGroup={plan.examGroup} initialScores={stored.scores} />
-    </ChamberPage>
-  );
+export default async function MajorOfficeGradesPage() {
+  redirect(GUIDANCE_CANONICAL_DASHBOARD);
 }

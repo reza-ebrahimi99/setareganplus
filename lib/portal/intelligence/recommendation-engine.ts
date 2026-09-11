@@ -34,7 +34,7 @@ export const StudentRecommendationEngine = {
         title: "مسیر انتخاب رشته را شروع کن",
         description: "با پیش‌ثبت‌نام، نقشه راه شخصی‌ات فعال می‌شود.",
         action: {
-          href: "/guidance/pre-register",
+          href: "/portal/student/services/guidance",
           label: "شروع پیش‌ثبت‌نام",
         },
         status: "needs_attention",

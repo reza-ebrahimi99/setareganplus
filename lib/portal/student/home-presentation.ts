@@ -93,7 +93,7 @@ export function buildPortalHomeHero(input: {
       greeting,
       headline: "آماده‌ای مسیر انتخاب رشته را شروع کنیم؟",
       support: "اولین قدم پیش‌ثبت‌نام است — چند دقیقه وقت می‌برد.",
-      cta: { href: "/guidance/pre-register", label: "شروع پیش‌ثبت‌نام" },
+      cta: { href: "/portal/student/services/guidance", label: "شروع پیش‌ثبت‌نام" },
       accent: "gold",
       icon: "route",
       tone: "start",
@@ -214,7 +214,7 @@ export function buildPortalQuickActions(input: {
   if (input.guidanceEnabled && !input.hasPlan) {
     actions.push({
       id: "start-guidance",
-      href: "/guidance/pre-register",
+      href: "/portal/student/services/guidance",
       label: "شروع انتخاب رشته",
       description: "پیش‌ثبت‌نام مسیر",
       icon: "route",
@@ -325,9 +325,7 @@ export function buildPortalHomeModules(input: {
   if (input.guidanceEnabled) {
     modules.unshift({
       id: "guidance",
-      href: input.hasPlan
-        ? "/portal/student/services/guidance"
-        : "/guidance/pre-register",
+      href: "/portal/student/services/guidance",
       title: "انتخاب رشته",
       description: "مسیر هدایت تحصیلی تا جلسه مشاوره",
       icon: "route",

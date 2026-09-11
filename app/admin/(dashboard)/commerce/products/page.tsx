@@ -4,6 +4,7 @@ import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminBreadcrumbs } from "@/content/admin";
 import { requirePermission } from "@/lib/auth/require-admin";
+import { toggleBookSkuMerchFlagAction } from "@/app/admin/(dashboard)/commerce/actions";
 import { listAdminCommerceItems } from "@/lib/commerce/catalog/service";
 import { formatRials } from "@/lib/registration/format";
 import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
@@ -58,6 +59,7 @@ export default async function AdminCommerceProductsPage() {
                 <th className="px-4 py-3 text-right font-medium">قیمت</th>
                 <th className="px-4 py-3 text-right font-medium">موجودی</th>
                 <th className="px-4 py-3 text-right font-medium">وضعیت</th>
+                <th className="px-4 py-3 text-right font-medium">ویترین</th>
                 <th className="px-4 py-3 text-right font-medium">به‌روزرسانی</th>
               </tr>
             </thead>
@@ -89,6 +91,20 @@ export default async function AdminCommerceProductsPage() {
                     {!item.isVisible ? (
                       <span className="mr-2 text-xs text-amber-700">مخفی</span>
                     ) : null}
+                  </td>
+                  <td className="px-4 py-3">
+                    <form action={toggleBookSkuMerchFlagAction}>
+                      <input type="hidden" name="skuId" value={item.id} />
+                      <input type="hidden" name="field" value="isFeatured" />
+                      <input
+                        type="hidden"
+                        name="value"
+                        value={item.isFeatured ? "false" : "true"}
+                      />
+                      <button type="submit" className="text-xs text-primary">
+                        {item.isFeatured ? "ویژه" : "عادی"}
+                      </button>
+                    </form>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     {formatJalaliDateTimeShort(item.updatedAt)}

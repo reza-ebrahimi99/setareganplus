@@ -1,0 +1,108 @@
+/* ===== GUIDANCE DISCOUNT MANAGER ===== */
+.gdm-page {
+  display: grid;
+  gap: 1rem;
+}
+.gdm-page__note {
+  margin: 0;
+  color: #475569;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+.gdm {
+  display: grid;
+  gap: 1rem;
+}
+.gdm-panel {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid #efe4c4;
+  border-radius: 16px;
+  background: #fffdf8;
+}
+.gdm-panel__head,
+.gdm-toolbar,
+.gdm-actions,
+.gdm-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.gdm-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+.gdm-form-grid label,
+.gdm-type,
+.gdm-packages {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+.gdm-form-grid input,
+.gdm-form-grid select,
+.gdm-toolbar input,
+.gdm-toolbar select {
+  min-height: 44px;
+  border: 1px solid #e2d4aa;
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+}
+.gdm-span { grid-column: 1 / -1; }
+.gdm-label { margin: 0; font-weight: 700; }
+.gdm-type,
+.gdm-packages {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+}
+.gdm-btn {
+  min-height: 40px;
+  border: 1px solid #e2d4aa;
+  background: #fff;
+  border-radius: 10px;
+  padding: 0.4rem 0.8rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.gdm-btn--primary {
+  background: #8a6b2e;
+  color: #fff;
+  border-color: #8a6b2e;
+}
+.gdm-table-wrap { overflow-x: auto; }
+.gdm-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 860px;
+}
+.gdm-table th,
+.gdm-table td {
+  text-align: right;
+  padding: 0.65rem 0.5rem;
+  border-bottom: 1px solid #efe4c4;
+  vertical-align: top;
+}
+.gdm-error { color: #b91c1c; margin: 0; }
+.gdm-success { color: #166534; margin: 0; }
+.gdm-generated pre {
+  margin: 0;
+  white-space: pre-wrap;
+  background: #fff;
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+@media (max-width: 800px) {
+  .gdm-form-grid,
+  .gdm-type,
+  .gdm-packages {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* ===== END GUIDANCE DISCOUNT MANAGER ===== */

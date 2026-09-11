@@ -1,12 +1,12 @@
 /**
  * Smoke: create a single-item commerce order against the live DB.
- * Requires DATABASE_URL. Optional: SHOP_SMOKE_ITEM_ID or picks first ACTIVE item.
+ * Requires DATABASE_URL. Optional: SHOP_SMOKE_ITEM_ID or picks first ACTIVE sku.
  *
  *   npx tsx scripts/commerce-shop-checkout-smoke.ts
  */
 
 import {
-  CommerceItemStatus,
+  BookSkuStatus,
   CommerceOrderPaymentStatus,
 } from "../generated/prisma/enums";
 import { createSingleItemCommerceOrder } from "../lib/commerce/orders/service";
@@ -24,24 +24,26 @@ async function main() {
   if (!org) throw new Error("Organization setareganplus not found");
 
   const forcedItemId = process.env.SHOP_SMOKE_ITEM_ID?.trim() || null;
-  const item = await prisma.commerceItem.findFirst({
+  const item = await prisma.bookSku.findFirst({
     where: {
       organizationId: org.id,
       deletedAt: null,
       isVisible: true,
-      status: CommerceItemStatus.ACTIVE,
+      status: BookSkuStatus.ACTIVE,
       ...(forcedItemId ? { id: forcedItemId } : {}),
     },
     include: {
       primaryImage: { select: { storageKey: true, status: true } },
+      title: { select: { title: true } },
     },
     orderBy: { updatedAt: "desc" },
   });
-  if (!item) throw new Error("No ACTIVE visible commerce item found");
+  if (!item) throw new Error("No ACTIVE visible book SKU found");
 
   console.log("item", {
     id: item.id,
     slug: item.slug,
+    title: item.title.title,
     status: item.status,
     stockQuantity: item.stockQuantity,
     trackInventory: item.trackInventory,
@@ -78,6 +80,7 @@ async function main() {
     deliveryMethod: order?.deliveryMethod,
     fulfillmentStatus: order?.fulfillmentStatus,
     lineCount: order?.items.length,
+    bookSkuId: order?.items[0]?.bookSkuId ?? null,
     grandTotalRials: order?.grandTotalRials,
   });
 
