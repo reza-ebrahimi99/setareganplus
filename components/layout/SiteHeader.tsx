@@ -10,7 +10,7 @@ import { headerCtas } from "@/content/public-nav";
 import type { PublicNavItem } from "@/content/public-nav";
 import { siteConfig } from "@/content/site";
 import { hasMediaUrl } from "@/lib/media";
-import { MainNav } from "./MainNav";
+import { MainNav, MobileMenu } from "./MainNav";
 
 type SiteHeaderProps = {
   activePath?: string;
@@ -85,11 +85,35 @@ export function SiteHeader({ activePath, navItems }: SiteHeaderProps) {
       }${compact ? " site-header--compact" : ""}`}
     >
       <Container
-        className={`flex min-w-0 items-center justify-between gap-2 transition-[padding] duration-300 sm:gap-3 lg:gap-4 ${
+        className={`flex min-w-0 items-center gap-2 transition-[padding] duration-300 sm:gap-3 lg:gap-4 ${
           compact ? "py-1.5 sm:py-2" : "py-2.5 sm:py-3"
         }`}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+        <MobileMenu
+          activePath={activePath}
+          overHero={overHero}
+          items={navItems}
+          mobileExtra={
+            <div className="flex flex-col gap-2">
+              <Button
+                href={headerCtas.secondary.href}
+                variant="secondary"
+                className="w-full"
+              >
+                {headerCtas.secondary.label}
+              </Button>
+              <Button
+                href={headerCtas.primary.href}
+                variant="outline"
+                className="w-full"
+              >
+                {headerCtas.primary.label}
+              </Button>
+            </div>
+          }
+        />
+
+        <div className="flex min-w-0 flex-1 items-center justify-center gap-2 sm:gap-3 lg:justify-start">
           <Link
             href="/"
             className="group flex min-w-0 items-center gap-2 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:gap-2.5"
@@ -149,32 +173,24 @@ export function SiteHeader({ activePath, navItems }: SiteHeaderProps) {
             activePath={activePath}
             overHero={overHero}
             items={navItems}
-            mobileExtra={
-              <div className="flex flex-col gap-2">
-                <Button href={headerCtas.primary.href} variant="secondary">
-                  {headerCtas.primary.label}
-                </Button>
-                <Button href={headerCtas.secondary.href} variant="outline">
-                  {headerCtas.secondary.label}
-                </Button>
-              </div>
-            }
           />
-          <Button
-            href={headerCtas.secondary.href}
-            variant="outline"
-            className={`hidden min-h-10 px-3 text-xs sm:inline-flex lg:text-sm ${
-              overHero
-                ? "border-white/25 bg-white/5 text-white hover:bg-white/10"
-                : ""
-            }`}
-          >
-            {headerCtas.secondary.label}
-          </Button>
+          <div className="hidden items-center gap-1.5 sm:gap-2.5 lg:flex">
+            <Button
+              href={headerCtas.secondary.href}
+              variant="outline"
+              className={`min-h-10 px-3 text-xs lg:text-sm ${
+                overHero
+                  ? "border-white/25 bg-white/5 text-white hover:bg-white/10"
+                  : ""
+              }`}
+            >
+              {headerCtas.secondary.label}
+            </Button>
+          </div>
           <Button
             href={headerCtas.primary.href}
             variant="secondary"
-            className={`hidden min-h-10 sm:inline-flex ${
+            className={`min-h-10 px-3 text-xs sm:px-5 sm:text-sm ${
               overHero ? "" : "site-header-cta-primary"
             }`}
           >
