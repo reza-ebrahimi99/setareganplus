@@ -19,6 +19,8 @@ export const CATALOG_IMPORT_MAPPING_FIELDS = [
   "barcode",
   "listPriceRials",
   "salePriceRials",
+  "initialStock",
+  "isActive",
   "keywords",
   "tags",
 ] as const;

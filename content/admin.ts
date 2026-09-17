@@ -47,6 +47,25 @@ export const adminNavGroups: ReadonlyArray<{
   items: readonly AdminNavItem[];
 }> = [
   {
+    label: "فروشگاه کتاب قلم‌چی",
+    items: [
+      {
+        href: "/admin/book-pos/sale",
+        label: "فروش جدید",
+        icon: "courses",
+        enabled: true,
+        permission: "commerce.orders.manage",
+      },
+      {
+        href: "/admin/book-pos/inventory",
+        label: "موجودی کتاب‌ها",
+        icon: "books",
+        enabled: true,
+        permission: "commerce.products.manage",
+      },
+    ],
+  },
+  {
     label: "مدیریت",
     items: [
       { href: "/admin", label: "نمای کلی", icon: "overview", enabled: true },
@@ -458,6 +477,16 @@ export const adminBreadcrumbs = {
     { label: "ثبت‌نام‌ها", href: "/admin/registrations" },
     { label: "جریان‌های ثبت‌نام", href: "/admin/registrations/flows" },
     { label: "ویرایش جریان" },
+  ],
+  bookPosSale: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه کتاب قلم‌چی" },
+    { label: "فروش جدید" },
+  ],
+  bookPosInventory: [
+    { label: "مدیریت", href: "/admin" },
+    { label: "فروشگاه کتاب قلم‌چی" },
+    { label: "موجودی کتاب‌ها" },
   ],
   commerce: [
     { label: "مدیریت", href: "/admin" },
