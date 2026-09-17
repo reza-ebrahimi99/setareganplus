@@ -1,10 +1,37 @@
-import { BookImportRowAction, BookImportJobStatus, BookPriceKind } from "@/generated/prisma/enums";
+import {
+  BookImportRowAction,
+  BookImportJobStatus,
+  BookPriceKind,
+  BookSkuStatus,
+  BookStockMovementReason,
+} from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { BOOKS_IMPORT_CHUNK_SIZE } from "@/lib/books/constants";
 import { buildSkuSearchText } from "@/lib/books/catalog/search";
 import { allocateOrgBookSkuSlug } from "@/lib/books/catalog/sku-service";
 import { resolveOrCreateTags, replaceSkuTags } from "@/lib/books/catalog/tags";
 import type { ValidCatalogRow } from "@/lib/books/catalog/import-parser";
+import {
+  adjustBookStock,
+  reconcileBookStockToAbsolute,
+} from "@/lib/commerce/pos/inventory";
+
+/** Ensure a publisher row by name (case-insensitive) and return its id. */
+export async function ensurePublisherByName(
+  organizationId: string,
+  name: string,
+): Promise<string> {
+  const found = await prisma.bookPublisher.findFirst({
+    where: { organizationId, name: { equals: name, mode: "insensitive" } },
+    select: { id: true },
+  });
+  if (found) return found.id;
+  const created = await prisma.bookPublisher.create({
+    data: { organizationId, name },
+    select: { id: true },
+  });
+  return created.id;
+}
 
 export type CatalogImportDuplicateStrategy = "UPDATE_EXISTING" | "SKIP_EXISTING";
 
@@ -169,8 +196,18 @@ async function processOneRow(params: {
   row: ValidCatalogRow;
   duplicateStrategy: CatalogImportDuplicateStrategy;
   createMissingTaxonomies: boolean;
+  jobId: string;
+  defaultPublisherId: string | null;
 }): Promise<CatalogRowOutcome> {
-  const { organizationId, actorUserId, row, duplicateStrategy, createMissingTaxonomies } = params;
+  const {
+    organizationId,
+    actorUserId,
+    row,
+    duplicateStrategy,
+    createMissingTaxonomies,
+    jobId,
+    defaultPublisherId,
+  } = params;
 
   const existingByCode = await prisma.bookSku.findFirst({
     where: { organizationId, internalCode: row.internalCode, deletedAt: null },
@@ -223,6 +260,9 @@ async function processOneRow(params: {
     ? await resolveOrCreateTags({ organizationId, names: row.tagNames })
     : [];
 
+  const resolvedPublisherId = taxonomy.publisherId ?? defaultPublisherId;
+  const tracksStock = row.initialStock != null;
+
   if (!existingByCode) {
     const titleId = (
       await prisma.bookTitle.create({
@@ -230,7 +270,7 @@ async function processOneRow(params: {
           organizationId,
           title: row.title,
           keywords: row.keywords,
-          publisherId: taxonomy.publisherId,
+          publisherId: resolvedPublisherId,
           bookTypeId: taxonomy.bookTypeId,
           gradeId: taxonomy.gradeId,
           subjectId: taxonomy.subjectId,
@@ -252,8 +292,9 @@ async function processOneRow(params: {
         editionYear: row.editionYear,
         slug,
         isVisible: false,
-        unlimitedStock: true,
-        trackInventory: false,
+        status: row.isActive === false ? BookSkuStatus.INACTIVE : BookSkuStatus.ACTIVE,
+        unlimitedStock: !tracksStock,
+        trackInventory: tracksStock,
         searchText: buildSkuSearchText({
           internalCode: row.internalCode,
           barcode: row.barcode,
@@ -265,6 +306,24 @@ async function processOneRow(params: {
       },
       select: { id: true },
     });
+
+    // Initial stock is recorded through the audited ledger (never a raw mutation).
+    if (row.initialStock != null && row.initialStock > 0) {
+      await adjustBookStock(prisma, {
+        organizationId,
+        bookSkuId: sku.id,
+        delta: row.initialStock,
+        reason: BookStockMovementReason.INITIAL,
+        actorUserId,
+        importJobId: jobId,
+        note: "موجودی اولیه (ورود اکسل)",
+      });
+    } else if (row.initialStock === 0) {
+      await prisma.bookSku.update({
+        where: { id: sku.id },
+        data: { stockQuantity: 0, trackInventory: true, unlimitedStock: false },
+      });
+    }
 
     await prisma.bookSkuPrice.createMany({
       data: [
@@ -309,7 +368,7 @@ async function processOneRow(params: {
     data: {
       title: row.title,
       keywords: row.keywords,
-      publisherId: taxonomy.publisherId,
+      publisherId: resolvedPublisherId,
       bookTypeId: taxonomy.bookTypeId,
       gradeId: taxonomy.gradeId,
       subjectId: taxonomy.subjectId,
@@ -324,6 +383,11 @@ async function processOneRow(params: {
       barcode: row.barcode,
       editionLabel: row.editionLabel,
       editionYear: row.editionYear,
+      // Only the explicitly-allowed active flag is updated here; visibility and
+      // other merchandising fields are never overwritten by import.
+      ...(row.isActive != null
+        ? { status: row.isActive ? BookSkuStatus.ACTIVE : BookSkuStatus.INACTIVE }
+        : {}),
       searchText: buildSkuSearchText({
         internalCode: row.internalCode,
         barcode: row.barcode,
@@ -334,6 +398,20 @@ async function processOneRow(params: {
       }),
     },
   });
+
+  // For existing books, initialStock means the DESIRED current stock. Record
+  // only the signed difference as an audited CORRECTION — never blindly add.
+  if (row.initialStock != null) {
+    await reconcileBookStockToAbsolute(prisma, {
+      organizationId,
+      bookSkuId: existingByCode.id,
+      desired: row.initialStock,
+      reason: BookStockMovementReason.CORRECTION,
+      actorUserId,
+      importJobId: jobId,
+      note: "اصلاح موجودی (ورود اکسل)",
+    });
+  }
 
   if (tagIds.length) await replaceSkuTags({ organizationId, skuId: existingByCode.id, tagIds });
 
@@ -379,8 +457,14 @@ export async function commitCatalogImport(params: {
   validRows: readonly ValidCatalogRow[];
   duplicateStrategy: CatalogImportDuplicateStrategy;
   createMissingTaxonomies: boolean;
+  /** When set, rows without a publisher column default to this publisher. */
+  defaultPublisherName?: string | null;
 }): Promise<CatalogImportSummary> {
   const { organizationId, jobId } = params;
+
+  const defaultPublisherId = params.defaultPublisherName?.trim()
+    ? await ensurePublisherByName(organizationId, params.defaultPublisherName.trim())
+    : null;
 
   await prisma.bookImportJob.update({
     where: { id: jobId },
@@ -412,6 +496,8 @@ export async function commitCatalogImport(params: {
           row,
           duplicateStrategy: params.duplicateStrategy,
           createMissingTaxonomies: params.createMissingTaxonomies,
+          jobId,
+          defaultPublisherId,
         });
       } catch (error) {
         outcome = {
