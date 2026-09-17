@@ -289,6 +289,8 @@ enum AuditAction {
   BOOKS_CATALOG_SKU_UPDATED
   BOOKS_CATALOG_PRICE_CHANGED
   BOOKS_CATALOG_IMPORTED
+  BOOKS_STOCK_ADJUSTED
+  BOOKS_POS_SALE
   GUIDANCE_PLAN_CREATED
   GUIDANCE_DOCUMENT_UPLOADED
   GUIDANCE_DOCUMENT_REPLACED
@@ -2778,6 +2780,7 @@ model Student {
   counselorAppointments       CounselorAppointment[]
   counselorCaseCorrections    CounselorCaseCorrection[]
   guidanceChoiceLists         GuidanceChoiceList[]
+  commerceOrders              CommerceOrder[]              @relation("CommerceOrderStudent")
 
   @@unique([organizationId, slug])
   @@unique([organizationId, kanoonStudentId])
@@ -4040,11 +4043,14 @@ model CommerceOrder {
   deliveredByUserId      String?
   deliveryNote           String?
   notes                  String?
+  /// Internal POS sale: optional link to a SetareganPlus Student (buyer fields remain the snapshot).
+  studentId              String?
   metadata               Json?
   createdAt              DateTime                      @default(now())
   updatedAt              DateTime                      @updatedAt
 
   organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student          Student?             @relation("CommerceOrderStudent", fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
   branch           Branch?              @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
   pickupBranch     Branch?              @relation("CommerceOrderPickupBranch", fields: [organizationId, pickupBranchId], references: [organizationId, id], onDelete: Restrict)
   lead             Lead?                @relation(fields: [organizationId, leadId], references: [organizationId, id], onDelete: Restrict)
@@ -4065,6 +4071,7 @@ model CommerceOrder {
   @@index([organizationId, leadId])
   @@index([organizationId, buyerMobile])
   @@index([organizationId, studentGrade])
+  @@index([organizationId, studentId])
   @@index([organizationId, inProductionAt])
   @@index([organizationId, readyForPickupAt])
   @@index([deliveredByUserId])
@@ -4489,6 +4496,7 @@ model BookSku {
   importRows    BookImportRowResult[]
   categoryLinks BookSkuCategory[]
   orderItems    CommerceOrderItem[]
+  stockMovements BookStockMovement[]
 
   @@unique([organizationId, internalCode])
   @@unique([organizationId, slug])
@@ -4501,6 +4509,42 @@ model BookSku {
   @@index([organizationId, branchId])
   @@index([primaryImageAssetId])
   @@map("book_skus")
+}
+
+/// Reason for an audited change to BookSku.stockQuantity. The movement ledger
+/// is the single source of truth for stock history (initial, restock, sale,
+/// correction, import, return). Never mutate stock without writing a row here.
+enum BookStockMovementReason {
+  INITIAL
+  RESTOCK
+  SALE
+  CORRECTION
+  IMPORT
+  RETURN
+}
+
+/// Append-only inventory ledger for canonical BookSku stock. `delta` is signed
+/// (+in / -out); `balanceAfter` is the resulting stockQuantity. Optional links
+/// point back to the POS order or the Excel import job that caused the change.
+model BookStockMovement {
+  id             String                  @id @default(cuid())
+  organizationId String
+  bookSkuId      String
+  delta          Int
+  balanceAfter   Int
+  reason         BookStockMovementReason
+  orderId        String?
+  importJobId    String?
+  actorUserId    String?
+  note           String?
+  createdAt      DateTime                @default(now())
+
+  sku BookSku @relation(fields: [organizationId, bookSkuId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([organizationId, bookSkuId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([organizationId, orderId])
+  @@map("book_stock_movements")
 }
 
 /// Temporal price history. Never UPDATE amountRials in place — close the
