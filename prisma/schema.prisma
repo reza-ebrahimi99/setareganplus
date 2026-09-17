@@ -4923,8 +4923,8 @@ model CounselorStudentAssignment {
   student      Student      @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
   assignedBy   User?        @relation("CounselorAssignmentAssignedBy", fields: [assignedByUserId], references: [id], onDelete: SetNull)
 
-  @@unique([organizationId, counselorUserId, studentId])
-  @@index([organizationId, counselorUserId, status])
+  @@unique([organizationId, counselorUserId, studentId], map: "counselor_student_assignments_org_counselor_student_key")
+  @@index([organizationId, counselorUserId, status], map: "counselor_student_assignments_org_counselor_status_idx")
   @@index([organizationId, studentId, status])
   @@map("counselor_student_assignments")
 }

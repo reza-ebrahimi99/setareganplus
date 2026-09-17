@@ -92,8 +92,8 @@ CREATE TABLE "counselor_follow_ups" (
     CONSTRAINT "counselor_follow_ups_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "counselor_student_assignments_organizationId_counselorUserId_studentId_key" ON "counselor_student_assignments"("organizationId", "counselorUserId", "studentId");
-CREATE INDEX "counselor_student_assignments_organizationId_counselorUserId_status_idx" ON "counselor_student_assignments"("organizationId", "counselorUserId", "status");
+CREATE UNIQUE INDEX "counselor_student_assignments_org_counselor_student_key" ON "counselor_student_assignments"("organizationId", "counselorUserId", "studentId");
+CREATE INDEX "counselor_student_assignments_org_counselor_status_idx" ON "counselor_student_assignments"("organizationId", "counselorUserId", "status");
 CREATE INDEX "counselor_student_assignments_organizationId_studentId_status_idx" ON "counselor_student_assignments"("organizationId", "studentId", "status");
 
 CREATE UNIQUE INDEX "counselor_appointments_bookingReservationId_key" ON "counselor_appointments"("bookingReservationId");
