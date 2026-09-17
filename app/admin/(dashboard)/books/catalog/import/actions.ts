@@ -117,6 +117,8 @@ export async function commitCatalogImportAction(
     const duplicateStrategy: CatalogImportDuplicateStrategy =
       strategyRaw === "SKIP_EXISTING" ? "SKIP_EXISTING" : "UPDATE_EXISTING";
     const createMissingTaxonomies = formData.get("createMissingTaxonomies") === "on";
+    const defaultPublisherName =
+      String(formData.get("defaultPublisherName") ?? "").trim() || null;
 
     const { checksum } = await loadCatalogWorkbook(file);
     const validRows = await reparseValidRows(file, mapping);
@@ -143,6 +145,7 @@ export async function commitCatalogImportAction(
       validRows,
       duplicateStrategy,
       createMissingTaxonomies,
+      defaultPublisherName,
     });
 
     revalidatePath("/admin/books/catalog");

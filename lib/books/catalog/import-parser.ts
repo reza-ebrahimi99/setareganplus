@@ -35,11 +35,22 @@ const FIELD_ALIASES: Readonly<
   editionLabel: ["چاپ", "ویرایش", "edition"],
   editionYear: ["سال چاپ", "سال", "edition year", "year"],
   barcode: ["بارکد", "شابک", "barcode", "isbn"],
-  listPriceRials: ["قیمت", "قیمت فهرست", "list price", "price"],
+  listPriceRials: ["قیمت", "قیمت فهرست", "قیمت فروش", "list price", "price"],
   salePriceRials: ["قیمت فروش ویژه", "قیمت ویژه", "sale price"],
+  initialStock: ["موجودی اولیه", "موجودی", "تعداد", "stock", "initial stock", "quantity"],
+  isActive: ["فعال", "فعال غیرفعال", "وضعیت", "active", "status"],
   keywords: ["کلیدواژه", "کلمات کلیدی", "keywords", "tags description"],
   tags: ["برچسب", "برچسب‌ها", "tags"],
 };
+
+/**
+ * Deterministic Ghalamchi internal code derived from a barcode/ISBN. Stable so
+ * repeated imports of the same file resolve to the same SKU (no duplicates).
+ */
+export function deriveGhalamchiInternalCode(barcode: string): string {
+  const cleaned = barcode.replace(/[^0-9A-Za-z]/g, "").toUpperCase();
+  return cleaned ? `GH-${cleaned}`.slice(0, 80) : "";
+}
 
 function cleanText(value: string): string {
   return value
@@ -226,6 +237,10 @@ export type ValidCatalogRow = {
   barcode: string | null;
   listPriceRials: number;
   salePriceRials: number | null;
+  /** Desired stock: initial for new books, target current stock for existing. */
+  initialStock: number | null;
+  /** Explicit active flag from the sheet; null = leave status untouched. */
+  isActive: boolean | null;
   keywords: string | null;
   tagNames: string[];
 };
@@ -247,6 +262,28 @@ function parsePriceRials(raw: string | undefined, label: string, errors: string[
   return Math.round(value);
 }
 
+function parseNonNegativeInt(raw: string | undefined, label: string, errors: string[]): number | null {
+  if (raw == null || raw.trim() === "") return null;
+  const latin = toLatinDigits(raw).replace(/[,٬\s]/g, "");
+  const value = Number(latin);
+  if (!Number.isInteger(value) || value < 0) {
+    errors.push(`${label} باید عددی صحیح و نامنفی باشد.`);
+    return null;
+  }
+  return value;
+}
+
+const TRUE_TOKENS = new Set(["فعال", "بله", "true", "1", "active", "yes", "y"]);
+const FALSE_TOKENS = new Set(["غیرفعال", "خیر", "false", "0", "inactive", "no", "n"]);
+
+function parseActiveFlag(raw: string | undefined): boolean | null {
+  const value = toLatinDigits(cleanText(raw ?? "")).toLocaleLowerCase("fa");
+  if (!value) return null;
+  if (TRUE_TOKENS.has(value)) return true;
+  if (FALSE_TOKENS.has(value)) return false;
+  return null;
+}
+
 export function validateMappedCatalogRows(rows: readonly RawCatalogRow[]): {
   validRows: ValidCatalogRow[];
   invalidRows: InvalidCatalogRow[];
@@ -257,17 +294,27 @@ export function validateMappedCatalogRows(rows: readonly RawCatalogRow[]): {
 
   for (const row of rows) {
     const errors: string[] = [];
-    const internalCode = cleanText(row.values.internalCode ?? "");
+    const barcode = cleanText(row.values.barcode ?? "") || null;
+    let internalCode = cleanText(row.values.internalCode ?? "");
     const title = cleanText(row.values.title ?? "");
 
-    if (!internalCode) errors.push("کد داخلی الزامی است.");
+    // SKU rules: use the internal code when present; otherwise derive a stable
+    // Ghalamchi code from the barcode; if both are missing it is an error.
+    if (!internalCode) {
+      if (barcode) {
+        internalCode = deriveGhalamchiInternalCode(barcode);
+      }
+      if (!internalCode) {
+        errors.push("کد کتاب یا بارکد الزامی است.");
+      }
+    }
     if (!title) errors.push("عنوان کتاب الزامی است.");
     if (row.hasFormula) errors.push("سلول فرمول‌دار در ستون‌های انتخاب‌شده مجاز نیست.");
 
     if (internalCode) {
       const firstSeenAt = seenCodes.get(internalCode.toLocaleLowerCase("fa"));
       if (firstSeenAt != null) {
-        errors.push(`کد داخلی تکراری در همین فایل (ردیف ${firstSeenAt}).`);
+        errors.push(`کد کتاب تکراری در همین فایل (ردیف ${firstSeenAt}).`);
       } else {
         seenCodes.set(internalCode.toLocaleLowerCase("fa"), row.excelRowNumber);
       }
@@ -276,12 +323,14 @@ export function validateMappedCatalogRows(rows: readonly RawCatalogRow[]): {
     const listPriceRaw = row.values.listPriceRials;
     let listPriceRials = 0;
     if (!listPriceRaw) {
-      errors.push("قیمت فهرست الزامی است.");
+      errors.push("قیمت فروش الزامی است.");
     } else {
-      const parsed = parsePriceRials(listPriceRaw, "قیمت فهرست", errors);
+      const parsed = parsePriceRials(listPriceRaw, "قیمت فروش", errors);
       if (parsed != null) listPriceRials = parsed;
     }
     const salePriceRials = parsePriceRials(row.values.salePriceRials, "قیمت فروش ویژه", errors);
+    const initialStock = parseNonNegativeInt(row.values.initialStock, "موجودی اولیه", errors);
+    const isActive = parseActiveFlag(row.values.isActive);
 
     if (errors.length > 0) {
       invalidRows.push({ excelRowNumber: row.excelRowNumber, internalCode, errors });
@@ -299,9 +348,11 @@ export function validateMappedCatalogRows(rows: readonly RawCatalogRow[]): {
       majorName: cleanText(row.values.majorName ?? "") || null,
       editionLabel: cleanText(row.values.editionLabel ?? "") || null,
       editionYear: cleanText(row.values.editionYear ?? "") || null,
-      barcode: cleanText(row.values.barcode ?? "") || null,
+      barcode,
       listPriceRials,
       salePriceRials,
+      initialStock,
+      isActive,
       keywords: cleanText(row.values.keywords ?? "") || null,
       tagNames: cleanText(row.values.tags ?? "")
         .split(/[,،]/)

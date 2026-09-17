@@ -40,8 +40,10 @@ const FIELD_LABELS: Record<CatalogImportMappingField, string> = {
   editionLabel: "چاپ/ویرایش",
   editionYear: "سال چاپ",
   barcode: "بارکد/شابک",
-  listPriceRials: "قیمت فهرست (ریال) *",
+  listPriceRials: "قیمت فروش (ریال) *",
   salePriceRials: "قیمت فروش ویژه (ریال)",
+  initialStock: "موجودی اولیه",
+  isActive: "فعال/غیرفعال",
   keywords: "کلیدواژه",
   tags: "برچسب‌ها",
 };
@@ -77,7 +79,15 @@ function Step({ label, active, done }: { label: string; active: boolean; done: b
   );
 }
 
-export function CatalogImportWizard() {
+export function CatalogImportWizard({
+  defaultPublisherName,
+  templateHref,
+}: {
+  /** When set, import rows without a publisher column default to this publisher. */
+  defaultPublisherName?: string;
+  /** When set, a "download template" link is shown on the upload step. */
+  templateHref?: string;
+} = {}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [phase, setPhase] = useState<Phase>("upload");
@@ -154,6 +164,7 @@ export function CatalogImportWizard() {
       formData.set("mapping", JSON.stringify(mapping));
       formData.set("strategy", strategy);
       if (createMissingTaxonomies) formData.set("createMissingTaxonomies", "on");
+      if (defaultPublisherName) formData.set("defaultPublisherName", defaultPublisherName);
       const result = await commitCatalogImportAction(formData);
       if (!result.ok) {
         setError(result.error);
@@ -202,6 +213,14 @@ export function CatalogImportWizard() {
           <p className="mt-1 text-sm leading-7 text-muted">
             فقط XLSX، حداکثر ۸ مگابایت، تا ۵٬۰۰۰ ردیف. فرمول‌ها اجرا نمی‌شوند و فقط مقدار خوانده می‌شود.
           </p>
+          {templateHref ? (
+            <a
+              href={templateHref}
+              className="mt-4 inline-flex rounded-lg border border-secondary/30 bg-secondary/10 px-4 py-2 text-sm font-medium text-primary"
+            >
+              دانلود قالب اکسل
+            </a>
+          ) : null}
           <input
             ref={fileInputRef}
             type="file"
