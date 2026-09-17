@@ -178,11 +178,207 @@ export function PosTerminal() {
       setCart([]);
     });
   }
+function printReceipt() {
+  if (!receipt) return;
 
+  const printWindow = window.open("", "_blank", "width=800,height=900");
+
+  if (!printWindow) {
+    setError("مرورگر اجازه باز کردن پنجره چاپ را نداد.");
+    return;
+  }
+
+  const rows = receipt.lines
+    .map(
+      (line) => `
+        <tr>
+          <td>${line.title}</td>
+          <td>${toPersianDigits(line.quantity)}</td>
+          <td>${formatRials(line.priceRials)}</td>
+          <td>${formatRials(line.priceRials * line.quantity)}</td>
+        </tr>
+      `,
+    )
+    .join("");
+
+  printWindow.document.write(`
+    <!doctype html>
+    <html lang="fa" dir="rtl">
+      <head>
+        <meta charset="utf-8" />
+        <title>فاکتور ${receipt.invoiceNumber}</title>
+
+        <style>
+          @page {
+            size: A4;
+            margin: 15mm;
+          }
+
+          * {
+            box-sizing: border-box;
+          }
+
+          body {
+            margin: 0;
+            font-family: Tahoma, Arial, sans-serif;
+            direction: rtl;
+            color: #111827;
+            background: white;
+          }
+
+          .invoice {
+            width: 100%;
+            max-width: 760px;
+            margin: 0 auto;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            padding: 24px;
+          }
+
+          .header {
+            text-align: center;
+            border-bottom: 2px solid #111827;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+          }
+
+          .header h1 {
+            margin: 0;
+            font-size: 22px;
+          }
+
+          .header p {
+            margin: 8px 0 0;
+            font-size: 14px;
+          }
+
+          .meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 24px;
+            margin-bottom: 24px;
+            font-size: 14px;
+          }
+
+          .meta-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+          }
+
+          th,
+          td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: right;
+          }
+
+          th {
+            background: #f3f4f6;
+            font-weight: bold;
+          }
+
+          .total {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 2px solid #111827;
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            font-weight: bold;
+          }
+
+          .footer {
+            margin-top: 32px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+          }
+
+          @media print {
+            body {
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+            }
+
+            .invoice {
+              border: none;
+            }
+          }
+        </style>
+      </head>
+
+      <body>
+        <main class="invoice">
+
+          <div class="header">
+            <h1>فروشگاه کتاب قلم‌چی نسیم‌شهر</h1>
+            <p>فاکتور فروش</p>
+          </div>
+
+          <div class="meta">
+            <div class="meta-row">
+              <span>شماره فاکتور:</span>
+              <strong dir="ltr">${receipt.invoiceNumber}</strong>
+            </div>
+
+            <div class="meta-row">
+              <span>تاریخ:</span>
+              <strong>${receipt.at}</strong>
+            </div>
+
+            <div class="meta-row">
+              <span>خریدار:</span>
+              <strong>${receipt.buyerName}</strong>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>کتاب</th>
+                <th>تعداد</th>
+                <th>قیمت واحد</th>
+                <th>جمع</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+
+          <div class="total">
+            <span>مبلغ کل</span>
+            <span>${formatRials(receipt.grandTotalRials)}</span>
+          </div>
+
+          <div class="footer">
+            ستارگان پلاس — فروش کتاب قلم‌چی
+          </div>
+
+        </main>
+
+        <script>
+          window.onload = function () {
+            window.print();
+          };
+        </script>
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+}
   if (receipt) {
     return (
       <div className="space-y-4">
-        <style>{`@media print { body * { visibility: hidden; } .pos-print-area, .pos-print-area * { visibility: visible; } .pos-print-area { position: absolute; inset: 0; width: 100%; } .pos-no-print { display: none !important; } }`}</style>
         <div className="pos-print-area admin-card mx-auto max-w-md p-6">
           <div className="text-center">
             <p className="text-lg font-bold text-primary">ستارگان پلاس — فروش کتاب</p>
@@ -228,7 +424,7 @@ export function PosTerminal() {
         <div className="pos-no-print mx-auto flex max-w-md gap-3">
           <button
             type="button"
-            onClick={() => window.print()}
+            onClick={printReceipt}
             className="min-h-11 flex-1 rounded-xl bg-primary px-4 text-sm font-semibold text-white"
           >
             چاپ فاکتور
