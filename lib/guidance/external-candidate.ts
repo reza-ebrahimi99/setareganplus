@@ -245,6 +245,7 @@ export async function ensureGuidanceCase(params: {
       organizationId: params.organizationId,
       studentId: params.studentId,
       userId: params.userId,
+      journeyVersion: 2,
       status: GuidancePlanStatus.PRE_REGISTERED,
       examGroup: EXTERNAL_CANDIDATE_PROVISIONAL_EXAM_GROUP,
       consentGrantedAt: null,

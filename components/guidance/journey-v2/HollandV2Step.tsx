@@ -8,110 +8,116 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
-import { submitGuidanceV2Step4Action } from "@/app/portal/student/services/guidance/journey/steps/actions/step4";
-import type { JourneyV2FormState } from "@/app/portal/student/services/guidance/journey/steps/actions/step1";
-import { GuidanceJourneyV2Shell } from "@/components/guidance/journey-v2/GuidanceJourneyV2Shell";
 import {
-  HOLLAND_QUESTIONS,
-  HOLLAND_QUESTION_COUNT,
-} from "@/lib/guidance/journey-v2/holland/question-bank";
-import type { HollandAnswers } from "@/lib/guidance/journey-v2/holland/scoring";
-import { guidanceJourneyV2StepPath } from "@/lib/guidance/journey-v2/steps";
-import type { GuidanceJourneySidebarStep } from "@/lib/guidance/journey/types";
+  submitGuidanceV2Step4Action,
+  type GuidanceV2Step4FormState,
+} from "@/app/portal/student/services/guidance/journey/steps/actions/step4";
+
+import { GuidanceJourneyV2Shell } from "@/components/guidance/journey-v2/GuidanceJourneyV2Shell";
+
+import {
+  ASSESSMENT_QUESTIONS,
+} from "@/lib/guidance/journey/assessment/question-bank";
+
+import type {
+  AssessmentAnswers,
+} from "@/lib/guidance/journey/assessment/scoring";
+
+import {
+  guidanceJourneyV2StepPath,
+} from "@/lib/guidance/journey-v2/catalog";
+
+import type {
+  GuidanceJourneySidebarStep,
+} from "@/lib/guidance/journey/types";
+
 import { toPersianDigits } from "@/lib/persian";
 
-const initialState: JourneyV2FormState = {};
+const initialState: GuidanceV2Step4FormState = {};
 
-const options = [
-  { value: 1, label: "اصلاً علاقه ندارم" },
-  { value: 2, label: "علاقه کمی دارم" },
+const OPTIONS = [
+  { value: 1, label: "کاملاً مخالفم" },
+  { value: 2, label: "مخالفم" },
   { value: 3, label: "نظری ندارم" },
-  { value: 4, label: "علاقه دارم" },
-  { value: 5, label: "خیلی علاقه دارم" },
+  { value: 4, label: "موافقم" },
+  { value: 5, label: "کاملاً موافقم" },
 ] as const;
 
-function resolveHollandQuestionIcon(text: string, type: string) {
-  if (/تعمیر|ابزار|فنی/.test(text)) return "🛠️";
-  if (/ماشین|دستگاه|تجهیزات/.test(text)) return "⚙️";
-  if (/ساخت|سرهم/.test(text)) return "🔧";
-  if (/فضای باز|میدانی/.test(text)) return "🌿";
-
-  if (/علمی|تحقیق/.test(text)) return "🔬";
-  if (/آزمایش|فرضیه/.test(text)) return "🧪";
-  if (/داده|عدد|شواهد|الگو/.test(text)) return "📊";
-  if (/حل مسئله|علت|چرا|چطور/.test(text)) return "🧠";
-
-  if (/طراحی|نقاشی|بصری|رنگ|فرم/.test(text)) return "🎨";
-  if (/موسیقی|نمایش|هنری/.test(text)) return "🎵";
-  if (/نوشتن|داستان|متن/.test(text)) return "✍️";
-  if (/محتوا|ایده|خلاق|ابتکار/.test(text)) return "💡";
-
-  if (/آموزش/.test(text)) return "👨‍🏫";
-  if (/کمک|حمایت|همدلی/.test(text)) return "🤝";
-  if (/کودکان|نوجوانان|خانواده/.test(text)) return "👨‍👩‍👧";
-  if (/گروهی|همکاری/.test(text)) return "👥";
-
-  if (/مذاکره|توافق|متقاعد/.test(text)) return "💬";
-  if (/کسب‌وکار|فرصت/.test(text)) return "🚀";
-  if (/مدیریت|هدایت|مسئولیت/.test(text)) return "🎯";
-  if (/رقابت/.test(text)) return "🏆";
-
-  if (/جدول|فهرست|اطلاعات/.test(text)) return "📋";
-  if (/برنامه|زمان‌بندی/.test(text)) return "📅";
-  if (/دقت|صحت|جزئیات/.test(text)) return "🔎";
-  if (/نظم|مرتب|مرحله‌به‌مرحله/.test(text)) return "✅";
+function resolveQuestionIcon(
+  text: string,
+  categoryId: string,
+): string {
+  if (/ابزار|دستگاه|فنی|نرم‌افزار|سیستم/.test(text)) return "🛠️";
+  if (/عدد|منطقی|داده|تحلیل|شواهد/.test(text)) return "📊";
+  if (/تحقیق|علت|پدیده|آزمایش/.test(text)) return "🔬";
+  if (/طراحی|خلاق|ایده|ساخت/.test(text)) return "🎨";
+  if (/آموزش|کمک|همراهی|دیگران/.test(text)) return "🤝";
+  if (/گروه|جمع|افراد تازه/.test(text)) return "👥";
+  if (/مدیریت|مسئولیت|هماهنگ/.test(text)) return "🎯";
+  if (/کسب.?و.?کار|مذاکره|پول|ریسک/.test(text)) return "🚀";
+  if (/محیط|طبیعت|فضای باز|میدانی/.test(text)) return "🌿";
+  if (/یادگیری|مطالعه|تمرین/.test(text)) return "📚";
+  if (/آینده|هدف|مسیر/.test(text)) return "🧭";
+  if (/فشار|ضرب.?الاجل|اشتباه/.test(text)) return "⚡";
 
   const fallback: Record<string, string> = {
-    R: "🛠️",
-    I: "🔬",
-    A: "🎨",
-    S: "🤝",
-    E: "🚀",
-    C: "📋",
+    personality: "🧠",
+    decision_making: "⚖️",
+    work_style: "✅",
+    learning_style: "📚",
+    interests: "✨",
+    future_goals: "🧭",
+    social: "👥",
+    helping: "🤝",
+    leadership: "🎯",
+    research: "🔬",
+    technical: "🛠️",
+    creativity: "🎨",
+    business: "🚀",
+    environmental: "🌿",
+    stress_tolerance: "⚡",
   };
 
-  return fallback[type] ?? "✨";
+  return fallback[categoryId] ?? "✨";
 }
 
 export function HollandV2Step({
   sidebarSteps,
   completionPercentage,
-  planPublicId,
   initialAnswers,
 }: {
   sidebarSteps: readonly GuidanceJourneySidebarStep[];
   completionPercentage: number;
-  planPublicId: string;
-  initialAnswers: HollandAnswers;
+  initialAnswers: AssessmentAnswers;
 }) {
   const router = useRouter();
 
-  const [state, action] = useActionState(
+  const [state, action, pending] = useActionState(
     submitGuidanceV2Step4Action,
     initialState,
   );
 
-  const storageKey = `guidance-holland-v2:${planPublicId}`;
-
   const [answers, setAnswers] =
-    useState<HollandAnswers>(initialAnswers);
+    useState<AssessmentAnswers>(initialAnswers);
 
-  const [index, setIndex] = useState(() => {
-    const firstUnansweredIndex =
-      HOLLAND_QUESTIONS.findIndex((item) => {
-        const value = initialAnswers[item.id];
+  const firstUnansweredIndex = useMemo(() => {
+    const index = ASSESSMENT_QUESTIONS.findIndex((question) => {
+      const value = initialAnswers[question.id];
 
-        return !(
-          typeof value === "number" &&
-          value >= 1 &&
-          value <= 5
-        );
-      });
+      return !(
+        typeof value === "number" &&
+        value >= 1 &&
+        value <= 5
+      );
+    });
 
-    return firstUnansweredIndex === -1
-      ? HOLLAND_QUESTION_COUNT - 1
-      : firstUnansweredIndex;
-  });
+    return index === -1
+      ? ASSESSMENT_QUESTIONS.length - 1
+      : index;
+  }, [initialAnswers]);
+
+  const [index, setIndex] =
+    useState(firstUnansweredIndex);
 
   const [started, setStarted] = useState(
     Object.keys(initialAnswers).length > 0,
@@ -121,50 +127,16 @@ export function HollandV2Step({
     useState(false);
 
   useEffect(() => {
-    try {
-      const cached = window.localStorage.getItem(storageKey);
-
-      if (!cached) return;
-
-      const parsed = JSON.parse(cached) as HollandAnswers;
-
-      setAnswers((current) => ({
-        ...parsed,
-        ...current,
-      }));
-    } catch {
-      // Ignore invalid browser cache.
+    if (state.ok) {
+      router.replace(guidanceJourneyV2StepPath(5));
     }
-  }, [storageKey]);
+  }, [router, state.ok]);
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        storageKey,
-        JSON.stringify(answers),
-      );
-    } catch {
-      // Browser storage is optional.
-    }
-  }, [answers, storageKey]);
-
-  useEffect(() => {
-    if (!state.ok) return;
-
-    try {
-      window.localStorage.removeItem(storageKey);
-    } catch {
-      // Ignore storage errors.
-    }
-
-    router.replace(guidanceJourneyV2StepPath(5));
-  }, [router, state.ok, storageKey]);
-
-  const question = HOLLAND_QUESTIONS[index]!;
+  const question = ASSESSMENT_QUESTIONS[index];
 
   const answeredCount = useMemo(
     () =>
-      HOLLAND_QUESTIONS.filter((item) => {
+      ASSESSMENT_QUESTIONS.filter((item) => {
         const value = answers[item.id];
 
         return (
@@ -177,24 +149,30 @@ export function HollandV2Step({
   );
 
   const questionProgress = Math.round(
-    (answeredCount / HOLLAND_QUESTION_COUNT) * 100,
+    (answeredCount / ASSESSMENT_QUESTIONS.length) * 100,
   );
 
   const complete =
-    answeredCount === HOLLAND_QUESTION_COUNT;
+    answeredCount === ASSESSMENT_QUESTIONS.length;
+
+  const currentAnswered =
+    question &&
+    typeof answers[question.id] === "number";
 
   function choose(value: number) {
+    if (!question) return;
+
     setAnswers((current) => ({
       ...current,
       [question.id]: value,
     }));
 
-    if (index < HOLLAND_QUESTION_COUNT - 1) {
+    if (index < ASSESSMENT_QUESTIONS.length - 1) {
       window.setTimeout(() => {
         setIndex((current) =>
           Math.min(
             current + 1,
-            HOLLAND_QUESTION_COUNT - 1,
+            ASSESSMENT_QUESTIONS.length - 1,
           ),
         );
       }, 180);
@@ -205,15 +183,17 @@ export function HollandV2Step({
     <GuidanceJourneyV2Shell
       stepId={4}
       stepCount={18}
-      title="آزمون رغبت‌سنجی اختصاصی مهندس ابراهیمی"
-      description="۶۰ سؤال هدفمند برای شناخت دقیق‌تر الگوی علایق تحصیلی و شغلی شما."
+      title="آزمون رغبت‌سنجی اختصاصی"
+      description="۶۰ سؤال هدفمند برای شناخت دقیق‌تر علایق، ویژگی‌ها و ترجیحات تحصیلی و شغلی شما."
       sidebarSteps={sidebarSteps}
       completionPercentage={completionPercentage}
     >
       {!started ? (
         <section className="gjv2-holland-intro">
           <div className="gjv2-holland-intro__hero">
-            <div className="gjv2-holland-intro__icon">🧭</div>
+            <div className="gjv2-holland-intro__icon">
+              🧭
+            </div>
 
             <span className="gjv2-holland-intro__eyebrow">
               به خودت فرصت یک انتخاب آگاهانه بده
@@ -225,59 +205,58 @@ export function HollandV2Step({
             </h2>
 
             <p>
-              این رغبت‌سنجی با طراحی و تنظیم تیم تخصصی انتخاب رشته
-              مهندس ابراهیمی و بر پایه الگوهای معتبر سنجش علایق
-              تحصیلی و شغلی آماده شده است. سؤال‌ها طوری تنظیم
-              شده‌اند که فقط نپرسند «چه رشته‌ای دوست داری؟»؛
-              بلکه کمک کنند الگوهایی از علایق و ترجیحات تو آشکار
-              شوند که شاید تا امروز کمتر به آن‌ها توجه کرده باشی.
+              این سنجش کمک می‌کند الگوی علایق، سبک تصمیم‌گیری،
+              یادگیری، تعامل اجتماعی، توانمندی‌های فنی و خلاقانه
+              و ترجیحات آینده خودت را بهتر بشناسی.
             </p>
           </div>
 
           <div className="gjv2-holland-intro__features">
             <article>
               <span>🧠</span>
-              <strong>شناخت علایق</strong>
-              <p>کمک می‌کند الگوی علاقه‌های تحصیلی و شغلی خودت را بهتر بشناسی.</p>
+              <strong>شناخت بهتر خودت</strong>
+              <p>
+                تصویری چندبعدی از علایق و ترجیحات تو می‌سازد.
+              </p>
             </article>
 
             <article>
               <span>🧩</span>
-              <strong>تحلیل چندبعدی علایق</strong>
+              <strong>تحلیل چندبعدی</strong>
               <p>
-                پاسخ‌ها با استفاده از شش الگوی اصلی رغبت شغلی
-                در چارچوب RIASEC تحلیل می‌شوند.
+                فقط علاقه به رشته را نمی‌سنجد و چند ویژگی مهم را
+                کنار هم بررسی می‌کند.
               </p>
             </article>
 
             <article>
               <span>⏱️</span>
               <strong>حدود ۸ تا ۱۰ دقیقه</strong>
-              <p>۶۰ عبارت کوتاه، ساده و بدون پاسخ درست یا غلط.</p>
+              <p>
+                ۶۰ عبارت کوتاه، ساده و بدون پاسخ درست یا غلط.
+              </p>
             </article>
           </div>
 
           <div className="gjv2-holland-intro__tip">
             <span>💚</span>
+
             <div>
               <strong>
-                ۶۰ پاسخ صادقانه تو می‌تواند تصویر متفاوتی از
-                مسیرهای مناسب‌تر برایت بسازد
+                بهترین نتیجه با پاسخ صادقانه به دست می‌آید
               </strong>
+
               <p>
-                زیاد روی هر سؤال مکث نکن. پشت پاسخ‌های تو
-                الگوهایی وجود دارد که در نگاه اول دیده نمی‌شوند.
-                بعد از تکمیل، پاسخ‌ها تحلیل می‌شوند تا ترکیب
-                علایق غالب و سرنخ‌های مهم برای انتخاب رشته
-                مشخص شود.
+                زیاد روی هر سؤال مکث نکن. گزینه‌ای را انتخاب کن که
+                بیشتر شبیه خود واقعی توست.
               </p>
             </div>
           </div>
 
           <div className="gjv2-holland-intro__disclaimer">
-            این نتیجه به‌تنهایی تعیین‌کننده رشته نیست؛ در فرآیند
-            تخصصی انتخاب رشته، در کنار نمرات، رتبه، توانایی‌ها،
-            شرایط فردی و تحلیل مشاور بررسی می‌شود.
+            نتیجه این سنجش به‌تنهایی تعیین‌کننده انتخاب رشته نیست و
+            در کنار نمرات، رتبه، شرایط فردی و سایر اطلاعات مسیر
+            انتخاب رشته بررسی می‌شود.
           </div>
 
           <button
@@ -285,7 +264,7 @@ export function HollandV2Step({
             className="gjv2-primary-button gjv2-holland-intro__start"
             onClick={() => setStarted(true)}
           >
-            آماده‌ام؛ رغبت‌سنجی را شروع کنیم
+            آماده‌ام؛ آزمون را شروع کنیم
             <span>←</span>
           </button>
         </section>
@@ -295,30 +274,21 @@ export function HollandV2Step({
             className="gjv2-holland-complete__icon"
             aria-hidden="true"
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            >
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
+            ✓
           </div>
 
           <span className="gjv2-holland-complete__eyebrow">
-            آزمون قبلاً تکمیل شده است
+            سنجش تکمیل شده است
           </span>
 
           <h2>
-            هر {toPersianDigits(HOLLAND_QUESTION_COUNT)} پاسخ
-            شما ثبت شده است
+            هر {toPersianDigits(ASSESSMENT_QUESTIONS.length)} پاسخ
+            شما آماده تحلیل است
           </h2>
 
           <p>
-            نیازی نیست دوباره سؤال‌ها را یکی‌یکی مرور کنی.
-            نیازی نیست دوباره ۶۰ سؤال را مرور کنی.
-            می‌توانی مستقیماً نتیجه رغبت‌سنجی را ببینی یا
-            در صورت نیاز پاسخ‌هایت را ویرایش کنی.
+            می‌توانی نتیجه سنجش را مشاهده کنی یا در صورت نیاز
+            پاسخ‌هایت را دوباره مرور و ویرایش کنی.
           </p>
 
           {state.error ? (
@@ -328,20 +298,23 @@ export function HollandV2Step({
           ) : null}
 
           <form action={action}>
-            {HOLLAND_QUESTIONS.map((item) => (
+            {ASSESSMENT_QUESTIONS.map((item) => (
               <input
                 key={item.id}
                 type="hidden"
-                name={`answer_${item.id}`}
+                name={`q_${item.id}`}
                 value={answers[item.id] ?? ""}
               />
             ))}
 
             <button
               type="submit"
+              disabled={pending}
               className="gjv2-primary-button gjv2-holland-complete__result"
             >
-              مشاهده نتیجه رغبت‌سنجی
+              {pending
+                ? "در حال تحلیل..."
+                : "مشاهده نتیجه رغبت‌سنجی"}
               <span>←</span>
             </button>
           </form>
@@ -360,148 +333,160 @@ export function HollandV2Step({
           <button
             type="button"
             className="gjv2-holland-complete__back"
-            onClick={() => router.push(guidanceJourneyV2StepPath(3))}
+            onClick={() =>
+              router.push(guidanceJourneyV2StepPath(3))
+            }
           >
             بازگشت به مرحله قبل
           </button>
         </section>
-      ) : (
-      <form action={action} className="gjv2-holland">
-        {HOLLAND_QUESTIONS.map((item) => (
-          <input
-            key={item.id}
-            type="hidden"
-            name={`answer_${item.id}`}
-            value={answers[item.id] ?? ""}
-          />
-        ))}
+      ) : question ? (
+        <form action={action} className="gjv2-holland">
+          {ASSESSMENT_QUESTIONS.map((item) => (
+            <input
+              key={item.id}
+              type="hidden"
+              name={`q_${item.id}`}
+              value={answers[item.id] ?? ""}
+            />
+          ))}
 
-        <div className="gjv2-holland__top">
-          <div>
+          <div className="gjv2-holland__top">
+            <div>
+              <span>
+                سؤال {toPersianDigits(index + 1)} از{" "}
+                {toPersianDigits(
+                  ASSESSMENT_QUESTIONS.length,
+                )}
+              </span>
+
+              <strong>
+                {toPersianDigits(answeredCount)} پاسخ ثبت شده
+              </strong>
+            </div>
+
             <span>
-              سؤال {toPersianDigits(index + 1)} از{" "}
-              {toPersianDigits(HOLLAND_QUESTION_COUNT)}
+              {toPersianDigits(questionProgress)}٪
             </span>
-
-            <strong>
-              {toPersianDigits(answeredCount)} پاسخ ثبت شده
-            </strong>
           </div>
 
-          <span>{toPersianDigits(questionProgress)}٪</span>
-        </div>
-
-        <div className="gjv2-holland__progress">
-          <span
-            style={{ width: `${questionProgress}%` }}
-          />
-        </div>
-
-        {state.error ? (
-          <p className="gpj-banner gpj-banner--error">
-            {state.error}
-          </p>
-        ) : null}
-
-        <section className="gjv2-holland__question">
-          <div
-            className="gjv2-holland__question-icon"
-            aria-hidden="true"
-          >
-            {resolveHollandQuestionIcon(question.text, question.type)}
+          <div className="gjv2-holland__progress">
+            <span
+              style={{
+                width: `${questionProgress}%`,
+              }}
+            />
           </div>
 
-          <p>{question.text}</p>
+          {state.error ? (
+            <p className="gpj-banner gpj-banner--error">
+              {state.error}
+            </p>
+          ) : null}
 
-          <div className="gjv2-holland__options">
-            {options.map((option) => {
-              const selected =
-                answers[question.id] === option.value;
+          <section className="gjv2-holland__question">
+            <div
+              className="gjv2-holland__question-icon"
+              aria-hidden="true"
+            >
+              {resolveQuestionIcon(
+                question.text,
+                question.categoryId,
+              )}
+            </div>
 
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={`gjv2-holland__option${
-                    selected
-                      ? " gjv2-holland__option--selected"
-                      : ""
-                  }`}
-                  onClick={() => choose(option.value)}
-                >
-                  <span className="gjv2-holland__radio">
-                    {selected ? "✓" : ""}
-                  </span>
+            <p>{question.text}</p>
 
-                  <strong>{option.label}</strong>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+            <div className="gjv2-holland__options">
+              {OPTIONS.map((option) => {
+                const selected =
+                  answers[question.id] === option.value;
 
-        <div className="gjv2-holland__navigation">
-          <button
-            type="button"
-            className="gjv2-back-button"
-            disabled={index === 0}
-            onClick={() =>
-              setIndex((current) =>
-                Math.max(0, current - 1),
-              )
-            }
-          >
-            سؤال قبلی
-          </button>
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`gjv2-holland__option${
+                      selected
+                        ? " gjv2-holland__option--selected"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      choose(option.value)
+                    }
+                  >
+                    <span className="gjv2-holland__radio">
+                      {selected ? "✓" : ""}
+                    </span>
 
-          <div className="gjv2-holland__dots">
-            {toPersianDigits(index + 1)}
-            <span>/</span>
-            {toPersianDigits(HOLLAND_QUESTION_COUNT)}
-          </div>
+                    <strong>{option.label}</strong>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
-          {index < HOLLAND_QUESTION_COUNT - 1 ? (
+          <div className="gjv2-holland__navigation">
             <button
               type="button"
-              className="gjv2-primary-button"
+              className="gjv2-back-button"
+              disabled={index === 0}
               onClick={() =>
                 setIndex((current) =>
-                  Math.min(
-                    HOLLAND_QUESTION_COUNT - 1,
-                    current + 1,
-                  ),
+                  Math.max(0, current - 1),
                 )
               }
             >
-              سؤال بعدی
+              سؤال قبلی
             </button>
-          ) : (
-            <button
-              type="submit"
-              className="gjv2-primary-button"
-              disabled={!complete}
-            >
-              پایان رغبت‌سنجی و مشاهده نتیجه
-            </button>
-          )}
-        </div>
 
-        {!complete &&
-        index === HOLLAND_QUESTION_COUNT - 1 ? (
-          <p className="gjv2-holland__remaining">
-            هنوز{" "}
-            {toPersianDigits(
-              HOLLAND_QUESTION_COUNT - answeredCount,
-            )}{" "}
-            سؤال بدون پاسخ مانده است.
-          </p>
-        ) : null}
+            <div className="gjv2-holland__dots">
+              {toPersianDigits(index + 1)}
+              <span>/</span>
+              {toPersianDigits(
+                ASSESSMENT_QUESTIONS.length,
+              )}
+            </div>
 
-        <p className="gjv2-holland__autosave">
-          ✓ پاسخ‌های شما در این دستگاه به‌صورت خودکار حفظ می‌شوند.
-        </p>
-      </form>
-      )}
+            {index <
+            ASSESSMENT_QUESTIONS.length - 1 ? (
+              <button
+                type="button"
+                className="gjv2-primary-button"
+                disabled={!currentAnswered}
+                onClick={() =>
+                  setIndex((current) =>
+                    Math.min(
+                      ASSESSMENT_QUESTIONS.length - 1,
+                      current + 1,
+                    ),
+                  )
+                }
+              >
+                سؤال بعدی
+              </button>
+            ) : complete ? (
+              <button
+                type="submit"
+                disabled={pending}
+                className="gjv2-primary-button"
+              >
+                {pending
+                  ? "در حال تحلیل..."
+                  : "ثبت پاسخ‌ها و مشاهده نتیجه"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="gjv2-primary-button"
+              >
+                ابتدا به همه سؤال‌ها پاسخ بده
+              </button>
+            )}
+          </div>
+        </form>
+      ) : null}
     </GuidanceJourneyV2Shell>
   );
 }

@@ -28,7 +28,7 @@ export function GuidanceJourneyV2Shell({
   const [showSteps, setShowSteps] = useState(false);
 
   return (
-    <div className="gjv2-shell gjv2-shell--compact" dir="rtl">
+    <div className="gjv2-shell" dir="rtl">
       <header className="gjv2-header">
         <div className="gjv2-header__top">
           <Link

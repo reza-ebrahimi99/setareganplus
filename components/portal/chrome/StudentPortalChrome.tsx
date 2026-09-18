@@ -169,6 +169,7 @@ export function StudentPortalChrome({
         onClick={closeMobileNav}
       />
 
+      {!inGuidancePlatform && (
       <Suspense fallback={null}>
         <PortalSidebar
           sections={activeSections}
@@ -206,6 +207,7 @@ export function StudentPortalChrome({
           }
         />
       </Suspense>
+      )}
 
       <div className="portal-os-frame">
         <PortalTopBar

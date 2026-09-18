@@ -38,7 +38,6 @@ export const GATED_DOCUMENT_TYPES = {
 } as const;
 
 export function requiredDocumentTypeForAdvance(stepId: number): GuidanceDocumentType | null {
-  if (stepId === 3) return GuidanceDocumentType.FINAL_GRADES;
   if (stepId === 12) return GuidanceDocumentType.EXAM_RESULT;
   return null;
 }

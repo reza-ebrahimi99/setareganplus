@@ -10,13 +10,11 @@ import { useRouter } from "next/navigation";
 
 import { submitGuidanceV2Step3Action } from "@/app/portal/student/services/guidance/journey/steps/actions/step3";
 import type { JourneyV2FormState } from "@/app/portal/student/services/guidance/journey/steps/actions/step1";
-import { GuidanceJourneyV2Nav } from "@/components/guidance/journey-v2/GuidanceJourneyV2Nav";
 import { GuidanceJourneyV2Shell } from "@/components/guidance/journey-v2/GuidanceJourneyV2Shell";
 import {
   RequiredStar,
   SubjectIcon,
 } from "@/components/guidance/journey-v2/GuidanceV2Icons";
-import { GuidanceFileUploadField } from "@/components/guidance/shared/GuidanceFileUploadField";
 import { guidanceJourneyV2StepPath } from "@/lib/guidance/journey-v2/steps";
 import type {
   FinalExamScoreMap,
@@ -181,20 +179,25 @@ export function FinalGradesV2Step({
         />
 
         <section className="gjv2-upload-section">
-          <GuidanceFileUploadField
+          <label className="gjv2-form-label" htmlFor="transcript">
+            کارنامه نهایی
+            <RequiredStar />
+          </label>
+
+          {existingTranscriptName ? (
+            <p className="gjv2-current-file">
+              ✓ فایل فعلی: {existingTranscriptName}
+            </p>
+          ) : null}
+
+          <input
             id="transcript"
             name="transcript"
-            required={!existingTranscriptName}
+            type="file"
             accept="application/pdf,image/jpeg,image/png"
-            title="بارگذاری کارنامه نهایی"
-            helper="فایل PDF یا تصویر · حداکثر ۵ مگابایت"
-            existingLabel={
-              existingTranscriptName
-                ? `فایل فعلی: ${existingTranscriptName}`
-                : null
-            }
-            error={errors.transcript ?? null}
-            onFileChange={() =>
+            className="gjv2-file-input"
+            aria-invalid={Boolean(errors.transcript)}
+            onChange={() =>
               setClientErrors((current) => {
                 const next = { ...current };
                 delete next.transcript;
@@ -202,15 +205,26 @@ export function FinalGradesV2Step({
               })
             }
           />
+
+          {errors.transcript ? (
+            <p className="gjv2-form-error">{errors.transcript}</p>
+          ) : null}
         </section>
 
-        <GuidanceJourneyV2Nav
-          previous={{
-            label: "برگشت",
-            onClick: () => router.push(guidanceJourneyV2StepPath(2)),
-          }}
-          next={{ label: "ذخیره و رفتن به مرحله بعد" }}
-        />
+        <div className="gjv2-actions">
+          <button
+            type="button"
+            className="gjv2-back-button"
+            onClick={() => router.push(guidanceJourneyV2StepPath(2))}
+          >
+            برگشت
+          </button>
+
+          <button type="submit" className="gjv2-primary-button">
+            ذخیره و رفتن به مرحله بعد
+            <span aria-hidden="true">←</span>
+          </button>
+        </div>
       </form>
     </GuidanceJourneyV2Shell>
   );

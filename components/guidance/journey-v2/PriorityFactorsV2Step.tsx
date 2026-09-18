@@ -173,6 +173,11 @@ export function PriorityFactorsV2Step({
       <form action={formAction} className="gjv2-form-card">
         <input
           type="hidden"
+          name="payload"
+          value={JSON.stringify(orderedCodes)}
+        />
+        <input
+          type="hidden"
           name="orderedCodes"
           value={JSON.stringify(orderedCodes)}
         />
@@ -309,7 +314,7 @@ export function PriorityFactorsV2Step({
           }}
           next={{
             label: "ثبت اولویت‌ها و ادامه مسیر",
-            disabled: pending || orderedCodes.length !== 3,
+            disabled: pending || orderedCodes.length !== 10,
             pending,
             pendingLabel: "در حال ثبت...",
           }}

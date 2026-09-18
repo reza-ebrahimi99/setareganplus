@@ -133,6 +133,11 @@ export function EducationPreferencesV2Step({
       <form action={action} className="gjv2-form-card" noValidate>
         <input
           type="hidden"
+          name="payload"
+          value={JSON.stringify(items)}
+        />
+        <input
+          type="hidden"
           name="items"
           value={JSON.stringify(items)}
         />

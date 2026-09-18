@@ -458,6 +458,11 @@ export function MajorPreferencesV2Step({
       >
         <input
           type="hidden"
+          name="payload"
+          value={JSON.stringify(items)}
+        />
+        <input
+          type="hidden"
           name="items"
           value={JSON.stringify(items)}
         />

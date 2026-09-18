@@ -284,6 +284,11 @@ export function CityPreferencesV2Step({
       <form action={formAction} className="gjv2-form-card">
         <input
           type="hidden"
+          name="payload"
+          value={JSON.stringify(items)}
+        />
+        <input
+          type="hidden"
           name="items"
           value={JSON.stringify(items)}
         />

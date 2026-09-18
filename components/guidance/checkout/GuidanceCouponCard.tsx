@@ -1,6 +1,7 @@
 "use client";
 
 import { rialToToman } from "@/lib/guidance/discounts/engine";
+import { GuidanceDiscountEligibilityNotice } from "@/components/guidance/checkout/GuidanceDiscountEligibilityNotice";
 
 export type GuidanceCouponPreview =
   | {
@@ -37,6 +38,8 @@ export function GuidanceCouponCard(props: {
         <p>کد تخفیف</p>
         <strong>اگر کد معتبر دارید، همین‌جا اعمال کنید</strong>
       </header>
+
+      <GuidanceDiscountEligibilityNotice />
 
       <div className="gjv2-coupon-card__row">
         <label className="gjv2-coupon-card__field">
