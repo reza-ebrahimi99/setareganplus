@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useActionState } from "react";
 import {
   addCounselorNoteAction,
@@ -26,24 +26,13 @@ import type {
   SessionRecordView,
 } from "@/lib/counselor-os/view-models";
 import type { CounselorLateJourneyModel } from "@/lib/counselor-os/late-journey";
+import {
+  buildCounselorCaseNavItems,
+  type CounselorCaseNavTabId,
+} from "@/lib/counselor-os/case-page-config";
 import { toPersianDigits } from "@/lib/persian";
 
 const initial: CounselorActionState = {};
-
-type Tab =
-  | "overview"
-  | "journey"
-  | "late"
-  | "academic"
-  | "holland"
-  | "preferences"
-  | "grades"
-  | "documents"
-  | "finance"
-  | "sessions"
-  | "notes"
-  | "followups"
-  | "corrections";
 
 export function CounselorStudentCaseTabs({
   caseModel,
@@ -72,72 +61,112 @@ export function CounselorStudentCaseTabs({
   counselors: Array<{ userId: string; name: string }>;
   lateJourney: CounselorLateJourneyModel | null;
 }) {
-  const [tab, setTab] = useState<Tab>("overview");
+  const navId = useId();
+  const [tab, setTab] = useState<CounselorCaseNavTabId>("overview");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [noteState, noteAction, notePending] = useActionState(addCounselorNoteAction, initial);
   const [followState, followAction, followPending] = useActionState(createFollowUpAction, initial);
   const [editState, editAction, editPending] = useActionState(correctStudentFieldAction, initial);
   const [assignState, assignAction, assignPending] = useActionState(assignStudentFromCaseAction, initial);
 
-  const tabs: Array<[Tab, string, boolean]> = [
-    ["overview", "نمای کلی", true],
-    ["journey", "مسیر ۱۸ مرحله‌ای", true],
-    ["late", "جلسات و چیدمان ۱۱–۱۸", true],
-    ["academic", "اطلاعات تحصیلی", Object.keys(dossier.personal).length > 0],
-    ["holland", "آزمون رغبت‌سنجی", true],
-    ["preferences", "ترجیحات و اولویت‌ها", Boolean(dossier.majors.length || dossier.provinces.length || dossier.educationTypes.length)],
-    ["grades", "نمرات و کارنامه", dossier.grades.length > 0],
-    ["documents", "مدارک و فایل‌ها", dossier.documents.length > 0],
-    ["finance", "مالی و بسته", true],
-    ["sessions", "جلسات", sessions.length > 0],
-    ["notes", "یادداشت‌ها", true],
-    ["followups", "پیگیری‌ها", true],
-    ["corrections", "تاریخچه اصلاحات", true],
-  ];
+  const navItems = buildCounselorCaseNavItems({
+    hasPersonal: Object.keys(dossier.personal).length > 0,
+    hasPreferences: Boolean(
+      dossier.majors.length || dossier.provinces.length || dossier.educationTypes.length,
+    ),
+    hasGrades: dossier.grades.length > 0,
+    hasDocuments: dossier.documents.length > 0,
+    hasSessions: sessions.length > 0,
+  });
+
+  function selectTab(id: CounselorCaseNavTabId) {
+    setTab(id);
+    setMobileNavOpen(false);
+  }
+
+  const exportBase = `/admin/counselor/students/${caseModel.studentId}/export`;
 
   return (
-    <div className="cos-tabs">
-      <div className="cos-tabs__nav" role="tablist">
-        {tabs
-          .filter(([, , show]) => show)
-          .map(([id, label]) => (
+    <div className="cos-case-layout">
+      <button
+        type="button"
+        className="cos-case-nav-toggle cos-btn cos-btn--ghost"
+        aria-expanded={mobileNavOpen}
+        aria-controls={`${navId}-nav`}
+        onClick={() => setMobileNavOpen((open) => !open)}
+      >
+        {mobileNavOpen ? "بستن منوی پرونده" : "منوی بخش‌های پرونده"}
+      </button>
+
+      <aside
+        id={`${navId}-nav`}
+        className={`cos-case-sidebar${mobileNavOpen ? " is-open" : ""}`}
+        aria-label="ناوبری اطلاعات پرونده"
+      >
+        <p className="cos-case-sidebar__title">اطلاعات پرونده</p>
+        <nav role="tablist" aria-orientation="vertical" className="cos-case-sidebar__nav">
+          {navItems.map((item) => (
             <button
-              key={id}
+              key={item.id}
               type="button"
               role="tab"
-              aria-selected={tab === id}
-              className={tab === id ? "is-active" : undefined}
-              onClick={() => setTab(id)}
+              id={`${navId}-tab-${item.id}`}
+              aria-selected={tab === item.id}
+              aria-controls={`${navId}-panel-${item.id}`}
+              className={tab === item.id ? "is-active" : undefined}
+              onClick={() => selectTab(item.id)}
             >
-              {label}
+              {item.label}
             </button>
           ))}
-      </div>
+        </nav>
+      </aside>
 
-      <div className="cos-tabs__panel">
+      {mobileNavOpen ? (
+        <button
+          type="button"
+          className="cos-case-sidebar-backdrop"
+          aria-label="بستن منو"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      ) : null}
+
+      <div
+        className="cos-case-main cos-tabs__panel"
+        role="tabpanel"
+        id={`${navId}-panel-${tab}`}
+        aria-labelledby={`${navId}-tab-${tab}`}
+      >
         {tab === "overview" && (
           <section className="cos-panel">
             <h2>خلاصه عملیاتی</h2>
-            <dl className="cos-dl cos-dl--grid">
-              <div>
-                <dt>وضعیت دانش‌آموز</dt>
-                <dd>{caseModel.studentStatusLabel}</dd>
-              </div>
-              <div>
-                <dt>تاریخ ثبت</dt>
-                <dd>{caseModel.registeredLabel}</dd>
-              </div>
-              <div>
-                <dt>آخرین فعالیت</dt>
-                <dd>{caseModel.lastActivityLabel ?? "—"}</dd>
-              </div>
-              <div>
-                <dt>آخرین مرحله تکمیل‌شده</dt>
-                <dd>{caseModel.lastCompletedStepTitle ?? "—"}</dd>
-              </div>
-              <div>
-                <dt>مرحله جاری</dt>
-                <dd>{caseModel.currentStepTitle ?? "هنوز شروع نشده"}</dd>
-              </div>
+            <div className="cos-summary-cards">
+              <article className="cos-summary-card">
+                <span>وضعیت دانش‌آموز</span>
+                <strong>{caseModel.studentStatusLabel}</strong>
+              </article>
+              <article className="cos-summary-card">
+                <span>تاریخ ثبت</span>
+                <strong>{caseModel.registeredLabel}</strong>
+              </article>
+              <article className="cos-summary-card">
+                <span>آخرین فعالیت</span>
+                <strong>{caseModel.lastActivityLabel ?? "—"}</strong>
+              </article>
+              <article className="cos-summary-card">
+                <span>مرحله جاری</span>
+                <strong>{caseModel.currentStepTitle ?? "هنوز شروع نشده"}</strong>
+              </article>
+              <article className="cos-summary-card">
+                <span>آخرین مرحله تکمیل‌شده</span>
+                <strong>{caseModel.lastCompletedStepTitle ?? "—"}</strong>
+              </article>
+              <article className="cos-summary-card">
+                <span>پیشرفت</span>
+                <strong>{toPersianDigits(caseModel.completionPercentage)}٪</strong>
+              </article>
+            </div>
+            <dl className="cos-dl cos-dl--grid cos-summary-dl">
               <div>
                 <dt>بسته</dt>
                 <dd>
@@ -160,49 +189,46 @@ export function CounselorStudentCaseTabs({
               ) : null}
             </dl>
             {isSupervisor ? (
-              <form action={assignAction} className="cos-form-stack cos-edit-box">
+              <form action={assignAction} className="cos-form-stack cos-edit-box cos-assign-form">
                 <h3>تخصیص / انتقال مشاور</h3>
                 <input type="hidden" name="studentId" value={caseModel.studentId} />
-                <select name="counselorUserId" required defaultValue={caseModel.assignedCounselor?.userId ?? ""}>
-                  <option value="" disabled>
-                    انتخاب مشاور
-                  </option>
-                  {counselors.map((c) => (
-                    <option key={c.userId} value={c.userId}>
-                      {c.name}
+                <label>
+                  مشاور
+                  <select name="counselorUserId" required defaultValue={caseModel.assignedCounselor?.userId ?? ""}>
+                    <option value="" disabled>
+                      انتخاب مشاور
                     </option>
-                  ))}
-                </select>
+                    {counselors.map((c) => (
+                      <option key={c.userId} value={c.userId}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <label className="cos-check">
                   <input type="checkbox" name="overrideCapacity" value="1" />
-                  تأیید صریح مدیر برای عبور از ظرفیت
+                  <span>تأیید صریح مدیر برای عبور از ظرفیت</span>
                 </label>
-                <button type="submit" className="cos-btn cos-btn--primary" disabled={assignPending}>
+                <button type="submit" className="cos-btn cos-btn--primary cos-assign-form__submit" disabled={assignPending}>
                   {assignPending ? "در حال ثبت…" : "ثبت تخصیص"}
                 </button>
                 {assignState.error ? <p className="cos-error">{assignState.error}</p> : null}
                 {assignState.success ? <p className="cos-success">{assignState.success}</p> : null}
               </form>
             ) : null}
-            <div className="cos-inline-actions">
-              <Link
-                href={`/admin/counselor/students/${caseModel.studentId}/export/case`}
-                className="cos-btn cos-btn--primary"
-              >
-                دانلود پرونده کامل PDF
-              </Link>
-              <Link
-                href={`/admin/counselor/students/${caseModel.studentId}/export/holland`}
-                className="cos-btn"
-              >
-                دانلود گزارش رغبت‌سنجی PDF
-              </Link>
-              <Link
-                href={`/admin/counselor/students/${caseModel.studentId}/export/worksheet`}
-                className="cos-btn"
-              >
-                دانلود برگه کار انتخاب رشته PDF
-              </Link>
+            <div className="cos-export-group">
+              <h3 className="cos-export-group__title">خروجی‌های PDF</h3>
+              <div className="cos-inline-actions cos-export-group__actions">
+                <Link href={`${exportBase}/case`} className="cos-btn cos-btn--primary">
+                  دانلود پرونده کامل PDF
+                </Link>
+                <Link href={`${exportBase}/holland`} className="cos-btn">
+                  دانلود گزارش رغبت‌سنجی PDF
+                </Link>
+                <Link href={`${exportBase}/worksheet`} className="cos-btn">
+                  دانلود برگه کار انتخاب رشته PDF
+                </Link>
+              </div>
             </div>
           </section>
         )}
@@ -237,6 +263,11 @@ export function CounselorStudentCaseTabs({
 
         {tab === "late" && lateJourney ? (
           <CounselorLateJourneyPanel model={lateJourney} isSupervisor={isSupervisor} />
+        ) : null}
+        {tab === "late" && !lateJourney ? (
+          <section className="cos-panel">
+            <p className="cos-muted">اطلاعات جلسات و چیدمان برای این پرونده هنوز در دسترس نیست.</p>
+          </section>
         ) : null}
 
         {tab === "academic" && (

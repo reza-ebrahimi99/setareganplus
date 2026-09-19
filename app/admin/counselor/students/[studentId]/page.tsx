@@ -1,4 +1,7 @@
 import { notFound } from "next/navigation";
+import { CounselorStudentCaseActions } from "@/components/counselor-os/CounselorStudentCaseActions";
+import { CounselorStudentCaseAlerts } from "@/components/counselor-os/CounselorStudentCaseAlerts";
+import { CounselorStudentCaseHeader } from "@/components/counselor-os/CounselorStudentCaseHeader";
 import { CounselorStudentCaseTabs } from "@/components/counselor-os/CounselorStudentCaseTabs";
 import { requireCounselorContext } from "@/lib/counselor-os/auth";
 import { listOrgCounselorsForSelect } from "@/lib/counselor-os/assignments";
@@ -8,7 +11,6 @@ import { listCounselorNotes } from "@/lib/counselor-os/notes";
 import { listStudentSessionHistory } from "@/lib/counselor-os/sessions";
 import { loadCounselorLateJourney } from "@/lib/counselor-os/late-journey";
 import { loadCounselorCaseBundle } from "@/lib/counselor-os/students";
-import { toPersianDigits } from "@/lib/persian";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -27,81 +29,39 @@ export default async function CounselorStudentCasePage({ params }: Props) {
   }
 
   const { caseModel, dossier } = bundle;
-  const [sessions, notes, corrections, followUps, counselors, lateJourney, reviewFlag] = await Promise.all([
-    listStudentSessionHistory(ctx, studentId),
-    listCounselorNotes(ctx, studentId),
-    listCounselorCorrections(ctx, studentId),
-    listStudentFollowUps(ctx, studentId),
-    ctx.isSupervisor ? listOrgCounselorsForSelect(ctx) : Promise.resolve([]),
-    loadCounselorLateJourney(ctx, studentId),
-    prisma.guidancePlan.findFirst({
-      where: {
-        organizationId: ctx.organizationId,
-        studentId,
-        deletedAt: null,
-        v2NeedsReviewAt: { not: null },
-      },
-      select: { v2NeedsReviewStep: true },
-    }),
-  ]);
+  const [sessions, notes, corrections, followUps, counselors, lateJourney, reviewFlag] =
+    await Promise.all([
+      listStudentSessionHistory(ctx, studentId),
+      listCounselorNotes(ctx, studentId),
+      listCounselorCorrections(ctx, studentId),
+      listStudentFollowUps(ctx, studentId),
+      ctx.isSupervisor ? listOrgCounselorsForSelect(ctx) : Promise.resolve([]),
+      loadCounselorLateJourney(ctx, studentId),
+      prisma.guidancePlan.findFirst({
+        where: {
+          organizationId: ctx.organizationId,
+          studentId,
+          deletedAt: null,
+          v2NeedsReviewAt: { not: null },
+        },
+        select: { v2NeedsReviewStep: true },
+      }),
+    ]);
 
   return (
-    <div className="cos-page">
-      <header className="cos-case-hero">
-        <div>
-          <p className="cos-page__eyebrow">پرونده کامل دانش‌آموز</p>
-          <h1>{caseModel.studentName}</h1>
-          <p className="cos-page__lead">
-            {[caseModel.gradeName, caseModel.examGroupLabel, caseModel.mobile, caseModel.province]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-        </div>
-        <div className="cos-case-hero__stats">
-          <div>
-            <span>مرحله جاری</span>
-            <strong>{caseModel.currentStepTitle ?? "شروع نشده"}</strong>
-          </div>
-          <div>
-            <span>پیشرفت</span>
-            <strong>{toPersianDigits(caseModel.completionPercentage)}٪</strong>
-          </div>
-          <div>
-            <span>وضعیت</span>
-            <strong>{caseModel.studentStatusLabel}</strong>
-          </div>
-        </div>
-      </header>
+    <div className="cos-page cos-case-page">
+      <CounselorStudentCaseHeader
+        caseModel={caseModel}
+        packageTitle={dossier.finance.packageTitle}
+        packageStateLabel={dossier.finance.packageStateLabel}
+      />
 
-      {reviewFlag ? (
-        <p className="cos-alerts" role="status">
-          نیازمند بررسی مجدد
-          {reviewFlag.v2NeedsReviewStep
-            ? ` — دانش‌آموز مرحله ${toPersianDigits(reviewFlag.v2NeedsReviewStep)} را پس از شروع کار مشاور ویرایش کرده است.`
-            : " — دانش‌آموز اطلاعات قبلی را پس از شروع کار مشاور تغییر داده است."}
-        </p>
-      ) : null}
+      <CounselorStudentCaseAlerts
+        alerts={caseModel.alerts}
+        needsReview={reviewFlag ? { step: reviewFlag.v2NeedsReviewStep } : null}
+      />
 
-      {caseModel.alerts.length > 0 ? (
-        <ul className="cos-alerts">
-          {caseModel.alerts.map((a) => (
-            <li key={a}>{a}</li>
-          ))}
-        </ul>
-      ) : null}
-
-      <nav className="cos-print-nav">
-        <a href={`/admin/counselor/students/${studentId}/export/case`}>پرونده کامل</a>
-        <a href={`/admin/counselor/students/${studentId}/export/holland`}>رغبت‌سنجی</a>
-        <a href={`/admin/counselor/students/${studentId}/export/konkur`}>نتایج کنکور</a>
-        <a href={`/admin/counselor/students/${studentId}/export/choices-initial`}>چیدمان اولیه</a>
-        <a href={`/admin/counselor/students/${studentId}/export/choices-review`}>بررسی دانش‌آموز</a>
-        <a href={`/admin/counselor/students/${studentId}/export/choices-final`}>فهرست نهایی</a>
-        <a href={`/admin/counselor/students/${studentId}/export/summary`}>خلاصه نهایی</a>
-        <a href={`/admin/counselor/students/${studentId}/export/worksheet`}>چاپ برگه جلسه خالی</a>
-        <a href={`/admin/counselor/students/${studentId}/choices`}>استودیوی چیدمان</a>
-        <a href={`/admin/counselor/students/${studentId}/choices?phase=sanjesh`}>ثبت سنجش</a>
-      </nav>
+      <CounselorStudentCaseActions studentId={studentId} />
 
       <CounselorStudentCaseTabs
         caseModel={caseModel}
