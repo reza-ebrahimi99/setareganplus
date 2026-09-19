@@ -18726,3 +18726,118 @@ body {
   min-width: 0 !important;
   max-width: none !important;
 }
+/* Fix Counselor Report Print */
+@media print {
+  aside,
+  nav,
+  header:not(.counselor-report__letterhead),
+  .counselor-report__print,
+  .counselor-report__hint,
+  button {
+    display: none !important;
+  }
+
+  html,
+  body,
+  main,
+  div {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    position: static !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .counselor-report {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 10mm !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  .counselor-report__table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+  }
+
+  .counselor-report__table tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  .counselor-report__table th,
+  .counselor-report__table td {
+    border: 1px solid #d1d5db !important;
+    color: #000000 !important;
+    padding: 8px !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+}
+
+/* Fix Counselor Report Print */
+@media print {
+  aside,
+  nav,
+  header:not(.counselor-report__letterhead),
+  .counselor-report__print,
+  .counselor-report__hint,
+  button {
+    display: none !important;
+  }
+
+  html,
+  body,
+  main,
+  div {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    position: static !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .counselor-report {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 10mm !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  .counselor-report__table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+  }
+
+  .counselor-report__table tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  .counselor-report__table th,
+  .counselor-report__table td {
+    border: 1px solid #d1d5db !important;
+    color: #000000 !important;
+    padding: 8px !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+}
