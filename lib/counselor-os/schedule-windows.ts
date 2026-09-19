@@ -35,6 +35,7 @@ export function clockWindowsOverlap(a: ClockWindow, b: ClockWindow): boolean {
 
 export function assertDayWindowsValid(
   windows: ClockWindow[],
+  minDurationMinutes?: number,
 ): { ok: true } | { ok: false; error: string } {
   const parsed: Array<{ start: number; end: number; raw: ClockWindow }> = [];
   for (const window of windows) {
@@ -45,6 +46,16 @@ export function assertDayWindowsValid(
     }
     if (end <= start) {
       return { ok: false, error: "ساعت پایان باید بعد از ساعت شروع باشد." };
+    }
+    if (
+      minDurationMinutes != null &&
+      minDurationMinutes > 0 &&
+      end - start < minDurationMinutes
+    ) {
+      return {
+        ok: false,
+        error: `هر بازه باید حداقل به اندازه مدت جلسه (${minDurationMinutes} دقیقه) باشد.`,
+      };
     }
     parsed.push({ start, end, raw: window });
   }

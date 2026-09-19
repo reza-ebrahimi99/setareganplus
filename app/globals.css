@@ -19185,3 +19185,128 @@ body {
     cursor: pointer;
   }
 }
+
+/* Counselor calendar — schedule editor + preview layout */
+.cos-cal-page {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.cos-cal-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.cos-cal-workspace__form-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.cos-cal-workspace__aside {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: sticky;
+  top: 0.75rem;
+  max-height: calc(100vh - 1.5rem);
+  overflow: auto;
+}
+
+.cos-cal-preview__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.cos-cal-preview__count {
+  font-size: 0.8rem;
+  color: var(--cos-muted);
+}
+
+.cos-sched__tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.cos-sched__tabs button {
+  border: 1px solid var(--cos-border);
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.45rem 1rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.cos-sched__tabs button.is-active {
+  background: var(--cos-primary);
+  color: #fff;
+  border-color: transparent;
+}
+
+.cos-sched__program--hidden {
+  display: none !important;
+}
+
+.cos-sched__days--accordion .cos-sched__day {
+  border: 1px solid var(--cos-border);
+  border-radius: 0.65rem;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+
+.cos-sched__day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  background: #fafafa;
+}
+
+.cos-sched__day.is-enabled .cos-sched__day-head {
+  background: #fffaf0;
+}
+
+.cos-sched__day-body {
+  padding: 0.65rem 0.75rem 0.85rem;
+  border-top: 1px solid var(--cos-border);
+}
+
+.cos-sched__day-expand {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--cos-primary);
+  cursor: pointer;
+  min-height: 2.75rem;
+  padding: 0 0.5rem;
+}
+
+.cos-sched__day-off {
+  font-size: 0.8rem;
+}
+
+.cos-sched__save {
+  margin-top: 0.75rem;
+  min-width: 10rem;
+}
+
+@media (max-width: 960px) {
+  .cos-cal-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cos-cal-workspace__aside {
+    position: static;
+    max-height: none;
+  }
+}

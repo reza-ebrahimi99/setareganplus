@@ -1,69 +1,36 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { CounselorActionState } from "@/app/admin/counselor/actions";
 import { JalaliDateField } from "@/components/datetime/JalaliDateField";
 import { PersianTimePicker } from "@/components/datetime/PersianTimePicker";
 import { PERSIAN_WEEKDAYS } from "@/lib/datetime/jalali";
 import { toPersianDigits } from "@/lib/persian";
+import {
+  daysFromProgram,
+  serializeDays,
+  type DayDraft,
+} from "@/lib/counselor-os/schedule-form-utils";
+import { assertDayWindowsValid } from "@/lib/counselor-os/schedule-windows";
 import type {
   CounselorExceptionView,
   WeeklyDayProgram,
 } from "@/lib/counselor-os/schedule";
 
-type PreviewSlot = {
-  id: string;
-  rangeLabel: string;
-  status: "free" | "booked";
-  statusLabel: string;
-  sessionLabel: string;
-};
+const initial: CounselorActionState = {};
 
-type PreviewDay = {
-  key: string;
-  heading: string;
-  slots: PreviewSlot[];
-};
-
-type DayDraft = {
-  enabled: boolean;
-  windows: Array<{ start: string; end: string }>;
-};
-
-function daysFromProgram(program: WeeklyDayProgram[]): DayDraft[] {
-  return Array.from({ length: 7 }, (_, weekday) => {
-    const found = program.find((day) => day.weekday === weekday);
-    const windows = found?.windows.length
-      ? found.windows.map((w) => ({
-          start: w.startLocalTime,
-          end: w.endLocalTime,
-        }))
-      : [{ start: "09:00", end: "12:00" }];
-    return {
-      enabled: found?.enabled === true,
-      windows,
-    };
-  });
-}
-
-function serializeDays(days: DayDraft[]) {
-  return JSON.stringify(
-    days.map((day, weekday) => ({
-      weekday,
-      enabled: day.enabled,
-      windows: day.windows.map((window) => ({
-        startLocalTime: window.start,
-        endLocalTime: window.end,
-      })),
-    })),
-  );
-}
+type ProgramTab = "first" | "second";
 
 function WeeklyWindowsEditor(props: {
   idPrefix: string;
   days: DayDraft[];
   setDays: (updater: (prev: DayDraft[]) => DayDraft[]) => void;
+  sessionMinutes: number;
+  fieldErrors: Record<string, string>;
 }) {
+  const [openDay, setOpenDay] = useState<number | null>(0);
+
   function updateWindow(
     weekday: number,
     index: number,
@@ -84,147 +51,123 @@ function WeeklyWindowsEditor(props: {
   }
 
   return (
-    <div className="cos-sched__days">
+    <div className="cos-sched__days cos-sched__days--accordion">
       {PERSIAN_WEEKDAYS.map((label, weekday) => {
         const day = props.days[weekday];
+        const isOpen = openDay === weekday;
+        const dayErr = props.fieldErrors[`${props.idPrefix}-day-${weekday}`];
         return (
-          <article key={`${props.idPrefix}-${label}`} className="cos-sched__day">
-            <label className="cos-sched__day-toggle">
-              <input
-                type="checkbox"
-                checked={day.enabled}
-                onChange={(event) => {
-                  const enabled = event.target.checked;
-                  props.setDays((prev) =>
-                    prev.map((item, i) =>
-                      i === weekday ? { ...item, enabled } : item,
-                    ),
-                  );
-                }}
-              />
-              <strong>{label}</strong>
-            </label>
-            {day.enabled ? (
-              day.windows.map((window, index) => (
-                <div
-                  key={`${props.idPrefix}-${weekday}-${index}`}
-                  className="cos-sched__window"
+          <article
+            key={`${props.idPrefix}-${label}`}
+            className={`cos-sched__day${day.enabled ? " is-enabled" : ""}${isOpen ? " is-open" : ""}`}
+          >
+            <div className="cos-sched__day-head">
+              <label className="cos-sched__day-toggle">
+                <input
+                  type="checkbox"
+                  checked={day.enabled}
+                  aria-label={`فعال‌سازی ${label}`}
+                  onChange={(event) => {
+                    const enabled = event.target.checked;
+                    props.setDays((prev) =>
+                      prev.map((item, i) =>
+                        i === weekday ? { ...item, enabled } : item,
+                      ),
+                    );
+                    if (enabled) setOpenDay(weekday);
+                  }}
+                />
+                <strong>{label}</strong>
+              </label>
+              {day.enabled ? (
+                <button
+                  type="button"
+                  className="cos-sched__day-expand"
+                  aria-expanded={isOpen}
+                  onClick={() => setOpenDay(isOpen ? null : weekday)}
                 >
-                  <PersianTimePicker
-                    id={`${props.idPrefix}-w-${weekday}-${index}-start`}
-                    label="از ساعت"
-                    value={window.start || null}
-                    onChange={(value) =>
-                      updateWindow(weekday, index, "start", value)
-                    }
-                    required
-                  />
-                  <PersianTimePicker
-                    id={`${props.idPrefix}-w-${weekday}-${index}-end`}
-                    label="تا ساعت"
-                    value={window.end || null}
-                    onChange={(value) =>
-                      updateWindow(weekday, index, "end", value)
-                    }
-                    required
-                  />
-                  {day.windows.length > 1 ? (
-                    <button
-                      type="button"
-                      className="cos-btn"
-                      onClick={() =>
-                        props.setDays((prev) =>
-                          prev.map((item, i) =>
-                            i === weekday
-                              ? {
-                                  ...item,
-                                  windows: item.windows.filter(
-                                    (_, w) => w !== index,
-                                  ),
-                                }
-                              : item,
-                          ),
-                        )
+                  {isOpen ? "بستن" : "بازه‌ها"}
+                </button>
+              ) : (
+                <span className="cos-muted cos-sched__day-off">غیرفعال</span>
+              )}
+            </div>
+            {day.enabled && isOpen ? (
+              <div className="cos-sched__day-body">
+                {day.windows.map((window, index) => (
+                  <div
+                    key={`${props.idPrefix}-${weekday}-${index}`}
+                    className="cos-sched__window"
+                  >
+                    <PersianTimePicker
+                      id={`${props.idPrefix}-w-${weekday}-${index}-start`}
+                      label="از ساعت"
+                      value={window.start || null}
+                      onChange={(value) =>
+                        updateWindow(weekday, index, "start", value)
                       }
-                    >
-                      حذف بازه
-                    </button>
-                  ) : null}
-                </div>
-              ))
-            ) : (
-              <p className="cos-muted">این روز غیرفعال است.</p>
-            )}
-            {day.enabled ? (
-              <button
-                type="button"
-                className="cos-btn"
-                onClick={() =>
-                  props.setDays((prev) =>
-                    prev.map((item, i) =>
-                      i === weekday
-                        ? {
-                            ...item,
-                            windows: [
-                              ...item.windows,
-                              { start: "16:00", end: "19:00" },
-                            ],
-                          }
-                        : item,
-                    ),
-                  )
-                }
-              >
-                + افزودن بازه (استراحت بین بازه‌ها)
-              </button>
+                      required
+                    />
+                    <PersianTimePicker
+                      id={`${props.idPrefix}-w-${weekday}-${index}-end`}
+                      label="تا ساعت"
+                      value={window.end || null}
+                      onChange={(value) =>
+                        updateWindow(weekday, index, "end", value)
+                      }
+                      required
+                    />
+                    {day.windows.length > 1 ? (
+                      <button
+                        type="button"
+                        className="cos-btn cos-btn--ghost"
+                        onClick={() =>
+                          props.setDays((prev) =>
+                            prev.map((item, i) =>
+                              i === weekday
+                                ? {
+                                    ...item,
+                                    windows: item.windows.filter(
+                                      (_, w) => w !== index,
+                                    ),
+                                  }
+                                : item,
+                            ),
+                          )
+                        }
+                      >
+                        حذف بازه
+                      </button>
+                    ) : null}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="cos-btn cos-btn--ghost"
+                  onClick={() =>
+                    props.setDays((prev) =>
+                      prev.map((item, i) =>
+                        i === weekday
+                          ? {
+                              ...item,
+                              windows: [
+                                ...item.windows,
+                                { start: "16:00", end: "19:00" },
+                              ],
+                            }
+                          : item,
+                      ),
+                    )
+                  }
+                >
+                  + بازه دیگر (استراحت بین بازه‌ها)
+                </button>
+                {dayErr ? <p className="cos-error">{dayErr}</p> : null}
+              </div>
             ) : null}
           </article>
         );
       })}
-    </div>
-  );
-}
-
-function SlotPreview(props: {
-  title: string;
-  days: PreviewDay[];
-  emptyHint: string;
-}) {
-  if (props.days.length === 0) {
-    return (
-      <div className="cos-sched__preview">
-        <h4>{props.title}</h4>
-        <p className="cos-empty">{props.emptyHint}</p>
-      </div>
-    );
-  }
-  return (
-    <div className="cos-sched__preview">
-      <h4>{props.title}</h4>
-      <div className="cos-slot-days">
-        {props.days.map((day) => (
-          <article key={day.key} className="cos-slot-day">
-            <h5>{day.heading}</h5>
-            <ul>
-              {day.slots.map((slot) => (
-                <li
-                  key={slot.id}
-                  className={
-                    slot.status === "booked"
-                      ? "cos-slot-row cos-slot-row--booked"
-                      : "cos-slot-row cos-slot-row--free"
-                  }
-                >
-                  <strong>
-                    {slot.rangeLabel} · {slot.statusLabel}
-                  </strong>
-                  <span>{slot.sessionLabel}</span>
-                </li>
-              ))}
-            </ul>
-          </article>
-        ))}
-      </div>
     </div>
   );
 }
@@ -253,28 +196,79 @@ export function CounselorScheduleForm(props: {
   firstValidUntilYmd?: string;
   secondValidFromYmd?: string;
   secondValidUntilYmd?: string;
-  firstPreviewDays?: PreviewDay[];
-  secondPreviewDays?: PreviewDay[];
   exceptions: CounselorExceptionView[];
   advisorId?: string | null;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
+  const router = useRouter();
   const [saveState, saveForm, savePending] = useActionState(props.saveAction, {});
   const [exState, exForm, exPending] = useActionState(props.exceptionAction, {});
   const [delState, delForm, delPending] = useActionState(
     props.deleteExceptionAction,
     {},
   );
-  const [firstDays, setFirstDays] = useState<DayDraft[]>(() =>
-    daysFromProgram(props.firstDays ?? props.days),
+
+  const initialFirstDays = useMemo(
+    () => daysFromProgram(props.firstDays ?? props.days),
+    [props.firstDays, props.days],
   );
-  const [secondDays, setSecondDays] = useState<DayDraft[]>(() =>
-    daysFromProgram(props.secondDays ?? props.days),
+  const initialSecondDays = useMemo(
+    () => daysFromProgram(props.secondDays ?? props.days),
+    [props.secondDays, props.days],
   );
+
+  const [activeTab, setActiveTab] = useState<ProgramTab>("first");
+  const [firstDays, setFirstDays] = useState<DayDraft[]>(initialFirstDays);
+  const [secondDays, setSecondDays] = useState<DayDraft[]>(initialSecondDays);
+  const [firstMinutes, setFirstMinutes] = useState(props.firstSessionMinutes);
+  const [secondMinutes, setSecondMinutes] = useState(props.secondSessionMinutes);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [clientError, setClientError] = useState<string | null>(null);
+
   const [exceptionKind, setExceptionKind] = useState<"blocked" | "special">(
     "blocked",
   );
   const [specialStart, setSpecialStart] = useState<string | null>("17:00");
   const [specialEnd, setSpecialEnd] = useState<string | null>("20:00");
+
+  const baseline = useMemo(
+    () =>
+      JSON.stringify({
+        first: serializeDays(initialFirstDays),
+        second: serializeDays(initialSecondDays),
+        fm: props.firstSessionMinutes,
+        sm: props.secondSessionMinutes,
+      }),
+    [
+      initialFirstDays,
+      initialSecondDays,
+      props.firstSessionMinutes,
+      props.secondSessionMinutes,
+    ],
+  );
+
+  const currentSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        first: serializeDays(firstDays),
+        second: serializeDays(secondDays),
+        fm: firstMinutes,
+        sm: secondMinutes,
+      }),
+    [firstDays, secondDays, firstMinutes, secondMinutes],
+  );
+
+  const dirty = baseline !== currentSnapshot;
+
+  useEffect(() => {
+    props.onDirtyChange?.(dirty);
+  }, [dirty, props]);
+
+  useEffect(() => {
+    if (saveState.success) {
+      router.refresh();
+    }
+  }, [saveState.success, router]);
 
   const firstWindowsJson = useMemo(() => serializeDays(firstDays), [firstDays]);
   const secondWindowsJson = useMemo(
@@ -282,32 +276,99 @@ export function CounselorScheduleForm(props: {
     [secondDays],
   );
 
+  function validateProgram(
+    days: DayDraft[],
+    minutes: number,
+    prefix: string,
+  ): Record<string, string> {
+    const errors: Record<string, string> = {};
+    days.forEach((day, weekday) => {
+      if (!day.enabled) return;
+      const windows = day.windows.map((w) => ({
+        startLocalTime: w.start,
+        endLocalTime: w.end,
+      }));
+      const result = assertDayWindowsValid(windows, minutes);
+      if (!result.ok) {
+        errors[`${prefix}-day-${weekday}`] = result.error;
+      }
+    });
+    return errors;
+  }
+
+  function handleSaveSubmit(event: React.FormEvent<HTMLFormElement>) {
+    setClientError(null);
+    const errors = {
+      ...validateProgram(firstDays, firstMinutes, "first"),
+      ...validateProgram(secondDays, secondMinutes, "second"),
+    };
+    const anyEnabled =
+      firstDays.some((d) => d.enabled) || secondDays.some((d) => d.enabled);
+    if (!anyEnabled) {
+      errors.program = "حداقل یک روز در جلسه اول یا دوم باید فعال باشد.";
+    }
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      event.preventDefault();
+      setClientError("لطفاً خطاهای فرم را برطرف کنید.");
+      return;
+    }
+  }
+
   return (
     <div className="cos-sched" dir="rtl">
-      <form action={saveForm} className="cos-sched__block" id="schedule-editor">
+      <form
+        action={saveForm}
+        className="cos-sched__block"
+        id="schedule-editor"
+        onSubmit={handleSaveSubmit}
+      >
         {props.advisorId ? (
           <input type="hidden" name="advisorId" value={props.advisorId} />
         ) : null}
         <input type="hidden" name="firstWindowsJson" value={firstWindowsJson} />
         <input type="hidden" name="secondWindowsJson" value={secondWindowsJson} />
 
-        <section className="cos-sched__program">
-          <h3>برنامه جلسه اول</h3>
-          <p className="cos-muted">
-            مدت، بازه فعال و ساعات آزاد جلسه اول جدا از جلسه دوم ذخیره می‌شود.
-            برای استراحت، چند بازه در یک روز بگذارید؛ نوبت از روی فاصله رد نمی‌شود.
-          </p>
+        <div className="cos-sched__tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "first"}
+            className={activeTab === "first" ? "is-active" : undefined}
+            onClick={() => setActiveTab("first")}
+          >
+            جلسه اول
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "second"}
+            className={activeTab === "second" ? "is-active" : undefined}
+            onClick={() => setActiveTab("second")}
+          >
+            جلسه دوم
+          </button>
+        </div>
+
+        <input type="hidden" name="firstSessionMinutes" value={firstMinutes} />
+        <input type="hidden" name="secondSessionMinutes" value={secondMinutes} />
+
+        <section
+          className={`cos-sched__program${activeTab === "first" ? "" : " cos-sched__program--hidden"}`}
+          role="tabpanel"
+          hidden={activeTab !== "first"}
+        >
           <div className="cos-sched__grid">
             <label>
               مدت جلسه اول
               <input
-                name="firstSessionMinutes"
                 type="number"
                 min={15}
                 max={180}
                 step={5}
-                defaultValue={props.firstSessionMinutes}
-                required
+                value={firstMinutes}
+                onChange={(e) => setFirstMinutes(Number(e.target.value))}
+                required={activeTab === "first"}
               />
               <small>دقیقه</small>
             </label>
@@ -336,36 +397,34 @@ export function CounselorScheduleForm(props: {
               />
             </div>
           </div>
-          <h4>ساعات هفتگی جلسه اول</h4>
+          {fieldErrors.program ? (
+            <p className="cos-error">{fieldErrors.program}</p>
+          ) : null}
           <WeeklyWindowsEditor
             idPrefix="first"
             days={firstDays}
-            setDays={(updater) => setFirstDays(updater)}
-          />
-          <SlotPreview
-            title="پیش‌نمایش نوبت‌های جلسه اول"
-            days={props.firstPreviewDays ?? []}
-            emptyHint="پس از ذخیره برنامه، نوبت‌های جلسه اول اینجا دیده می‌شوند."
+            setDays={setFirstDays}
+            sessionMinutes={firstMinutes}
+            fieldErrors={fieldErrors}
           />
         </section>
 
-        <section className="cos-sched__program">
-          <h3>برنامه جلسه دوم</h3>
-          <p className="cos-muted">
-            مدت، بازه فعال و ساعات جلسه دوم مستقل است. اگر تاریخ‌های فعال دو برنامه
-            روی هم نیفتند، ساعت مشابه تداخل محسوب نمی‌شود.
-          </p>
+        <section
+          className={`cos-sched__program${activeTab === "second" ? "" : " cos-sched__program--hidden"}`}
+          role="tabpanel"
+          hidden={activeTab !== "second"}
+        >
           <div className="cos-sched__grid">
             <label>
               مدت جلسه دوم
               <input
-                name="secondSessionMinutes"
                 type="number"
                 min={15}
                 max={180}
                 step={5}
-                defaultValue={props.secondSessionMinutes}
-                required
+                value={secondMinutes}
+                onChange={(e) => setSecondMinutes(Number(e.target.value))}
+                required={activeTab === "second"}
               />
               <small>دقیقه</small>
             </label>
@@ -394,29 +453,28 @@ export function CounselorScheduleForm(props: {
               />
             </div>
           </div>
-          <h4>ساعات هفتگی جلسه دوم</h4>
           <WeeklyWindowsEditor
             idPrefix="second"
             days={secondDays}
-            setDays={(updater) => setSecondDays(updater)}
-          />
-          <SlotPreview
-            title="پیش‌نمایش نوبت‌های جلسه دوم"
-            days={props.secondPreviewDays ?? []}
-            emptyHint="پس از ذخیره برنامه، نوبت‌های جلسه دوم اینجا دیده می‌شوند."
+            setDays={setSecondDays}
+            sessionMinutes={secondMinutes}
+            fieldErrors={fieldErrors}
           />
         </section>
 
+        {clientError ? <p className="cos-error">{clientError}</p> : null}
         {saveState.error ? <p className="cos-error">{saveState.error}</p> : null}
         {saveState.success ? (
-          <p className="cos-success">{saveState.success}</p>
+          <p className="cos-success" role="status">
+            {saveState.success}
+          </p>
         ) : null}
         <button
           type="submit"
-          className="cos-btn cos-btn--primary"
+          className="cos-btn cos-btn--primary cos-sched__save"
           disabled={savePending}
         >
-          {savePending ? "در حال ذخیره…" : "ذخیره برنامه هر دو جلسه"}
+          {savePending ? "در حال ذخیره…" : "ذخیره برنامه"}
         </button>
       </form>
 
@@ -451,7 +509,7 @@ export function CounselorScheduleForm(props: {
                   <input type="hidden" name="exceptionId" value={item.id} />
                   <button
                     type="submit"
-                    className="cos-btn"
+                    className="cos-btn cos-btn--ghost"
                     disabled={delPending}
                   >
                     حذف

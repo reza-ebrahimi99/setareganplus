@@ -4,8 +4,7 @@ import {
   saveCounselorScheduleAction,
   upsertCounselorExceptionAction,
 } from "@/app/admin/counselor/actions";
-import { CounselorCalendarSelect } from "@/components/counselor-os/CounselorCalendarSelect";
-import { CounselorScheduleForm } from "@/components/counselor-os/CounselorScheduleForm";
+import { CounselorCalendarWorkspace } from "@/components/counselor-os/CounselorCalendarWorkspace";
 import { requireCounselorContext } from "@/lib/counselor-os/auth";
 import {
   listManagedCounselorAdvisors,
@@ -65,15 +64,6 @@ export default async function CounselorCalendarPage({
   const schedule = selectedAdvisor
     ? await loadCounselorSchedule(ctx, selectedAdvisor.id)
     : null;
-  const enabledWindows =
-    (schedule?.firstDays.reduce(
-      (sum, day) => sum + (day.enabled ? day.windows.length : 0),
-      0,
-    ) ?? 0) +
-    (schedule?.secondDays.reduce(
-      (sum, day) => sum + (day.enabled ? day.windows.length : 0),
-      0,
-    ) ?? 0);
   const calendarPreview =
     selectedAdvisor && schedule
       ? await listCounselorCalendarDays({
@@ -87,7 +77,7 @@ export default async function CounselorCalendarPage({
       : { firstDays: [], secondDays: [] };
 
   return (
-    <div className="cos-page">
+    <div className="cos-page cos-cal-page">
       <header className="cos-page__head">
         <div>
           <h1>تقویم مشاور</h1>
@@ -98,8 +88,8 @@ export default async function CounselorCalendarPage({
         </div>
         <div className="cos-inline-actions">
           {selectedAdvisor ? (
-            <a href="#schedule-editor" className="cos-btn cos-btn--primary">
-              تعریف / ویرایش برنامه زمانی
+            <a href="#schedule-panel" className="cos-btn cos-btn--primary">
+              تعریف / ویرایش برنامه
             </a>
           ) : null}
           <Link href="/admin/counselor/appointments" className="cos-btn">
@@ -107,15 +97,6 @@ export default async function CounselorCalendarPage({
           </Link>
         </div>
       </header>
-
-      {ctx.isSupervisor && advisors.length > 0 && selectedAdvisor ? (
-        <section className="cos-panel">
-          <CounselorCalendarSelect
-            advisors={advisors}
-            selectedId={selectedAdvisor.id}
-          />
-        </section>
-      ) : null}
 
       {!selectedAdvisor ? (
         <section className="cos-panel">
@@ -145,114 +126,20 @@ export default async function CounselorCalendarPage({
             </>
           )}
         </section>
-      ) : (
-        <div className="cos-calendar-layout">
-          <section className="cos-panel" id="schedule-panel">
-            <h2>تنظیم برنامه زمانی</h2>
-            <p className="cos-muted">
-              برنامه {selectedAdvisor.displayName} — جلسه اول و جلسه دوم جداگانه
-              تنظیم می‌شوند؛ استراحت با چند بازه در یک روز ممکن است
-            </p>
-            {enabledWindows === 0 ? (
-              <p className="cos-empty">
-                برای این مشاور هنوز برنامه زمانی ثبت نشده است.
-              </p>
-            ) : null}
-            {schedule ? (
-              <CounselorScheduleForm
-                advisorId={selectedAdvisor.id}
-                saveAction={saveCounselorScheduleAction}
-                exceptionAction={upsertCounselorExceptionAction}
-                deleteExceptionAction={deleteCounselorExceptionAction}
-                firstSessionMinutes={schedule.firstSessionMinutes}
-                secondSessionMinutes={schedule.secondSessionMinutes}
-                validFromYmd={schedule.validFromYmd}
-                validUntilYmd={schedule.validUntilYmd}
-                days={schedule.days}
-                firstDays={schedule.firstDays}
-                secondDays={schedule.secondDays}
-                firstValidFromYmd={schedule.firstValidFromYmd}
-                firstValidUntilYmd={schedule.firstValidUntilYmd}
-                secondValidFromYmd={schedule.secondValidFromYmd}
-                secondValidUntilYmd={schedule.secondValidUntilYmd}
-                firstPreviewDays={calendarPreview.firstDays}
-                secondPreviewDays={calendarPreview.secondDays}
-                exceptions={schedule.exceptions}
-              />
-            ) : null}
-          </section>
-
-          <section className="cos-panel">
-            <h2>پیش‌نمایش نوبت‌های جلسه اول</h2>
-            {calendarPreview.firstDays.length === 0 ? (
-              <p className="cos-empty">
-                {enabledWindows === 0
-                  ? "پس از ذخیره برنامه جلسه اول، زمان‌های آزاد اینجا دیده می‌شوند."
-                  : "در بازه فعال جلسه اول، نوبت آزادی برای نمایش نیست."}
-              </p>
-            ) : (
-              <div className="cos-slot-days">
-                {calendarPreview.firstDays.map((day) => (
-                  <article key={`first-${day.key}`} className="cos-slot-day">
-                    <h3>{day.heading}</h3>
-                    <ul>
-                      {day.slots.map((slot) => (
-                        <li
-                          key={slot.id}
-                          className={
-                            slot.status === "booked"
-                              ? "cos-slot-row cos-slot-row--booked"
-                              : "cos-slot-row cos-slot-row--free"
-                          }
-                        >
-                          <strong>
-                            {day.heading} · {slot.rangeLabel} · {slot.statusLabel}
-                          </strong>
-                          <span>{slot.sessionLabel}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="cos-panel">
-            <h2>پیش‌نمایش نوبت‌های جلسه دوم</h2>
-            {calendarPreview.secondDays.length === 0 ? (
-              <p className="cos-empty">
-                در بازه فعال جلسه دوم، نوبت آزادی برای نمایش نیست.
-              </p>
-            ) : (
-              <div className="cos-slot-days">
-                {calendarPreview.secondDays.map((day) => (
-                  <article key={`second-${day.key}`} className="cos-slot-day">
-                    <h3>{day.heading}</h3>
-                    <ul>
-                      {day.slots.map((slot) => (
-                        <li
-                          key={slot.id}
-                          className={
-                            slot.status === "booked"
-                              ? "cos-slot-row cos-slot-row--booked"
-                              : "cos-slot-row cos-slot-row--free"
-                          }
-                        >
-                          <strong>
-                            {day.heading} · {slot.rangeLabel} · {slot.statusLabel}
-                          </strong>
-                          <span>{slot.sessionLabel}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
-      )}
+      ) : schedule ? (
+        <CounselorCalendarWorkspace
+          isSupervisor={ctx.isSupervisor}
+          advisorId={selectedAdvisor.id}
+          advisorName={selectedAdvisor.displayName}
+          advisors={advisors}
+          schedule={schedule}
+          firstPreviewDays={calendarPreview.firstDays}
+          secondPreviewDays={calendarPreview.secondDays}
+          saveAction={saveCounselorScheduleAction}
+          exceptionAction={upsertCounselorExceptionAction}
+          deleteExceptionAction={deleteCounselorExceptionAction}
+        />
+      ) : null}
     </div>
   );
 }

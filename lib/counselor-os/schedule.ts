@@ -19,6 +19,7 @@ import {
   formatTehranTime24,
   getPersianWeekdayIndex,
   getTehranParts,
+  normalizeLocalTimeHm,
   parseLocalTimeHm,
 } from "@/lib/datetime/tehran-zone";
 import { BookingSlotStatus } from "@/generated/prisma/enums";
@@ -208,13 +209,7 @@ async function ensureService(organizationId: string) {
   });
 }
 
-export function parseWeeklyProgramJson(raw: string): WeeklyDayProgram[] {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error("برنامه هفتگی نامعتبر است.");
-  }
+function parseWeeklyProgramArray(parsed: unknown): WeeklyDayProgram[] {
   if (!Array.isArray(parsed)) {
     throw new Error("برنامه هفتگی نامعتبر است.");
   }
@@ -233,9 +228,12 @@ export function parseWeeklyProgramJson(raw: string): WeeklyDayProgram[] {
       ) {
         continue;
       }
+      const start = normalizeLocalTimeHm(window.startLocalTime);
+      const end = normalizeLocalTimeHm(window.endLocalTime);
+      if (!start || !end) continue;
       windows.push({
-        startLocalTime: window.startLocalTime,
-        endLocalTime: window.endLocalTime,
+        startLocalTime: start,
+        endLocalTime: end,
       });
     }
     days[weekday] = {
@@ -245,6 +243,16 @@ export function parseWeeklyProgramJson(raw: string): WeeklyDayProgram[] {
     };
   }
   return days;
+}
+
+export function parseWeeklyProgramJson(raw: string): WeeklyDayProgram[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("برنامه هفتگی نامعتبر است.");
+  }
+  return parseWeeklyProgramArray(parsed);
 }
 
 function cloneDays(days: WeeklyDayProgram[]): WeeklyDayProgram[] {
@@ -271,10 +279,13 @@ export function daysToWindowOverride(
   for (const day of days) {
     if (!day.enabled) continue;
     for (const window of day.windows) {
+      const start = normalizeLocalTimeHm(window.startLocalTime);
+      const end = normalizeLocalTimeHm(window.endLocalTime);
+      if (!start || !end) continue;
       rows.push({
         weekday: day.weekday,
-        startLocalTime: window.startLocalTime,
-        endLocalTime: window.endLocalTime,
+        startLocalTime: start,
+        endLocalTime: end,
         validFrom,
         validUntil,
         slotCapacity: 1,
@@ -302,8 +313,12 @@ export function readStoredPrograms(
   const first = isRecord(own.first) ? own.first : null;
   const second = isRecord(own.second) ? own.second : null;
   return {
-    firstDays: Array.isArray(first?.days) ? parseWeeklyProgramJson(JSON.stringify(first.days)) : undefined,
-    secondDays: Array.isArray(second?.days) ? parseWeeklyProgramJson(JSON.stringify(second.days)) : undefined,
+    firstDays: Array.isArray(first?.days)
+      ? parseWeeklyProgramArray(first.days)
+      : undefined,
+    secondDays: Array.isArray(second?.days)
+      ? parseWeeklyProgramArray(second.days)
+      : undefined,
     firstValidFromYmd: typeof first?.validFromYmd === "string" ? first.validFromYmd : undefined,
     firstValidUntilYmd: typeof first?.validUntilYmd === "string" ? first.validUntilYmd : undefined,
     secondValidFromYmd: typeof second?.validFromYmd === "string" ? second.validFromYmd : undefined,
@@ -397,17 +412,33 @@ export async function loadCounselorSchedule(
     }),
   ]);
 
-  const days = emptyDays();
+  const stored = readStoredPrograms(service.settings, advisor.id);
+
+  function rulesToProgram(validFromYmd: string, validUntilYmd: string): WeeklyDayProgram[] {
+    const from = ymdToUtcNoon(validFromYmd);
+    const until = ymdToUtcNoon(validUntilYmd);
+    const days = emptyDays();
+    for (const rule of rules) {
+      if (from && rule.validFrom && rule.validFrom.getTime() !== from.getTime()) {
+        continue;
+      }
+      if (until && rule.validUntil && rule.validUntil.getTime() !== until.getTime()) {
+        continue;
+      }
+      const day = days[rule.weekday];
+      if (!day) continue;
+      const start = normalizeLocalTimeHm(rule.startLocalTime);
+      const end = normalizeLocalTimeHm(rule.endLocalTime);
+      if (!start || !end) continue;
+      day.enabled = true;
+      day.windows.push({ startLocalTime: start, endLocalTime: end });
+    }
+    return days;
+  }
+
   let validFrom: Date | null = null;
   let validUntil: Date | null = null;
   for (const rule of rules) {
-    const day = days[rule.weekday];
-    if (!day) continue;
-    day.enabled = true;
-    day.windows.push({
-      startLocalTime: rule.startLocalTime,
-      endLocalTime: rule.endLocalTime,
-    });
     if (rule.validFrom && (!validFrom || rule.validFrom < validFrom)) {
       validFrom = rule.validFrom;
     }
@@ -416,13 +447,22 @@ export async function loadCounselorSchedule(
     }
   }
 
-  const stored = readStoredPrograms(service.settings, advisor.id);
-  const firstDays = stored?.firstDays?.some((day) => day.enabled)
-    ? stored.firstDays
-    : cloneDays(days);
-  const secondDays = stored?.secondDays?.some((day) => day.enabled)
-    ? stored.secondDays
-    : cloneDays(days);
+  const legacyFrom = validFrom ? utcDateToYmd(validFrom) : defaultScheduleRangeYmd().from;
+  const legacyUntil = validUntil ? utcDateToYmd(validUntil) : defaultScheduleRangeYmd().until;
+
+  const firstFromStored = stored?.firstValidFromYmd ?? legacyFrom;
+  const firstUntilStored = stored?.firstValidUntilYmd ?? legacyUntil;
+  const secondFromStored = stored?.secondValidFromYmd ?? firstFromStored;
+  const secondUntilStored = stored?.secondValidUntilYmd ?? firstUntilStored;
+
+  const firstDays =
+    stored?.firstDays != null
+      ? stored.firstDays
+      : rulesToProgram(firstFromStored, firstUntilStored);
+  const secondDays =
+    stored?.secondDays != null
+      ? stored.secondDays
+      : rulesToProgram(secondFromStored, secondUntilStored);
   const firstFrom = stored?.firstValidFromYmd || (validFrom
       ? utcDateToYmd(validFrom)
       : defaultScheduleRangeYmd().from);
@@ -497,9 +537,14 @@ export async function saveCounselorSchedule(input: {
   const secondValidFromYmd = input.secondValidFromYmd || input.validFromYmd;
   const secondValidUntilYmd = input.secondValidUntilYmd || input.validUntilYmd;
 
-  for (const day of [...firstDays, ...secondDays]) {
+  for (const day of firstDays) {
     if (!day.enabled) continue;
-    const windows = assertDayWindowsValid(day.windows);
+    const windows = assertDayWindowsValid(day.windows, first);
+    if (!windows.ok) throw new Error(windows.error);
+  }
+  for (const day of secondDays) {
+    if (!day.enabled) continue;
+    const windows = assertDayWindowsValid(day.windows, second);
     if (!windows.ok) throw new Error(windows.error);
   }
   const shared = assertProgramsDoNotOverlap({
@@ -548,13 +593,18 @@ export async function saveCounselorSchedule(input: {
         throw new Error("روز هفته نامعتبر است.");
       }
       for (const window of day.windows) {
+        const start = normalizeLocalTimeHm(window.startLocalTime);
+        const end = normalizeLocalTimeHm(window.endLocalTime);
+        if (!start || !end) {
+          throw new Error("ساعت شروع و پایان هر بازه را کامل وارد کنید.");
+        }
         rows.push({
           organizationId: input.ctx.organizationId,
           advisorId: advisor.id,
           serviceId: service.id,
           weekday: day.weekday,
-          startLocalTime: window.startLocalTime,
-          endLocalTime: window.endLocalTime,
+          startLocalTime: start,
+          endLocalTime: end,
           slotCapacity: 1,
           validFrom: program.from,
           validUntil: program.until,

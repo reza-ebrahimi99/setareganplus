@@ -10,6 +10,7 @@ type AdvisorOption = {
 export function CounselorCalendarSelect(props: {
   advisors: AdvisorOption[];
   selectedId: string;
+  dirty?: boolean;
 }) {
   const router = useRouter();
 
@@ -21,6 +22,16 @@ export function CounselorCalendarSelect(props: {
         value={props.selectedId}
         onChange={(event) => {
           const next = event.target.value;
+          if (next === props.selectedId) return;
+          if (
+            props.dirty &&
+            !window.confirm(
+              "تغییرات برنامه ذخیره نشده است. بدون ذخیره به مشاور دیگر بروید؟",
+            )
+          ) {
+            event.target.value = props.selectedId;
+            return;
+          }
           router.push(
             next
               ? `/admin/counselor/calendar?advisorId=${encodeURIComponent(next)}`

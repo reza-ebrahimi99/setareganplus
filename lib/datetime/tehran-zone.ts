@@ -3,6 +3,8 @@
  * Store UTC in DB; convert at application boundaries only.
  */
 
+import { fromPersianDigits } from "@/lib/persian";
+
 export const TEHRAN_TIMEZONE = "Asia/Tehran" as const;
 
 export type TehranDateTimeParts = {
@@ -113,6 +115,27 @@ export function parseLocalTimeHm(value: string): { hour: number; minute: number 
     return null;
   }
   return { hour: Number(match[1]), minute: Number(match[2]) };
+}
+
+/**
+ * Canonical `HH:mm` (ASCII) for DB + form controls.
+ * Accepts Persian digits and optional `:ss`.
+ */
+export function normalizeLocalTimeHm(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  let value = raw.trim();
+  if (!value) return null;
+
+  value = fromPersianDigits(value);
+
+  const withSeconds = /^(\d{1,2}):(\d{2}):(\d{2})$/.exec(value);
+  if (withSeconds) {
+    value = `${withSeconds[1]}:${withSeconds[2]}`;
+  }
+
+  const parsed = parseLocalTimeHm(value);
+  if (!parsed) return null;
+  return `${String(parsed.hour).padStart(2, "0")}:${String(parsed.minute).padStart(2, "0")}`;
 }
 
 export function tehranDayBoundsUtc(year: number, month: number, day: number): {
