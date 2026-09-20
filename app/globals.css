@@ -19692,6 +19692,136 @@ body {
   font-size: 0.85rem;
 }
 
+.cos-next-action {
+  margin-bottom: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.cos-next-action__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.cos-next-action__action {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+}
+
+.cos-next-action__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+}
+
+.cos-next-action__meta dt {
+  color: #64748b;
+}
+
+.cos-next-action__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.cos-next-action__chip {
+  min-width: 1.75rem;
+  text-align: center;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.cos-next-action__chip--active {
+  background: #1e3a5f;
+  color: #fff;
+}
+
+.cos-next-action__chip--done {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.cos-next-action__chip--warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.cos-next-action__chip--wait {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.cos-next-action__state {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+}
+
+.cos-next-action__cta {
+  display: inline-flex;
+}
+
+.cos-work-queue-panel {
+  margin-bottom: 1.25rem;
+}
+
+.cos-work-queue-panel__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.cos-work-queue-panel__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.cos-work-queue-panel__count {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.cos-work-queue--rich .cos-work-queue__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cos-work-queue__badge {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.cos-work-queue__step,
+.cos-work-queue__wait,
+.cos-work-queue__warn {
+  display: block;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.cos-work-queue__warn {
+  color: #b45309;
+}
+
 .cos-cal-v2__sticky-bar {
   position: fixed;
   bottom: 0;

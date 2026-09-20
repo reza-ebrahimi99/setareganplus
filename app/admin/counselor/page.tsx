@@ -1,14 +1,24 @@
 import Link from "next/link";
+import { CounselorWorkQueuePanel } from "@/components/counselor-os/CounselorWorkQueuePanel";
 import { requireCounselorContext } from "@/lib/counselor-os/auth";
 import { loadCounselorDashboard } from "@/lib/counselor-os/dashboard";
+import { loadCounselorWorkQueue } from "@/lib/counselor-os/work-queue";
 import { labelFollowUpPriority } from "@/lib/counselor-os/labels";
 import { toPersianDigits } from "@/lib/persian";
 
 export const dynamic = "force-dynamic";
 
-export default async function CounselorDashboardPage() {
+type Props = {
+  searchParams: Promise<{ q?: string; step?: string; bucket?: string }>;
+};
+
+export default async function CounselorDashboardPage({ searchParams }: Props) {
   const ctx = await requireCounselorContext();
-  const model = await loadCounselorDashboard(ctx);
+  const sp = await searchParams;
+  const [model, workQueue] = await Promise.all([
+    loadCounselorDashboard(ctx),
+    loadCounselorWorkQueue(ctx),
+  ]);
 
   const kpis = [
     ["پرونده‌های فعال", model.stats.totalStudents],
@@ -78,9 +88,16 @@ export default async function CounselorDashboardPage() {
         ))}
       </section>
 
+      <CounselorWorkQueuePanel
+        model={workQueue}
+        q={sp.q}
+        step={sp.step}
+        bucket={sp.bucket}
+      />
+
       <div className="cos-dashboard-grid">
         <section className="cos-panel">
-          <h2>صف کار اولویت‌دار</h2>
+          <h2>صف کار اولویت‌دار (خلاصه)</h2>
           {model.workQueue.length === 0 ? (
             <p className="cos-empty">الان مورد فوری در صف نیست.</p>
           ) : (

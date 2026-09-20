@@ -36,6 +36,7 @@
     "test:counselor-schedule": "tsx scripts/counselor-schedule-unit-tests.ts",
     "test:counselor-schedule-v2": "tsx scripts/counselor-schedule-v2-unit-tests.ts",
     "test:counselor-schedule-v2:integration": "tsx --env-file=.env scripts/counselor-schedule-v2-save-activate-integration.ts",
+    "test:guidance-next-action": "tsx scripts/guidance-next-action-unit-tests.ts",
     "test:guidance-assessment": "tsx scripts/guidance-assessment-unit-tests.ts",
     "test:guidance-discover": "tsx scripts/guidance-discover-unit-tests.ts",
     "test:sxp": "tsx scripts/sxp-unit-tests.ts",

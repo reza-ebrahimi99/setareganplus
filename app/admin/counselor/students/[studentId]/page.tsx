@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
+import { CounselorNextActionCard } from "@/components/counselor-os/CounselorNextActionCard";
 import { CounselorStudentCaseActions } from "@/components/counselor-os/CounselorStudentCaseActions";
+import { loadCounselorCaseNextAction } from "@/lib/counselor-os/case-next-action";
 import { CounselorStudentCaseAlerts } from "@/components/counselor-os/CounselorStudentCaseAlerts";
 import { CounselorStudentCaseHeader } from "@/components/counselor-os/CounselorStudentCaseHeader";
 import { CounselorStudentCaseTabs } from "@/components/counselor-os/CounselorStudentCaseTabs";
@@ -29,7 +31,7 @@ export default async function CounselorStudentCasePage({ params }: Props) {
   }
 
   const { caseModel, dossier } = bundle;
-  const [sessions, notes, corrections, followUps, counselors, lateJourney, reviewFlag] =
+  const [sessions, notes, corrections, followUps, counselors, lateJourney, reviewFlag, nextAction] =
     await Promise.all([
       listStudentSessionHistory(ctx, studentId),
       listCounselorNotes(ctx, studentId),
@@ -46,6 +48,7 @@ export default async function CounselorStudentCasePage({ params }: Props) {
         },
         select: { v2NeedsReviewStep: true },
       }),
+      loadCounselorCaseNextAction(ctx, studentId),
     ]);
 
   return (
@@ -60,6 +63,8 @@ export default async function CounselorStudentCasePage({ params }: Props) {
         alerts={caseModel.alerts}
         needsReview={reviewFlag ? { step: reviewFlag.v2NeedsReviewStep } : null}
       />
+
+      {nextAction ? <CounselorNextActionCard card={nextAction} /> : null}
 
       <CounselorStudentCaseActions studentId={studentId} />
 
