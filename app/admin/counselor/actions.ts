@@ -19,8 +19,10 @@ import {
   deleteSchedulePlan,
   pauseSchedulePlan,
   saveAndActivateSchedulePlan,
+  getSchedulePlanDeletePreview,
   saveSchedulePlanDraft,
   updateActiveSchedulePlan,
+  updatePausedSchedulePlan,
 } from "@/lib/counselor-os/schedule-v2/plan-service";
 import { linkCounselorBookingAdvisor } from "@/lib/counselor-os/advisor";
 import { correctPersonalInfoField } from "@/lib/counselor-os/corrections";
@@ -608,13 +610,30 @@ export async function saveSchedulePlanV2Action(
         expectedVersion: payload.expectedVersion ?? 1,
       });
       savedPlanId = payload.planId;
+    } else if (payload.planStatus === "PAUSED" && payload.planId) {
+      await updatePausedSchedulePlan({
+        ctx,
+        planId: payload.planId,
+        sessionMinutes: payload.sessionMinutes,
+        title: payload.title,
+        note: payload.note,
+        daysJson: payload.daysJson,
+        expectedVersion: payload.expectedVersion ?? 1,
+      });
+      savedPlanId = payload.planId;
     } else {
       const saved = await saveSchedulePlanDraft(payload);
       savedPlanId = saved.planId;
     }
     revalidatePath("/admin/counselor/calendar");
     revalidatePath("/admin/counselor/appointments");
-    return { success: "پیش‌نویس ذخیره شد.", planId: savedPlanId };
+    const successMsg =
+      payload.planStatus === "ACTIVE"
+        ? "برنامه فعال به‌روزرسانی شد."
+        : payload.planStatus === "PAUSED"
+          ? "برنامه متوقف‌شده ذخیره شد."
+          : "پیش‌نویس ذخیره شد.";
+    return { success: successMsg, planId: savedPlanId };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "ذخیره پیش‌نویس انجام نشد." };
   }
@@ -711,7 +730,30 @@ export async function deleteSchedulePlanV2Action(
     return { error: e instanceof Error ? e.message : "حذف انجام نشد." };
   }
   revalidatePath("/admin/counselor/calendar");
-  return { success: "پیش‌نویس حذف شد." };
+  return { success: "برنامه حذف شد." };
+}
+
+export async function getSchedulePlanDeletePreviewAction(planId: string): Promise<{
+  ok: boolean;
+  preview?: {
+    title: string;
+    sessionKind: CounselorScheduleSessionKind;
+    dayCount: number;
+    reservationCount: number;
+  };
+  error?: string;
+}> {
+  const ctx = await requireCounselorContext();
+  try {
+    const preview = await getSchedulePlanDeletePreview({ ctx, planId });
+    if (!preview) return { ok: false, error: "برنامه یافت نشد." };
+    return { ok: true, preview };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "بارگذاری اطلاعات حذف انجام نشد.",
+    };
+  }
 }
 
 export async function copySchedulePlanV2Action(planId: string): Promise<{

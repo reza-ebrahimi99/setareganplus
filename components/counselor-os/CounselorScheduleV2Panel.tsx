@@ -14,6 +14,7 @@ import {
   activateSchedulePlanV2Action,
   copySchedulePlanV2Action,
   deleteSchedulePlanV2Action,
+  getSchedulePlanDeletePreviewAction,
   pauseSchedulePlanV2Action,
   saveAndActivateSchedulePlanV2Action,
   saveSchedulePlanV2Action,
@@ -117,7 +118,9 @@ export function CounselorScheduleV2Panel(props: Props) {
   const [sessionKind, setSessionKind] = useState(
     props.editingPlan?.sessionKind ?? CounselorScheduleSessionKind.FIRST_SESSION,
   );
-  const [planFilter, setPlanFilter] = useState<PlanFilter>("ALL");
+  const [planFilter, setPlanFilter] = useState<PlanFilter>(
+    CounselorSchedulePlanStatus.ACTIVE,
+  );
   const [planId, setPlanId] = useState(props.editingPlan?.id ?? "");
   const [planStatus, setPlanStatus] = useState(
     props.editingPlan?.status ?? CounselorSchedulePlanStatus.DRAFT,
@@ -141,6 +144,14 @@ export function CounselorScheduleV2Panel(props: Props) {
   const isSubmitting = submitPhase !== "idle";
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deletePreview, setDeletePreview] = useState<{
+    title: string;
+    sessionKind: CounselorScheduleSessionKind;
+    dayCount: number;
+    reservationCount: number;
+  } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [planRowBusy, setPlanRowBusy] = useState<string | null>(null);
   const idempotencyRef = useRef(newId("idem"));
   const initialRevision = useRef("");
 
@@ -317,6 +328,20 @@ export function CounselorScheduleV2Panel(props: Props) {
     }
   }
 
+  async function openDeleteModal(planIdToDelete: string) {
+    setDeleteTargetId(planIdToDelete);
+    setDeletePreview(null);
+    setDeleteOpen(true);
+    setDeleteLoading(true);
+    try {
+      const r = await getSchedulePlanDeletePreviewAction(planIdToDelete);
+      if (r.ok && r.preview) setDeletePreview(r.preview);
+      else setFlash({ error: r.error ?? "بارگذاری اطلاعات حذف انجام نشد." });
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
   function loadPlanFromList(id: string) {
     if (
       dirty &&
@@ -461,7 +486,7 @@ export function CounselorScheduleV2Panel(props: Props) {
             {filteredPlans.map((plan) => (
               <li key={plan.id} className="cos-cal-v2__plan-card">
                 <div className="cos-cal-v2__plan-main">
-                  <strong>{plan.title ?? "بدون عنوان"}</strong>
+                  <strong>{plan.title ?? sessionKindLabel(plan.sessionKind)}</strong>
                   <span
                     className={`cos-cal-v2__badge cos-cal-v2__badge--${plan.status.toLowerCase()}`}
                   >
@@ -478,72 +503,84 @@ export function CounselorScheduleV2Panel(props: Props) {
                     className="cos-btn cos-btn--ghost"
                     onClick={() => loadPlanFromList(plan.id)}
                   >
-                    {plan.status === CounselorSchedulePlanStatus.ACTIVE
-                      ? "ویرایش"
-                      : "مشاهده"}
+                    ویرایش
                   </button>
                   <button
                     type="button"
                     className="cos-btn cos-btn--ghost"
-                    disabled={pending}
+                    disabled={planRowBusy === plan.id}
                     onClick={() => {
+                      setPlanRowBusy(plan.id);
                       startTransition(async () => {
-                        const r = await copySchedulePlanV2Action(plan.id);
-                        if (r.ok && r.planId) loadPlanFromList(r.planId);
-                        else setFlash({ error: r.error });
+                        try {
+                          const r = await copySchedulePlanV2Action(plan.id);
+                          if (r.ok && r.planId) loadPlanFromList(r.planId);
+                          else setFlash({ error: r.error });
+                        } finally {
+                          setPlanRowBusy(null);
+                        }
                       });
                     }}
                   >
-                    کپی
+                    {planRowBusy === plan.id ? "…" : "کپی"}
                   </button>
-                  {plan.status === CounselorSchedulePlanStatus.DRAFT ? (
-                    <>
-                      <button
-                        type="button"
-                        className="cos-btn cos-btn--primary"
-                        disabled={pending}
-                        onClick={() => {
-                          startTransition(async () => {
+                  {plan.status === CounselorSchedulePlanStatus.DRAFT ||
+                  plan.status === CounselorSchedulePlanStatus.PAUSED ? (
+                    <button
+                      type="button"
+                      className="cos-btn cos-btn--primary"
+                      disabled={planRowBusy === `${plan.id}:activate`}
+                      onClick={() => {
+                        setPlanRowBusy(`${plan.id}:activate`);
+                        startTransition(async () => {
+                          try {
                             const fd = new FormData();
                             fd.set("planId", plan.id);
                             fd.set("version", String(plan.version));
                             fd.set("idempotencyKey", newId("idem"));
                             setFlash(await activateSchedulePlanV2Action({}, fd));
                             router.refresh();
-                          });
-                        }}
-                      >
-                        فعال‌سازی
-                      </button>
-                      <button
-                        type="button"
-                        className="cos-btn cos-btn--danger"
-                        onClick={() => {
-                          setDeleteTargetId(plan.id);
-                          setDeleteOpen(true);
-                        }}
-                      >
-                        حذف
-                      </button>
-                    </>
+                          } finally {
+                            setPlanRowBusy(null);
+                          }
+                        });
+                      }}
+                    >
+                      {planRowBusy === `${plan.id}:activate`
+                        ? "…"
+                        : "فعال‌سازی"}
+                    </button>
                   ) : null}
                   {plan.status === CounselorSchedulePlanStatus.ACTIVE ? (
                     <button
                       type="button"
                       className="cos-btn"
-                      disabled={pending}
+                      disabled={planRowBusy === `${plan.id}:pause`}
                       onClick={() => {
-                        const fd = new FormData();
-                        fd.set("planId", plan.id);
+                        setPlanRowBusy(`${plan.id}:pause`);
                         startTransition(async () => {
-                          setFlash(await pauseSchedulePlanV2Action({}, fd));
-                          router.refresh();
+                          try {
+                            const fd = new FormData();
+                            fd.set("planId", plan.id);
+                            setFlash(await pauseSchedulePlanV2Action({}, fd));
+                            router.refresh();
+                          } finally {
+                            setPlanRowBusy(null);
+                          }
                         });
                       }}
                     >
-                      توقف
+                      {planRowBusy === `${plan.id}:pause` ? "…" : "توقف"}
                     </button>
                   ) : null}
+                  <button
+                    type="button"
+                    className="cos-btn cos-btn--danger"
+                    disabled={planRowBusy === `${plan.id}:delete`}
+                    onClick={() => void openDeleteModal(plan.id)}
+                  >
+                    حذف
+                  </button>
                 </div>
               </li>
             ))}
@@ -765,7 +802,8 @@ export function CounselorScheduleV2Panel(props: Props) {
         {submitError ? (
           <p className="cos-cal-v2__sticky-error">{submitError}</p>
         ) : null}
-        {planStatus === CounselorSchedulePlanStatus.ACTIVE ? (
+        {planStatus === CounselorSchedulePlanStatus.ACTIVE ||
+        planStatus === CounselorSchedulePlanStatus.PAUSED ? (
           <button
             type="button"
             className="cos-btn cos-btn--primary"
@@ -805,14 +843,44 @@ export function CounselorScheduleV2Panel(props: Props) {
       {deleteOpen ? (
         <div className="cos-modal-backdrop" role="presentation">
           <div className="cos-modal" role="dialog" aria-modal="true">
-            <p>آیا از حذف این پیش‌نویس مطمئن هستید؟</p>
+            <h4>حذف برنامه</h4>
+            {deleteLoading ? (
+              <p className="cos-muted">در حال بارگذاری…</p>
+            ) : deletePreview ? (
+              <ul className="cos-cal-v2__delete-summary">
+                <li>
+                  <strong>عنوان:</strong> {deletePreview.title}
+                </li>
+                <li>
+                  <strong>نوع:</strong>{" "}
+                  {sessionKindLabel(deletePreview.sessionKind)}
+                </li>
+                <li>
+                  <strong>تعداد روز:</strong>{" "}
+                  {toPersianDigits(String(deletePreview.dayCount))}
+                </li>
+                <li>
+                  <strong>رزروها:</strong>{" "}
+                  {toPersianDigits(String(deletePreview.reservationCount))}
+                </li>
+              </ul>
+            ) : (
+              <p className="cos-muted">اطلاعات برنامه در دسترس نیست.</p>
+            )}
+            <p>
+              {deletePreview && deletePreview.reservationCount > 0
+                ? "رزروها و سوابق حفظ می‌شوند؛ فقط رزرو جدید و نوبت‌های آزاد آینده حذف می‌شوند."
+                : "این برنامه و نوبت‌های آزاد آینده آن حذف می‌شوند."}
+            </p>
             <div className="cos-inline-actions">
               <button
                 type="button"
                 className="cos-btn"
+                disabled={planRowBusy === "delete-confirm"}
                 onClick={() => {
                   setDeleteOpen(false);
                   setDeleteTargetId(null);
+                  setDeletePreview(null);
                 }}
               >
                 انصراف
@@ -820,20 +888,27 @@ export function CounselorScheduleV2Panel(props: Props) {
               <button
                 type="button"
                 className="cos-btn cos-btn--danger"
-                disabled={pending}
+                disabled={deleteLoading || planRowBusy === "delete-confirm"}
                 onClick={() => {
-                  setDeleteOpen(false);
                   const target = deleteTargetId ?? planId;
                   if (!target) return;
+                  setPlanRowBusy("delete-confirm");
                   startTransition(async () => {
-                    const fd = new FormData();
-                    fd.set("planId", target);
-                    setFlash(await deleteSchedulePlanV2Action({}, fd));
-                    router.refresh();
+                    try {
+                      const fd = new FormData();
+                      fd.set("planId", target);
+                      setFlash(await deleteSchedulePlanV2Action({}, fd));
+                      setDeleteOpen(false);
+                      setDeleteTargetId(null);
+                      setDeletePreview(null);
+                      router.refresh();
+                    } finally {
+                      setPlanRowBusy(null);
+                    }
                   });
                 }}
               >
-                حذف
+                {planRowBusy === "delete-confirm" ? "در حال حذف…" : "حذف برنامه"}
               </button>
             </div>
           </div>

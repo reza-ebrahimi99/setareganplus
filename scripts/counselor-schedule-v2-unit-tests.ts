@@ -5,6 +5,12 @@ import { gregorianDateOnlyToJalaliParts } from "../lib/datetime/jalali-form";
 import { weekdayLabelForGregorianYmd } from "../lib/counselor-os/schedule-v2/local-date";
 import { validateScheduleDays } from "../lib/counselor-os/schedule-v2/validate";
 import { computeSchedulePreview } from "../lib/counselor-os/schedule-v2/preview-compute";
+import {
+  resolveSchedulePlanTitle,
+  suggestSchedulePlanTitle,
+} from "../lib/counselor-os/schedule-v2/plan-title";
+import { CounselorScheduleSessionKind } from "../generated/prisma/enums";
+import { bookableCounselorSlotWhere } from "../lib/counselor-os/schedule-v2/student-slot-access";
 
 function test(name: string, fn: () => void) {
   fn();
@@ -102,6 +108,37 @@ test("1405/06/30 13-17 window yields 4 slots at 60min", () => {
   });
   assert.equal(preview.ok, true);
   if (preview.ok) assert.equal(preview.totalSlots, 4);
+});
+
+test("auto title from date range", () => {
+  const ymd1 = jalaliPartsToGregorianDateOnly(1405, 6, 31);
+  const ymd2 = jalaliPartsToGregorianDateOnly(1405, 7, 2);
+  const title = suggestSchedulePlanTitle({
+    sessionKind: CounselorScheduleSessionKind.FIRST_SESSION,
+    dayYmds: [ymd1, ymd2],
+  });
+  assert.match(title, /جلسه اول/);
+  assert.match(title, /تا/);
+  const resolved = resolveSchedulePlanTitle({
+    title: "  ",
+    sessionKind: CounselorScheduleSessionKind.FIRST_SESSION,
+    dayYmds: [ymd1],
+  });
+  assert.ok(resolved && resolved.includes("جلسه اول"));
+});
+
+test("bookable slot where requires active plan id when present", () => {
+  const now = new Date();
+  const end = new Date(now.getTime() + 86400000);
+  const where = bookableCounselorSlotWhere({
+    organizationId: "org",
+    serviceId: "svc",
+    advisorId: "adv",
+    now,
+    endDate: end,
+    activePlanId: "plan-1",
+  });
+  assert.equal((where as { schedulePlanId?: string }).schedulePlanId, "plan-1");
 });
 
 console.log("\ncounselor schedule v2 unit tests passed");

@@ -2,6 +2,7 @@
  * Counselor OS booking — reuses Smart Booking Engine.
  */
 
+import type { Prisma } from "@/generated/prisma/client";
 import { BookingMeetingType, BookingStatus } from "@/generated/prisma/enums";
 import { cancelReservation } from "@/lib/booking/manage-reservation";
 import { createReservation } from "@/lib/booking/reserve";
@@ -21,10 +22,18 @@ import {
   ymdToUtcNoon,
 } from "@/lib/counselor-os/schedule";
 import { slotMatchesProgram } from "@/lib/counselor-os/schedule-windows";
-import { findActiveSchedulePlan } from "@/lib/counselor-os/schedule-v2/active-plan";
+import {
+  findActiveSchedulePlan,
+  hasNonArchivedSchedulePlans,
+} from "@/lib/counselor-os/schedule-v2/active-plan";
 import { sessionKindFromPurpose } from "@/lib/counselor-os/schedule-v2/session-kind";
 import { slotMatchesActivePlan } from "@/lib/counselor-os/schedule-v2/slot-match";
 import { materializeActivePlanSlots } from "@/lib/counselor-os/schedule-v2/slot-sync";
+import { bookableCounselorSlotWhere, assertSlotBookableForCounselorSession } from "@/lib/counselor-os/schedule-v2/student-slot-access";
+import {
+  CounselorSchedulePlanStatus,
+  CounselorScheduleSessionKind,
+} from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import {
   formatJalaliDateTimeLabel,
@@ -85,6 +94,11 @@ export async function loadCounselorAvailableSlots(params: {
     advisorId: params.advisorId,
     sessionKind,
   });
+  const usesScheduleV2 = await hasNonArchivedSchedulePlans({
+    organizationId: params.organizationId,
+    advisorId: params.advisorId,
+    sessionKind,
+  });
 
   const durations = readCounselorSessionDurations(
     service.settings,
@@ -126,7 +140,7 @@ export async function loadCounselorAvailableSlots(params: {
       organizationId: params.organizationId,
       planId: activePlan.id,
     });
-  } else {
+  } else if (!usesScheduleV2) {
     const rangeFrom = ymdToUtcNoon(fromYmd ?? "") ?? now;
     const rangeUntil = ymdToUtcNoon(untilYmd ?? "") ?? endDate;
     const windowsOverride =
@@ -148,13 +162,15 @@ export async function loadCounselorAvailableSlots(params: {
   }
 
   const slots = await prisma.bookingSlot.findMany({
-    where: {
+    where: bookableCounselorSlotWhere({
       organizationId: params.organizationId,
       serviceId: service.id,
       advisorId: params.advisorId,
-      startsAt: { gte: now, lte: endDate },
-      status: "OPEN",
-    },
+      now,
+      endDate,
+      activePlanId: activePlan?.id ?? null,
+      allowLegacyNullSlots: !usesScheduleV2,
+    }),
     include: { advisor: { select: { displayName: true } } },
     orderBy: { startsAt: "asc" },
     take: 160,
@@ -272,13 +288,40 @@ export async function bookCounselorSlotForStudent(params: {
     return { ok: false as const, error: "این زمان برای جلسه مشاوره معتبر نیست." };
   }
   if (params.purpose) {
+    const sessionKind = sessionKindFromPurpose(
+      params.purpose as AppointmentPurpose,
+    );
+    const usesScheduleV2 = await hasNonArchivedSchedulePlans({
+      organizationId: params.organizationId,
+      advisorId: slot.advisorId,
+      sessionKind,
+    });
     const activePlan = await findActiveSchedulePlan({
       organizationId: params.organizationId,
       advisorId: slot.advisorId,
-      sessionKind: sessionKindFromPurpose(
-        params.purpose as AppointmentPurpose,
-      ),
+      sessionKind,
     });
+    if (usesScheduleV2 && !activePlan) {
+      return {
+        ok: false as const,
+        error: "در حال حاضر نوبت فعالی برای این جلسه تعریف نشده است.",
+      };
+    }
+    const access = await assertSlotBookableForCounselorSession({
+      organizationId: params.organizationId,
+      slotId: slot.id,
+      advisorId: slot.advisorId,
+      sessionKind,
+    });
+    if (!access.ok) {
+      return { ok: false as const, error: access.error };
+    }
+    if (activePlan && slot.schedulePlanId && slot.schedulePlanId !== activePlan.id) {
+      return { ok: false as const, error: "این زمان برای رزرو فعال نیست." };
+    }
+    if (activePlan && !slot.schedulePlanId) {
+      return { ok: false as const, error: "این زمان برای رزرو فعال نیست." };
+    }
     const durations = readCounselorSessionDurations(
       service.settings,
       slot.advisorId,
@@ -511,16 +554,76 @@ export async function listCounselorCalendarDays(params: {
   const now = new Date();
   const horizon = new Date(now.getTime() + MAX_SLOT_GENERATION_DAYS * 24 * 60 * 60 * 1000);
 
-  await refreshCounselorGeneratedSlots({
+  const firstActive = await findActiveSchedulePlan({
     organizationId: params.organizationId,
     advisorId: params.advisorId,
-    validFromYmd: params.validFromYmd ?? utcDateToYmd(now),
-    validUntilYmd: params.validUntilYmd ?? utcDateToYmd(horizon),
-    secondValidFromYmd: params.secondValidFromYmd,
-    secondValidUntilYmd: params.secondValidUntilYmd,
+    sessionKind: CounselorScheduleSessionKind.FIRST_SESSION,
+  });
+  const secondActive = await findActiveSchedulePlan({
+    organizationId: params.organizationId,
+    advisorId: params.advisorId,
+    sessionKind: CounselorScheduleSessionKind.SECOND_SESSION,
+  });
+  const firstUsesV2 = await hasNonArchivedSchedulePlans({
+    organizationId: params.organizationId,
+    advisorId: params.advisorId,
+    sessionKind: CounselorScheduleSessionKind.FIRST_SESSION,
+  });
+  const secondUsesV2 = await hasNonArchivedSchedulePlans({
+    organizationId: params.organizationId,
+    advisorId: params.advisorId,
+    sessionKind: CounselorScheduleSessionKind.SECOND_SESSION,
   });
 
+  if (firstActive) {
+    await materializeActivePlanSlots({
+      organizationId: params.organizationId,
+      planId: firstActive.id,
+    });
+  }
+  if (secondActive) {
+    await materializeActivePlanSlots({
+      organizationId: params.organizationId,
+      planId: secondActive.id,
+    });
+  }
+
+  if (
+    (!firstActive && !firstUsesV2) ||
+    (!secondActive && !secondUsesV2)
+  ) {
+    await refreshCounselorGeneratedSlots({
+      organizationId: params.organizationId,
+      advisorId: params.advisorId,
+      validFromYmd: params.validFromYmd ?? utcDateToYmd(now),
+      validUntilYmd: params.validUntilYmd ?? utcDateToYmd(horizon),
+      secondValidFromYmd: params.secondValidFromYmd,
+      secondValidUntilYmd: params.secondValidUntilYmd,
+    });
+  }
+
   const durations = readCounselorSessionDurations(service.settings, params.advisorId);
+  const visibilityOr: Prisma.BookingSlotWhereInput[] = [];
+  if (firstActive) {
+    visibilityOr.push({
+      schedulePlanId: firstActive.id,
+      schedulePlan: { status: CounselorSchedulePlanStatus.ACTIVE },
+    });
+  } else if (!firstUsesV2) {
+    visibilityOr.push({ schedulePlanId: null });
+  }
+  if (secondActive) {
+    visibilityOr.push({
+      schedulePlanId: secondActive.id,
+      schedulePlan: { status: CounselorSchedulePlanStatus.ACTIVE },
+    });
+  } else if (!secondUsesV2) {
+    visibilityOr.push({ schedulePlanId: null });
+  }
+  if (visibilityOr.length === 0) {
+    visibilityOr.push({ id: "__no_bookable_counselor_slots__" });
+  }
+
   const slots = await prisma.bookingSlot.findMany({
     where: {
       organizationId: params.organizationId,
@@ -528,6 +631,7 @@ export async function listCounselorCalendarDays(params: {
       advisorId: params.advisorId,
       startsAt: { gte: now, lte: horizon },
       status: { in: ["OPEN", "FULL"] },
+      OR: visibilityOr,
     },
     orderBy: { startsAt: "asc" },
     take: 240,

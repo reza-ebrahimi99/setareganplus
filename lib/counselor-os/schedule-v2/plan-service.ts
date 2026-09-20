@@ -28,15 +28,21 @@ import {
   parseScheduleDaysJson,
   validateScheduleDays,
 } from "@/lib/counselor-os/schedule-v2/validate";
+import { sessionKindLabel } from "@/lib/counselor-os/schedule-v2/session-kind";
 import type { Prisma } from "@/generated/prisma/client";
+import {
+  planLegacyArchivedAt,
+  resolveSchedulePlanTitle,
+} from "@/lib/counselor-os/schedule-v2/plan-title";
 import { formatJalaliDateLong } from "@/lib/datetime/jalali";
 import { normalizeLocalTimeHm } from "@/lib/datetime/tehran-zone";
 import { prisma } from "@/lib/prisma";
+import { BookingStatus } from "@/generated/prisma/enums";
 
 type SchedulePlanDb = Prisma.TransactionClient | typeof prisma;
 
 const DELETE_BLOCKED_MSG =
-  "این برنامه دارای رزرو است و قابل حذف نیست؛ ابتدا آن را متوقف کنید.";
+  "حذف برنامه انجام نشد؛ دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.";
 
 async function assertAdvisorAccess(
   ctx: CounselorContext,
@@ -52,26 +58,103 @@ async function planHasReservations(
   organizationId: string,
   planId: string,
 ): Promise<boolean> {
-  const count = await prisma.bookingSlot.count({
+  const slotBooked = await prisma.bookingSlot.count({
     where: {
       organizationId,
       schedulePlanId: planId,
       bookedCount: { gt: 0 },
     },
   });
-  return count > 0;
+  if (slotBooked > 0) return true;
+  const reservationCount = await prisma.bookingReservation.count({
+    where: {
+      organizationId,
+      status: {
+        in: [
+          BookingStatus.PENDING,
+          BookingStatus.CONFIRMED,
+          BookingStatus.COMPLETED,
+        ],
+      },
+      slot: { schedulePlanId: planId },
+    },
+  });
+  return reservationCount > 0;
+}
+
+export async function countSchedulePlanReservations(params: {
+  organizationId: string;
+  planId: string;
+}): Promise<number> {
+  const fromSlots = await prisma.bookingSlot.count({
+    where: {
+      organizationId: params.organizationId,
+      schedulePlanId: params.planId,
+      bookedCount: { gt: 0 },
+    },
+  });
+  if (fromSlots > 0) return fromSlots;
+  return prisma.bookingReservation.count({
+    where: {
+      organizationId: params.organizationId,
+      slot: { schedulePlanId: params.planId },
+      status: {
+        in: [
+          BookingStatus.PENDING,
+          BookingStatus.CONFIRMED,
+          BookingStatus.COMPLETED,
+        ],
+      },
+    },
+  });
+}
+
+export async function getSchedulePlanDeletePreview(params: {
+  ctx: CounselorContext;
+  planId: string;
+}): Promise<{
+  title: string;
+  sessionKind: CounselorScheduleSessionKind;
+  dayCount: number;
+  reservationCount: number;
+} | null> {
+  const plan = await loadPlanById(params.ctx.organizationId, params.planId);
+  if (!plan) return null;
+  await assertAdvisorAccess(params.ctx, plan.advisorId);
+  const dayYmds = plan.days.map((d) => dbDateToGregorianYmd(d.localDate));
+  const title =
+    resolveSchedulePlanTitle({
+      title: plan.title,
+      sessionKind: plan.sessionKind,
+      dayYmds,
+    }) ?? sessionKindLabel(plan.sessionKind);
+  const reservationCount = await countSchedulePlanReservations({
+    organizationId: params.ctx.organizationId,
+    planId: plan.id,
+  });
+  return {
+    title,
+    sessionKind: plan.sessionKind,
+    dayCount: plan.days.length,
+    reservationCount,
+  };
 }
 
 function mapPlanDetail(
   plan: NonNullable<Awaited<ReturnType<typeof loadPlanById>>>,
 ): SchedulePlanDetail {
+  const dayYmds = plan.days.map((d) => dbDateToGregorianYmd(d.localDate));
   return {
     id: plan.id,
     advisorId: plan.advisorId,
     sessionKind: plan.sessionKind,
     status: plan.status,
     sessionMinutes: plan.sessionMinutes,
-    title: plan.title,
+    title: resolveSchedulePlanTitle({
+      title: plan.title,
+      sessionKind: plan.sessionKind,
+      dayYmds,
+    }),
     note: plan.note,
     version: plan.version,
     days: plan.days.map((day) => {
@@ -121,21 +204,33 @@ export async function listSchedulePlans(params: {
       ...(params.sessionKind ? { sessionKind: params.sessionKind } : {}),
       ...(params.status ? { status: params.status } : {}),
     },
-    include: { _count: { select: { days: true } } },
+    include: {
+      _count: { select: { days: true } },
+      days: { select: { localDate: true }, orderBy: { localDate: "asc" } },
+    },
     orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
   });
-  return rows.map((row) => ({
-    id: row.id,
-    sessionKind: row.sessionKind,
-    status: row.status,
-    sessionMinutes: row.sessionMinutes,
-    title: row.title,
-    version: row.version,
-    dayCount: row._count.days,
-    slotPreviewCount: null,
-    updatedAt: row.updatedAt.toISOString(),
-    activatedAt: row.activatedAt?.toISOString() ?? null,
-  }));
+  return rows
+    .filter((row) => !planLegacyArchivedAt(row.legacyMeta))
+    .map((row) => {
+      const dayYmds = row.days.map((d) => dbDateToGregorianYmd(d.localDate));
+      return {
+        id: row.id,
+        sessionKind: row.sessionKind,
+        status: row.status,
+        sessionMinutes: row.sessionMinutes,
+        title: resolveSchedulePlanTitle({
+          title: row.title,
+          sessionKind: row.sessionKind,
+          dayYmds,
+        }),
+        version: row.version,
+        dayCount: row._count.days,
+        slotPreviewCount: null,
+        updatedAt: row.updatedAt.toISOString(),
+        activatedAt: row.activatedAt?.toISOString() ?? null,
+      };
+    });
 }
 
 export async function getSchedulePlanDetail(params: {
@@ -144,6 +239,7 @@ export async function getSchedulePlanDetail(params: {
 }): Promise<SchedulePlanDetail | null> {
   const plan = await loadPlanById(params.ctx.organizationId, params.planId);
   if (!plan) return null;
+  if (planLegacyArchivedAt(plan.legacyMeta)) return null;
   await assertAdvisorAccess(params.ctx, plan.advisorId);
   return mapPlanDetail(plan);
 }
@@ -210,6 +306,12 @@ export async function saveSchedulePlanDraft(params: {
   const sessionMinutes = asSessionMinutes(params.sessionMinutes, 45);
   const days = parseScheduleDaysJson(params.daysJson);
   validateScheduleDays(days, sessionMinutes);
+  const dayYmds = days.map((d) => d.localDateGregorian);
+  const resolvedTitle = resolveSchedulePlanTitle({
+    title: params.title,
+    sessionKind: params.sessionKind,
+    dayYmds,
+  });
 
   if (params.idempotencyKey?.trim()) {
     const existing = await prisma.counselorSchedulePlan.findFirst({
@@ -254,7 +356,7 @@ export async function saveSchedulePlanDraft(params: {
         },
         data: {
           sessionMinutes,
-          title: params.title?.trim() || null,
+          title: resolvedTitle,
           note: params.note?.trim() || null,
           version: { increment: 1 },
         },
@@ -284,7 +386,7 @@ export async function saveSchedulePlanDraft(params: {
         sessionKind: params.sessionKind,
         status: CounselorSchedulePlanStatus.DRAFT,
         sessionMinutes,
-        title: params.title?.trim() || null,
+        title: resolvedTitle,
         note: params.note?.trim() || null,
         idempotencyKey: params.idempotencyKey?.trim() || null,
         createdByUserId: params.ctx.userId,
@@ -321,6 +423,11 @@ export async function updateActiveSchedulePlan(params: {
   const sessionMinutes = asSessionMinutes(params.sessionMinutes, current.sessionMinutes);
   const days = parseScheduleDaysJson(params.daysJson);
   validateScheduleDays(days, sessionMinutes);
+  const resolvedTitle = resolveSchedulePlanTitle({
+    title: params.title,
+    sessionKind: current.sessionKind,
+    dayYmds: days.map((d) => d.localDateGregorian),
+  });
 
   if (current.version !== params.expectedVersion) {
     throw new Error(
@@ -337,7 +444,7 @@ export async function updateActiveSchedulePlan(params: {
       },
       data: {
         sessionMinutes,
-        title: params.title?.trim() || null,
+        title: resolvedTitle,
         note: params.note?.trim() || null,
         version: { increment: 1 },
       },
@@ -354,6 +461,74 @@ export async function updateActiveSchedulePlan(params: {
   });
 
   await materializeActivePlanSlots({
+    organizationId: params.ctx.organizationId,
+    planId: params.planId,
+  });
+
+  const fresh = await loadPlanById(params.ctx.organizationId, params.planId);
+  return { version: fresh?.version ?? params.expectedVersion + 1 };
+}
+
+export async function updatePausedSchedulePlan(params: {
+  ctx: CounselorContext;
+  planId: string;
+  sessionMinutes: number;
+  title?: string | null;
+  note?: string | null;
+  daysJson: string;
+  expectedVersion: number;
+}): Promise<{ version: number }> {
+  const current = await loadPlanById(params.ctx.organizationId, params.planId);
+  if (!current) throw new Error("برنامه یافت نشد.");
+  await assertAdvisorAccess(params.ctx, current.advisorId);
+  if (current.status !== CounselorSchedulePlanStatus.PAUSED) {
+    throw new Error("این عملیات فقط برای برنامه متوقف‌شده است.");
+  }
+  if (planLegacyArchivedAt(current.legacyMeta)) {
+    throw new Error("این برنامه حذف شده و قابل ویرایش نیست.");
+  }
+
+  const sessionMinutes = asSessionMinutes(params.sessionMinutes, current.sessionMinutes);
+  const days = parseScheduleDaysJson(params.daysJson);
+  validateScheduleDays(days, sessionMinutes);
+  const resolvedTitle = resolveSchedulePlanTitle({
+    title: params.title,
+    sessionKind: current.sessionKind,
+    dayYmds: days.map((d) => d.localDateGregorian),
+  });
+
+  if (current.version !== params.expectedVersion) {
+    throw new Error(
+      "این برنامه هم‌زمان ویرایش شده است. صفحه را تازه‌سازی کنید.",
+    );
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const updated = await tx.counselorSchedulePlan.updateMany({
+      where: {
+        id: params.planId,
+        organizationId: params.ctx.organizationId,
+        version: params.expectedVersion,
+      },
+      data: {
+        sessionMinutes,
+        title: resolvedTitle,
+        note: params.note?.trim() || null,
+        version: { increment: 1 },
+      },
+    });
+    if (updated.count === 0) {
+      throw new Error("ذخیره انجام نشد؛ نسخه برنامه تغییر کرده است.");
+    }
+    await replacePlanDays({
+      db: tx,
+      organizationId: params.ctx.organizationId,
+      planId: params.planId,
+      days,
+    });
+  });
+
+  await cancelFutureOpenSlotsForPlan({
     organizationId: params.ctx.organizationId,
     planId: params.planId,
   });
@@ -414,6 +589,17 @@ export async function activateSchedulePlan(params: {
     if (dup) return;
   }
 
+  const demotedPlans = await prisma.counselorSchedulePlan.findMany({
+    where: {
+      organizationId: params.ctx.organizationId,
+      advisorId: plan.advisorId,
+      sessionKind: plan.sessionKind,
+      status: CounselorSchedulePlanStatus.ACTIVE,
+      NOT: { id: plan.id },
+    },
+    select: { id: true },
+  });
+
   await prisma.$transaction(async (tx) => {
     await tx.counselorSchedulePlan.updateMany({
       where: {
@@ -447,6 +633,13 @@ export async function activateSchedulePlan(params: {
     }
   });
 
+  for (const demoted of demotedPlans) {
+    await cancelFutureOpenSlotsForPlan({
+      organizationId: params.ctx.organizationId,
+      planId: demoted.id,
+    });
+  }
+
   const mat = await materializeActivePlanSlots({
     organizationId: params.ctx.organizationId,
     planId: plan.id,
@@ -463,6 +656,9 @@ export async function pauseSchedulePlan(params: {
   const plan = await loadPlanById(params.ctx.organizationId, params.planId);
   if (!plan) throw new Error("برنامه یافت نشد.");
   await assertAdvisorAccess(params.ctx, plan.advisorId);
+  if (plan.status === CounselorSchedulePlanStatus.PAUSED) {
+    return;
+  }
   if (plan.status !== CounselorSchedulePlanStatus.ACTIVE) {
     throw new Error("فقط برنامه فعال را می‌توان متوقف کرد.");
   }
@@ -490,18 +686,39 @@ export async function deleteSchedulePlan(params: {
   if (!plan) throw new Error("برنامه یافت نشد.");
   await assertAdvisorAccess(params.ctx, plan.advisorId);
 
-  if (await planHasReservations(params.ctx.organizationId, plan.id)) {
-    throw new Error(DELETE_BLOCKED_MSG);
-  }
-
-  if (plan.status === CounselorSchedulePlanStatus.ACTIVE) {
-    throw new Error(DELETE_BLOCKED_MSG);
+  if (planLegacyArchivedAt(plan.legacyMeta)) {
+    return;
   }
 
   await cancelFutureOpenSlotsForPlan({
     organizationId: params.ctx.organizationId,
     planId: plan.id,
   });
+
+  const preserveHistory = await planHasReservations(
+    params.ctx.organizationId,
+    plan.id,
+  );
+
+  if (preserveHistory) {
+    const legacyMeta: Prisma.InputJsonValue = {
+      ...(plan.legacyMeta && typeof plan.legacyMeta === "object"
+        ? (plan.legacyMeta as Record<string, Prisma.InputJsonValue>)
+        : {}),
+      archivedAt: new Date().toISOString(),
+      archivedByUserId: params.ctx.userId,
+    };
+    await prisma.counselorSchedulePlan.update({
+      where: { id: plan.id },
+      data: {
+        status: CounselorSchedulePlanStatus.PAUSED,
+        pausedAt: new Date(),
+        legacyMeta,
+        version: { increment: 1 },
+      },
+    });
+    return;
+  }
 
   await prisma.$transaction(async (tx) => {
     await tx.bookingSlot.updateMany({
