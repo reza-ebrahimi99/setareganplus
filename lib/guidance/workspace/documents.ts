@@ -45,6 +45,8 @@ export async function replaceGuidanceDocumentAsCounselor(params: {
   documentType: "FINAL_GRADES" | "EXAM_RESULT";
   file: File;
   reason: string;
+  /** V2 journey step for review events (e.g. 3 for final grades). */
+  reviewStepNumber?: number;
 }): Promise<CounselorDocumentResult> {
   const plan = await prisma.guidancePlan.findFirst({
     where: {
@@ -140,10 +142,13 @@ export async function replaceGuidanceDocumentAsCounselor(params: {
     return nextVersion;
   });
 
+  const reviewStep =
+    params.reviewStepNumber ??
+    stepForDocumentType(documentType);
   await recordDocumentReviewEvent({
     organizationId: params.organizationId,
     planId: plan.id,
-    stepNumber: stepForDocumentType(documentType),
+    stepNumber: reviewStep as GuidanceJourneyStepId,
     actorUserId: params.actorUserId,
     kind: "DOCUMENT_REPLACED",
     metadata: { documentType, versionNumber, reason: params.reason },

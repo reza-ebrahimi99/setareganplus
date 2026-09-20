@@ -1,5 +1,5 @@
 /**
- * Holland (step 4) retake — new attempts, preserve history.
+ * Holland (step 4) retake — attempts, basis selection, no overwrite.
  */
 
 import { GuidanceStepReviewEventKind, GuidanceStepReviewStatus } from "@/generated/prisma/enums";
@@ -10,6 +10,13 @@ import {
 } from "@/lib/guidance/journey-v2/step-review/dependencies";
 import { parseNeedsReviewFlags } from "@/lib/guidance/journey-v2/step-review/plan-json";
 import { notifyStudentPortal } from "@/lib/counselor-os/appointment-notify";
+import { appendGuidanceStepData } from "@/lib/guidance/journey/step-store";
+import { addOpenRevisionStep, parseOpenRevisionSteps } from "@/lib/guidance/journey-v2/step-review/plan-json";
+import { studentResubmitStep } from "@/lib/guidance/journey-v2/step-review/service";
+import type { AssessmentAnswers } from "@/lib/guidance/journey/assessment/scoring";
+
+const CATEGORY = "guidance-v2-interest-assessment";
+const KIND = "guidance-v2-interest-assessment";
 
 export async function requestHollandRetake(params: {
   organizationId: string;
@@ -27,12 +34,31 @@ export async function requestHollandRetake(params: {
       deletedAt: null,
       journeyVersion: 2,
     },
-    select: { id: true, v2StepNeedsReviewFlags: true },
+    select: { id: true, publicId: true, userId: true, v2StepNeedsReviewFlags: true, v2OpenRevisionSteps: true },
   });
   if (!plan) return { ok: false, error: "پرونده یافت نشد." };
 
   const impact = previewStepChangeImpact(4);
   const flags = mergeNeedsReviewFlags(parseNeedsReviewFlags(plan.v2StepNeedsReviewFlags), impact.affectedSteps);
+  const openSteps = addOpenRevisionStep(parseOpenRevisionSteps(plan.v2OpenRevisionSteps), 4);
+
+  const placeholder = await appendGuidanceStepData<Record<string, never>>({
+    organizationId: params.organizationId,
+    actorUserId: params.counselorUserId,
+    category: CATEGORY,
+    kind: KIND,
+    planId: plan.id,
+    planPublicId: plan.publicId,
+    data: {},
+    filenamePrefix: "guidance-v2-interest-pending",
+  });
+
+  const last = await prisma.guidanceHollandAttempt.findFirst({
+    where: { organizationId: params.organizationId, planId: plan.id },
+    orderBy: { attemptNumber: "desc" },
+    select: { attemptNumber: true },
+  });
+  const attemptNumber = (last?.attemptNumber ?? 0) + 1;
 
   const review = await prisma.guidanceStepReview.upsert({
     where: {
@@ -61,13 +87,28 @@ export async function requestHollandRetake(params: {
     },
   });
 
-  await prisma.guidancePlan.update({
-    where: { id: plan.id },
-    data: {
-      v2HollandRetakePending: true,
-      v2StepNeedsReviewFlags: flags,
-    },
-  });
+  await prisma.$transaction([
+    prisma.guidanceHollandAttempt.create({
+      data: {
+        organizationId: params.organizationId,
+        planId: plan.id,
+        attemptNumber,
+        mediaAssetId: placeholder.mediaAssetId,
+        completedAt: null,
+        isActiveBasis: false,
+        requestedByUserId: params.counselorUserId,
+        requestReason: reason,
+      },
+    }),
+    prisma.guidancePlan.update({
+      where: { id: plan.id },
+      data: {
+        v2HollandRetakePending: true,
+        v2StepNeedsReviewFlags: flags,
+        v2OpenRevisionSteps: openSteps,
+      },
+    }),
+  ]);
 
   await prisma.guidanceStepReviewEvent.create({
     data: {
@@ -77,6 +118,7 @@ export async function requestHollandRetake(params: {
       kind: GuidanceStepReviewEventKind.HOLLAND_RETAKE_REQUESTED,
       status: GuidanceStepReviewStatus.REVISION_REQUESTED,
       rejectReason: reason,
+      metadata: { attemptNumber },
     },
   });
 
@@ -87,38 +129,70 @@ export async function requestHollandRetake(params: {
     body: reason,
     entityType: "GuidanceHollandRetake",
     entityId: review.id,
-    dedupeKey: `holland-retake:${review.id}`,
+    dedupeKey: `holland-retake:${review.id}:${attemptNumber}`,
   });
 
   return { ok: true };
 }
 
-export async function registerHollandAttempt(params: {
+export async function completeHollandAttemptOnSubmit(params: {
   organizationId: string;
   planId: string;
+  planPublicId: string;
+  studentUserId: string;
+  studentId: string;
+  answers: AssessmentAnswers;
   mediaAssetId: string;
-  completedAt?: Date;
-}): Promise<number> {
-  const last = await prisma.guidanceHollandAttempt.findFirst({
+  isRetakeFlow: boolean;
+}): Promise<void> {
+  const now = new Date();
+  const pending = await prisma.guidanceHollandAttempt.findFirst({
     where: {
       organizationId: params.organizationId,
       planId: params.planId,
+      completedAt: null,
     },
     orderBy: { attemptNumber: "desc" },
-    select: { attemptNumber: true },
   });
-  const attemptNumber = (last?.attemptNumber ?? 0) + 1;
-  await prisma.guidanceHollandAttempt.create({
-    data: {
+
+  if (pending) {
+    await prisma.guidanceHollandAttempt.update({
+      where: { id: pending.id },
+      data: {
+        mediaAssetId: params.mediaAssetId,
+        completedAt: now,
+      },
+    });
+  } else {
+    const last = await prisma.guidanceHollandAttempt.findFirst({
+      where: { organizationId: params.organizationId, planId: params.planId },
+      orderBy: { attemptNumber: "desc" },
+    });
+    const attemptNumber = (last?.attemptNumber ?? 0) + 1;
+    await prisma.guidanceHollandAttempt.create({
+      data: {
+        organizationId: params.organizationId,
+        planId: params.planId,
+        attemptNumber,
+        mediaAssetId: params.mediaAssetId,
+        completedAt: now,
+        isActiveBasis: attemptNumber === 1,
+      },
+    });
+  }
+
+  if (params.isRetakeFlow) {
+    await prisma.guidancePlan.update({
+      where: { id: params.planId },
+      data: { v2HollandRetakePending: false },
+    });
+    await studentResubmitStep({
       organizationId: params.organizationId,
       planId: params.planId,
-      attemptNumber,
-      mediaAssetId: params.mediaAssetId,
-      completedAt: params.completedAt ?? new Date(),
-      isActiveBasis: attemptNumber === 1,
-    },
-  });
-  return attemptNumber;
+      studentUserId: params.studentUserId,
+      stepNumber: 4,
+    });
+  }
 }
 
 export async function setHollandActiveBasis(params: {
@@ -132,6 +206,7 @@ export async function setHollandActiveBasis(params: {
       id: params.attemptId,
       organizationId: params.organizationId,
       planId: params.planId,
+      completedAt: { not: null },
     },
   });
   if (!attempt) return { ok: false, error: "تلاش آزمون یافت نشد." };

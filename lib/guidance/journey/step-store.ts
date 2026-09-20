@@ -188,3 +188,70 @@ export async function saveGuidanceStepData<T>(params: {
 
   return { mediaAssetId: created.id, updatedAtIso: now };
 }
+
+/** Always creates a new media asset (preserves prior versions for audit / Holland attempts). */
+export async function appendGuidanceStepData<T>(params: {
+  organizationId: string;
+  actorUserId: string;
+  category: string;
+  kind: string;
+  planId: string;
+  planPublicId: string;
+  data: T;
+  filenamePrefix: string;
+}): Promise<{ mediaAssetId: string; updatedAtIso: string }> {
+  const now = new Date().toISOString();
+  const payload: StoredEnvelope<T> = {
+    kind: params.kind,
+    planId: params.planId,
+    planPublicId: params.planPublicId,
+    updatedAtIso: now,
+    data: params.data,
+  };
+
+  const body = Buffer.from(JSON.stringify(payload, null, 2), "utf8");
+  const checksum = createHash("sha256").update(body).digest("hex");
+  const storageKey = generatePrivateGuidanceUploadStorageKey("json");
+  await writeMediaFile({ storageKey, data: body });
+  const created = await prisma.mediaAsset.create({
+    data: {
+      organizationId: params.organizationId,
+      storageKey,
+      originalName: `${params.filenamePrefix}-${params.planPublicId}-${Date.now()}.json`,
+      mimeType: "application/json",
+      byteSize: body.byteLength,
+      checksum,
+      status: MediaAssetStatus.ACTIVE,
+      category: params.category,
+      createdByUserId: params.actorUserId,
+      metadata: payload as object,
+    },
+    select: { id: true },
+  });
+
+  return { mediaAssetId: created.id, updatedAtIso: now };
+}
+
+export async function loadGuidanceStepDataFromAsset<T>(params: {
+  mediaAssetId: string;
+  kind: string;
+  validate: (data: unknown) => T | null;
+}): Promise<{ data: T | null; updatedAtIso: string | null }> {
+  const asset = await prisma.mediaAsset.findFirst({
+    where: { id: params.mediaAssetId, deletedAt: null },
+    select: { storageKey: true, metadata: true },
+  });
+  if (!asset) return { data: null, updatedAtIso: null };
+
+  const fileJson = await readJsonFile(asset.storageKey);
+  const raw = isEnvelope(fileJson, params.kind)
+    ? fileJson
+    : isEnvelope(asset.metadata, params.kind)
+      ? asset.metadata
+      : null;
+  if (!raw) return { data: null, updatedAtIso: null };
+  return {
+    data: params.validate(raw.data),
+    updatedAtIso: raw.updatedAtIso,
+  };
+}

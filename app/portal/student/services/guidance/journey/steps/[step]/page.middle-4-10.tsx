@@ -93,6 +93,7 @@ export default async function GuidanceMiddleStepPage(props: Props) {
         sidebarSteps={sidebar}
         completionPercentage={plan.completionPercentage}
         initialAnswers={initialAnswers}
+        hollandRetakePending={plan.v2HollandRetakePending}
       />
     );
   }

@@ -32,6 +32,8 @@ import type {
 } from "@/lib/guidance/journey/types";
 
 import { toPersianDigits } from "@/lib/persian";
+import type { CounselorV2StepEmbed } from "@/lib/counselor-os/counselor-v2-journey-step-types";
+import { CounselorV2EditReasonFields } from "@/components/counselor-os/CounselorV2EditReasonFields";
 
 const initialState: GuidanceV2Step4FormState = {};
 
@@ -85,15 +87,19 @@ export function HollandV2Step({
   sidebarSteps,
   completionPercentage,
   initialAnswers,
+  hollandRetakePending = false,
+  counselorEmbed,
 }: {
   sidebarSteps: readonly GuidanceJourneySidebarStep[];
   completionPercentage: number;
   initialAnswers: AssessmentAnswers;
+  hollandRetakePending?: boolean;
+  counselorEmbed?: CounselorV2StepEmbed;
 }) {
   const router = useRouter();
 
   const [state, action, pending] = useActionState(
-    submitGuidanceV2Step4Action,
+    counselorEmbed?.formAction ?? submitGuidanceV2Step4Action,
     initialState,
   );
 
@@ -127,10 +133,10 @@ export function HollandV2Step({
     useState(false);
 
   useEffect(() => {
-    if (state.ok) {
+    if (state.ok && !counselorEmbed) {
       router.replace(guidanceJourneyV2StepPath(5));
     }
-  }, [router, state.ok]);
+  }, [router, state.ok, counselorEmbed]);
 
   const question = ASSESSMENT_QUESTIONS[index];
 
@@ -188,6 +194,15 @@ export function HollandV2Step({
       sidebarSteps={sidebarSteps}
       completionPercentage={completionPercentage}
     >
+      {hollandRetakePending ? (
+        <p className="gpj-banner gpj-banner--warn" role="status">
+          مشاور درخواست انجام مجدد آزمون رغبت‌سنجی را ثبت کرده است. پاسخ‌های جدید
+          جایگزین نتیجه قبلی نمی‌شوند؛ یک تلاش جدید به پرونده اضافه می‌شود.
+        </p>
+      ) : null}
+      {state.ok && counselorEmbed ? (
+        <p className="gpj-banner gpj-banner--success">ویرایش مشاور ذخیره شد.</p>
+      ) : null}
       {!started ? (
         <section className="gjv2-holland-intro">
           <div className="gjv2-holland-intro__hero">
@@ -264,7 +279,7 @@ export function HollandV2Step({
             className="gjv2-primary-button gjv2-holland-intro__start"
             onClick={() => setStarted(true)}
           >
-            آماده‌ام؛ آزمون را شروع کنیم
+            {hollandRetakePending ? "انجام مجدد آزمون" : "آماده‌ام؛ آزمون را شروع کنیم"}
             <span>←</span>
           </button>
         </section>
@@ -298,6 +313,9 @@ export function HollandV2Step({
           ) : null}
 
           <form action={action}>
+            {counselorEmbed ? (
+              <input type="hidden" name="studentId" value={counselorEmbed.studentId} />
+            ) : null}
             {ASSESSMENT_QUESTIONS.map((item) => (
               <input
                 key={item.id}
@@ -307,6 +325,7 @@ export function HollandV2Step({
               />
             ))}
 
+            {counselorEmbed ? <CounselorV2EditReasonFields /> : null}
             <button
               type="submit"
               disabled={pending}
@@ -314,7 +333,11 @@ export function HollandV2Step({
             >
               {pending
                 ? "در حال تحلیل..."
-                : "مشاهده نتیجه رغبت‌سنجی"}
+                : counselorEmbed
+                  ? "ثبت ویرایش مشاور"
+                  : hollandRetakePending
+                    ? "ثبت آزمون مجدد"
+                    : "مشاهده نتیجه رغبت‌سنجی"}
               <span>←</span>
             </button>
           </form>
@@ -342,6 +365,9 @@ export function HollandV2Step({
         </section>
       ) : question ? (
         <form action={action} className="gjv2-holland">
+          {counselorEmbed ? (
+            <input type="hidden" name="studentId" value={counselorEmbed.studentId} />
+          ) : null}
           {ASSESSMENT_QUESTIONS.map((item) => (
             <input
               key={item.id}

@@ -14,6 +14,8 @@ import { guidanceJourneyV2StepPath } from "@/lib/guidance/journey-v2/steps";
 import { toPersianDigits } from "@/lib/persian";
 import type { JourneyV2FormState } from "@/app/portal/student/services/guidance/journey/steps/actions/step1";
 import type { GuidanceJourneySidebarStep } from "@/lib/guidance/journey/types";
+import type { CounselorV2StepEmbed } from "@/lib/counselor-os/counselor-v2-journey-step-types";
+import { CounselorV2EditReasonFields } from "@/components/counselor-os/CounselorV2EditReasonFields";
 
 type PriorityFactor = {
   code: string;
@@ -26,6 +28,7 @@ type Props = {
   completionPercentage: number;
   factors: readonly PriorityFactor[];
   initialOrderedCodes: string[];
+  counselorEmbed?: CounselorV2StepEmbed;
 };
 
 const initialState: JourneyV2FormState = {};
@@ -105,11 +108,12 @@ export function PriorityFactorsV2Step({
   completionPercentage,
   factors,
   initialOrderedCodes,
+  counselorEmbed,
 }: Props) {
   const router = useRouter();
 
   const [state, formAction, pending] = useActionState(
-    submitGuidanceV2Step9Action,
+    counselorEmbed?.formAction ?? submitGuidanceV2Step9Action,
     initialState,
   );
 
@@ -137,10 +141,10 @@ export function PriorityFactorsV2Step({
   });
 
   useEffect(() => {
-    if (state.ok) {
+    if (state.ok && !counselorEmbed) {
       router.replace(guidanceJourneyV2StepPath(10));
     }
-  }, [state.ok, router]);
+  }, [state.ok, router, counselorEmbed]);
 
   function move(index: number, direction: -1 | 1) {
     setOrderedCodes((current) => {
@@ -307,6 +311,12 @@ export function PriorityFactorsV2Step({
           بگیرد.
         </div>
 
+        {counselorEmbed ? <CounselorV2EditReasonFields /> : null}
+        {counselorEmbed ? (
+          <button type="submit" className="gjv2-btn gjv2-btn--primary" disabled={pending}>
+            {pending ? "در حال ثبت…" : "ثبت ویرایش مشاور"}
+          </button>
+        ) : (
         <GuidanceJourneyV2Nav
           previous={{
             label: "بازگشت به اولویت رشته‌ها",
@@ -319,6 +329,7 @@ export function PriorityFactorsV2Step({
             pendingLabel: "در حال ثبت...",
           }}
         />
+        )}
       </form>
     </GuidanceJourneyV2Shell>
   );

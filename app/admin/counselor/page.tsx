@@ -6,21 +6,25 @@ import { requireCounselorContext } from "@/lib/counselor-os/auth";
 import { loadCounselorDashboard } from "@/lib/counselor-os/dashboard";
 import { loadManagementOverview } from "@/lib/counselor-os/management-overview";
 import { loadCounselorWorkQueue } from "@/lib/counselor-os/work-queue";
+import { loadCounselorReviewWorkQueue } from "@/lib/counselor-os/review-work-queue";
+import { CounselorReviewWorkQueuePanel } from "@/components/counselor-os/CounselorReviewWorkQueuePanel";
+import type { ReviewWorkBucketId } from "@/lib/counselor-os/review-work-queue-types";
 import { labelFollowUpPriority } from "@/lib/counselor-os/labels";
 import { toPersianDigits } from "@/lib/persian";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ q?: string; step?: string; bucket?: string }>;
+  searchParams: Promise<{ q?: string; step?: string; bucket?: string; reviewBucket?: string }>;
 };
 
 export default async function CounselorDashboardPage({ searchParams }: Props) {
   const ctx = await requireCounselorContext();
   const sp = await searchParams;
-  const [model, workQueue, mgmt, pendingConfirmations] = await Promise.all([
+  const [model, workQueue, reviewWorkQueue, mgmt, pendingConfirmations] = await Promise.all([
     loadCounselorDashboard(ctx),
     loadCounselorWorkQueue(ctx),
+    loadCounselorReviewWorkQueue(ctx),
     ctx.isSupervisor || ctx.canReview
       ? loadManagementOverview(ctx)
       : Promise.resolve(null),
@@ -111,6 +115,11 @@ export default async function CounselorDashboardPage({ searchParams }: Props) {
           </article>
         ))}
       </section>
+
+      <CounselorReviewWorkQueuePanel
+        model={reviewWorkQueue}
+        activeBucket={(sp.reviewBucket as ReviewWorkBucketId | undefined) ?? "all"}
+      />
 
       <CounselorWorkQueuePanel
         model={workQueue}

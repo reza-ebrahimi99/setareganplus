@@ -12,9 +12,12 @@ import {
   type AssessmentResult,
 } from "@/lib/guidance/journey/assessment/scoring";
 import {
+  appendGuidanceStepData,
   loadGuidanceStepData,
   saveGuidanceStepData,
 } from "@/lib/guidance/journey/step-store";
+import { completeHollandAttemptOnSubmit } from "@/lib/guidance/journey-v2/step-review/holland";
+import { prisma } from "@/lib/prisma";
 
 export type GuidanceV2Step4FormState = {
   ok?: boolean;
@@ -115,16 +118,48 @@ export async function submitGuidanceV2Step4Action(
 
     const result = computeAssessmentResult(answers);
 
-    await saveGuidanceStepData({
+    const existingAttempts = await prisma.guidanceHollandAttempt.count({
+      where: { organizationId: context.organization.id, planId: plan.id },
+    });
+    const isRetakeFlow = plan.v2HollandRetakePending || existingAttempts > 0;
+
+    const saved = isRetakeFlow
+      ? await appendGuidanceStepData({
+          organizationId: context.organization.id,
+          actorUserId: context.user.id,
+          category: CATEGORY,
+          kind: KIND,
+          planId: plan.id,
+          planPublicId: plan.publicId,
+          data: answers,
+          filenamePrefix: "guidance-v2-interest",
+        })
+      : await saveGuidanceStepData({
+          organizationId: context.organization.id,
+          actorUserId: context.user.id,
+          category: CATEGORY,
+          kind: KIND,
+          planId: plan.id,
+          planPublicId: plan.publicId,
+          data: answers,
+          filenamePrefix: "guidance-v2-interest",
+        });
+
+    await completeHollandAttemptOnSubmit({
       organizationId: context.organization.id,
-      actorUserId: context.user.id,
-      category: CATEGORY,
-      kind: KIND,
       planId: plan.id,
       planPublicId: plan.publicId,
-      data: answers,
-      filenamePrefix: "guidance-v2-interest",
+      studentUserId: context.user.id,
+      studentId: plan.studentId,
+      answers,
+      mediaAssetId: saved.mediaAssetId,
+      isRetakeFlow: Boolean(plan.v2HollandRetakePending),
     });
+
+    const shouldAdvance = plan.currentStep === 4 && !plan.completedSteps.includes(4);
+    if (!shouldAdvance) {
+      return { ok: true, result, answers };
+    }
 
     await advanceGuidanceJourneyV2Step({
       organizationId: context.organization.id,

@@ -13,6 +13,8 @@ import {
   guidanceJourneyV2StepPath,
 } from "@/lib/guidance/journey-v2/steps";
 import type { GuidanceJourneySidebarStep } from "@/lib/guidance/journey/types";
+import type { CounselorV2StepEmbed } from "@/lib/counselor-os/counselor-v2-journey-step-types";
+import { CounselorV2EditReasonFields } from "@/components/counselor-os/CounselorV2EditReasonFields";
 import type { GuidanceV2EducationPreferenceItem } from "@/lib/guidance/journey-v2/steps/step6-education-preferences";
 import { toPersianDigits } from "@/lib/persian";
 
@@ -56,25 +58,22 @@ function normalize(
   return [...enabled, ...disabled];
 }
 
-export function EducationPreferencesV2Step({
-  sidebarSteps,
-  completionPercentage,
-  initialItems,
-}: {
+export function EducationPreferencesV2Step(props: {
   sidebarSteps: readonly GuidanceJourneySidebarStep[];
   completionPercentage: number;
   initialItems: GuidanceV2EducationPreferenceItem[];
+  counselorEmbed?: CounselorV2StepEmbed;
 }) {
   const router = useRouter();
 
   const [state, action, pending] = useActionState(
-    submitGuidanceV2Step6Action,
+    props.counselorEmbed?.formAction ?? submitGuidanceV2Step6Action,
     initialState,
   );
 
-  const [items, setItems] = useState(() => normalize(initialItems));
+  const [items, setItems] = useState(() => normalize(props.initialItems));
 
-  if (state.ok) {
+  if (state.ok && !props.counselorEmbed) {
     router.replace(guidanceJourneyV2StepPath(7));
   }
 
@@ -127,10 +126,16 @@ export function EducationPreferencesV2Step({
       stepCount={18}
       title="اولویت دوره‌های تحصیلی"
       description="دوره‌هایی را که حاضر هستید در انتخاب رشته بررسی شوند انتخاب کنید و سپس آن‌ها را به ترتیب ترجیح مرتب کنید."
-      sidebarSteps={sidebarSteps}
-      completionPercentage={completionPercentage}
+      sidebarSteps={props.sidebarSteps}
+      completionPercentage={props.completionPercentage}
     >
       <form action={action} className="gjv2-form-card" noValidate>
+        {props.counselorEmbed ? (
+          <input type="hidden" name="studentId" value={props.counselorEmbed.studentId} />
+        ) : null}
+        {state.ok && props.counselorEmbed ? (
+          <p className="gpj-banner gpj-banner--success">ویرایش مشاور ذخیره شد.</p>
+        ) : null}
         <input
           type="hidden"
           name="payload"
@@ -294,18 +299,29 @@ export function EducationPreferencesV2Step({
           )}
         </section>
 
-        <GuidanceJourneyV2Nav
-          previous={{
-            label: "برگشت",
-            onClick: () => router.push(guidanceJourneyV2StepPath(5)),
-          }}
-          next={{
-            label: "ذخیره و رفتن به مرحله بعد",
-            disabled: pending || enabledItems.length === 0,
-            pending,
-            pendingLabel: "در حال ذخیره…",
-          }}
-        />
+        {props.counselorEmbed ? <CounselorV2EditReasonFields /> : null}
+        {props.counselorEmbed ? (
+          <button
+            type="submit"
+            className="gjv2-btn gjv2-btn--primary"
+            disabled={pending || enabledItems.length === 0}
+          >
+            {pending ? "در حال ذخیره…" : "ثبت ویرایش مشاور"}
+          </button>
+        ) : (
+          <GuidanceJourneyV2Nav
+            previous={{
+              label: "برگشت",
+              onClick: () => router.push(guidanceJourneyV2StepPath(5)),
+            }}
+            next={{
+              label: "ذخیره و رفتن به مرحله بعد",
+              disabled: pending || enabledItems.length === 0,
+              pending,
+              pendingLabel: "در حال ذخیره…",
+            }}
+          />
+        )}
       </form>
     </GuidanceJourneyV2Shell>
   );

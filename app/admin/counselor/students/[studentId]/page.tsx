@@ -17,6 +17,7 @@ import { loadCounselorCaseBundle } from "@/lib/counselor-os/students";
 import { loadSteps1118WorkspaceModel } from "@/lib/counselor-os/steps-11-18-workspace";
 import { loadStepReviewBoard } from "@/lib/guidance/journey-v2/step-review/service";
 import type { Journey18ControlModel } from "@/components/counselor-os/CounselorJourney18Control";
+import { loadHollandAttemptsForPlan } from "@/lib/guidance/journey-v2/holland-attempts";
 import type { CounselorCaseNavTabId } from "@/lib/counselor-os/case-page-config";
 import { prisma } from "@/lib/prisma";
 
@@ -40,7 +41,7 @@ export default async function CounselorStudentCasePage({ params }: Props) {
   }
 
   const { caseModel, dossier } = bundle;
-  const [sessions, notes, corrections, followUps, counselors, steps1118, reviewFlag, studentRow, journey18Raw, hollandPlan] =
+  const [sessions, notes, corrections, followUps, counselors, steps1118, reviewFlag, studentRow, journey18Raw, hollandPlan, hollandAttempts] =
     await Promise.all([
       listStudentSessionHistory(ctx, studentId),
       listCounselorNotes(ctx, studentId),
@@ -69,8 +70,24 @@ export default async function CounselorStudentCasePage({ params }: Props) {
           deletedAt: null,
           journeyVersion: 2,
         },
-        select: { v2HollandRetakePending: true },
+        select: { id: true, v2HollandRetakePending: true },
       }),
+      (async () => {
+        const p = await prisma.guidancePlan.findFirst({
+          where: {
+            organizationId: ctx.organizationId,
+            studentId,
+            deletedAt: null,
+            journeyVersion: 2,
+          },
+          select: { id: true },
+        });
+        if (!p) return [];
+        return loadHollandAttemptsForPlan({
+          organizationId: ctx.organizationId,
+          planId: p.id,
+        });
+      })(),
     ]);
 
   const journey18: Journey18ControlModel | null = journey18Raw
@@ -81,6 +98,7 @@ export default async function CounselorStudentCasePage({ params }: Props) {
         currentStep: journey18Raw.currentStep,
         steps: journey18Raw.steps,
         hollandRetakePending: hollandPlan?.v2HollandRetakePending ?? false,
+        hollandAttempts,
       }
     : null;
 

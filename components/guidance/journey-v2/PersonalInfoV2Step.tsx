@@ -21,6 +21,8 @@ import {
 } from "@/lib/guidance/journey-v2/steps/step1-validation";
 import { GUIDANCE_EDIT_WARNING } from "@/lib/guidance/journey-v2/step-access-policy";
 import type { GuidanceJourneySidebarStep } from "@/lib/guidance/journey/types";
+import type { CounselorV2StepEmbed } from "@/lib/counselor-os/counselor-v2-journey-step-types";
+import { CounselorV2EditReasonFields } from "@/components/counselor-os/CounselorV2EditReasonFields";
 
 const initial: JourneyV2FormState = {};
 
@@ -42,9 +44,13 @@ export function PersonalInfoV2Step(props: {
   mobile: string;
   provinces: readonly string[];
   prefill: Record<string, string>;
+  counselorEmbed?: CounselorV2StepEmbed;
 }) {
   const router = useRouter();
-  const [state, action] = useActionState(submitGuidanceV2Step1Action, initial);
+  const [state, action] = useActionState(
+    props.counselorEmbed?.formAction ?? submitGuidanceV2Step1Action,
+    initial,
+  );
   const prefill = useMemo(
     () => stripSyntheticPrefill(props.prefill),
     [props.prefill],
@@ -67,7 +73,7 @@ export function PersonalInfoV2Step(props: {
     [dob],
   );
 
-  if (state.ok) {
+  if (state.ok && !props.counselorEmbed) {
     router.replace(guidanceJourneyV2StepPath(2));
   }
 
@@ -83,6 +89,14 @@ export function PersonalInfoV2Step(props: {
       completionPercentage={props.completionPercentage}
     >
       <form action={action} className="gjv2-form-card" noValidate>
+        {props.counselorEmbed ? (
+          <input type="hidden" name="studentId" value={props.counselorEmbed.studentId} />
+        ) : null}
+        {state.ok && props.counselorEmbed ? (
+          <p className="gpj-banner gpj-banner--success" role="status">
+            ویرایش مشاور ذخیره شد.
+          </p>
+        ) : null}
         {state.error ? (
           <p className="gpj-banner gpj-banner--error" role="alert">
             {state.error}
@@ -250,15 +264,22 @@ export function PersonalInfoV2Step(props: {
           />
         </div>
 
-        <GuidanceJourneyV2Nav
-          leading={
-            <span className="gjv2-required-note">
-              <RequiredStar />
-              موارد ستاره‌دار اجباری هستند.
-            </span>
-          }
-          next={{ label: "ذخیره و رفتن به مرحله بعد" }}
-        />
+        {props.counselorEmbed ? <CounselorV2EditReasonFields /> : null}
+        {props.counselorEmbed ? (
+          <button type="submit" className="gjv2-btn gjv2-btn--primary">
+            ثبت ویرایش مشاور
+          </button>
+        ) : (
+          <GuidanceJourneyV2Nav
+            leading={
+              <span className="gjv2-required-note">
+                <RequiredStar />
+                موارد ستاره‌دار اجباری هستند.
+              </span>
+            }
+            next={{ label: "ذخیره و رفتن به مرحله بعد" }}
+          />
+        )}
       </form>
     </GuidanceJourneyV2Shell>
   );

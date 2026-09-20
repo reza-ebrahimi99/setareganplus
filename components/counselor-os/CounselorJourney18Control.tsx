@@ -13,6 +13,8 @@ import {
 import { counselorV2StepTitle } from "@/lib/counselor-os/v2-catalog";
 import { guidanceJourneyV2StepPath } from "@/lib/guidance/journey-v2/catalog";
 import type { StepReviewRowView } from "@/lib/guidance/journey-v2/step-review/service";
+import type { HollandAttemptView } from "@/lib/guidance/journey-v2/holland-attempts";
+import { CounselorHollandAttemptsPanel } from "@/components/counselor-os/CounselorHollandAttemptsPanel";
 import { previewStepChangeImpact } from "@/lib/guidance/journey-v2/step-review/dependencies";
 import { isGuidanceV2StepId, type GuidanceV2StepId } from "@/lib/guidance/journey-v2/catalog";
 import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
@@ -25,6 +27,7 @@ export type Journey18ControlModel = {
   currentStep: number;
   steps: StepReviewRowView[];
   hollandRetakePending: boolean;
+  hollandAttempts: HollandAttemptView[];
 };
 
 const initial: StepReviewActionState = {};
@@ -118,6 +121,12 @@ export function CounselorJourney18Control({ model }: { model: Journey18ControlMo
                 <td>{step.needsReviewFlag ? "بله" : "—"}</td>
                 <td>{toPersianDigits(step.revisionCount)}</td>
                 <td>
+                  <Link
+                    href={`/admin/counselor/students/${model.studentId}/journey/${step.stepNumber}`}
+                    className="cos-btn cos-btn--sm cos-btn--primary"
+                  >
+                    مشاهده و ویرایش
+                  </Link>
                   <button
                     type="button"
                     className="cos-btn cos-btn--sm"
@@ -149,10 +158,10 @@ export function CounselorJourney18Control({ model }: { model: Journey18ControlMo
 
           <div className="cos-inline-actions">
             <Link
-              href={`/admin/guidance/${model.publicId}/steps/${active.stepNumber}`}
-              className="cos-btn"
+              href={`/admin/counselor/students/${model.studentId}/journey/${active.stepNumber}`}
+              className="cos-btn cos-btn--primary"
             >
-              مشاهده / ویرایش (workspace)
+              مشاهده و ویرایش
             </Link>
             <Link
               href={guidanceJourneyV2StepPath(active.stepNumber as 1)}
@@ -200,8 +209,11 @@ export function CounselorJourney18Control({ model }: { model: Journey18ControlMo
               <label className="cos-check">
                 <input type="checkbox" name="retakeFromBeginning" /> انجام مجدد از ابتدای فرم/آزمون
               </label>
-              <button type="submit" className="cos-btn cos-btn--warn" disabled={revPending}>
-                ثبت درخواست اصلاح
+              <label className="cos-check">
+                <input type="checkbox" name="notifyStudent" defaultChecked /> ارسال اعلان به دانش‌آموز
+              </label>
+              <button type="submit" className="cos-btn cos-btn--warn" disabled={revPending} aria-busy={revPending}>
+                {revPending ? "در حال ارسال…" : "ثبت درخواست اصلاح"}
               </button>
             </form>
           </details>
@@ -235,6 +247,14 @@ export function CounselorJourney18Control({ model }: { model: Journey18ControlMo
               </button>
             </form>
           </details>
+
+          {active.stepNumber === 4 ? (
+            <CounselorHollandAttemptsPanel
+              studentId={model.studentId}
+              planId={model.planId}
+              attempts={model.hollandAttempts}
+            />
+          ) : null}
 
           {active.stepNumber === 4 ? (
             <details className="cos-details">

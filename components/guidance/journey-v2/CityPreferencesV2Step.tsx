@@ -16,12 +16,15 @@ import { toPersianDigits } from "@/lib/persian";
 import type { JourneyV2FormState } from "@/app/portal/student/services/guidance/journey/steps/actions/step1";
 import type { GuidanceV2ProvincePreferenceItem } from "@/lib/guidance/journey-v2/steps/step7-city-preferences";
 import type { GuidanceJourneySidebarStep } from "@/lib/guidance/journey/types";
+import type { CounselorV2StepEmbed } from "@/lib/counselor-os/counselor-v2-journey-step-types";
+import { CounselorV2EditReasonFields } from "@/components/counselor-os/CounselorV2EditReasonFields";
 
 type Props = {
   sidebarSteps: readonly GuidanceJourneySidebarStep[];
   completionPercentage: number;
   allProvinces: readonly string[];
   initialItems: GuidanceV2ProvincePreferenceItem[];
+  counselorEmbed?: CounselorV2StepEmbed;
 };
 
 const initialState: JourneyV2FormState = {};
@@ -139,10 +142,11 @@ export function CityPreferencesV2Step({
   completionPercentage,
   allProvinces,
   initialItems,
+  counselorEmbed,
 }: Props) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(
-    submitGuidanceV2Step7Action,
+    counselorEmbed?.formAction ?? submitGuidanceV2Step7Action,
     initialState,
   );
 
@@ -152,10 +156,10 @@ export function CityPreferencesV2Step({
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    if (state.ok) {
+    if (state.ok && !counselorEmbed) {
       router.replace(guidanceJourneyV2StepPath(8));
     }
-  }, [state.ok, router]);
+  }, [state.ok, router, counselorEmbed]);
 
   const selectedNames = useMemo(
     () => new Set(items.map((item) => item.province)),
@@ -282,6 +286,12 @@ export function CityPreferencesV2Step({
       completionPercentage={completionPercentage}
     >
       <form action={formAction} className="gjv2-form-card">
+        {counselorEmbed ? (
+          <input type="hidden" name="studentId" value={counselorEmbed.studentId} />
+        ) : null}
+        {state.ok && counselorEmbed ? (
+          <p className="gpj-banner gpj-banner--success">ویرایش مشاور ذخیره شد.</p>
+        ) : null}
         <input
           type="hidden"
           name="payload"
@@ -563,6 +573,12 @@ export function CityPreferencesV2Step({
           )}
         </section>
 
+        {counselorEmbed ? <CounselorV2EditReasonFields /> : null}
+        {counselorEmbed ? (
+          <button type="submit" className="gjv2-btn gjv2-btn--primary" disabled={pending || !items.length || items.some((item) => !item.cities.length)}>
+            {pending ? "در حال ثبت..." : "ثبت ویرایش مشاور"}
+          </button>
+        ) : (
         <GuidanceJourneyV2Nav
           previous={{
             label: "بازگشت به دوره‌های تحصیلی",
@@ -578,6 +594,7 @@ export function CityPreferencesV2Step({
             pendingLabel: "در حال ثبت...",
           }}
         />
+        )}
       </form>
     </GuidanceJourneyV2Shell>
   );

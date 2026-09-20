@@ -23,6 +23,7 @@ const lateInitial: CounselorLateState = {};
 type Props = {
   model: Steps1118WorkspaceModel;
   isSupervisor: boolean;
+  focusStep?: number;
 };
 
 function railButtonClass(state: Steps1118VisualState, active: boolean): string {
@@ -31,9 +32,9 @@ function railButtonClass(state: Steps1118VisualState, active: boolean): string {
   return active ? `${base} ${stateClass} is-active` : `${base} ${stateClass}`;
 }
 
-export function CounselorSteps1118Workspace({ model, isSupervisor }: Props) {
+export function CounselorSteps1118Workspace({ model, isSupervisor, focusStep }: Props) {
   const defaultStep =
-    model.currentStep >= 11 && model.currentStep <= 18 ? model.currentStep : 11;
+    focusStep ?? (model.currentStep >= 11 && model.currentStep <= 18 ? model.currentStep : 11);
   const [step, setStep] = useState(defaultStep);
 
   const syncFromHash = useCallback(() => {

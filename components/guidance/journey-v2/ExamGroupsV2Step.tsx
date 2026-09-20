@@ -13,6 +13,8 @@ import {
 } from "@/components/guidance/journey-v2/GuidanceV2Icons";
 import { guidanceJourneyV2StepPath } from "@/lib/guidance/journey-v2/steps";
 import type { GuidanceJourneySidebarStep } from "@/lib/guidance/journey/types";
+import type { CounselorV2StepEmbed } from "@/lib/counselor-os/counselor-v2-journey-step-types";
+import { CounselorV2EditReasonFields } from "@/components/counselor-os/CounselorV2EditReasonFields";
 
 const initial: JourneyV2FormState = {};
 
@@ -52,26 +54,25 @@ const secondary = [
   },
 ];
 
-export function ExamGroupsV2Step({
-  sidebarSteps,
-  completionPercentage,
-  initialPrimary,
-  initialSecondary,
-}: {
+export function ExamGroupsV2Step(props: {
   sidebarSteps: readonly GuidanceJourneySidebarStep[];
   completionPercentage: number;
   initialPrimary: string;
   initialSecondary: readonly string[];
+  counselorEmbed?: CounselorV2StepEmbed;
 }) {
   const router = useRouter();
-  const [state, action] = useActionState(submitGuidanceV2Step2Action, initial);
+  const [state, action] = useActionState(
+    props.counselorEmbed?.formAction ?? submitGuidanceV2Step2Action,
+    initial,
+  );
 
-  const [selectedPrimary, setSelectedPrimary] = useState(initialPrimary);
+  const [selectedPrimary, setSelectedPrimary] = useState(props.initialPrimary);
   const [selectedSecondary, setSelectedSecondary] = useState<string[]>([
-    ...initialSecondary,
+    ...props.initialSecondary,
   ]);
 
-  if (state.ok) {
+  if (state.ok && !props.counselorEmbed) {
     router.replace(guidanceJourneyV2StepPath(3));
   }
 
@@ -89,10 +90,16 @@ export function ExamGroupsV2Step({
       stepCount={18}
       title="گروه‌های آزمایشی"
       description="گروه اصلی کنکور و آزمون‌های شناوری که در آن‌ها شرکت کرده‌اید را مشخص کنید."
-      sidebarSteps={sidebarSteps}
-      completionPercentage={completionPercentage}
+      sidebarSteps={props.sidebarSteps}
+      completionPercentage={props.completionPercentage}
     >
       <form action={action} className="gjv2-form-card" noValidate>
+        {props.counselorEmbed ? (
+          <input type="hidden" name="studentId" value={props.counselorEmbed.studentId} />
+        ) : null}
+        {state.ok && props.counselorEmbed ? (
+          <p className="gpj-banner gpj-banner--success">ویرایش مشاور ذخیره شد.</p>
+        ) : null}
         {state.error ? (
           <p className="gpj-banner gpj-banner--error">{state.error}</p>
         ) : null}
@@ -182,13 +189,20 @@ export function ExamGroupsV2Step({
           </div>
         </section>
 
-        <GuidanceJourneyV2Nav
-          previous={{
-            label: "برگشت",
-            onClick: () => router.push(guidanceJourneyV2StepPath(1)),
-          }}
-          next={{ label: "ذخیره و رفتن به مرحله بعد" }}
-        />
+        {props.counselorEmbed ? <CounselorV2EditReasonFields /> : null}
+        {props.counselorEmbed ? (
+          <button type="submit" className="gjv2-btn gjv2-btn--primary">
+            ثبت ویرایش مشاور
+          </button>
+        ) : (
+          <GuidanceJourneyV2Nav
+            previous={{
+              label: "برگشت",
+              onClick: () => router.push(guidanceJourneyV2StepPath(1)),
+            }}
+            next={{ label: "ذخیره و رفتن به مرحله بعد" }}
+          />
+        )}
       </form>
     </GuidanceJourneyV2Shell>
   );

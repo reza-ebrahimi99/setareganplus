@@ -338,17 +338,27 @@ export async function markStepReviewed(params: {
     stepNumber: params.stepNumber,
   });
   const now = new Date();
+  const openSteps = removeOpenRevisionStep(
+    parseOpenRevisionSteps(plan.v2OpenRevisionSteps),
+    params.stepNumber,
+  );
 
-  await prisma.guidanceStepReview.update({
-    where: { id: review.id },
-    data: {
-      status: GuidanceStepReviewStatus.REVIEWED,
-      approvedAt: now,
-      approvedByUserId: params.counselorUserId,
-      resolvedAt: now,
-      privateNote: params.privateNote?.trim() || review.privateNote,
-    },
-  });
+  await prisma.$transaction([
+    prisma.guidancePlan.update({
+      where: { id: plan.id },
+      data: { v2OpenRevisionSteps: openSteps },
+    }),
+    prisma.guidanceStepReview.update({
+      where: { id: review.id },
+      data: {
+        status: GuidanceStepReviewStatus.REVIEWED,
+        approvedAt: now,
+        approvedByUserId: params.counselorUserId,
+        resolvedAt: now,
+        privateNote: params.privateNote?.trim() || review.privateNote,
+      },
+    }),
+  ]);
 
   await appendReviewEvent({
     organizationId: params.organizationId,
@@ -391,21 +401,14 @@ export async function studentResubmitStep(params: {
     stepNumber: params.stepNumber,
   });
   const now = new Date();
-  const nextOpen = removeOpenRevisionStep(open, params.stepNumber);
 
-  await prisma.$transaction([
-    prisma.guidancePlan.update({
-      where: { id: plan.id },
-      data: { v2OpenRevisionSteps: nextOpen },
-    }),
-    prisma.guidanceStepReview.update({
-      where: { id: review.id },
-      data: {
-        status: GuidanceStepReviewStatus.RESUBMITTED,
-        resubmittedAt: now,
-      },
-    }),
-  ]);
+  await prisma.guidanceStepReview.update({
+    where: { id: review.id },
+    data: {
+      status: GuidanceStepReviewStatus.RESUBMITTED,
+      resubmittedAt: now,
+    },
+  });
 
   await appendReviewEvent({
     organizationId: params.organizationId,
@@ -602,6 +605,8 @@ export async function loadStudentOpenRevisions(params: {
     stepNumber: number;
     message: string;
     requestedAtIso: string | null;
+    status: V2ReviewStatus;
+    sections: string[];
   }>
 > {
   const plan = await loadV2Plan({
@@ -610,28 +615,40 @@ export async function loadStudentOpenRevisions(params: {
   });
   if (!plan) return [];
 
-  const open = parseOpenRevisionSteps(plan.v2OpenRevisionSteps);
-  if (open.length === 0) return [];
-
   const reviews = await prisma.guidanceStepReview.findMany({
     where: {
       organizationId: params.organizationId,
       planId: plan.id,
-      stepNumber: { in: open },
+      status: {
+        in: [
+          GuidanceStepReviewStatus.REVISION_REQUESTED,
+          GuidanceStepReviewStatus.RESUBMITTED,
+        ],
+      },
     },
     select: {
       stepNumber: true,
       studentMessage: true,
       revisionRequestedAt: true,
+      status: true,
+      requestedSections: true,
     },
   });
 
-  return open.map((stepNumber) => {
-    const r = reviews.find((x) => x.stepNumber === stepNumber);
+  return reviews.map((r) => {
+    const sections = Array.isArray(r.requestedSections)
+      ? (r.requestedSections as string[])
+      : [];
+    const status = normalizeV2ReviewStatus(r.status);
     return {
-      stepNumber,
-      message: r?.studentMessage ?? "مشاور درخواست اصلاح این مرحله را ثبت کرده است.",
-      requestedAtIso: r?.revisionRequestedAt?.toISOString() ?? null,
+      stepNumber: r.stepNumber,
+      message:
+        status === "RESUBMITTED"
+          ? "اصلاح شما ارسال شد و در صف بررسی مشاور است."
+          : (r.studentMessage ?? "مشاور درخواست اصلاح این مرحله را ثبت کرده است."),
+      requestedAtIso: r.revisionRequestedAt?.toISOString() ?? null,
+      status,
+      sections,
     };
   });
 }
