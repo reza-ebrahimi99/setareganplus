@@ -20,6 +20,7 @@ import { validateCanonicalRows } from "../lib/guidance/choice-studio/validate";
 import { resolveChoiceStudioState, labelChoiceStudioState } from "../lib/guidance/choice-studio/status";
 import type { CanonicalChoiceRow } from "../lib/guidance/choice-studio/types";
 import { validateChoiceDraftImportPayload } from "../lib/counselor-os/choice-draft-import-schema";
+import { choiceManualInputHasContent } from "../lib/guidance/choice-studio/manual-input";
 
 let passed = 0;
 
@@ -304,6 +305,21 @@ await test("import API validation accepts 149 and 150 rows in full mode", () => 
     assert.equal(v.ok, true);
     if (v.ok) assert.equal(v.importRows.length, n);
   }
+});
+
+await test("manual input: major-only or university-only has content", () => {
+  assert.equal(choiceManualInputHasContent({ major: "فیزیک" }), true);
+  assert.equal(choiceManualInputHasContent({ university: "تهران" }), true);
+  assert.equal(choiceManualInputHasContent({}), false);
+  assert.equal(
+    choiceManualInputHasContent({
+      officialCode: "",
+      major: "",
+      university: "",
+      city: "",
+    }),
+    false,
+  );
 });
 
 await test("import API validation 159 rows requires truncate ack", () => {

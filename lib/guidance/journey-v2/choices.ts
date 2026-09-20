@@ -15,6 +15,7 @@ import {
   type ChoiceFeedbackVerdict,
   type ChoiceListKind,
 } from "@/lib/guidance/journey-v2/constants";
+import { choiceManualInputHasContent } from "@/lib/guidance/choice-studio/manual-input";
 import {
   CHOICE_STUDIO_MAX_PARSE_ROWS,
   SANJESH_ACTIVE_LIMIT,
@@ -515,6 +516,9 @@ export async function addChoiceItem(params: {
   listId: string;
   input: ChoiceItemInput;
 }) {
+  if (!choiceManualInputHasContent(params.input)) {
+    throw new Error("EMPTY_CHOICE_ITEM");
+  }
   const list = await assertEditableList(params);
   const data = normalizeItem(params.input);
 
@@ -546,6 +550,9 @@ export async function updateChoiceItem(params: {
   itemId: string;
   input: ChoiceItemInput;
 }) {
+  if (!choiceManualInputHasContent(params.input)) {
+    throw new Error("EMPTY_CHOICE_ITEM");
+  }
   await assertEditableList(params);
   const data = normalizeItem(params.input);
   const item = await prisma.guidanceChoiceItem.findFirst({

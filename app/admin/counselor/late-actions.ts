@@ -19,6 +19,7 @@ import {
 } from "@/lib/guidance/journey-v2/choices";
 import { CHOICE_LIST_KIND } from "@/lib/guidance/journey-v2/constants";
 import { parseChoiceWorkbook } from "@/lib/guidance/choice-studio/excel";
+import { choiceManualInputFromFormData } from "@/lib/guidance/choice-studio/manual-input";
 import { takeFirstRowsForDraft } from "@/lib/guidance/choice-studio/preview-limits";
 import type { CanonicalChoiceRow, ChoiceImportPreview } from "@/lib/guidance/choice-studio/types";
 import { SANJESH_ACTIVE_LIMIT } from "@/lib/guidance/choice-studio/types";
@@ -91,23 +92,27 @@ export async function addChoiceItemAction(
   const studentId = field(formData, "studentId");
   try {
     const { ctx } = await gated(studentId);
+    const input = choiceManualInputFromFormData(formData);
     await addChoiceItem({
       organizationId: ctx.organizationId,
       listId: field(formData, "listId"),
       input: {
-        major: field(formData, "major"),
-        university: field(formData, "university"),
-        city: field(formData, "city"),
-        province: field(formData, "province"),
-        educationType: field(formData, "educationType"),
-        admissionType: field(formData, "admissionType"),
-        officialCode: field(formData, "officialCode") || null,
-        band: field(formData, "band") || null,
-        notes: field(formData, "notes"),
-        rationale: field(formData, "rationale"),
+        major: input.major ?? "",
+        university: input.university ?? "",
+        city: input.city ?? "",
+        province: input.province ?? "",
+        educationType: input.educationType ?? "",
+        admissionType: input.admissionType ?? "",
+        officialCode: input.officialCode,
+        band: input.band,
+        notes: input.notes ?? "",
+        rationale: input.rationale ?? "",
       },
     });
   } catch (e) {
+    if (e instanceof Error && e.message === "EMPTY_CHOICE_ITEM") {
+      return {};
+    }
     return { error: e instanceof Error ? e.message : "افزودن انتخاب ممکن نشد." };
   }
   refresh(studentId);
@@ -121,24 +126,28 @@ export async function updateChoiceItemAction(
   const studentId = field(formData, "studentId");
   try {
     const { ctx } = await gated(studentId);
+    const input = choiceManualInputFromFormData(formData);
     await updateChoiceItem({
       organizationId: ctx.organizationId,
       listId: field(formData, "listId"),
       itemId: field(formData, "itemId"),
       input: {
-        major: field(formData, "major"),
-        university: field(formData, "university"),
-        city: field(formData, "city"),
-        province: field(formData, "province"),
-        educationType: field(formData, "educationType"),
-        admissionType: field(formData, "admissionType"),
-        officialCode: field(formData, "officialCode") || null,
-        band: field(formData, "band") || null,
-        notes: field(formData, "notes"),
-        rationale: field(formData, "rationale"),
+        major: input.major ?? "",
+        university: input.university ?? "",
+        city: input.city ?? "",
+        province: input.province ?? "",
+        educationType: input.educationType ?? "",
+        admissionType: input.admissionType ?? "",
+        officialCode: input.officialCode,
+        band: input.band,
+        notes: input.notes ?? "",
+        rationale: input.rationale ?? "",
       },
     });
   } catch (e) {
+    if (e instanceof Error && e.message === "EMPTY_CHOICE_ITEM") {
+      return {};
+    }
     return { error: e instanceof Error ? e.message : "ویرایش ممکن نشد." };
   }
   refresh(studentId);

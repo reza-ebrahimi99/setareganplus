@@ -38,6 +38,10 @@ import {
   sortPreviewRowsByPriority,
   takeFirstRowsForDraft,
 } from "@/lib/guidance/choice-studio/preview-limits";
+import {
+  choiceManualInputHasContent,
+  type ChoiceManualInputFields,
+} from "@/lib/guidance/choice-studio/manual-input";
 import { toPersianDigits } from "@/lib/persian";
 import {
   CHOICE_DRAFT_IMPORT_TIMEOUT_MS,
@@ -476,35 +480,12 @@ export function ChoiceStudio(props: {
                   </header>
 
                   {showManual && !locked && !confirmed ? (
-                    <form action={addAction} className="gcs-manual">
-                      <input type="hidden" name="studentId" value={props.studentId} />
-                      <input type="hidden" name="listId" value={list.id} />
-                      <input name="officialCode" placeholder="کد رشته" required />
-                      <input name="major" placeholder="رشته" required />
-                      <input name="university" placeholder="دانشگاه" required />
-                      <input name="city" placeholder="شهر" />
-                      <select name="educationType" required>
-                        <option value="">دوره</option>
-                        {GUIDANCE_EDUCATION_TYPES.map((t) => (
-                          <option key={t.code} value={t.code}>
-                            {t.label}
-                          </option>
-                        ))}
-                      </select>
-                      <select name="band">
-                        <option value="">شانس قبولی</option>
-                        {CHOICE_CHANCE_CANONICAL.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.label}
-                          </option>
-                        ))}
-                      </select>
-                      <input name="notes" placeholder="توضیحات" />
-                      <input name="rationale" placeholder="یادداشت مشاور" />
-                      <button type="submit" className="gcs-btn gcs-btn--primary" disabled={addPending}>
-                        {addPending ? "…" : "افزودن"}
-                      </button>
-                    </form>
+                    <ManualAddForm
+                      studentId={props.studentId}
+                      listId={list.id}
+                      action={addAction}
+                      pending={addPending}
+                    />
                   ) : null}
 
                   <div className="gcs-table-wrap">
@@ -808,6 +789,107 @@ function Tiny(props: {
   );
 }
 
+function ManualAddForm(props: {
+  studentId: string;
+  listId: string;
+  action: (payload: FormData) => void;
+  pending: boolean;
+}) {
+  const [fields, setFields] = useState<ChoiceManualInputFields>({
+    major: "",
+    university: "",
+    city: "",
+    officialCode: "",
+    educationType: "",
+    band: "",
+    notes: "",
+    rationale: "",
+  });
+  const canSave = choiceManualInputHasContent(fields);
+
+  function set(key: keyof ChoiceManualInputFields, value: string) {
+    setFields((prev) => ({ ...prev, [key]: value }));
+  }
+
+  return (
+    <form
+      action={props.action}
+      className="gcs-manual"
+      onSubmit={(e) => {
+        if (!choiceManualInputHasContent(fields)) {
+          e.preventDefault();
+        }
+      }}
+    >
+      <input type="hidden" name="studentId" value={props.studentId} />
+      <input type="hidden" name="listId" value={props.listId} />
+      <input
+        name="officialCode"
+        placeholder="کد رشته"
+        value={fields.officialCode ?? ""}
+        onChange={(e) => set("officialCode", e.target.value)}
+      />
+      <input
+        name="major"
+        placeholder="رشته"
+        value={fields.major ?? ""}
+        onChange={(e) => set("major", e.target.value)}
+      />
+      <input
+        name="university"
+        placeholder="دانشگاه"
+        value={fields.university ?? ""}
+        onChange={(e) => set("university", e.target.value)}
+      />
+      <input
+        name="city"
+        placeholder="شهر"
+        value={fields.city ?? ""}
+        onChange={(e) => set("city", e.target.value)}
+      />
+      <select
+        name="educationType"
+        value={fields.educationType ?? ""}
+        onChange={(e) => set("educationType", e.target.value)}
+      >
+        <option value="">دوره</option>
+        {GUIDANCE_EDUCATION_TYPES.map((t) => (
+          <option key={t.code} value={t.code}>
+            {t.label}
+          </option>
+        ))}
+      </select>
+      <select name="band" value={fields.band ?? ""} onChange={(e) => set("band", e.target.value)}>
+        <option value="">شانس قبولی</option>
+        {CHOICE_CHANCE_CANONICAL.map((b) => (
+          <option key={b.id} value={b.id}>
+            {b.label}
+          </option>
+        ))}
+      </select>
+      <input
+        name="notes"
+        placeholder="توضیحات"
+        value={fields.notes ?? ""}
+        onChange={(e) => set("notes", e.target.value)}
+      />
+      <input
+        name="rationale"
+        placeholder="یادداشت مشاور"
+        value={fields.rationale ?? ""}
+        onChange={(e) => set("rationale", e.target.value)}
+      />
+      <button
+        type="submit"
+        className="gcs-btn gcs-btn--primary"
+        disabled={props.pending || !canSave}
+      >
+        {props.pending ? "…" : "افزودن"}
+      </button>
+    </form>
+  );
+}
+
 function InlineEdit(props: {
   studentId: string;
   listId: string;
@@ -816,23 +898,62 @@ function InlineEdit(props: {
   const [state, action, pending] = useActionState(updateChoiceItemAction, empty);
   const [itemId, setItemId] = useState(props.items[0]!.id);
   const item = props.items.find((i) => i.id === itemId) ?? props.items[0]!;
+  const [fields, setFields] = useState<ChoiceManualInputFields>(() => manualFieldsFromItem(item));
+
+  useEffect(() => {
+    setFields(manualFieldsFromItem(item));
+  }, [itemId, props.items, item]);
+
+  const canSave = choiceManualInputHasContent(fields);
+
+  function set(key: keyof ChoiceManualInputFields, value: string) {
+    setFields((prev) => ({ ...prev, [key]: value }));
+  }
+
   return (
-    <form action={action} className="gcs-manual" key={item.id}>
+    <form
+      action={action}
+      className="gcs-manual"
+      key={item.id}
+      onSubmit={(e) => {
+        if (!choiceManualInputHasContent(fields)) {
+          e.preventDefault();
+        }
+      }}
+    >
       <input type="hidden" name="studentId" value={props.studentId} />
       <input type="hidden" name="listId" value={props.listId} />
       <input type="hidden" name="itemId" value={item.id} />
-      <select value={itemId} onChange={(e) => setItemId(e.target.value)}>
+      <select
+        value={itemId}
+        onChange={(e) => {
+          setItemId(e.target.value);
+        }}
+      >
         {props.items.map((opt) => (
           <option key={opt.id} value={opt.id}>
-            {opt.sortOrder}. {opt.officialCode || opt.major}
+            {opt.sortOrder}. {opt.officialCode || opt.major || opt.university || "—"}
           </option>
         ))}
       </select>
-      <input name="officialCode" defaultValue={item.officialCode ?? ""} required />
-      <input name="major" defaultValue={item.major} required />
-      <input name="university" defaultValue={item.university} required />
-      <input name="city" defaultValue={item.city} />
-      <select name="educationType" defaultValue={item.educationType}>
+      <input
+        name="officialCode"
+        value={fields.officialCode ?? ""}
+        onChange={(e) => set("officialCode", e.target.value)}
+      />
+      <input name="major" value={fields.major ?? ""} onChange={(e) => set("major", e.target.value)} />
+      <input
+        name="university"
+        value={fields.university ?? ""}
+        onChange={(e) => set("university", e.target.value)}
+      />
+      <input name="city" value={fields.city ?? ""} onChange={(e) => set("city", e.target.value)} />
+      <select
+        name="educationType"
+        value={fields.educationType ?? ""}
+        onChange={(e) => set("educationType", e.target.value)}
+      >
+        <option value="">دوره</option>
         {GUIDANCE_EDUCATION_TYPES.map((t) => (
           <option key={t.code} value={t.code}>
             {t.label}
@@ -843,7 +964,7 @@ function InlineEdit(props: {
           <option value={item.educationType}>{item.educationType}</option>
         ) : null}
       </select>
-      <select name="band" defaultValue={item.band ?? ""}>
+      <select name="band" value={fields.band ?? ""} onChange={(e) => set("band", e.target.value)}>
         <option value="">شانس قبولی</option>
         {CHOICE_CHANCE_CANONICAL.map((b) => (
           <option key={b.id} value={b.id}>
@@ -851,12 +972,29 @@ function InlineEdit(props: {
           </option>
         ))}
       </select>
-      <input name="notes" defaultValue={item.notes} />
-      <input name="rationale" defaultValue={item.rationale} />
-      <button type="submit" className="gcs-btn gcs-btn--primary" disabled={pending}>
-        ذخیره ویرایش
+      <input name="notes" value={fields.notes ?? ""} onChange={(e) => set("notes", e.target.value)} />
+      <input
+        name="rationale"
+        value={fields.rationale ?? ""}
+        onChange={(e) => set("rationale", e.target.value)}
+      />
+      <button type="submit" className="gcs-btn gcs-btn--primary" disabled={pending || !canSave}>
+        {pending ? "…" : "ذخیره ویرایش"}
       </button>
       {state.error ? <span className="gcs-banner gcs-banner--error">{state.error}</span> : null}
     </form>
   );
+}
+
+function manualFieldsFromItem(item: ChoiceListView["items"][number]): ChoiceManualInputFields {
+  return {
+    officialCode: item.officialCode ?? "",
+    major: item.major ?? "",
+    university: item.university ?? "",
+    city: item.city ?? "",
+    educationType: item.educationType ?? "",
+    band: item.band ?? "",
+    notes: item.notes ?? "",
+    rationale: item.rationale ?? "",
+  };
 }

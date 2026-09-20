@@ -41,6 +41,7 @@
     "test:counselor-workspace-ui": "tsx scripts/counselor-workspace-ui-wiring-tests.ts",
     "test:choice-studio": "tsx scripts/choice-studio-unit-tests.ts",
     "test:choice-draft-import": "NODE_ENV=test tsx --env-file=.env scripts/choice-draft-import-integration-tests.ts",
+    "test:choice-manual-item": "NODE_ENV=test tsx --env-file=.env scripts/choice-manual-item-integration-tests.ts",
     "test:guidance-assessment": "tsx scripts/guidance-assessment-unit-tests.ts",
     "test:guidance-discover": "tsx scripts/guidance-discover-unit-tests.ts",
     "test:sxp": "tsx scripts/sxp-unit-tests.ts",
