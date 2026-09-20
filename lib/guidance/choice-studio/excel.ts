@@ -182,7 +182,19 @@ function parseChoiceWorksheet(sheet: ExcelJS.Worksheet): ChoiceImportPreview {
     const chanceRaw = read("chance").text;
     const noteRaw = read("counselorNote").text;
 
-    if (isBlankRow([priorityRaw, codeRaw.text, majorRaw, universityRaw, courseRaw])) {
+    if (
+      isBlankRow([
+        priorityRaw,
+        codeRaw.text,
+        majorRaw,
+        universityRaw,
+        cityRaw,
+        courseRaw,
+        descriptionRaw,
+        chanceRaw,
+        noteRaw,
+      ])
+    ) {
       return;
     }
 

@@ -80,9 +80,6 @@ function cleanText(value: string | null | undefined, max: number): string {
 function normalizeItem(input: ChoiceItemInput) {
   const major = cleanText(input.major, 160);
   const university = cleanText(input.university, 160);
-  if (!major || !university) {
-    throw new Error("رشته و دانشگاه الزامی است.");
-  }
   const official = cleanText(input.officialCode ?? "", 40);
   const band = input.band && isChoiceBandId(input.band) ? input.band : null;
   return {
@@ -360,25 +357,9 @@ function validateActiveItemsForPublish(
       `سقف عملیاتی سنجش ${MAX_GUIDANCE_CHOICES} انتخاب فعال است. ابتدا فهرست را کاهش دهید. هیچ ردیفی به‌صورت خودکار حذف نمی‌شود.`,
     );
   }
-  const codes = new Map<string, number>();
   const orders = new Map<number, number>();
   for (const item of active) {
-    if (!item.major.trim() || !item.university.trim()) {
-      throw new Error("رشته و دانشگاه برای همه انتخاب‌های فعال الزامی است.");
-    }
-    if (!item.officialCode?.trim()) {
-      throw new Error("کد رشته برای همه انتخاب‌های فعال الزامی است. کد را حدس نزنید.");
-    }
-    if (!item.educationType?.trim()) {
-      throw new Error("نوع دوره برای همه انتخاب‌های فعال الزامی است.");
-    }
-    const code = item.officialCode.trim();
-    codes.set(code, (codes.get(code) ?? 0) + 1);
     orders.set(item.sortOrder, (orders.get(item.sortOrder) ?? 0) + 1);
-  }
-  const dupCode = [...codes.entries()].find(([, n]) => n > 1);
-  if (dupCode) {
-    throw new Error(`کد رشته تکراری مانع انتشار است: ${dupCode[0]}`);
   }
   const dupOrder = [...orders.entries()].find(([, n]) => n > 1);
   if (dupOrder) {

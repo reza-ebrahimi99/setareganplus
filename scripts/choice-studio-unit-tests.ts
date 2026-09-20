@@ -103,25 +103,50 @@ await test("formula-looking text is neutralized on export", () => {
   assert.equal(excelSafeText("12345"), "12345");
 });
 
-await test("priority gaps warn but do not reorder", () => {
+await test("priority gaps do not block commit or add issues", () => {
   const preview = validateCanonicalRows(
     [row({ sourceRow: 2, priority: 1 }), row({ sourceRow: 3, priority: 3, code: "999" })],
     "انتخاب‌ها",
   );
-  assert.equal(preview.issues.some((i) => i.code === "priority_gap"), true);
+  assert.equal(preview.issues.length, 0);
   assert.equal(preview.canCommit, true);
   const inputs = previewRowsToInputs(preview.rows);
   assert.equal(inputs[0]?.officialCode, "12345");
   assert.equal(inputs[1]?.officialCode, "999");
 });
 
-await test("duplicate priorities are blocking", () => {
+await test("duplicate priorities do not block commit", () => {
   const preview = validateCanonicalRows(
     [row({ sourceRow: 2, priority: 1 }), row({ sourceRow: 3, priority: 1, code: "222" })],
     "انتخاب‌ها",
   );
-  assert.equal(preview.canCommit, false);
-  assert.equal(preview.issues.some((i) => i.code === "duplicate_priority"), true);
+  assert.equal(preview.canCommit, true);
+  assert.equal(preview.issues.length, 0);
+});
+
+await test("missing code, city, course do not block commit", () => {
+  const preview = validateCanonicalRows(
+    [
+      row({ sourceRow: 2, code: "", city: "", course: "", major: "فیزیک", university: "" }),
+      row({ sourceRow: 3, code: "111", major: "", university: "دانشگاه تهران" }),
+    ],
+    "انتخاب‌ها",
+  );
+  assert.equal(preview.canCommit, true);
+  assert.equal(preview.issues.length, 0);
+  assert.equal(preview.transferableRows, 2);
+});
+
+await test("duplicate codes do not block commit", () => {
+  const preview = validateCanonicalRows(
+    [
+      row({ sourceRow: 2, priority: 1, code: "12345", course: "روزانه" }),
+      row({ sourceRow: 3, priority: 2, code: "12345", course: "شبانه" }),
+    ],
+    "انتخاب‌ها",
+  );
+  assert.equal(preview.canCommit, true);
+  assert.equal(preview.duplicateCodes.length, 0);
 });
 
 await test("149 rows commit allowed", () => {
@@ -149,7 +174,7 @@ await test("151 rows blocked with one extra", () => {
   const preview = validateCanonicalRows(rows, "انتخاب‌ها");
   assert.equal(preview.canCommit, false);
   assert.equal(preview.overLimitCount, 1);
-  assert.match(preview.issues.find((i) => i.code === "over_sanjesh_limit")?.message ?? "", /۱ مورد/);
+  assert.equal(preview.issues.length, 0);
 });
 
 await test("159 rows blocked with nine extra", () => {

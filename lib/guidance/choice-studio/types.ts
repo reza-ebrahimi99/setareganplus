@@ -55,13 +55,8 @@ export const CANONICAL_HEADER_LABELS: Record<CanonicalColumn, string> = {
   counselorNote: "یادداشت مشاور",
 };
 
-export const REQUIRED_COLUMNS: readonly CanonicalColumn[] = [
-  "priority",
-  "code",
-  "major",
-  "university",
-  "course",
-];
+/** Legacy template hint; parser does not reject uploads when optional columns are absent. */
+export const REQUIRED_COLUMNS: readonly CanonicalColumn[] = [];
 
 /** Sanjesh operational / publish limit. Draft preview may exceed this. */
 export const SANJESH_ACTIVE_LIMIT = 150;
@@ -104,6 +99,8 @@ export type CanonicalChoiceRow = {
 export type ChoiceImportPreview = {
   sheetName: string;
   totalRows: number;
+  /** Same as totalRows — all parsed non-blank rows are transferable (subject to 150 cap). */
+  transferableRows: number;
   validRows: number;
   errorRows: number;
   warningRows: number;

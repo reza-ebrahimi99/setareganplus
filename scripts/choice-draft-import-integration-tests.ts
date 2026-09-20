@@ -112,6 +112,96 @@ async function main() {
   });
 
   try {
+    const partial = await runChoiceDraftImport({
+      organizationId: org.id,
+      counselorUserId: user.id,
+      studentId: student.id,
+      payload: {
+        requestId: `partial-${suffix}`,
+        kind: "INITIAL",
+        mode: "full",
+        truncateAck: false,
+        replaceReady: false,
+        rows: [
+          {
+            ...makeRows(1)[0]!,
+            code: "",
+            city: "",
+            course: "",
+            courseCode: null,
+            major: "رشته بدون کد",
+            university: "",
+          },
+          {
+            ...makeRows(1)[0]!,
+            sourceRow: 3,
+            priority: 2,
+            code: "55555",
+            major: "",
+            university: "دانشگاه تنها",
+          },
+          {
+            ...makeRows(1)[0]!,
+            sourceRow: 4,
+            priority: 3,
+            code: "77777",
+            major: "رشته مشترک",
+            university: "الف",
+            course: "روزانه",
+          },
+          {
+            ...makeRows(1)[0]!,
+            sourceRow: 5,
+            priority: 4,
+            code: "77777",
+            major: "رشته مشترک",
+            university: "ب",
+            course: "شبانه",
+          },
+        ],
+      },
+    });
+    assert.equal(partial.ok, true);
+    if (partial.ok) {
+      assert.equal(partial.draftCount, 4);
+      const stored = await prisma.guidanceChoiceItem.findMany({
+        where: { listId: partial.listId, isActive: true },
+        orderBy: { sortOrder: "asc" },
+      });
+      assert.equal(stored.length, 4);
+      assert.equal(stored[0]?.major, "رشته بدون کد");
+      assert.equal(stored[0]?.officialCode, null);
+      assert.equal(stored[1]?.university, "دانشگاه تنها");
+      assert.equal(stored[2]?.officialCode, "77777");
+      assert.equal(stored[3]?.officialCode, "77777");
+    }
+    ok("partial rows (no code, no city, major-only, uni-only, duplicate code) import");
+
+    const incomplete150 = makeRows(150).map((r, i) => ({
+      ...r,
+      code: i % 2 === 0 ? "" : r.code,
+      city: "",
+      course: i % 3 === 0 ? "" : r.course,
+    }));
+    const incResult = await runChoiceDraftImport({
+      organizationId: org.id,
+      counselorUserId: user.id,
+      studentId: student.id,
+      payload: {
+        requestId: `incomplete-150-${suffix}`,
+        kind: "INITIAL",
+        mode: "full",
+        truncateAck: false,
+        replaceReady: false,
+        rows: incomplete150,
+      },
+    });
+    assert.equal(incResult.ok, true);
+    if (incResult.ok) {
+      assert.equal(incResult.draftCount, 150);
+    }
+    ok("150 incomplete rows import with order preserved");
+
     for (const count of [149, 150] as const) {
       const requestId = `full-${count}-${suffix}`;
       const result = await runChoiceDraftImport({

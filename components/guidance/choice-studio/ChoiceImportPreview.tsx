@@ -19,46 +19,39 @@ export function ChoiceImportPreview(props: {
 }) {
   const { preview } = props;
   const ordered = useMemo(() => sortPreviewRowsByPriority(preview.rows), [preview.rows]);
+  const transferable =
+    preview.transferableRows ?? preview.totalRows;
 
   return (
     <section className="gcs-preview" id="gcs-import-preview">
       <div className="gcs-preview__counters">
         <article className="gcs-preview__counter gcs-preview__counter--import">
-          <span>پیش‌نمایش وارداتی</span>
-          <strong>{toPersianDigits(preview.totalRows)} انتخاب</strong>
-          <small>هنوز در پیش‌نویس ذخیره نشده است.</small>
+          <span>تعداد ردیف‌های شناسایی‌شده</span>
+          <strong>{toPersianDigits(preview.totalRows)}</strong>
         </article>
         <article className="gcs-preview__counter gcs-preview__counter--draft">
-          <span>پیش‌نویس فعلی</span>
-          <strong>{toPersianDigits(props.draftActiveCount)} انتخاب</strong>
-          <small>فهرست ذخیره‌شده در استودیو (پایین صفحه).</small>
+          <span>قابل انتقال به پیش‌نویس</span>
+          <strong>
+            {preview.exceedsSanjeshLimit
+              ? toPersianDigits(String(CHOICE_DRAFT_ACTIVE_LIMIT))
+              : toPersianDigits(transferable)}
+          </strong>
+          {preview.exceedsSanjeshLimit ? (
+            <small>
+              از {toPersianDigits(preview.totalRows)} ردیف — با تأیید «انتقال ۱۵۰ انتخاب اول»
+            </small>
+          ) : (
+            <small>پیش‌نویس فعلی: {toPersianDigits(props.draftActiveCount)} انتخاب</small>
+          )}
         </article>
       </div>
 
       <p className="gcs-preview__explain">
-        با «ذخیره پیش‌نویس از پیش‌نمایش»، ردیف‌های پیش‌نمایش جایگزین پیش‌نویس فعلی می‌شوند (تا سقف{" "}
-        {toPersianDigits(String(CHOICE_DRAFT_ACTIVE_LIMIT))} انتخاب). هیچ ردیفی بدون تأیید شما حذف
-        نمی‌شود.
+        اطلاعات ناقص نیز قابل ذخیره است و در مراحل بعد قابل ویرایش خواهد بود. با «ذخیره پیش‌نویس از
+        پیش‌نمایش»، ردیف‌های پیش‌نمایش جایگزین پیش‌نویس فعلی می‌شوند (تا سقف{" "}
+        {toPersianDigits(String(CHOICE_DRAFT_ACTIVE_LIMIT))} انتخاب). بیش از این فقط با تأیید صریح
+        «انتقال ۱۵۰ انتخاب اول» انجام می‌شود.
       </p>
-
-      <div className="gcs-summary">
-        <article>
-          <span>ردیف معتبر</span>
-          <strong>{toPersianDigits(preview.validRows)}</strong>
-        </article>
-        <article>
-          <span>نیازمند بررسی</span>
-          <strong>{toPersianDigits(preview.errorRows + preview.warningRows)}</strong>
-        </article>
-        <article>
-          <span>سقف پیش‌نویس</span>
-          <strong>
-            {preview.exceedsSanjeshLimit
-              ? `+${toPersianDigits(String(preview.overLimitCount))} اضافه`
-              : toPersianDigits(String(preview.activeSanjeshCount))}
-          </strong>
-        </article>
-      </div>
 
       {preview.exceedsSanjeshLimit ? (
         <div className="gcs-preview__limit-alert" role="alert">
@@ -69,31 +62,11 @@ export function ChoiceImportPreview(props: {
         </div>
       ) : null}
 
-      {preview.duplicateCodes.length > 0 ? (
-        <p className="gcs-preview__dupes" role="status">
-          کدهای تکراری: {preview.duplicateCodes.slice(0, 12).join("، ")}
-          {preview.duplicateCodes.length > 12 ? " …" : ""}
-        </p>
-      ) : null}
-
       {props.importTimedOut ? (
         <p className="gcs-error" role="alert">
           پاسخ سرور در زمان معقول دریافت نشد. صفحه را یک‌بار Refresh کنید و پیش‌نویس فعلی را بررسی
           کنید؛ در صورت موفقیت قبلی، دوباره import نکنید.
         </p>
-      ) : null}
-
-      {preview.issues.length > 0 ? (
-        <ul className="gcs-issues">
-          {preview.issues.slice(0, 16).map((issue, index) => (
-            <li key={`${issue.code}-${index}`} data-level={issue.level}>
-              {issue.level === "error" ? "خطا" : "هشدار"}
-              {issue.rowNumber ? ` · ردیف ${toPersianDigits(issue.rowNumber)}` : ""}
-              {" — "}
-              {issue.message}
-            </li>
-          ))}
-        </ul>
       ) : null}
 
       <div className="gcs-table-wrap">
@@ -139,7 +112,7 @@ export function ChoiceImportPreview(props: {
               <em>{row.priority != null ? toPersianDigits(row.priority) : "—"}</em>
               <strong>{row.code || "بدون کد"}</strong>
               <span>
-                {row.major} · {row.university}
+                {[row.major, row.university].filter(Boolean).join(" · ") || "—"}
               </span>
               <small>
                 {[row.city, row.course, row.chance ? labelChoiceBand(row.chance) : ""]
@@ -168,7 +141,7 @@ export function ChoiceImportPreview(props: {
           <button
             type="button"
             className="gcs-btn gcs-btn--ghost"
-            disabled={props.pending || preview.errorRows > 0}
+            disabled={props.pending}
             onClick={props.onCommitFirst150}
           >
             انتقال {toPersianDigits(String(CHOICE_DRAFT_ACTIVE_LIMIT))} انتخاب اول به پیش‌نویس…
