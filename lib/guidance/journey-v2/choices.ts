@@ -394,6 +394,9 @@ export async function importChoiceRows(params: {
   kind: ChoiceListKind;
   items: ChoiceItemInput[];
   replaceReady?: boolean;
+  importRequestId?: string;
+  importPreviewRowCount?: number;
+  importMode?: string;
 }) {
   if (params.items.length < 1) {
     throw new Error("هیچ ردیف معتبری برای ورود وجود ندارد.");
@@ -485,7 +488,15 @@ export async function importChoiceRows(params: {
         version: target.version,
         imported: true,
         count: normalized.length,
+        importedCount: normalized.length,
         source: "EXCEL",
+        listId: target.id,
+        studentId: params.studentId,
+        ...(params.importRequestId ? { importRequestId: params.importRequestId } : {}),
+        ...(params.importPreviewRowCount != null
+          ? { previewRowCount: params.importPreviewRowCount }
+          : {}),
+        ...(params.importMode ? { mode: params.importMode } : {}),
       },
     },
   });

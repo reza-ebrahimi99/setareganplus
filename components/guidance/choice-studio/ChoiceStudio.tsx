@@ -4,7 +4,6 @@ import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   addChoiceItemAction,
-  importChoiceExcelAction,
   markArrangementReadyAction,
   moveChoiceItemAction,
   parseChoiceExcelAction,
@@ -40,6 +39,10 @@ import {
   takeFirstRowsForDraft,
 } from "@/lib/guidance/choice-studio/preview-limits";
 import { toPersianDigits } from "@/lib/persian";
+import {
+  CHOICE_DRAFT_IMPORT_TIMEOUT_MS,
+  postChoiceDraftImport,
+} from "@/lib/guidance/choice-studio/import-api";
 
 const empty: CounselorLateState = {};
 
@@ -68,7 +71,10 @@ export function ChoiceStudio(props: {
 }) {
   const router = useRouter();
   const [parseState, parseAction, parsePending] = useActionState(parseChoiceExcelAction, empty);
-  const [importState, importAction, importPending] = useActionState(importChoiceExcelAction, empty);
+  const [importPending, setImportPending] = useState(false);
+  const [importDialogError, setImportDialogError] = useState<string | null>(null);
+  const [draftCountOverride, setDraftCountOverride] = useState<number | null>(null);
+  const importAbortRef = useRef<AbortController | null>(null);
   const [readyState, readyAction, readyPending] = useActionState(markArrangementReadyAction, empty);
   const [addState, addAction, addPending] = useActionState(addChoiceItemAction, empty);
   const [startState, startAction, startPending] = useActionState(startArrangementAction, empty);
@@ -98,34 +104,8 @@ export function ChoiceStudio(props: {
   }, [readyState.success, props.phase, props.studentId, router]);
 
   useEffect(() => {
-    if (!importState.success) return;
-    setConfirm(null);
-    setPreview(null);
-    setFileMeta(null);
-    setImportTimedOut(false);
-    importStartedAt.current = null;
-    router.refresh();
-  }, [importState.success, router]);
-
-  useEffect(() => {
-    if (!importState.error) return;
-    setConfirm(null);
-    setImportTimedOut(false);
-    importStartedAt.current = null;
-  }, [importState.error]);
-
-  useEffect(() => {
-    if (!importPending) {
-      setImportTimedOut(false);
-      importStartedAt.current = null;
-      return;
-    }
-    importStartedAt.current = Date.now();
-    const timer = window.setTimeout(() => {
-      setImportTimedOut(true);
-    }, 90_000);
-    return () => window.clearTimeout(timer);
-  }, [importPending]);
+    setDraftCountOverride(null);
+  }, [props.list?.id, props.list?.version]);
 
   useEffect(() => {
     if (!reviseState.success) return;
@@ -161,10 +141,10 @@ export function ChoiceStudio(props: {
   const confirmed = list?.status === "CONFIRMED";
   const replaceReady = list?.status === "READY";
   const kind = props.phase === "final" ? "FINAL" : "INITIAL";
-  const draftActiveCount = useMemo(
-    () => (list?.items ?? []).filter((i) => i.isActive).length,
-    [list],
-  );
+  const draftActiveCount = useMemo(() => {
+    if (draftCountOverride != null) return draftCountOverride;
+    return (list?.items ?? []).filter((i) => i.isActive).length;
+  }, [list, draftCountOverride]);
 
   function submitFile(file: File) {
     setFileMeta({ name: file.name, size: file.size });
@@ -175,22 +155,83 @@ export function ChoiceStudio(props: {
     parseAction(data);
   }
 
-  function commitImport(options?: { truncateFirst150?: boolean }) {
+  async function commitImport(options?: { truncateFirst150?: boolean }) {
     if (!preview) return;
     if (importPending) return;
     if (!options?.truncateFirst150 && !preview.canCommit) return;
 
-    const data = new FormData();
-    data.set("studentId", props.studentId);
-    data.set("kind", kind);
-    data.set("rows", JSON.stringify(preview.rows));
-    if (replaceReady) data.set("replaceReady", "1");
-    if (options?.truncateFirst150) {
-      data.set("truncateFirst150", "1");
-      data.set("truncateAck", "1");
-    }
+    importAbortRef.current?.abort();
+    const controller = new AbortController();
+    importAbortRef.current = controller;
+    const timeoutId = window.setTimeout(() => controller.abort(), CHOICE_DRAFT_IMPORT_TIMEOUT_MS);
+
+    const requestId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    setImportDialogError(null);
     setImportTimedOut(false);
-    importAction(data);
+    setImportPending(true);
+    importStartedAt.current = Date.now();
+
+    try {
+      const { response, data } = await postChoiceDraftImport({
+        studentId: props.studentId,
+        payload: {
+          requestId,
+          kind,
+          mode: options?.truncateFirst150 ? "truncate_first_150" : "full",
+          truncateAck: Boolean(options?.truncateFirst150),
+          replaceReady: Boolean(replaceReady),
+          rows: preview.rows,
+        },
+        signal: controller.signal,
+      });
+
+      if (controller.signal.aborted) {
+        setImportDialogError(
+          "درخواست به پایان زمان رسید یا لغو شد. دوباره تلاش کنید؛ در صورت موفقیت قبلی، Refresh کنید.",
+        );
+        setImportTimedOut(true);
+        return;
+      }
+
+      if (!data || !data.ok) {
+        const fallback =
+          response.status === 401
+            ? "نشست کاربری منقضی شده است. دوباره وارد شوید."
+            : response.status === 403
+              ? "مجوز انجام این عملیات را ندارید."
+              : "ورود پیش‌نویس انجام نشد.";
+        setImportDialogError(data?.ok === false ? data.error : fallback);
+        return;
+      }
+
+      setDraftCountOverride(data.draftCount);
+      setConfirm(null);
+      setPreview(null);
+      setFileMeta(null);
+      setImportDialogError(null);
+      setImportTimedOut(false);
+      importStartedAt.current = null;
+      router.refresh();
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        setImportDialogError(
+          "درخواست به پایان زمان رسید یا لغو شد. دوباره تلاش کنید؛ در صورت موفقیت قبلی، Refresh کنید.",
+        );
+        setImportTimedOut(true);
+        return;
+      }
+      setImportDialogError("خطای شبکه. اتصال را بررسی کنید و دوباره تلاش کنید.");
+    } finally {
+      window.clearTimeout(timeoutId);
+      if (importAbortRef.current === controller) {
+        importAbortRef.current = null;
+      }
+      setImportPending(false);
+    }
   }
 
   const truncateExtraPreview = useMemo(() => {
@@ -242,14 +283,14 @@ export function ChoiceStudio(props: {
         </aside>
 
         <div className="gcs-main">
-          {parseState.error || importState.error || readyState.error || addState.error || reviseState.error ? (
+          {parseState.error || readyState.error || addState.error || reviseState.error ? (
             <p className="gcs-banner gcs-banner--error">
-              {parseState.error || importState.error || readyState.error || addState.error || reviseState.error}
+              {parseState.error || readyState.error || addState.error || reviseState.error}
             </p>
           ) : null}
-          {importState.success || readyState.success || addState.success || reviseState.success ? (
+          {readyState.success || addState.success || reviseState.success ? (
             <p className="gcs-banner gcs-banner--ok">
-              {importState.success || readyState.success || addState.success || reviseState.success}
+              {readyState.success || addState.success || reviseState.success}
             </p>
           ) : null}
 
@@ -651,11 +692,13 @@ export function ChoiceStudio(props: {
         }
         confirmLabel="تأیید ورود"
         pending={importPending}
+        error={confirm === "import" ? importDialogError : null}
         onCancel={() => {
           if (importPending) return;
+          setImportDialogError(null);
           setConfirm(null);
         }}
-        onConfirm={() => commitImport()}
+        onConfirm={() => void commitImport()}
       />
       <ChoiceConfirmDialog
         open={confirm === "import-truncate"}
@@ -670,11 +713,13 @@ export function ChoiceStudio(props: {
         }
         confirmLabel="تأیید انتقال ۱۵۰ انتخاب"
         pending={importPending}
+        error={confirm === "import-truncate" ? importDialogError : null}
         onCancel={() => {
           if (importPending) return;
+          setImportDialogError(null);
           setConfirm(null);
         }}
-        onConfirm={() => commitImport({ truncateFirst150: true })}
+        onConfirm={() => void commitImport({ truncateFirst150: true })}
       />
       <ChoiceConfirmDialog
         open={confirm === "publish"}

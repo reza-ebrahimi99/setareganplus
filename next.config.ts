@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "9mb",
     },
+    webpackMemoryOptimizations: true,
   },
   async redirects() {
     return [

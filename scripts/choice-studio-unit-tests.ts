@@ -19,6 +19,7 @@ import { parseChoiceWorkbook, previewRowsToInputs } from "../lib/guidance/choice
 import { validateCanonicalRows } from "../lib/guidance/choice-studio/validate";
 import { resolveChoiceStudioState, labelChoiceStudioState } from "../lib/guidance/choice-studio/status";
 import type { CanonicalChoiceRow } from "../lib/guidance/choice-studio/types";
+import { validateChoiceDraftImportPayload } from "../lib/counselor-os/choice-draft-import-schema";
 
 let passed = 0;
 
@@ -239,6 +240,73 @@ await test("empty workbook is rejected in Persian", async () => {
 await test("normalizePriority accepts Persian digits", () => {
   assert.equal(normalizePriority("۱۵۰"), 150);
   assert.equal(normalizePriority("0"), null);
+});
+
+function draftRows(count: number): CanonicalChoiceRow[] {
+  return Array.from({ length: count }, (_, i) =>
+    row({
+      sourceRow: i + 2,
+      priority: i + 1,
+      code: String(30000 + i),
+      major: `رشته ${i + 1}`,
+    }),
+  );
+}
+
+await test("import API validation rejects 151 rows in full mode", () => {
+  const v = validateChoiceDraftImportPayload({
+    requestId: "req-12345678",
+    kind: "INITIAL",
+    mode: "full",
+    truncateAck: false,
+    replaceReady: false,
+    rows: draftRows(151),
+  });
+  assert.equal(v.ok, false);
+  if (!v.ok) assert.match(v.error, /151/);
+});
+
+await test("import API validation accepts 149 and 150 rows in full mode", () => {
+  for (const n of [149, 150]) {
+    const v = validateChoiceDraftImportPayload({
+      requestId: "req-12345678",
+      kind: "INITIAL",
+      mode: "full",
+      truncateAck: false,
+      replaceReady: false,
+      rows: draftRows(n),
+    });
+    assert.equal(v.ok, true);
+    if (v.ok) assert.equal(v.importRows.length, n);
+  }
+});
+
+await test("import API validation 159 rows requires truncate ack", () => {
+  const noAck = validateChoiceDraftImportPayload({
+    requestId: "req-12345678",
+    kind: "INITIAL",
+    mode: "truncate_first_150",
+    truncateAck: false,
+    replaceReady: false,
+    rows: draftRows(159),
+  });
+  assert.equal(noAck.ok, false);
+
+  const ok = validateChoiceDraftImportPayload({
+    requestId: "req-12345678",
+    kind: "INITIAL",
+    mode: "truncate_first_150",
+    truncateAck: true,
+    replaceReady: false,
+    rows: draftRows(159),
+  });
+  assert.equal(ok.ok, true);
+  if (ok.ok) {
+    assert.equal(ok.body.rows.length, 159);
+    assert.equal(ok.importRows.length, 150);
+    assert.equal(ok.importRows[0]?.priority, 1);
+    assert.equal(ok.importRows[149]?.priority, 150);
+  }
 });
 
 console.log(`\n${passed} Choice Studio tests passed`);

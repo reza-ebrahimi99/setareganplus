@@ -8,7 +8,6 @@ import {
   addChoiceItem,
   duplicateChoiceItem,
   ensureWorkingList,
-  importChoiceRows,
   markListReady,
   moveChoiceItem,
   removeChoiceItem,
@@ -19,10 +18,11 @@ import {
   updateChoiceItem,
 } from "@/lib/guidance/journey-v2/choices";
 import { CHOICE_LIST_KIND } from "@/lib/guidance/journey-v2/constants";
-import { parseChoiceWorkbook, previewRowsToInputs } from "@/lib/guidance/choice-studio/excel";
+import { parseChoiceWorkbook } from "@/lib/guidance/choice-studio/excel";
 import { takeFirstRowsForDraft } from "@/lib/guidance/choice-studio/preview-limits";
 import type { CanonicalChoiceRow, ChoiceImportPreview } from "@/lib/guidance/choice-studio/types";
 import { SANJESH_ACTIVE_LIMIT } from "@/lib/guidance/choice-studio/types";
+import { runChoiceDraftImport } from "@/lib/counselor-os/choice-draft-import";
 import { correctKonkurField } from "@/lib/guidance/journey-v2/konkur";
 import { loadGuidanceV2Plan } from "@/lib/guidance/journey-v2/plan";
 import { SANJESH_STATUS } from "@/lib/guidance/journey-v2/constants";
@@ -388,33 +388,35 @@ export async function importChoiceExcelAction(
       }
     }
 
-    console.info("[choice-studio] importChoiceExcel", {
-      studentId,
-      kind,
-      previewRows: rows.length,
-      importRows: importRows.length,
-      truncateFirst150,
-    });
-
-    const list = await importChoiceRows({
+    const requestId = field(formData, "requestId") || `legacy-${Date.now()}`;
+    const result = await runChoiceDraftImport({
       organizationId: ctx.organizationId,
-      planId: plan.id,
-      studentId,
       counselorUserId: ctx.userId,
-      kind,
-      items: previewRowsToInputs(importRows),
-      replaceReady: field(formData, "replaceReady") === "1",
+      studentId,
+      payload: {
+        requestId,
+        kind: kind === CHOICE_LIST_KIND.FINAL ? "FINAL" : "INITIAL",
+        mode: truncateFirst150 ? "truncate_first_150" : "full",
+        truncateAck: truncateFirst150 && field(formData, "truncateAck") === "1",
+        replaceReady: field(formData, "replaceReady") === "1",
+        rows,
+      },
     });
-    refresh(studentId);
+    if (!result.ok) {
+      return { error: result.error };
+    }
+    if (!result.idempotentReplay) {
+      refresh(studentId);
+    }
     const dropped =
-      truncateFirst150 && rows.length > importRows.length
-        ? rows.length - importRows.length
+      truncateFirst150 && rows.length > result.importedCount
+        ? rows.length - result.importedCount
         : 0;
     return {
       success:
         dropped > 0
-          ? `${importRows.length} انتخاب اول در پیش‌نویس ذخیره شد (${dropped} انتخاب اضافی وارد نشد). نسخه ${list.version}.`
-          : `${kind === "FINAL" ? "نسخه اصلاح‌شده" : "نسخه اولیه"} با ${importRows.length} انتخاب از اکسل ذخیره شد (نسخه ${list.version}).`,
+          ? `${result.importedCount} انتخاب اول در پیش‌نویس ذخیره شد (${dropped} انتخاب اضافی وارد نشد). نسخه ${result.version}.`
+          : `${kind === "FINAL" ? "نسخه اصلاح‌شده" : "نسخه اولیه"} با ${result.importedCount} انتخاب از اکسل ذخیره شد (نسخه ${result.version}).`,
     };
   } catch (e) {
     console.error("[choice-studio] importChoiceExcel failed", {

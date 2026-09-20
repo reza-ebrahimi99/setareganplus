@@ -6,6 +6,7 @@ export function ChoiceConfirmDialog(props: {
   body: string;
   confirmLabel: string;
   pending?: boolean;
+  error?: string | null;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -15,6 +16,11 @@ export function ChoiceConfirmDialog(props: {
       <div className="gcs-modal__card">
         <h3 id="gcs-modal-title">{props.title}</h3>
         <p>{props.body}</p>
+        {props.error ? (
+          <p className="gcs-error" role="alert">
+            {props.error}
+          </p>
+        ) : null}
         <div className="gcs-modal__actions">
           <button
             type="button"
