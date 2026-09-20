@@ -4828,6 +4828,8 @@ model GuidancePlan {
   personalInfoConfirmedAt DateTime?
   /// Step 3 — selected guidance package + payment completion snapshot.
   guidancePackageCode     String?
+  /// V2 add-on codes at purchase time, e.g. ["FARHANGIAN_ADDON"].
+  guidancePackageAddons   Json      @default("[]")
   packagePaidAt           DateTime?
   /// Step 10 — counselor review/approval of the AI-arranged 150-choice list.
   choicesApprovedAt       DateTime?

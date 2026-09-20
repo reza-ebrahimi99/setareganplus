@@ -49,13 +49,15 @@ export function decideGuidanceCheckoutPath(
 export function buildGuidanceCheckoutIdempotencyKey(params: {
   planId: string;
   packageCode: string;
+  addonToken?: string;
   originalAmountRials: number;
   discountAmountRials: number;
   finalAmountRials: number;
   discountCode: string | null;
 }): string {
   const code = params.discountCode ?? "-";
-  return `guidance-pkg:v2:${params.planId}:${params.packageCode}:${params.originalAmountRials}:${params.discountAmountRials}:${params.finalAmountRials}:d:${code}`;
+  const addons = params.addonToken ?? "-";
+  return `guidance-pkg:v2:${params.planId}:${params.packageCode}:${addons}:${params.originalAmountRials}:${params.discountAmountRials}:${params.finalAmountRials}:d:${code}`;
 }
 
 export function buildGuidancePaymentSnapshot(params: {

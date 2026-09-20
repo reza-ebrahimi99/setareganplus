@@ -19,7 +19,11 @@ import { rialToToman } from "@/lib/guidance/discounts/engine";
 import { guidanceJourneyV2StepPath } from "@/lib/guidance/journey-v2/steps";
 import type { GuidanceJourneySidebarStep } from "@/lib/guidance/journey/types";
 import { GuidanceCouponCard } from "@/components/guidance/checkout/GuidanceCouponCard";
-import { packageIncludesArrangement } from "@/lib/guidance/journey-v2/entitlements";
+import { GUIDANCE_COMMERCE_CODES, GUIDANCE_PRICE_RIALS } from "@/lib/guidance/commerce/catalog";
+import {
+  hasValidGuidanceCommercialPurchase,
+  packageIncludesArrangement,
+} from "@/lib/guidance/journey-v2/entitlements";
 import type {
   GuidanceV2PackageCode,
 } from "@/lib/guidance/journey-v2/steps/step10-packages";
@@ -239,20 +243,15 @@ export function PackagePaymentV2Step({
   }, [state.checkoutUrl]);
 
   const initialCode =
-    packages.find(
-      (item) =>
-        item.code === activePackageCode,
-    )?.code ??
-    packages.find(
-      (item) => item.highlighted,
-    )?.code ??
+    packages.find((item) => item.code === activePackageCode)?.code ??
+    packages.find((item) => item.highlighted)?.code ??
     packages[0]?.code ??
-    "START";
+    GUIDANCE_COMMERCE_CODES.PREMIUM;
 
   const [selectedCode, setSelectedCode] =
-    useState<GuidanceV2PackageCode>(
-      initialCode,
-    );
+    useState<GuidanceV2PackageCode>(initialCode);
+
+  const [farhangianAddon, setFarhangianAddon] = useState(false);
 
   const [discountCode, setDiscountCode] =
     useState("");
@@ -274,11 +273,11 @@ export function PackagePaymentV2Step({
     setDiscountPreviewPending(true);
 
     try {
-      const result =
-        await previewGuidanceV2Step10DiscountAction(
-          selectedCode,
-          discountCode,
-        );
+      const result = await previewGuidanceV2Step10DiscountAction(
+        selectedCode,
+        discountCode,
+        farhangianAddon,
+      );
 
       setDiscountPreview(result);
     } catch (error) {
@@ -311,6 +310,11 @@ export function PackagePaymentV2Step({
 
   const alreadyPaid =
     (packagePaid || hasPaidSummary) &&
+    hasValidGuidanceCommercialPurchase({
+      packageCode: activePackageCode,
+      packageAddons: [],
+      packagePaidAtIso: packagePaid || hasPaidSummary ? new Date().toISOString() : null,
+    }) &&
     packageIncludesArrangement(activePackageCode);
 
   const connecting =
@@ -333,7 +337,7 @@ export function PackagePaymentV2Step({
       stepId={10}
       stepCount={18}
       title="انتخاب پلن و پرداخت"
-      description="سطح همراهی موردنظر خود را انتخاب کنید؛ از مسیر رایگان تا همراهی اختصاصی و کامل."
+      description="یکی از بسته‌های خدمات انتخاب رشته را انتخاب کنید و پرداخت امن را تکمیل کنید."
       sidebarSteps={sidebarSteps}
       completionPercentage={
         completionPercentage
@@ -430,6 +434,11 @@ export function PackagePaymentV2Step({
             name="discountCode"
             value={discountCode}
           />
+          <input
+            type="hidden"
+            name="farhangianAddon"
+            value={farhangianAddon ? "1" : "0"}
+          />
 
           <div className="gjv2-step10-packages">
             {packages.map((item) => {
@@ -448,6 +457,9 @@ export function PackagePaymentV2Step({
                   disabled={alreadyPaid}
                   onClick={() => {
                     setSelectedCode(item.code);
+                    if (item.code !== GUIDANCE_COMMERCE_CODES.PREMIUM) {
+                      setFarhangianAddon(false);
+                    }
                     setDiscountPreview(null);
                   }}
                   className={[
@@ -557,7 +569,24 @@ export function PackagePaymentV2Step({
           </div>
 
           {!alreadyPaid &&
-          selectedPackage?.requiresPayment ? (
+          selectedCode === GUIDANCE_COMMERCE_CODES.PREMIUM ? (
+            <label className="gjv2-step10-addon">
+              <input
+                type="checkbox"
+                checked={farhangianAddon}
+                onChange={(e) => {
+                  setFarhangianAddon(e.target.checked);
+                  setDiscountPreview(null);
+                }}
+              />
+              <span>
+                افزودن خدمات انتخاب رشته فرهنگیان با{" "}
+                {formatToman(GUIDANCE_PRICE_RIALS.FARHANGIAN_ADDON)} تومان
+              </span>
+            </label>
+          ) : null}
+
+          {!alreadyPaid && selectedPackage?.requiresPayment ? (
             <GuidanceCouponCard
               discountCode={discountCode}
               onCodeChange={(value) => {
@@ -569,32 +598,57 @@ export function PackagePaymentV2Step({
               }}
               pending={discountPreviewPending}
               preview={discountPreview}
-              packagePriceRials={selectedPackage.priceRials}
+              packagePriceRials={
+                selectedPackage.priceRials +
+                (farhangianAddon ? GUIDANCE_PRICE_RIALS.FARHANGIAN_ADDON : 0)
+              }
             />
           ) : null}
 
-          {!alreadyPaid &&
-          selectedPackage ? (
+          {!alreadyPaid && selectedPackage ? (
             <section className="gjv2-step10-summary">
               <div>
-                <span>
-                  پلن انتخابی
-                </span>
-                <strong>
-                  {selectedPackage.title}
-                </strong>
+                <span>پلن انتخابی</span>
+                <strong>{selectedPackage.title}</strong>
               </div>
 
               <div>
-                <span>
-                  مبلغ پلن
-                </span>
+                <span>انتخاب رشته ممتاز</span>
                 <strong>
-                  {selectedPackage.requiresPayment
-                    ? `${formatToman(
-                        selectedPackage.priceRials,
-                      )} تومان`
-                    : "رایگان"}
+                  {selectedCode === GUIDANCE_COMMERCE_CODES.PREMIUM
+                    ? `${formatToman(GUIDANCE_PRICE_RIALS.PREMIUM)} تومان`
+                    : "—"}
+                </strong>
+              </div>
+
+              {selectedCode === GUIDANCE_COMMERCE_CODES.FARHANGIAN ? (
+                <div>
+                  <span>انتخاب رشته فرهنگیان</span>
+                  <strong>
+                    {formatToman(GUIDANCE_PRICE_RIALS.FARHANGIAN)} تومان
+                  </strong>
+                </div>
+              ) : null}
+
+              {farhangianAddon ? (
+                <div>
+                  <span>افزونه فرهنگیان</span>
+                  <strong>
+                    {formatToman(GUIDANCE_PRICE_RIALS.FARHANGIAN_ADDON)} تومان
+                  </strong>
+                </div>
+              ) : null}
+
+              <div>
+                <span>جمع اولیه</span>
+                <strong>
+                  {formatToman(
+                    selectedPackage.priceRials +
+                      (farhangianAddon
+                        ? GUIDANCE_PRICE_RIALS.FARHANGIAN_ADDON
+                        : 0),
+                  )}{" "}
+                  تومان
                 </strong>
               </div>
 
@@ -622,22 +676,17 @@ export function PackagePaymentV2Step({
               ) : null}
 
               <div className="gjv2-step10-summary__final">
-                <span>
-                  {selectedPackage.requiresPayment
-                    ? "مبلغ قابل پرداخت"
-                    : "هزینه ادامه مسیر"}
-                </span>
-
+                <span>قابل پرداخت</span>
                 <strong>
-                  {selectedPackage.requiresPayment
-                    ? `${formatToman(
-                        discountPreview?.ok &&
-                        discountPreview.packageCode ===
-                          selectedCode
-                          ? discountPreview.finalAmountRials
-                          : selectedPackage.priceRials,
-                      )} تومان`
-                    : "۰ تومان"}
+                  {`${formatToman(
+                    discountPreview?.ok &&
+                      discountPreview.packageCode === selectedCode
+                      ? discountPreview.finalAmountRials
+                      : selectedPackage.priceRials +
+                          (farhangianAddon
+                            ? GUIDANCE_PRICE_RIALS.FARHANGIAN_ADDON
+                            : 0),
+                  )} تومان`}
                 </strong>
               </div>
 
@@ -660,14 +709,10 @@ export function PackagePaymentV2Step({
               }}
               next={{
                 type: "submit",
-                label: selectedPackage?.requiresPayment
-                  ? "پرداخت امن"
-                  : "انتخاب پلن رایگان و ادامه",
+                label: "پرداخت امن",
                 disabled: connecting || !selectedPackage,
                 pending: connecting,
-                pendingLabel: selectedPackage?.requiresPayment
-                  ? "در حال اتصال به درگاه امن…"
-                  : "در حال ثبت پلن رایگان…",
+                pendingLabel: "در حال اتصال به درگاه امن…",
               }}
             />
           ) : null}

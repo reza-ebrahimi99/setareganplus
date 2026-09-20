@@ -34,6 +34,7 @@
     "test:guidance-workspace": "tsx scripts/guidance-workspace-unit-tests.ts",
     "test:guidance-prelaunch": "tsx scripts/guidance-prelaunch-master-unit-tests.ts",
     "test:counselor-schedule": "tsx scripts/counselor-schedule-unit-tests.ts",
+    "test:guidance-commerce": "tsx scripts/guidance-commerce-catalog-unit-tests.ts",
     "test:counselor-schedule-v2": "tsx scripts/counselor-schedule-v2-unit-tests.ts",
     "test:counselor-schedule-v2:integration": "tsx --env-file=.env scripts/counselor-schedule-v2-save-activate-integration.ts",
     "test:guidance-next-action": "tsx scripts/guidance-next-action-unit-tests.ts",

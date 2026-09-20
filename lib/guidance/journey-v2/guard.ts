@@ -29,6 +29,7 @@ function asAccessSnapshot(
     | "completedSteps"
     | "packagePaidAtIso"
     | "guidancePackageCode"
+    | "guidancePackageAddons"
     | "finalApprovedAtIso"
     | "v2InformedRevisionId"
     | "v2SanjeshStatus"
@@ -38,6 +39,7 @@ function asAccessSnapshot(
     currentStep: plan.currentStep,
     completedSteps: plan.completedSteps,
     packageCode: plan.guidancePackageCode,
+    packageAddons: plan.guidancePackageAddons,
     packagePaidAtIso: plan.packagePaidAtIso,
     finalApprovedAtIso: plan.finalApprovedAtIso,
     informedRevisionId: plan.v2InformedRevisionId,
@@ -58,6 +60,7 @@ export function canOpenGuidanceV2Step(
     | "completedSteps"
     | "packagePaidAtIso"
     | "guidancePackageCode"
+    | "guidancePackageAddons"
     | "finalApprovedAtIso"
     | "v2InformedRevisionId"
     | "v2SanjeshStatus"

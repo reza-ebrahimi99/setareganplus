@@ -62,7 +62,10 @@ export async function renderGuidanceV2LateStep(step: GuidanceV2StepId) {
   const paymentHref = guidanceJourneyV2StepPath(10);
   const previousHref = guidanceJourneyV2StepPath(step - 1);
   const isCurrent = step === plan.currentStep;
-  const hasArrangement = packageIncludesArrangement(plan.guidancePackageCode);
+  const hasArrangement = packageIncludesArrangement(
+    plan.guidancePackageCode,
+    plan.guidancePackageAddons,
+  );
   const accessMode = resolveGuidanceV2StepAccessMode(step, {
     currentStep: plan.currentStep,
     completedSteps: plan.completedSteps,

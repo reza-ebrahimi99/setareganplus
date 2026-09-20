@@ -1,16 +1,13 @@
 /**
  * Guidance Journey V2 Step 10 package catalog.
- * Canonical payable prices are integer RIALS.
- *
- * PREMIUM list price is the confirmed production amount:
- * 7,900,000 تومان = 79,000,000 ریال.
- *
- * SMART was last observed on a live charge at 43,000,000 ریال.
- * SPECIALIZED approved commercial price:
- * 5,700,000 تومان = 57,000,000 ریال.
- * If production already has this file, do not overwrite it from the
- * discount-engine deploy bundle.
+ * Canonical payable prices are integer RIALS (10 rials = 1 toman in UI).
  */
+
+import {
+  GUIDANCE_COMMERCE_CODES,
+  GUIDANCE_PRICE_RIALS,
+  legacyPackagePriceRials,
+} from "@/lib/guidance/commerce/catalog";
 
 export const GUIDANCE_V2_PACKAGES = [
   {
@@ -20,15 +17,8 @@ export const GUIDANCE_V2_PACKAGES = [
     priceRials: 0,
     requiresPayment: false,
     highlighted: false,
-    features: [
-      "تشکیل پرونده و ورود اطلاعات",
-      "ورود نمرات نهایی و کارنامه",
-      "آزمون رغبت‌سنجی",
-      "تحلیل علایق و پیشنهاد رشته‌ها",
-      "بررسی دانشگاه‌ها و دوره‌های تحصیلی",
-      "بررسی شهرهای موردنظر",
-      "ثبت اولویت رشته، شهر و دوره",
-    ],
+    sellable: false,
+    features: ["تشکیل پرونده و ورود اطلاعات"],
   },
   {
     code: "SMART" as const,
@@ -37,6 +27,7 @@ export const GUIDANCE_V2_PACKAGES = [
     priceRials: 43_000_000,
     requiresPayment: true,
     highlighted: false,
+    sellable: false,
     features: ["مشاوره و چیدمان هوشمند"],
   },
   {
@@ -46,22 +37,45 @@ export const GUIDANCE_V2_PACKAGES = [
     priceRials: 57_000_000,
     requiresPayment: true,
     highlighted: false,
+    sellable: false,
     features: ["بازبینی تخصصی انتخاب‌ها"],
   },
   {
-    code: "PREMIUM" as const,
-    title: "ممتاز",
-    subtitle: "همراهی کامل تا ثبت سنجش",
-    priceRials: 79_000_000,
+    code: GUIDANCE_COMMERCE_CODES.PREMIUM,
+    title: "انتخاب رشته ممتاز",
+    subtitle: "همراهی کامل مسیر اصلی تا ثبت سنجش",
+    priceRials: GUIDANCE_PRICE_RIALS.PREMIUM,
     requiresPayment: true,
     highlighted: true,
-    features: ["۲ جلسه مشاوره", "بازبینی کامل", "همراهی تا ثبت نهایی"],
+    sellable: true,
+    features: [
+      "۲ جلسه مشاوره انتخاب رشته",
+      "بازبینی و چیدمان ۱۵۰ انتخاب",
+      "همراهی تا ثبت نهایی",
+    ],
+  },
+  {
+    code: GUIDANCE_COMMERCE_CODES.FARHANGIAN,
+    title: "انتخاب رشته فرهنگیان",
+    subtitle: "خدمات و جلسات ویژه فرهنگیان",
+    priceRials: GUIDANCE_PRICE_RIALS.FARHANGIAN,
+    requiresPayment: true,
+    highlighted: false,
+    sellable: true,
+    features: [
+      "جلسات مشاوره مرتبط با فرهنگیان",
+      "راهنمایی انتخاب رشته فرهنگیان",
+    ],
   },
 ] as const;
 
 export type GuidanceV2PackageCode = (typeof GUIDANCE_V2_PACKAGES)[number]["code"];
 
 export type GuidanceV2PackageDefinition = (typeof GUIDANCE_V2_PACKAGES)[number];
+
+export function listGuidanceV2PackagesForNewSale(): GuidanceV2PackageDefinition[] {
+  return GUIDANCE_V2_PACKAGES.filter((item) => item.sellable);
+}
 
 export function isGuidanceV2PackageCode(value: string): value is GuidanceV2PackageCode {
   return GUIDANCE_V2_PACKAGES.some((item) => item.code === value);
@@ -70,15 +84,12 @@ export function isGuidanceV2PackageCode(value: string): value is GuidanceV2Packa
 export function getGuidanceV2Package(
   code: string,
 ): GuidanceV2PackageDefinition | null {
-  return GUIDANCE_V2_PACKAGES.find((item) => item.code === code) ?? null;
+  const normalized = code.trim().toUpperCase();
+  const found = GUIDANCE_V2_PACKAGES.find((item) => item.code === normalized);
+  if (found) return found;
+  return null;
 }
 
-/**
- * Production Step 10 / dashboard plans payment still import this constant.
- * It is not a package list price. List prices stay in GUIDANCE_V2_PACKAGES.
- * The recovery applier overwrites this assignment from the pre-deploy backup
- * when that backup is present, so the live alumni amount is not invented here.
- */
 export const GUIDANCE_V2_ALUMNI_DISCOUNT_RIALS = 0;
 
 export type GuidanceV2CalculatedPackagePrice = {
@@ -94,39 +105,36 @@ export type GuidanceV2CalculatedPackagePrice = {
   requiresPayment: boolean;
 };
 
-function wantsAlumniDiscount(
-  flag?: boolean | { alumni?: boolean; applyAlumniDiscount?: boolean; isAlumni?: boolean },
-): boolean {
-  if (flag === true) return true;
-  if (!flag || typeof flag !== "object") return false;
-  return Boolean(flag.alumni || flag.applyAlumniDiscount || flag.isAlumni);
-}
-
-/**
- * Backward-compatible price helper for production plans-payment / step10-payment.
- * Reads list prices only from GUIDANCE_V2_PACKAGES. Does not create a second catalog.
- */
 export function calculateGuidanceV2PackagePrice(
   packageCode: string,
-  applyAlumniDiscount?: boolean | { alumni?: boolean; applyAlumniDiscount?: boolean; isAlumni?: boolean },
 ): GuidanceV2CalculatedPackagePrice | null {
   const pkg = getGuidanceV2Package(packageCode);
-  if (!pkg) return null;
-  const alumniDiscountRials =
-    wantsAlumniDiscount(applyAlumniDiscount) && pkg.requiresPayment
-      ? Math.min(Math.max(0, Math.floor(GUIDANCE_V2_ALUMNI_DISCOUNT_RIALS)), pkg.priceRials)
-      : 0;
-  const payableRials = pkg.priceRials - alumniDiscountRials;
+  if (!pkg) {
+    const legacy = legacyPackagePriceRials(packageCode);
+    if (legacy == null) return null;
+    return {
+      code: packageCode as GuidanceV2PackageCode,
+      title: packageCode,
+      listPriceRials: legacy,
+      priceRials: legacy,
+      originalAmountRials: legacy,
+      alumniDiscountRials: 0,
+      discountRials: 0,
+      finalAmountRials: legacy,
+      payableRials: legacy,
+      requiresPayment: legacy > 0,
+    };
+  }
   return {
     code: pkg.code,
     title: pkg.title,
     listPriceRials: pkg.priceRials,
-    priceRials: payableRials,
+    priceRials: pkg.priceRials,
     originalAmountRials: pkg.priceRials,
-    alumniDiscountRials,
-    discountRials: alumniDiscountRials,
-    finalAmountRials: payableRials,
-    payableRials,
-    requiresPayment: pkg.requiresPayment && payableRials > 0,
+    alumniDiscountRials: 0,
+    discountRials: 0,
+    finalAmountRials: pkg.priceRials,
+    payableRials: pkg.priceRials,
+    requiresPayment: pkg.requiresPayment && pkg.priceRials > 0,
   };
 }

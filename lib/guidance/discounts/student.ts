@@ -6,30 +6,12 @@
 
 import { quoteGuidancePackageDiscount } from "@/lib/guidance/discounts/quote";
 import { loadGuidanceV2Entry } from "@/lib/guidance/journey-v2/guard";
-import { resolveGuidancePayablePackage } from "@/lib/guidance/packages/resolve-payable";
+import { resolveGuidanceNewSaleCheckout } from "@/lib/guidance/packages/resolve-payable";
+import { isGuidanceSellableBaseCode } from "@/lib/guidance/commerce/catalog";
 
-export const GUIDANCE_V2_PREVIEW_PACKAGE_CODES = [
-  "START",
-  "SMART",
-  "SPECIALIZED",
-  "PREMIUM",
-] as const;
-
-export type GuidanceV2PreviewPackageCode =
-  (typeof GUIDANCE_V2_PREVIEW_PACKAGE_CODES)[number];
-
-export function parseGuidanceV2PreviewPackageCode(
-  value: string,
-): GuidanceV2PreviewPackageCode | null {
-  switch (value) {
-    case "START":
-    case "SMART":
-    case "SPECIALIZED":
-    case "PREMIUM":
-      return value;
-    default:
-      return null;
-  }
+export function parseGuidanceV2PreviewPackageCode(value: string): string | null {
+  const normalized = value.trim().toUpperCase();
+  return isGuidanceSellableBaseCode(normalized) ? normalized : null;
 }
 
 function discountPreviewLabel(code: string, source: "db" | "legacy"): string {
@@ -45,24 +27,27 @@ export type GuidanceDiscountPreviewState =
       originalAmountRials: number;
       discountRials: number;
       finalAmountRials: number;
-      packageCode: GuidanceV2PreviewPackageCode;
+      packageCode: string;
       source: "db" | "legacy";
     }
   | { ok: false; error: string };
 
 export function lookupKnownGuidancePackagePriceRials(
   packageCode: string,
-  _ignoredClientPrice?: number,
+  farhangianAddon = false,
 ): number | null {
-  const pkg = resolveGuidancePayablePackage(packageCode, { journeyVersion: 2 });
-  if (!pkg || !pkg.requiresPayment) return null;
-  return pkg.priceRials;
+  const resolved = resolveGuidanceNewSaleCheckout({
+    packageCode,
+    farhangianAddon,
+  });
+  if (!resolved.ok) return null;
+  return resolved.quote.originalAmountRials;
 }
 
 export async function previewManagedGuidanceDiscountForStudent(
   packageCode: string,
   discountCode: string,
-  _ignoredClientPrice?: number,
+  farhangianAddon = false,
 ): Promise<{ resolved: boolean; result: GuidanceDiscountPreviewState }> {
   const { plan } = await loadGuidanceV2Entry();
   const normalizedPackage = parseGuidanceV2PreviewPackageCode(packageCode);
@@ -72,17 +57,20 @@ export async function previewManagedGuidanceDiscountForStudent(
       result: { ok: false, error: "بسته انتخاب‌شده معتبر نیست." },
     };
   }
-  const pkg = resolveGuidancePayablePackage(normalizedPackage, { journeyVersion: 2 });
-  if (!pkg || !pkg.requiresPayment) {
+  const resolved = resolveGuidanceNewSaleCheckout({
+    packageCode: normalizedPackage,
+    farhangianAddon,
+  });
+  if (!resolved.ok) {
     return {
       resolved: false,
-      result: { ok: false, error: "بسته انتخاب‌شده معتبر نیست." },
+      result: { ok: false, error: resolved.error },
     };
   }
   const quote = await quoteGuidancePackageDiscount({
     organizationId: plan.organizationId,
-    packageCode: pkg.code,
-    packagePriceRials: pkg.priceRials,
+    packageCode: resolved.quote.discountPackageCode,
+    packagePriceRials: resolved.quote.originalAmountRials,
     discountCode,
   });
   if (!quote.ok) {

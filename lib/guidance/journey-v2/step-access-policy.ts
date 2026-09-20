@@ -5,7 +5,10 @@
  */
 
 import type { GuidanceV2StepId } from "@/lib/guidance/journey-v2/catalog";
-import { packageIncludesArrangement } from "@/lib/guidance/journey-v2/entitlements";
+import {
+  hasValidGuidanceCommercialPurchase,
+  packageIncludesArrangement,
+} from "@/lib/guidance/journey-v2/entitlements";
 
 export const STUDENT_OWNED_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 14] as const;
 export const COUNSELOR_OWNED_STEPS = [13, 16] as const;
@@ -20,6 +23,7 @@ export type StepAccessSnapshot = {
   currentStep: number;
   completedSteps: readonly number[];
   packageCode: string | null;
+  packageAddons?: readonly string[];
   packagePaidAtIso: string | null;
   finalApprovedAtIso?: string | null;
   informedRevisionId?: string | null;
@@ -47,9 +51,25 @@ export function resolveGuidanceV2StepAccessMode(
   if (stepId === plan.currentStep) return "current";
 
   if (stepId === 10) {
-    if (!plan.packagePaidAtIso) return "payment";
-    if (!packageIncludesArrangement(plan.packageCode)) return "payment";
+    const profile = {
+      packageCode: plan.packageCode,
+      packageAddons: plan.packageAddons ?? [],
+      packagePaidAtIso: plan.packagePaidAtIso,
+    };
+    if (!hasValidGuidanceCommercialPurchase(profile)) return "payment";
+    if (!packageIncludesArrangement(plan.packageCode, plan.packageAddons ?? [])) {
+      return "payment";
+    }
     return "readonly";
+  }
+
+  if (stepId >= 11 && stepId <= 18) {
+    const profile = {
+      packageCode: plan.packageCode,
+      packageAddons: plan.packageAddons ?? [],
+      packagePaidAtIso: plan.packagePaidAtIso,
+    };
+    if (!hasValidGuidanceCommercialPurchase(profile)) return "locked";
   }
 
   const completed = plan.completedSteps.includes(stepId);

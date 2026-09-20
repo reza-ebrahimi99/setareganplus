@@ -34,6 +34,8 @@ import {
   labelAppointmentPurpose,
   labelAppointmentStatus,
 } from "@/lib/guidance/journey-v2/labels";
+import { assertGuidanceCounselorBookingAccess } from "@/lib/guidance/journey-v2/entitlements";
+import { loadGuidanceV2Plan } from "@/lib/guidance/journey-v2/plan";
 import { prisma } from "@/lib/prisma";
 
 export type AssignedCounselorView = {
@@ -332,6 +334,25 @@ export async function bookV2Session(params: {
   slotId: string;
   purpose: AppointmentPurpose;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
+  const plan = await loadGuidanceV2Plan({
+    organizationId: params.organizationId,
+    studentId: params.studentId,
+    userId: params.userId,
+  });
+  if (!plan) {
+    return { ok: false, error: "پرونده انتخاب رشته یافت نشد." };
+  }
+  const commercial = assertGuidanceCounselorBookingAccess({
+    profile: {
+      packageCode: plan.guidancePackageCode,
+      packageAddons: plan.guidancePackageAddons,
+      packagePaidAtIso: plan.packagePaidAtIso,
+    },
+  });
+  if (!commercial.ok) {
+    return commercial;
+  }
+
   const counselor = await loadAssignedCounselorForStudent({
     organizationId: params.organizationId,
     studentId: params.studentId,

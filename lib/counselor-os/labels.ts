@@ -20,6 +20,8 @@ const PACKAGE_TITLES: Record<string, string> = {
   SMART: "هوشمند",
   SPECIALIZED: "تخصصی",
   PREMIUM: "ممتاز",
+  FARHANGIAN: "فرهنگیان",
+  FARHANGIAN_ADDON: "افزونه فرهنگیان",
 };
 
 const PRIORITY_FACTORS: Record<string, string> = {

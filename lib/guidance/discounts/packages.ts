@@ -7,6 +7,7 @@ export const GUIDANCE_DISCOUNT_PACKAGE_CODES = [
   "SMART",
   "SPECIALIZED",
   "PREMIUM",
+  "FARHANGIAN",
 ] as const;
 
 export type GuidanceDiscountPackageCode =
@@ -19,6 +20,7 @@ export const GUIDANCE_DISCOUNT_PACKAGE_LABELS: Record<
   SMART: "هوشمند",
   SPECIALIZED: "تخصصی",
   PREMIUM: "ممتاز",
+  FARHANGIAN: "فرهنگیان",
 };
 
 export function isGuidanceDiscountPackageCode(

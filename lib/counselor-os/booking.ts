@@ -52,6 +52,8 @@ import {
   APPOINTMENT_PURPOSE,
   type AppointmentPurpose,
 } from "@/lib/guidance/journey-v2/constants";
+import { assertGuidanceCounselorBookingAccess } from "@/lib/guidance/journey-v2/entitlements";
+import { loadGuidanceV2Plan } from "@/lib/guidance/journey-v2/plan";
 
 export async function ensureCounselorBookingService(organizationId: string) {
   const existing = await prisma.bookingService.findFirst({
@@ -270,6 +272,25 @@ export async function bookCounselorSlotForStudent(params: {
   });
   if (params.purpose && !plan) {
     return { ok: false as const, error: "پرونده انتخاب رشته یافت نشد." };
+  }
+  if (params.purpose && plan) {
+    const snapshot = await loadGuidanceV2Plan({
+      organizationId: params.organizationId,
+      studentId: params.studentId,
+      userId: params.userId,
+    });
+    if (snapshot) {
+      const commercial = assertGuidanceCounselorBookingAccess({
+        profile: {
+          packageCode: snapshot.guidancePackageCode,
+          packageAddons: snapshot.guidancePackageAddons,
+          packagePaidAtIso: snapshot.packagePaidAtIso,
+        },
+      });
+      if (!commercial.ok) {
+        return { ok: false as const, error: commercial.error };
+      }
+    }
   }
 
   const slot = await prisma.bookingSlot.findFirst({

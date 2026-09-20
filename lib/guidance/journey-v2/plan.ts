@@ -13,6 +13,7 @@ import {
   normalizeGuidanceExamGroup,
   type GuidanceExamGroup,
 } from "@/lib/guidance/journey-v2/constants";
+import { parseGuidancePackageAddons } from "@/lib/guidance/commerce/access";
 
 export type GuidanceV2PlanSnapshot = {
   id: string;
@@ -27,6 +28,7 @@ export type GuidanceV2PlanSnapshot = {
   completionPercentage: number;
   quota: string | null;
   guidancePackageCode: string | null;
+  guidancePackageAddons: readonly string[];
   packagePaidAtIso: string | null;
   choicesApprovedAtIso: string | null;
   finalApprovedAtIso: string | null;
@@ -53,6 +55,7 @@ const PLAN_SELECT = {
   completionPercentage: true,
   quota: true,
   guidancePackageCode: true,
+  guidancePackageAddons: true,
   packagePaidAt: true,
   choicesApprovedAt: true,
   finalApprovedAt: true,
@@ -91,6 +94,7 @@ export function mapGuidanceV2Plan(row: {
   completionPercentage: number;
   quota: string | null;
   guidancePackageCode: string | null;
+  guidancePackageAddons: unknown;
   packagePaidAt: Date | null;
   choicesApprovedAt: Date | null;
   finalApprovedAt: Date | null;
@@ -116,6 +120,7 @@ export function mapGuidanceV2Plan(row: {
     completionPercentage: row.completionPercentage,
     quota: row.quota,
     guidancePackageCode: row.guidancePackageCode,
+    guidancePackageAddons: parseGuidancePackageAddons(row.guidancePackageAddons),
     packagePaidAtIso: row.packagePaidAt?.toISOString() ?? null,
     choicesApprovedAtIso: row.choicesApprovedAt?.toISOString() ?? null,
     finalApprovedAtIso: row.finalApprovedAt?.toISOString() ?? null,

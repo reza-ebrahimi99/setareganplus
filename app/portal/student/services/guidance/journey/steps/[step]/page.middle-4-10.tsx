@@ -40,9 +40,7 @@ import {
   loadGuidanceV2Step2,
 } from "@/lib/guidance/journey-v2/steps/step2-exam-groups";
 
-import {
-  GUIDANCE_V2_PACKAGES,
-} from "@/lib/guidance/journey-v2/steps/step10-packages";
+import { listGuidanceV2PackagesForNewSale } from "@/lib/guidance/journey-v2/steps/step10-packages";
 
 import {
   guidanceJourneyV2StepPath,
@@ -227,7 +225,7 @@ export default async function GuidanceMiddleStepPage(props: Props) {
     <PackagePaymentV2Step
       sidebarSteps={sidebar}
       completionPercentage={plan.completionPercentage}
-      packages={GUIDANCE_V2_PACKAGES}
+      packages={listGuidanceV2PackagesForNewSale()}
       paymentSummary={null}
       packagePaid={Boolean(plan.packagePaidAtIso)}
       activePackageCode={plan.guidancePackageCode}

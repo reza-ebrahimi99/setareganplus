@@ -26,6 +26,7 @@ function plan(partial: Partial<GuidanceV2PlanSnapshot>): GuidanceV2PlanSnapshot 
     completionPercentage: 55,
     quota: null,
     guidancePackageCode: "SMART",
+    guidancePackageAddons: [],
     packagePaidAtIso: new Date().toISOString(),
     choicesApprovedAtIso: null,
     finalApprovedAtIso: null,

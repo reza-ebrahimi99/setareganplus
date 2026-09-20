@@ -25,7 +25,10 @@ import {
   loadSessionStepAdvanceQualification,
 } from "@/lib/guidance/journey-v2/appointments";
 import { assertRequiredDocumentApproved } from "@/lib/guidance/documents/verification-gate";
-import { assertArrangementEntitlement } from "@/lib/guidance/journey-v2/entitlements";
+import {
+  assertArrangementEntitlement,
+  assertGuidanceCommercialAccess,
+} from "@/lib/guidance/journey-v2/entitlements";
 
 export type AdvanceV2Result =
   | { ok: true; plan: GuidanceV2PlanSnapshot }
@@ -69,8 +72,23 @@ export async function advanceGuidanceJourneyV2Step(params: {
     };
   }
 
+  if (params.stepId >= 11) {
+    const commercial = assertGuidanceCommercialAccess({
+      profile: {
+        packageCode: plan.guidancePackageCode,
+        packageAddons: plan.guidancePackageAddons,
+        packagePaidAtIso: plan.packagePaidAtIso,
+      },
+      stepId: params.stepId,
+    });
+    if (!commercial.ok) {
+      return { ok: false, error: commercial.error };
+    }
+  }
+
   const arrangement = assertArrangementEntitlement({
     packageCode: plan.guidancePackageCode,
+    packageAddons: plan.guidancePackageAddons,
     stepId: params.stepId,
   });
   if (!arrangement.ok) {

@@ -44,7 +44,10 @@ export function buildLateJourneySignals(facts: LateJourneyFacts): LateJourneySig
   return {
     currentStep: plan.currentStep,
     packagePaid: Boolean(plan.packagePaidAtIso),
-    hasArrangementEntitlement: packageIncludesArrangement(plan.guidancePackageCode),
+    hasArrangementEntitlement: packageIncludesArrangement(
+      plan.guidancePackageCode,
+      plan.guidancePackageAddons,
+    ),
     firstSessionBooked: facts.firstSessionBooked,
     secondSessionBooked: facts.secondSessionBooked,
     konkurSubmitted: facts.konkurSubmitted && facts.konkurCounselorApproved,

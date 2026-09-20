@@ -43,7 +43,7 @@ import {
   buildGuidanceCheckoutIdempotencyKey,
   buildGuidancePaymentSnapshot,
 } from "@/lib/guidance/checkout/financials";
-import { resolveGuidancePayablePackage } from "@/lib/guidance/packages/resolve-payable";
+import { resolveGuidanceNewSaleCheckout } from "@/lib/guidance/packages/resolve-payable";
 
 const INTENT_TTL_MS = 60 * 60 * 1000;
 const GUIDANCE_CALLBACK_PATH = "/payments/callback/guidance";
@@ -176,6 +176,7 @@ export async function startGuidancePackageCheckout(params: {
   planId: string;
   planPublicId: string;
   packageCode: string;
+  farhangianAddon?: boolean;
   discountCode?: string | null;
 }): Promise<StartGuidanceCheckoutResult> {
   const plan = await prisma.guidancePlan.findFirst({
@@ -198,18 +199,21 @@ export async function startGuidancePackageCheckout(params: {
     return { ok: false, error: "بسته مشاوره قبلاً پرداخت شده است." };
   }
 
-  const pkg = resolveGuidancePayablePackage(params.packageCode, {
-    journeyVersion: plan.journeyVersion,
+  const resolved = resolveGuidanceNewSaleCheckout({
+    packageCode: params.packageCode,
+    farhangianAddon: Boolean(params.farhangianAddon),
   });
-  if (!pkg || !pkg.requiresPayment) {
+  if (!resolved.ok) {
     logGuidanceCheckout("package_invalid", { packageCode: params.packageCode });
-    return { ok: false, error: "بسته انتخاب‌شده معتبر نیست." };
+    return { ok: false, error: resolved.error };
   }
+  const pkg = resolved.pkg;
+  const checkoutQuote = resolved.quote;
 
   const quoted = await resolveGuidanceCheckoutDiscount({
     organizationId: params.organizationId,
-    packageCode: pkg.code,
-    packagePriceRials: pkg.priceRials,
+    packageCode: checkoutQuote.discountPackageCode,
+    packagePriceRials: checkoutQuote.originalAmountRials,
     discountCode: params.discountCode,
   });
   if (!quoted.ok) {
@@ -226,18 +230,18 @@ export async function startGuidancePackageCheckout(params: {
   const quotedOriginalRials = quoted.originalAmountRials;
   const quotedFinalRials = quoted.finalAmountRials;
 
-  if (quotedOriginalRials !== pkg.priceRials) {
+  if (quotedOriginalRials !== checkoutQuote.originalAmountRials) {
     logGuidanceCheckout("price_mismatch", {
       packageCode: pkg.code,
-      catalogRials: pkg.priceRials,
+      catalogRials: checkoutQuote.originalAmountRials,
       quotedRials: quotedOriginalRials,
     });
     return { ok: false, error: "محاسبه مالی بسته هم‌خوان نیست." };
   }
 
   const built = buildGuidancePaymentSnapshot({
-    packageCode: pkg.code,
-    originalAmountRials: pkg.priceRials,
+    packageCode: checkoutQuote.planPackageCode,
+    originalAmountRials: checkoutQuote.originalAmountRials,
     discountAmountRials: quotedDiscountRials,
     finalAmountRials: quotedFinalRials,
   });
@@ -250,7 +254,8 @@ export async function startGuidancePackageCheckout(params: {
   const provider = getPaymentProvider();
   const idempotencyKey = buildGuidanceCheckoutIdempotencyKey({
     planId: plan.id,
-    packageCode: pkg.code,
+    packageCode: checkoutQuote.planPackageCode,
+    addonToken: checkoutQuote.addonCodes.join("+") || "-",
     originalAmountRials: snapshot.originalAmountRials,
     discountAmountRials: snapshot.discountAmountRials,
     finalAmountRials: snapshot.finalAmountRials,
@@ -259,11 +264,13 @@ export async function startGuidancePackageCheckout(params: {
   const description = `ثبت‌نام بسته «${pkg.title}» — سامانه انتخاب رشته`;
 
   const financialMetadata: Record<string, unknown> = {
-    packageCode: pkg.code,
+    packageCode: checkoutQuote.planPackageCode,
+    guidancePackageAddons: checkoutQuote.addonCodes,
+    lineItems: checkoutQuote.lineItems,
     originalAmountRials: snapshot.originalAmountRials,
     discountAmountRials: snapshot.discountAmountRials,
     finalAmountRials: snapshot.finalAmountRials,
-    calculation: "guidance-discount-engine-v1",
+    calculation: "guidance-discount-engine-v2",
     ...(quotedDiscountCode
       ? {
           guidanceDiscountCode: quotedDiscountCode,
@@ -418,7 +425,8 @@ export async function startGuidancePackageCheckout(params: {
     return finalizeZeroPayableGuidanceCheckout({
       organizationId: params.organizationId,
       plan,
-      pkgCode: pkg.code,
+      pkgCode: checkoutQuote.planPackageCode,
+      pkgAddons: checkoutQuote.addonCodes,
       intent: intent!,
       description,
       snapshotFinal: snapshot.finalAmountRials,
@@ -602,7 +610,10 @@ export async function startGuidancePackageCheckout(params: {
 
     await tx.guidancePlan.update({
       where: { id: plan.id },
-      data: { guidancePackageCode: pkg.code },
+      data: {
+        guidancePackageCode: checkoutQuote.planPackageCode,
+        guidancePackageAddons: checkoutQuote.addonCodes,
+      },
     });
   });
 
@@ -620,6 +631,23 @@ export async function startGuidancePackageCheckout(params: {
   };
 }
 
+function readPackageCommerceMeta(metadata: Prisma.JsonValue | null): {
+  packageCode: string | null;
+  addons: string[];
+} {
+  const meta = asMetadataRecord(metadata);
+  const packageCode =
+    typeof meta.packageCode === "string" && meta.packageCode.trim()
+      ? meta.packageCode.trim().toUpperCase()
+      : null;
+  const addons = Array.isArray(meta.guidancePackageAddons)
+    ? meta.guidancePackageAddons.filter(
+        (v): v is string => typeof v === "string" && v.trim().length > 0,
+      )
+    : [];
+  return { packageCode, addons };
+}
+
 async function finalizeZeroPayableGuidanceCheckout(params: {
   organizationId: string;
   plan: {
@@ -632,6 +660,7 @@ async function finalizeZeroPayableGuidanceCheckout(params: {
     userId: string;
   };
   pkgCode: string;
+  pkgAddons: readonly string[];
   intent: {
     id: string;
     status: PaymentStatus;
@@ -688,6 +717,7 @@ async function finalizeZeroPayableGuidanceCheckout(params: {
       where: { id: params.plan.id },
       data: {
         guidancePackageCode: params.pkgCode,
+        guidancePackageAddons: [...params.pkgAddons],
         packagePaidAt: new Date(),
       },
     });
@@ -899,9 +929,18 @@ export async function verifyGuidancePaymentCallback(params: {
     });
 
     if (nextStatus === PaymentStatus.PAID) {
+      const commerce = readPackageCommerceMeta(intent.metadata);
       await tx.guidancePlan.update({
         where: { id: plan.id },
-        data: { packagePaidAt: new Date() },
+        data: {
+          packagePaidAt: new Date(),
+          ...(commerce.packageCode
+            ? {
+                guidancePackageCode: commerce.packageCode,
+                guidancePackageAddons: commerce.addons,
+              }
+            : {}),
+        },
       });
     }
   });
