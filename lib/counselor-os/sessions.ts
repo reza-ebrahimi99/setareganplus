@@ -222,6 +222,13 @@ export async function saveSessionRecord(params: {
     });
   }
 
+  if (params.input.markCompleted) {
+    const { revalidatePath } = await import("next/cache");
+    revalidatePath(`/admin/counselor/students/${row.studentId}`);
+    revalidatePath("/portal/student/services/guidance/journey/steps/11");
+    revalidatePath("/portal/student/services/guidance/journey/steps/15");
+  }
+
   if (params.input.markCompleted && params.input.nextFollowUpAt) {
     await prisma.counselorFollowUp.create({
       data: {

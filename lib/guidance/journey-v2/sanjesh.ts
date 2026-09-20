@@ -64,6 +64,23 @@ export async function loadSanjeshCase(params: {
   };
 }
 
+export function validateSanjeshReference(raw: string | undefined | null): {
+  ok: true;
+  value: string;
+} | { ok: false; error: string } {
+  const value = (raw ?? "").trim().replace(/\s+/g, "");
+  if (!value) {
+    return { ok: false, error: "کد رهگیری سنجش را وارد کنید." };
+  }
+  if (value.length < 6 || value.length > 40) {
+    return { ok: false, error: "کد رهگیری باید بین ۶ تا ۴۰ کاراکتر باشد." };
+  }
+  if (!/^[A-Za-z0-9\-]+$/.test(value)) {
+    return { ok: false, error: "کد رهگیری فقط می‌تواند شامل حروف، عدد و خط تیره باشد." };
+  }
+  return { ok: true, value };
+}
+
 export async function declareSanjeshSubmission(params: {
   organizationId: string;
   actorUserId: string;
@@ -74,6 +91,9 @@ export async function declareSanjeshSubmission(params: {
   submittedAt?: string;
   file: File | null;
 }) {
+  const refCheck = validateSanjeshReference(params.reference);
+  if (!refCheck.ok) return refCheck;
+
   if (params.file) {
     const uploaded = await uploadGuidanceTypedDocument({
       organizationId: params.organizationId,
@@ -95,7 +115,7 @@ export async function declareSanjeshSubmission(params: {
     data: {
       v2SanjeshStatus: SANJESH_STATUS.PENDING_REVIEW,
       v2SanjeshDeclaredAt: Number.isNaN(declaredAt.getTime()) ? new Date() : declaredAt,
-      v2SanjeshReference: params.reference?.trim().slice(0, 80) || null,
+      v2SanjeshReference: refCheck.value,
       v2SanjeshNote: params.note?.trim().slice(0, 800) || null,
     },
   });

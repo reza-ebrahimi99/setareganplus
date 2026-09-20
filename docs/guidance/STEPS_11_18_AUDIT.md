@@ -65,7 +65,22 @@
 5. **Studio 13** — choice-studio present; autosave/concurrency/warnings need consolidation (reuse existing validate).
 6. **Versioning** — `GuidanceChoiceList.version` + statuses; compare/restore via new revision (partial — strengthen UI).
 7. **Management dashboard** — KPIs partial on counselor home; supervisor rollup to extend.
-8. **E2E** — seed script exists; dedicated 11–18 workflow test to add.
+8. **E2E** — `npm run test:guidance-steps-11-18` (unit); full DB e2e via `guidance:journey-e2e-seed` (manual).
+
+## Implemented in this mission (baseline after c9fd0d7)
+
+- Unified `buildLateJourneySignals` + `computeNextActionCard` (counselor case + student late steps).
+- Counselor work queue buckets + URL filters on `/admin/counselor`.
+- Session step advance requires counselor completion + summary (not booking alone).
+- Supervisor KPI strip (`CounselorManagementOverview`).
+- Sanjesh reference validation.
+
+## Reused without rewrite
+
+- Choice studio: `/admin/counselor/students/[id]/choices`, `lib/guidance/choice-studio/*`, `lib/guidance/journey-v2/choices.ts` (versions, diff, feedback).
+- Konkur step 12: `KonkurResultForm`, `correctKonkurField`, document verification gate in `advance.ts`.
+- Informed consent step 17: `InformedConfirmPanel`, plan `finalApprovedAt` / ack version.
+- PDF/print: existing export routes under `students/[id]/export/[kind]`.
 
 ## Reuse strategy
 
