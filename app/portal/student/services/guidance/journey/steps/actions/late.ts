@@ -35,6 +35,10 @@ import {
   planHasCounselorDownstreamWork,
   recordStudentHistoricalEdit,
 } from "@/lib/guidance/journey-v2/student-edit-review";
+import {
+  acceptAlternativeProposal,
+  rejectAlternativeProposal,
+} from "@/lib/counselor-os/appointment-alternative";
 import { prisma } from "@/lib/prisma";
 
 export type LateFormState = {
@@ -424,5 +428,43 @@ export async function declareSanjeshAction(
   if (!declared.ok) return { error: declared.error };
 
   revalidateJourney(18);
+  return { ok: true };
+}
+
+export async function acceptAltProposalAction(
+  _prev: LateFormState,
+  formData: FormData,
+): Promise<LateFormState> {
+  const step = Number(field(formData, "step"));
+  if (step !== 11 && step !== 15) return { error: "مرحله نامعتبر است." };
+  const access = await requirePaidStep(step, "editable");
+  const appointmentId = field(formData, "appointmentId");
+  if (!appointmentId) return { error: "نوبت یافت نشد." };
+  const result = await acceptAlternativeProposal({
+    organizationId: access.context.organization.id,
+    studentId: access.plan.studentId,
+    appointmentId,
+  });
+  if (!result.ok) return { error: result.error };
+  revalidateJourney(step);
+  return { ok: true };
+}
+
+export async function rejectAltProposalAction(
+  _prev: LateFormState,
+  formData: FormData,
+): Promise<LateFormState> {
+  const step = Number(field(formData, "step"));
+  if (step !== 11 && step !== 15) return { error: "مرحله نامعتبر است." };
+  const access = await requirePaidStep(step, "editable");
+  const appointmentId = field(formData, "appointmentId");
+  if (!appointmentId) return { error: "نوبت یافت نشد." };
+  const result = await rejectAlternativeProposal({
+    organizationId: access.context.organization.id,
+    studentId: access.plan.studentId,
+    appointmentId,
+  });
+  if (!result.ok) return { error: result.error };
+  revalidateJourney(step);
   return { ok: true };
 }

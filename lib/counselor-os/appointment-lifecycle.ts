@@ -15,6 +15,7 @@ import {
 import { assertSlotBookableForCounselorSession } from "@/lib/counselor-os/schedule-v2/student-slot-access";
 import { sessionKindFromPurpose } from "@/lib/counselor-os/schedule-v2/session-kind";
 import type { AppointmentPurpose } from "@/lib/guidance/journey-v2/constants";
+import { notifyCounselorStaff, notifyStudentPortal } from "@/lib/counselor-os/appointment-notify";
 import { prisma } from "@/lib/prisma";
 
 export const STUDENT_LOCKED_MESSAGE =
@@ -178,6 +179,15 @@ export async function confirmCounselorAppointment(params: {
       data: { status: CounselorAppointmentStatus.CONFIRMED },
     });
 
+    await notifyStudentPortal({
+      organizationId: params.ctx.organizationId,
+      studentId: appt.studentId,
+      title: "جلسه مشاوره تأیید شد",
+      body: STUDENT_LOCKED_MESSAGE,
+      entityId: appt.id,
+      dedupeKey: `confirmed:${appt.id}`,
+    });
+
     return { ok: true };
   } catch (e) {
     return {
@@ -226,6 +236,15 @@ export async function rejectCounselorAppointment(params: {
     await prisma.counselorAppointment.update({
       where: { id: appt.id },
       data: { status: CounselorAppointmentStatus.CANCELLED_BY_COUNSELOR },
+    });
+
+    await notifyStudentPortal({
+      organizationId: params.ctx.organizationId,
+      studentId: appt.studentId,
+      title: "درخواست جلسه رد شد",
+      body: params.reason?.trim() || "می‌توانید زمان دیگری انتخاب کنید.",
+      entityId: appt.id,
+      dedupeKey: `rejected:${appt.id}`,
     });
 
     return { ok: true };

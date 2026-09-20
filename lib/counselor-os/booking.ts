@@ -420,7 +420,7 @@ export async function bookCounselorSlotForStudent(params: {
   const counselorUserId = slot.advisor.userId ?? params.userId;
 
   try {
-    await prisma.counselorAppointment.create({
+    const created = await prisma.counselorAppointment.create({
       data: {
         organizationId: params.organizationId,
         studentId: params.studentId,
@@ -430,6 +430,17 @@ export async function bookCounselorSlotForStudent(params: {
         status: "BOOKED",
         purpose: params.purpose ?? null,
       },
+    });
+    const { notifyCounselorStaff } = await import(
+      "@/lib/counselor-os/appointment-notify"
+    );
+    await notifyCounselorStaff({
+      organizationId: params.organizationId,
+      counselorUserId,
+      title: "درخواست جلسه جدید",
+      body: "دانش‌آموز زمان جلسه درخواست کرده است.",
+      appointmentId: created.id,
+      dedupeSuffix: "booked",
     });
   } catch {
     await cancelReservation({

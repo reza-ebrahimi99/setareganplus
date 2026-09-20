@@ -22,7 +22,7 @@ export function SessionWorksheetDocument(props: {
   appointmentId?: string;
   generatedAtIso?: string;
   /** When set, filled report sections render instead of blank lines. */
-  filledSections?: Partial<Record<(typeof SECTIONS)[number], string>>;
+  filledSections?: Record<string, string>;
 }) {
   return (
     <div className="counselor-report counselor-worksheet" dir="rtl">

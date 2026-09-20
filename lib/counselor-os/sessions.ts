@@ -155,12 +155,18 @@ export type SaveSessionInput = {
   body?: string;
   keyPoints?: string;
   decisions?: string;
+  layoutChangeNotes?: string;
   studentActionItems?: string;
   counselorActionItems?: string;
   summary?: string;
+  counselorInternalNotes?: string;
+  sessionOutcome?: string;
   nextFollowUpAt?: Date | null;
+  startedAt?: Date | null;
+  endedAt?: Date | null;
   markCompleted?: boolean;
   saveDraft?: boolean;
+  unlockReportReason?: string;
 };
 
 export async function saveSessionRecord(params: {
@@ -172,15 +178,25 @@ export async function saveSessionRecord(params: {
     where: {
       id: params.sessionId,
       organizationId: params.ctx.organizationId,
-      counselorUserId: params.ctx.userId,
+      ...(params.ctx.canReview ? {} : { counselorUserId: params.ctx.userId }),
     },
   });
   if (!row) throw new Error("جلسه یافت نشد.");
+
+  if (row.reportLockedAt && !params.input.unlockReportReason?.trim()) {
+    if (params.input.markCompleted || params.input.saveDraft) {
+      throw new Error("گزارش قفل است. برای ویرایش، علت بازگشایی را ثبت کنید.");
+    }
+  }
 
   const summaryText = (params.input.summary ?? row.summary ?? "").trim();
   if (params.input.markCompleted && summaryText.length < 10) {
     throw new Error("برای تکمیل جلسه، خلاصه حداقل ۱۰ کاراکتر لازم است.");
   }
+
+  const unlocking = Boolean(
+    row.reportLockedAt && params.input.unlockReportReason?.trim(),
+  );
 
   await prisma.counselingSessionRecord.update({
     where: { id: params.sessionId },
@@ -189,20 +205,42 @@ export async function saveSessionRecord(params: {
       body: params.input.body ?? row.body,
       keyPoints: params.input.keyPoints ?? row.keyPoints,
       decisions: params.input.decisions ?? row.decisions,
+      layoutChangeNotes:
+        params.input.layoutChangeNotes ?? row.layoutChangeNotes,
       studentActionItems:
         params.input.studentActionItems ?? row.studentActionItems,
       counselorActionItems:
         params.input.counselorActionItems ?? row.counselorActionItems,
       summary: params.input.summary ?? row.summary,
+      counselorInternalNotes:
+        params.input.counselorInternalNotes ?? row.counselorInternalNotes,
+      sessionOutcome: params.input.sessionOutcome ?? row.sessionOutcome,
       nextFollowUpAt:
         params.input.nextFollowUpAt !== undefined
           ? params.input.nextFollowUpAt
           : row.nextFollowUpAt,
+      startedAt:
+        params.input.startedAt !== undefined ? params.input.startedAt : row.startedAt,
+      endedAt:
+        params.input.endedAt !== undefined
+          ? params.input.endedAt
+          : params.input.markCompleted
+            ? new Date()
+            : row.endedAt,
+      updatedByUserId: params.ctx.userId,
+      reportLockedAt:
+        params.input.markCompleted
+          ? new Date()
+          : unlocking
+            ? null
+            : row.reportLockedAt,
+      reportUnlockedReason: unlocking
+        ? params.input.unlockReportReason?.trim() ?? null
+        : row.reportUnlockedReason,
       isDraft: params.input.markCompleted ? false : params.input.saveDraft ?? row.isDraft,
       status: params.input.markCompleted
         ? CounselingSessionRecordStatus.COMPLETED
         : row.status,
-      endedAt: params.input.markCompleted ? new Date() : row.endedAt,
     },
   });
 

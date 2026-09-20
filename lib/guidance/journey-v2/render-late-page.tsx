@@ -152,10 +152,20 @@ export async function renderGuidanceV2LateStep(step: GuidanceV2StepId) {
     const purpose =
       step === 15 ? APPOINTMENT_PURPOSE.SECOND_SESSION : APPOINTMENT_PURPOSE.FIRST_SESSION;
     const copy = sessionPurposeCopy(purpose);
+    const { loadActiveAltProposalForStudent } = await import(
+      "@/lib/counselor-os/appointment-alternative"
+    );
     const [{ counselor, slots }, appointment] = await Promise.all([
       loadAssignedCounselorSlots({ organizationId: orgId, studentId, purpose }),
       loadPurposeAppointmentView({ organizationId: orgId, studentId, purpose }),
     ]);
+    const altProposal = appointment
+      ? await loadActiveAltProposalForStudent({
+          organizationId: orgId,
+          studentId,
+          appointmentId: appointment.id,
+        })
+      : null;
     body = (
       <SessionBookingPanel
         step={step}
@@ -163,6 +173,7 @@ export async function renderGuidanceV2LateStep(step: GuidanceV2StepId) {
         counselor={counselor}
         slots={slots}
         appointment={appointment}
+        altProposalId={altProposal?.id ?? null}
       />
     );
   } else if (step === 12) {

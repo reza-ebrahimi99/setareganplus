@@ -18009,6 +18009,142 @@ body {
   border-top: 1px dashed #cbd5e1;
 }
 
+.cos-panel--warn {
+  border-color: #fdba74;
+  background: #fff7ed;
+}
+
+.cos-hub-toolbar {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.cos-hub-toolbar__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.cos-day-grid {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 0.5rem;
+  min-height: 32rem;
+  position: relative;
+}
+
+.cos-day-grid__axis {
+  position: relative;
+  border-inline-end: 1px solid #e2e8f0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.cos-day-grid__axis span {
+  position: absolute;
+  inset-inline-end: 0.25rem;
+  transform: translateY(-50%);
+}
+
+.cos-day-grid__canvas {
+  position: relative;
+  background: #f8fafc;
+  border-radius: 0.65rem;
+  min-height: 32rem;
+}
+
+.cos-day-grid__now {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #dc2626;
+  z-index: 3;
+}
+
+.cos-day-block {
+  position: absolute;
+  left: 0.35rem;
+  right: 0.35rem;
+  border-radius: 0.45rem;
+  border: 1px solid transparent;
+  padding: 0.25rem 0.4rem;
+  text-align: right;
+  font-size: 0.78rem;
+  overflow: hidden;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.cos-day-block--pending { background: #fef9c3; border-color: #fde047; }
+.cos-day-block--confirmed { background: #dbeafe; border-color: #6366f1; }
+.cos-day-block--completed { background: #dcfce7; border-color: #22c55e; }
+.cos-day-block--noshow { background: #ffedd5; border-color: #fb923c; }
+.cos-day-block--cancelled { background: #fee2e2; border-color: #f87171; }
+.cos-day-block--open_slot { background: #ecfdf5; border-color: #6ee7b7; border-style: dashed; }
+.cos-day-block--gap { background: #fff; border-color: #cbd5e1; border-style: dotted; cursor: default; }
+.cos-day-block--break { background: #e2e8f0; border-color: #94a3b8; cursor: default; }
+
+.cos-week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.5rem;
+  overflow-x: auto;
+}
+
+@media (max-width: 900px) {
+  .cos-week-grid {
+    grid-template-columns: repeat(7, minmax(8.5rem, 1fr));
+  }
+}
+
+.cos-week-col {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.65rem;
+  padding: 0.5rem;
+  min-height: 10rem;
+}
+
+.cos-week-col h3 {
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 0.5rem;
+}
+
+.cos-week-block {
+  width: 100%;
+  text-align: right;
+  border: 0;
+  background: #ede9fe;
+  border-radius: 0.4rem;
+  padding: 0.35rem;
+  font-size: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.cos-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(15 23 42 / 0.45);
+  z-index: 80;
+  display: flex;
+  justify-content: flex-start;
+  padding: 1rem;
+}
+
+.cos-drawer {
+  background: #fff;
+  width: min(24rem, 100%);
+  border-radius: 0.85rem;
+  padding: 1rem;
+  margin-inline-start: auto;
+  max-height: 90vh;
+  overflow: auto;
+}
+
 .counselor-casebook__cover {
   display: grid;
   gap: 0.6rem;

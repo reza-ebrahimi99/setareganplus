@@ -2,8 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { OpenSessionButton } from "@/components/counselor-os/OpenSessionButton";
 import { AppointmentDetailActions } from "@/components/counselor-os/AppointmentDetailActions";
+import { AppointmentSessionReportForm } from "@/components/counselor-os/AppointmentSessionReportForm";
 import { loadCounselorAppointmentDetail } from "@/lib/counselor-os/appointments";
+import { listAppointmentAuditLogs } from "@/lib/counselor-os/appointment-audit";
 import { requireCounselorContext } from "@/lib/counselor-os/auth";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +17,18 @@ export default async function CounselorAppointmentDetailPage({ params }: Props) 
   const { appointmentId } = await params;
   const detail = await loadCounselorAppointmentDetail(ctx, appointmentId);
   if (!detail) notFound();
+
+  const [session, auditLogs] = await Promise.all([
+    detail.sessionRecordId
+      ? prisma.counselingSessionRecord.findFirst({
+          where: { id: detail.sessionRecordId, organizationId: ctx.organizationId },
+        })
+      : Promise.resolve(null),
+    listAppointmentAuditLogs({
+      organizationId: ctx.organizationId,
+      appointmentId: detail.id,
+    }),
+  ]);
 
   return (
     <div className="cos-page">
@@ -74,13 +89,55 @@ export default async function CounselorAppointmentDetailPage({ params }: Props) 
             className="cos-btn cos-btn--ghost"
             target="_blank"
           >
-            چاپ برگه جلسه
+            چاپ برگه خام
+          </Link>
+          <Link
+            href={`/admin/counselor/appointments/${detail.id}/print/report`}
+            className="cos-btn cos-btn--ghost"
+            target="_blank"
+          >
+            چاپ گزارش تکمیل‌شده
           </Link>
           <OpenSessionButton appointmentId={detail.id} sessionRecordId={detail.sessionRecordId} />
         </div>
       </section>
 
       <AppointmentDetailActions appointment={detail} />
+
+      {session ? (
+        <AppointmentSessionReportForm
+          sessionId={session.id}
+          locked={Boolean(session.reportLockedAt)}
+          defaults={{
+            keyPoints: session.keyPoints ?? "",
+            decisions: session.decisions ?? "",
+            layoutChangeNotes: session.layoutChangeNotes ?? "",
+            followUpItems: session.body ?? "",
+            studentActionItems: session.studentActionItems ?? "",
+            counselorActionItems: session.counselorActionItems ?? "",
+            summary: session.summary ?? "",
+            counselorInternalNotes: session.counselorInternalNotes ?? "",
+            sessionOutcome: session.sessionOutcome ?? "",
+          }}
+        />
+      ) : null}
+
+      {auditLogs.length > 0 ? (
+        <section className="cos-panel">
+          <h2>تاریخچه تغییرات</h2>
+          <ul className="cos-audit-list">
+            {auditLogs.map((log) => (
+              <li key={log.id}>
+                <strong>{log.action}</strong>
+                <span>
+                  {log.actor.firstName} {log.actor.lastName} · {log.createdAt.toISOString()}
+                </span>
+                {log.reason ? <em>{log.reason}</em> : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -7,9 +7,11 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import {
+  acceptAltProposalAction,
   bookV2SessionAction,
   cancelV2SessionAction,
   completeV2BookingStepAction,
+  rejectAltProposalAction,
   rescheduleV2SessionAction,
   type LateFormState,
 } from "@/app/portal/student/services/guidance/journey/steps/actions/late";
@@ -24,6 +26,7 @@ export function SessionBookingPanel(props: {
   counselor: AssignedCounselorView | null;
   slots: V2SlotView[];
   appointment: V2AppointmentView | null;
+  altProposalId?: string | null;
 }) {
   const router = useRouter();
   const [bookState, bookAction, bookPending] = useActionState(bookV2SessionAction, initial);
@@ -37,6 +40,14 @@ export function SessionBookingPanel(props: {
   );
   const [rescheduleState, rescheduleAction, reschedulePending] = useActionState(
     rescheduleV2SessionAction,
+    initial,
+  );
+  const [acceptAltState, acceptAltAction, acceptAltPending] = useActionState(
+    acceptAltProposalAction,
+    initial,
+  );
+  const [rejectAltState, rejectAltAction, rejectAltPending] = useActionState(
+    rejectAltProposalAction,
     initial,
   );
   const [selected, setSelected] = useState("");
@@ -109,7 +120,36 @@ export function SessionBookingPanel(props: {
             </p>
             {doneState.error ? <p className="gpj-banner gpj-banner--error">{doneState.error}</p> : null}
           </form>
-          {props.appointment.canReschedule ? (
+          {props.appointment.lockedMessage ? (
+            <p className="gpj-banner gpj-banner--info">{props.appointment.lockedMessage}</p>
+          ) : null}
+          {props.appointment && props.altProposalId ? (
+            <div className="gv2-panel gv2-panel--accent">
+              <h3>پیشنهاد زمان جایگزین</h3>
+              <p>مشاور زمان دیگری پیشنهاد داده است. فقط یکی از گزینه‌ها را انتخاب کنید.</p>
+              <form action={acceptAltAction} className="gv2-booking__actions">
+                <input type="hidden" name="step" value={String(props.step)} />
+                <input type="hidden" name="appointmentId" value={props.appointment.id} />
+                <button type="submit" className="cos-btn" disabled={acceptAltPending}>
+                  پذیرش زمان پیشنهادی
+                </button>
+              </form>
+              <form action={rejectAltAction}>
+                <input type="hidden" name="step" value={String(props.step)} />
+                <input type="hidden" name="appointmentId" value={props.appointment.id} />
+                <button type="submit" className="gv2-btn-ghost" disabled={rejectAltPending}>
+                  رد پیشنهاد
+                </button>
+              </form>
+              {acceptAltState.error ? (
+                <p className="gpj-banner gpj-banner--error">{acceptAltState.error}</p>
+              ) : null}
+              {rejectAltState.error ? (
+                <p className="gpj-banner gpj-banner--error">{rejectAltState.error}</p>
+              ) : null}
+            </div>
+          ) : null}
+          {props.appointment.canCancel ? (
             <div className="gv2-booking__actions">
               <form action={cancelAction}>
                 <input type="hidden" name="step" value={String(props.step)} />
@@ -124,7 +164,7 @@ export function SessionBookingPanel(props: {
         </section>
       ) : null}
 
-      {props.slots.length === 0 ? (
+      {props.appointment && !props.appointment.canReschedule ? null : props.slots.length === 0 ? (
         <div className="gv2-status-card">
           <h2>در حال حاضر زمان آزادی ثبت نشده است.</h2>
           <p>مشاور پرونده هنوز بازه زمانی آزادی در تقویم ثبت نکرده است. بعداً دوباره سر بزنید.</p>

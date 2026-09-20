@@ -631,6 +631,9 @@ model Organization {
   counselorNotes                       CounselorNote[]
   counselorFollowUps                   CounselorFollowUp[]
   counselorAppointments                CounselorAppointment[]
+  counselorAppointmentAuditLogs        CounselorAppointmentAuditLog[]
+  counselorAppointmentAltProposals     CounselorAppointmentAltProposal[]
+  studentPortalNotifications           StudentPortalNotification[]
   counselorSchedulePlans               CounselorSchedulePlan[]
   counselorScheduleDays                CounselorScheduleDay[]
   counselorScheduleWindows             CounselorScheduleWindow[]
@@ -743,6 +746,9 @@ model User {
   counselorStudentAssignments  CounselorStudentAssignment[] @relation("CounselorAssignmentCounselor")
   counselorAssignmentsCreated  CounselorStudentAssignment[] @relation("CounselorAssignmentAssignedBy")
   counselingSessionRecords     CounselingSessionRecord[]    @relation("CounselingSessionCounselor")
+  counselingSessionsUpdated    CounselingSessionRecord[]    @relation("CounselingSessionUpdatedBy")
+  counselorAppointmentAuditLogs CounselorAppointmentAuditLog[] @relation("CounselorAppointmentAuditActor")
+  counselorAppointmentAltProposalsCreated CounselorAppointmentAltProposal[] @relation("CounselorAltProposalCreator")
   counselorNotes               CounselorNote[]              @relation("CounselorNoteAuthor")
   counselorFollowUps           CounselorFollowUp[]          @relation("CounselorFollowUpCounselor")
   counselorAppointments        CounselorAppointment[]       @relation("CounselorAppointmentCounselor")
@@ -2870,6 +2876,7 @@ model Student {
   counselorNotes              CounselorNote[]
   counselorFollowUps          CounselorFollowUp[]
   counselorAppointments       CounselorAppointment[]
+  studentPortalNotifications  StudentPortalNotification[]
   counselorCaseCorrections    CounselorCaseCorrection[]
   guidanceChoiceLists         GuidanceChoiceList[]
   commerceOrders              CommerceOrder[]              @relation("CommerceOrderStudent")
@@ -5078,6 +5085,8 @@ model CounselorAppointment {
   status               CounselorAppointmentStatus @default(BOOKED)
   /// V2 session purpose: FIRST_SESSION | SECOND_SESSION. Null = generic counseling booking.
   purpose              String?
+  /// Legacy BOOKED + CONFIRMED reservation resolved by admin.
+  inconsistencyResolvedAt DateTime?
   createdAt            DateTime                   @default(now())
   updatedAt            DateTime                   @updatedAt
 
@@ -5086,6 +5095,8 @@ model CounselorAppointment {
   counselor          User               @relation("CounselorAppointmentCounselor", fields: [counselorUserId], references: [id], onDelete: Restrict)
   guidancePlan       GuidancePlan?      @relation(fields: [organizationId, guidancePlanId], references: [organizationId, id], onDelete: SetNull)
   bookingReservation BookingReservation @relation(fields: [organizationId, bookingReservationId], references: [organizationId, id], onDelete: Restrict)
+  auditLogs          CounselorAppointmentAuditLog[]
+  altProposals       CounselorAppointmentAltProposal[]
 
   @@unique([organizationId, bookingReservationId])
   @@index([organizationId, counselorUserId, status])
@@ -5093,6 +5104,66 @@ model CounselorAppointment {
   @@index([organizationId, guidancePlanId])
   @@index([organizationId, studentId, purpose, status], map: "cos_appt_stu_purp_idx")
   @@map("counselor_appointments")
+}
+
+model CounselorAppointmentAuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  appointmentId  String
+  actorUserId    String
+  action         String
+  reason         String?
+  beforeJson     Json?
+  afterJson      Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  appointment  CounselorAppointment @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  actor        User                 @relation("CounselorAppointmentAuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, appointmentId, createdAt])
+  @@map("counselor_appointment_audit_logs")
+}
+
+model CounselorAppointmentAltProposal {
+  id                String    @id @default(cuid())
+  organizationId    String
+  appointmentId     String
+  proposedSlotId    String
+  holdReservationId String?   @unique
+  status            String    @default("PENDING_STUDENT")
+  expiresAt         DateTime
+  createdByUserId   String
+  respondedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  appointment  CounselorAppointment @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  createdBy    User                 @relation("CounselorAltProposalCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, appointmentId, status])
+  @@map("counselor_appointment_alt_proposals")
+}
+
+model StudentPortalNotification {
+  id             String    @id @default(cuid())
+  organizationId String
+  studentId      String
+  title          String
+  body           String?
+  entityType     String?
+  entityId       String?
+  dedupeKey      String
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student      Student      @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, studentId, dedupeKey])
+  @@index([organizationId, studentId, readAt])
+  @@map("student_portal_notifications")
 }
 
 /// Persistent counseling session documentation (institutional knowledge).
@@ -5118,12 +5189,19 @@ model CounselingSessionRecord {
   summary              String?                       @db.Text
   nextFollowUpAt       DateTime?
   isDraft              Boolean                       @default(false)
+  layoutChangeNotes    String?                       @db.Text
+  counselorInternalNotes String?                     @db.Text
+  sessionOutcome       String?
+  reportLockedAt       DateTime?
+  reportUnlockedReason String?                       @db.Text
+  updatedByUserId      String?
   createdAt            DateTime                      @default(now())
   updatedAt            DateTime                      @updatedAt
 
   organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   student            Student             @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
   counselor          User                @relation("CounselingSessionCounselor", fields: [counselorUserId], references: [id], onDelete: Restrict)
+  updatedBy          User?               @relation("CounselingSessionUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
   guidancePlan       GuidancePlan?       @relation(fields: [organizationId, guidancePlanId], references: [organizationId, id], onDelete: SetNull)
   bookingReservation BookingReservation? @relation(fields: [organizationId, bookingReservationId], references: [organizationId, id], onDelete: SetNull)
   followUps          CounselorFollowUp[]
