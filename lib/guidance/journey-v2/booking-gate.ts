@@ -62,3 +62,57 @@ export function assertQualifyingSessionBooking(params: {
   }
   return { ok: true };
 }
+
+/** Step 11/15 completion — after the session, not at booking time. */
+export function assertSessionHeldForStepAdvance(params: {
+  snapshot: BookingAdvanceSnapshot | null;
+  expectedPurpose: string;
+  expectedPlanId: string;
+  expectedCounselorUserId: string;
+  appointmentCompleted: boolean;
+  sessionRecordCompleted: boolean;
+  sessionSummary: string | null | undefined;
+  now?: Date;
+}): { ok: true } | { ok: false; error: string } {
+  const now = params.now ?? new Date();
+  const row = params.snapshot;
+  if (!row) {
+    return { ok: false, error: "ابتدا جلسه را رزرو کنید." };
+  }
+  if (row.purpose !== params.expectedPurpose) {
+    return { ok: false, error: "نوبت با نوع این جلسه هم‌خوان نیست." };
+  }
+  if (!row.guidancePlanId || row.guidancePlanId !== params.expectedPlanId) {
+    return { ok: false, error: "نوبت به پرونده فعلی متصل نیست." };
+  }
+  if (row.counselorUserId !== params.expectedCounselorUserId) {
+    return { ok: false, error: "نوبت متعلق به مشاور پرونده شما نیست." };
+  }
+  if (!row.slotStartsAt) {
+    return { ok: false, error: "زمان جلسه ثبت نشده است." };
+  }
+  if (
+    !params.appointmentCompleted &&
+    !params.sessionRecordCompleted &&
+    row.slotStartsAt.getTime() > now.getTime()
+  ) {
+    return {
+      ok: false,
+      error: "تا برگزاری جلسه، ادامه مسیر باز نمی‌شود.",
+    };
+  }
+  const summary = (params.sessionSummary ?? "").trim();
+  if (!params.appointmentCompleted && !params.sessionRecordCompleted) {
+    return {
+      ok: false,
+      error: "مشاور باید جلسه را برگزارشده علامت بزند و خلاصه ثبت کند.",
+    };
+  }
+  if (summary.length < 10) {
+    return {
+      ok: false,
+      error: "خلاصه جلسه هنوز توسط مشاور ثبت نشده است.",
+    };
+  }
+  return { ok: true };
+}

@@ -42,10 +42,10 @@ export function SessionBookingPanel(props: {
   const [selected, setSelected] = useState("");
 
   useEffect(() => {
-    if (doneState.ok || bookState.ok) {
+    if (doneState.ok) {
       router.replace(guidanceJourneyV2StepPath(props.step + 1));
     }
-  }, [bookState.ok, doneState.ok, props.step, router]);
+  }, [doneState.ok, props.step, router]);
 
   if (!props.counselor) {
     return (
@@ -102,8 +102,11 @@ export function SessionBookingPanel(props: {
           <form action={doneAction}>
             <input type="hidden" name="step" value={String(props.step)} />
             <button type="submit" className="gjv2-nav__button gjv2-nav__button--next" disabled={donePending}>
-              {donePending ? "در حال ادامه…" : "ادامه مسیر"}
+              {donePending ? "در حال ادامه…" : "ادامه پس از ثبت جلسه توسط مشاور"}
             </button>
+            <p className="cos-muted" style={{ marginTop: "0.5rem" }}>
+              پس از برگزاری جلسه، مشاور خلاصه را ثبت می‌کند؛ سپس می‌توانید ادامه دهید.
+            </p>
             {doneState.error ? <p className="gpj-banner gpj-banner--error">{doneState.error}</p> : null}
           </form>
           {props.appointment.canReschedule ? (

@@ -20,7 +20,11 @@ import {
   formatJalaliDateTimeShort,
 } from "@/lib/datetime/jalali";
 import { publicUrlForStorageKey } from "@/lib/media/storage";
-import { assertQualifyingSessionBooking } from "@/lib/guidance/journey-v2/booking-gate";
+import {
+  assertQualifyingSessionBooking,
+  assertSessionHeldForStepAdvance,
+} from "@/lib/guidance/journey-v2/booking-gate";
+import { CounselorAppointmentStatus, CounselingSessionRecordStatus } from "@/generated/prisma/enums";
 import {
   ACTIVE_APPOINTMENT_STATUSES,
   APPOINTMENT_PURPOSE,
@@ -192,6 +196,86 @@ export async function loadPurposeAppointmentView(params: {
 }): Promise<V2AppointmentView | null> {
   const row = await findActivePurposeAppointment(params);
   return row ? mapAppointmentView(row) : null;
+}
+
+export async function findLatestPurposeAppointment(params: {
+  organizationId: string;
+  studentId: string;
+  purpose: AppointmentPurpose;
+}) {
+  return prisma.counselorAppointment.findFirst({
+    where: {
+      organizationId: params.organizationId,
+      studentId: params.studentId,
+      purpose: params.purpose,
+      status: {
+        in: [
+          CounselorAppointmentStatus.BOOKED,
+          CounselorAppointmentStatus.CONFIRMED,
+          CounselorAppointmentStatus.COMPLETED,
+        ],
+      },
+    },
+    include: {
+      bookingReservation: {
+        include: { slot: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function loadSessionStepAdvanceQualification(params: {
+  organizationId: string;
+  studentId: string;
+  purpose: AppointmentPurpose;
+  planId: string;
+  counselorUserId: string;
+  now?: Date;
+}): Promise<{ ok: true; appointmentId: string } | { ok: false; error: string }> {
+  const row = await findLatestPurposeAppointment({
+    organizationId: params.organizationId,
+    studentId: params.studentId,
+    purpose: params.purpose,
+  });
+  const reservation = row?.bookingReservation;
+  const slot = reservation?.slot;
+  const session = reservation
+    ? await prisma.counselingSessionRecord.findFirst({
+        where: {
+          organizationId: params.organizationId,
+          bookingReservationId: reservation.id,
+        },
+        select: { status: true, summary: true },
+      })
+    : null;
+
+  const gate = assertSessionHeldForStepAdvance({
+    expectedPurpose: params.purpose,
+    expectedPlanId: params.planId,
+    expectedCounselorUserId: params.counselorUserId,
+    now: params.now,
+    appointmentCompleted: row?.status === CounselorAppointmentStatus.COMPLETED,
+    sessionRecordCompleted:
+      session?.status === CounselingSessionRecordStatus.COMPLETED,
+    sessionSummary: session?.summary,
+    snapshot: row
+      ? {
+          appointmentId: row.id,
+          purpose: row.purpose ?? "",
+          appointmentStatus: row.status,
+          guidancePlanId: row.guidancePlanId,
+          counselorUserId: row.counselorUserId,
+          reservationId: row.bookingReservationId,
+          reservationStatus: reservation?.status ?? null,
+          slotStartsAt: slot?.startsAt ?? null,
+          slotAdvisorId: slot?.advisorId ?? null,
+        }
+      : null,
+  });
+  if (!gate.ok) return gate;
+  if (!row) return { ok: false, error: "جلسه یافت نشد." };
+  return { ok: true, appointmentId: row.id };
 }
 
 export async function loadQualifyingSessionBooking(params: {

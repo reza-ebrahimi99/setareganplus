@@ -22,7 +22,7 @@ import {
 import { APPOINTMENT_PURPOSE } from "@/lib/guidance/journey-v2/constants";
 import {
   loadAssignedCounselorForStudent,
-  loadQualifyingSessionBooking,
+  loadSessionStepAdvanceQualification,
 } from "@/lib/guidance/journey-v2/appointments";
 import { assertRequiredDocumentApproved } from "@/lib/guidance/documents/verification-gate";
 import { assertArrangementEntitlement } from "@/lib/guidance/journey-v2/entitlements";
@@ -109,7 +109,7 @@ export async function advanceGuidanceJourneyV2Step(params: {
     if (!counselor) {
       return { ok: false, error: "پرونده شما در حال تخصیص به مشاور است." };
     }
-    const qualified = await loadQualifyingSessionBooking({
+    const qualified = await loadSessionStepAdvanceQualification({
       organizationId: params.organizationId,
       studentId: params.studentId,
       purpose,

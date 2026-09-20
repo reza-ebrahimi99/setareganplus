@@ -10,6 +10,7 @@ import {
   bucketForWorkItem,
   scoreWorkQueuePriority,
 } from "../lib/counselor-os/work-queue-priority";
+import { assertSessionHeldForStepAdvance } from "../lib/guidance/journey-v2/booking-gate";
 
 function plan(partial: Partial<GuidanceV2PlanSnapshot>): GuidanceV2PlanSnapshot {
   return {
@@ -114,5 +115,43 @@ assert.match(card.actionLabel, /جلسه/);
 assert.equal(card.owner, "student");
 assert.equal(card.href, "/admin/counselor/students/s1");
 assert.equal(card.progress11to18.length, 8);
+
+const snap = {
+  appointmentId: "a1",
+  purpose: "FIRST_SESSION",
+  appointmentStatus: "COMPLETED",
+  guidancePlanId: "plan1",
+  counselorUserId: "c1",
+  reservationId: "r1",
+  reservationStatus: "CONFIRMED",
+  slotStartsAt: new Date(Date.now() - 3600_000),
+  slotAdvisorId: "adv1",
+};
+
+assert.equal(
+  assertSessionHeldForStepAdvance({
+    snapshot: snap,
+    expectedPurpose: "FIRST_SESSION",
+    expectedPlanId: "plan1",
+    expectedCounselorUserId: "c1",
+    appointmentCompleted: true,
+    sessionRecordCompleted: true,
+    sessionSummary: "خلاصه جلسه اول ثبت شد",
+  }).ok,
+  true,
+);
+
+assert.equal(
+  assertSessionHeldForStepAdvance({
+    snapshot: snap,
+    expectedPurpose: "FIRST_SESSION",
+    expectedPlanId: "plan1",
+    expectedCounselorUserId: "c1",
+    appointmentCompleted: false,
+    sessionRecordCompleted: false,
+    sessionSummary: "",
+  }).ok,
+  false,
+);
 
 console.log("guidance next-action unit tests passed");

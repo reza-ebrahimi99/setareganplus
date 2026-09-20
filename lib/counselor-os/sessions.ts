@@ -3,6 +3,7 @@
  */
 
 import {
+  CounselorAppointmentStatus,
   CounselingSessionRecordStatus,
   CounselingSessionType,
 } from "@/generated/prisma/enums";
@@ -176,6 +177,11 @@ export async function saveSessionRecord(params: {
   });
   if (!row) throw new Error("جلسه یافت نشد.");
 
+  const summaryText = (params.input.summary ?? row.summary ?? "").trim();
+  if (params.input.markCompleted && summaryText.length < 10) {
+    throw new Error("برای تکمیل جلسه، خلاصه حداقل ۱۰ کاراکتر لازم است.");
+  }
+
   await prisma.counselingSessionRecord.update({
     where: { id: params.sessionId },
     data: {
@@ -199,6 +205,22 @@ export async function saveSessionRecord(params: {
       endedAt: params.input.markCompleted ? new Date() : row.endedAt,
     },
   });
+
+  if (params.input.markCompleted && row.bookingReservationId) {
+    await prisma.counselorAppointment.updateMany({
+      where: {
+        organizationId: params.ctx.organizationId,
+        bookingReservationId: row.bookingReservationId,
+        status: {
+          in: [
+            CounselorAppointmentStatus.BOOKED,
+            CounselorAppointmentStatus.CONFIRMED,
+          ],
+        },
+      },
+      data: { status: CounselorAppointmentStatus.COMPLETED },
+    });
+  }
 
   if (params.input.markCompleted && params.input.nextFollowUpAt) {
     await prisma.counselorFollowUp.create({

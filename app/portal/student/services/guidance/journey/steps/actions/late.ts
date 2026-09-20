@@ -18,7 +18,7 @@ import {
   cancelV2Session,
   rescheduleV2Session,
   loadAssignedCounselorForStudent,
-  loadQualifyingSessionBooking,
+  loadSessionStepAdvanceQualification,
 } from "@/lib/guidance/journey-v2/appointments";
 import { validateKonkurInput, saveKonkurResult, loadSelectedExamGroups } from "@/lib/guidance/journey-v2/konkur";
 import {
@@ -108,15 +108,6 @@ export async function bookV2SessionAction(
   });
   if (!booked.ok) return { error: booked.error };
 
-  const completed = await completeBookedV2Step({
-    step,
-    purpose,
-    organizationId: access.context.organization.id,
-    actorUserId: access.context.user.id,
-    studentId,
-    planId: access.plan.id,
-  });
-  if (!completed.ok) return completed;
   revalidateJourney(step);
   return { ok: true };
 }
@@ -136,7 +127,7 @@ async function completeBookedV2Step(params: {
   if (!counselor) {
     return { error: "پرونده شما در حال تخصیص به مشاور است." };
   }
-  const qualified = await loadQualifyingSessionBooking({
+  const qualified = await loadSessionStepAdvanceQualification({
     organizationId: params.organizationId,
     studentId: params.studentId,
     purpose: params.purpose,
