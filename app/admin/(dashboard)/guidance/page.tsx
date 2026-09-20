@@ -73,6 +73,15 @@ export default async function AdminGuidanceQueuePage({
         breadcrumbs={adminBreadcrumbs.guidance}
       />
 
+      <section className="admin-card cos-guidance-bridge" role="note">
+        <h2 className="cos-guidance-bridge__title">صف کاری و Workspace ۱۱–۱۸</h2>
+        <p>
+          صف «صف کاری من»، KPI مراحل ۱۱–۱۸، rail عملیاتی و استودیوی چیدمان در{" "}
+          <Link href="/admin/counselor">اتاق کار مشاور (Counselor OS)</Link> قرار دارد — مسیر
+          اصلی Production برای عملیات دیررس.
+        </p>
+      </section>
+
       <p className="counselor-workspace__phase-note">
         جستجو با نام، کد ملی، موبایل، شناسه پرونده یا شماره قلم‌چی.
         {canReview ? "" : " · دسترسی شما فقط مشاهده است."}

@@ -97,6 +97,7 @@ export type WorkspaceAuditItem = {
 export type WorkspaceDossier = {
   publicId: string;
   planId: string;
+  studentId: string;
   studentName: string;
   mobile: string | null;
   gradeName: string | null;

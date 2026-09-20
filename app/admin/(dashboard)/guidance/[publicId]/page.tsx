@@ -72,6 +72,22 @@ export default async function AdminGuidanceCasePage({ params }: PageProps) {
       <p className="counselor-workspace__phase-note">
         میز کار عملیاتی: مشاهده، ویرایش، تأیید/رد هر مرحله، مدارک و خط زمان.
       </p>
+      {dossier.studentId ? (
+        <section className="admin-card cos-guidance-bridge" role="note">
+          <h2 className="cos-guidance-bridge__title">Workspace مراحل ۱۱–۱۸ (Counselor OS)</h2>
+          <p>
+            صف کاری، کارت اقدام بعدی، rail مراحل و استودیوی چیدمان در مسیر{" "}
+            <strong>/admin/counselor</strong> فعال است. برای تجربه عملیاتی جدید وارد پرونده
+            مشاور شوید.
+          </p>
+          <p className="counselor-ops__toolbar">
+            <Link href={`/admin/counselor/students/${dossier.studentId}#cos-steps1118`}>
+              ورود به Workspace ۱۱–۱۸
+            </Link>
+            <Link href="/admin/counselor">صف کاری و KPI مدیریتی</Link>
+          </p>
+        </section>
+      ) : null}
       <p className="counselor-ops__toolbar">
         <Link href={`/admin/guidance/${model.publicId}/export/summary`}>خلاصه PDF</Link>
         <Link href={`/admin/guidance/${model.publicId}/export/journey`}>گزارش سفر</Link>

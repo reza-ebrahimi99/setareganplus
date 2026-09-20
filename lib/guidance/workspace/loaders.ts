@@ -445,6 +445,7 @@ export async function loadWorkspaceDossier(params: {
   return {
     publicId: plan.publicId,
     planId: plan.id,
+    studentId: plan.studentId,
     studentName,
     mobile: userRow?.mobile ?? null,
     gradeName: studentRow?.grade?.name ?? null,
