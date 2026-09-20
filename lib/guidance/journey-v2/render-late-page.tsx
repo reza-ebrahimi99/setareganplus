@@ -46,7 +46,11 @@ import { loadJourneyCompletionSummary } from "@/lib/guidance/journey-v2/completi
 import { toPersianDigits } from "@/lib/persian";
 import { packageIncludesArrangement } from "@/lib/guidance/journey-v2/entitlements";
 import { buildLateJourneyTimeline } from "@/lib/guidance/journey-v2/late-status";
+import { buildLateJourneySignals } from "@/lib/guidance/journey-v2/signals";
+import { loadStudentNextAction } from "@/lib/guidance/journey-v2/student-next-action";
+import { StudentNextActionCard } from "@/components/guidance/v2-late/StudentNextActionCard";
 import { resolveGuidanceV2StepAccessMode } from "@/lib/guidance/journey-v2/step-access-policy";
+import { CounselorAppointmentStatus } from "@/generated/prisma/enums";
 
 export async function renderGuidanceV2LateStep(step: GuidanceV2StepId) {
   const { plan, context } = await requireGuidanceV2StepAccess(step);
@@ -94,20 +98,26 @@ export async function renderGuidanceV2LateStep(step: GuidanceV2StepId) {
       loadSanjeshCase({ organizationId: orgId, planId: plan.id }),
     ]);
 
-  const timeline = buildLateJourneyTimeline({
-    currentStep: plan.currentStep,
-    packagePaid,
-    hasArrangementEntitlement: hasArrangement,
+  const signals = buildLateJourneySignals({
+    plan,
     firstSessionBooked: Boolean(firstAppt),
+    firstSessionCompleted: firstAppt?.status === CounselorAppointmentStatus.COMPLETED,
     secondSessionBooked: Boolean(secondAppt),
-    konkurSubmitted: plan.completedSteps.includes(12) || plan.currentStep > 12,
-    initialReady: initialListForSignal?.status === CHOICE_LIST_STATUS.READY,
-    reviewComplete: plan.completedSteps.includes(14) || plan.currentStep > 14,
-    finalReady: finalListForSignal?.status === CHOICE_LIST_STATUS.READY,
-    informedConfirmed: Boolean(plan.v2InformedRevisionId || plan.finalApprovedAtIso),
-    sanjeshDeclared: Boolean(sanjeshForSignal.declaredAtLabel || plan.v2SanjeshDeclaredAtIso),
-    sanjeshVerified: sanjeshForSignal.status === SANJESH_STATUS.VERIFIED,
+    secondSessionCompleted: secondAppt?.status === CounselorAppointmentStatus.COMPLETED,
+    konkurSubmitted: Boolean(plan.completedSteps.includes(12) || plan.currentStep > 12),
+    konkurCounselorApproved: plan.completedSteps.includes(12) || plan.currentStep > 12,
+    initialListStatus: initialListForSignal?.status ?? null,
+    initialItemCount: initialListForSignal?.items.filter((i) => i.isActive).length ?? 0,
+    reviewSubmitted:
+      plan.completedSteps.includes(14) || Boolean(plan.choicesApprovedAtIso),
+    finalListStatus: finalListForSignal?.status ?? null,
     needsCounselorReview: false,
+  });
+  const timeline = buildLateJourneyTimeline(signals);
+  const studentNextAction = await loadStudentNextAction({
+    organizationId: orgId,
+    studentId,
+    plan,
   });
 
   let body: React.ReactNode = null;
@@ -310,6 +320,7 @@ export async function renderGuidanceV2LateStep(step: GuidanceV2StepId) {
       timeline={timeline}
     >
       {!isCurrent && accessMode === "edit" ? <LateStepEditWarning /> : null}
+      {studentNextAction ? <StudentNextActionCard card={studentNextAction} /> : null}
       {body}
       <p className="gv2-muted gv2-step-foot">
         مرحله جاری: {toPersianDigits(plan.currentStep)} — پیشرفت {toPersianDigits(plan.completionPercentage)}٪
