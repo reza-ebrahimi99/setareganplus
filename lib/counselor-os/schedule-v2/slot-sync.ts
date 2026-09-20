@@ -160,6 +160,7 @@ export async function materializeActivePlanSlots(params: {
     from,
     to,
     durationMinutes: plan.sessionMinutes,
+    slotStepMinutes: plan.sessionMinutes,
     explicitDays,
   });
   if (gen.error) {

@@ -15,6 +15,7 @@ import {
   copySchedulePlanV2Action,
   deleteSchedulePlanV2Action,
   pauseSchedulePlanV2Action,
+  saveAndActivateSchedulePlanV2Action,
   saveSchedulePlanV2Action,
 } from "@/app/admin/counselor/actions";
 import { JalaliDateField } from "@/components/datetime/JalaliDateField";
@@ -131,7 +132,13 @@ export function CounselorScheduleV2Panel(props: Props) {
   );
   const [dayHint, setDayHint] = useState<string | null>(null);
   const [flash, setFlash] = useState<CounselorActionState>({});
+  const [submitPhase, setSubmitPhase] = useState<
+    "idle" | "draft" | "activate"
+  >("idle");
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const flashRef = useRef<HTMLDivElement>(null);
   const [pending, startTransition] = useTransition();
+  const isSubmitting = submitPhase !== "idle";
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const idempotencyRef = useRef(newId("idem"));
@@ -237,57 +244,77 @@ export function CounselorScheduleV2Panel(props: Props) {
     });
   }, []);
 
-  function buildFormData(): FormData {
+  function buildFormData(intent: "save-draft" | "save-and-activate"): FormData {
     const fd = new FormData();
+    fd.set("intent", intent);
     fd.set("advisorId", props.advisorId);
     fd.set("sessionKind", sessionKind);
     fd.set("sessionMinutes", String(sessionMinutes));
     fd.set("title", title);
+    fd.set("note", "");
     fd.set("daysJson", daysJson);
     fd.set("planStatus", planStatus);
-    fd.set("idempotencyKey", idempotencyRef.current);
+    fd.set("idempotencyKey", newId("idem"));
     if (planId) fd.set("planId", planId);
     fd.set("version", String(version));
     return fd;
   }
 
-  function afterSuccess(result: CounselorActionState) {
+  function afterSuccess(
+    result: CounselorActionState,
+    activated: boolean,
+  ) {
     setFlash(result);
-    if (result.error) return;
+    flashRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (result.error) {
+      setSubmitError(result.error);
+      return;
+    }
+    setSubmitError(null);
     initialRevision.current =
       daysJson + sessionKind + String(sessionMinutes) + title;
     idempotencyRef.current = newId("idem");
-    if (result.planId && result.planId !== planId) {
+    if (activated) {
+      setPlanStatus(CounselorSchedulePlanStatus.ACTIVE);
+      setPlanFilter(CounselorSchedulePlanStatus.ACTIVE);
+    }
+    const nextId = result.planId ?? planId;
+    if (nextId) setPlanId(nextId);
+    if (nextId && (nextId !== planId || activated)) {
       router.push(
-        `/admin/counselor/calendar?advisorId=${encodeURIComponent(props.advisorId)}&planId=${encodeURIComponent(result.planId)}`,
+        `/admin/counselor/calendar?advisorId=${encodeURIComponent(props.advisorId)}&planId=${encodeURIComponent(nextId)}`,
       );
     } else {
       router.refresh();
     }
   }
 
-  function runSave(thenActivate = false) {
+  async function submitSchedule(intent: "save-draft" | "save-and-activate") {
+    if (isSubmitting) return;
     if (!preview.ok) {
-      setFlash({ error: preview.error });
+      const msg = preview.error;
+      setSubmitError(msg);
+      setFlash({ error: msg });
       return;
     }
-    startTransition(async () => {
-      const saveResult = await saveSchedulePlanV2Action({}, buildFormData());
-      if (saveResult.error) {
-        setFlash(saveResult);
-        return;
-      }
-      const nextPlanId = saveResult.planId ?? planId;
-      if (thenActivate && nextPlanId) {
-        const fd = new FormData();
-        fd.set("planId", nextPlanId);
-        fd.set("idempotencyKey", newId("idem"));
-        const act = await activateSchedulePlanV2Action({}, fd);
-        afterSuccess(act);
-        return;
-      }
-      afterSuccess(saveResult);
-    });
+    setSubmitError(null);
+    setFlash({});
+    setSubmitPhase(intent === "save-draft" ? "draft" : "activate");
+    try {
+      const fd = buildFormData(intent);
+      const result =
+        intent === "save-and-activate"
+          ? await saveAndActivateSchedulePlanV2Action({}, fd)
+          : await saveSchedulePlanV2Action({}, fd);
+      afterSuccess(result, intent === "save-and-activate");
+    } catch (e) {
+      const msg =
+        e instanceof Error ? e.message : "عملیات ذخیره انجام نشد.";
+      setSubmitError(msg);
+      setFlash({ error: msg });
+    } finally {
+      setSubmitPhase("idle");
+    }
   }
 
   function loadPlanFromList(id: string) {
@@ -316,16 +343,18 @@ export function CounselorScheduleV2Panel(props: Props) {
 
   return (
     <div className="cos-cal-v2 cos-cal-v2--pro">
-      {flash.error ? (
-        <p className="cos-alert cos-alert--error" role="alert">
-          {flash.error}
-        </p>
-      ) : null}
-      {flash.success ? (
-        <p className="cos-alert cos-alert--success" role="status">
-          {flash.success}
-        </p>
-      ) : null}
+      <div ref={flashRef} className="cos-cal-v2__flash">
+        {submitError || flash.error ? (
+          <p className="cos-alert cos-alert--error" role="alert">
+            {submitError ?? flash.error}
+          </p>
+        ) : null}
+        {flash.success ? (
+          <p className="cos-alert cos-alert--success" role="status">
+            {flash.success}
+          </p>
+        ) : null}
+      </div>
       {dayHint ? (
         <p className="cos-alert cos-alert--warn" role="status">
           {dayHint}
@@ -522,7 +551,11 @@ export function CounselorScheduleV2Panel(props: Props) {
         )}
       </section>
 
-      <div className="cos-cal-v2__layout">
+      <form
+        id="counselor-schedule-v2-form"
+        className="cos-cal-v2__layout"
+        onSubmit={(e) => e.preventDefault()}
+      >
         <section className="cos-cal-v2__editor cos-panel">
           <header className="cos-cal-v2__editor-head">
             <h3>
@@ -726,35 +759,44 @@ export function CounselorScheduleV2Panel(props: Props) {
             </>
           )}
         </aside>
-      </div>
+      </form>
 
-      <div className="cos-cal-v2__sticky-bar">
+      <div className="cos-cal-v2__sticky-bar" role="toolbar" aria-label="ذخیره برنامه">
+        {submitError ? (
+          <p className="cos-cal-v2__sticky-error">{submitError}</p>
+        ) : null}
         {planStatus === CounselorSchedulePlanStatus.ACTIVE ? (
           <button
             type="button"
             className="cos-btn cos-btn--primary"
-            disabled={pending || !preview.ok}
-            onClick={() => runSave(false)}
+            disabled={isSubmitting || !preview.ok}
+            onClick={() => void submitSchedule("save-draft")}
           >
-            {pending ? "در حال ذخیره…" : "ذخیره تغییرات"}
+            {submitPhase === "draft"
+              ? "در حال ذخیره…"
+              : "ذخیره تغییرات"}
           </button>
         ) : (
           <>
             <button
               type="button"
               className="cos-btn cos-btn--primary"
-              disabled={pending || !preview.ok}
-              onClick={() => runSave(false)}
+              disabled={isSubmitting || !preview.ok}
+              onClick={() => void submitSchedule("save-draft")}
             >
-              {pending ? "در حال ذخیره…" : "ذخیره پیش‌نویس"}
+              {submitPhase === "draft"
+                ? "در حال ذخیره…"
+                : "ذخیره پیش‌نویس"}
             </button>
             <button
               type="button"
-              className="cos-btn"
-              disabled={pending || !preview.ok}
-              onClick={() => runSave(true)}
+              className="cos-btn cos-btn--primary"
+              disabled={isSubmitting || !preview.ok}
+              onClick={() => void submitSchedule("save-and-activate")}
             >
-              ذخیره و فعال‌سازی
+              {submitPhase === "activate"
+                ? "در حال ذخیره و فعال‌سازی…"
+                : "ذخیره و فعال‌سازی"}
             </button>
           </>
         )}

@@ -89,4 +89,19 @@ test("two windows 09-12 and 13-16 yield 6 slots at 60min", () => {
   assert.equal(starts.length, 6);
 });
 
+test("1405/06/30 13-17 window yields 4 slots at 60min", () => {
+  const ymd = jalaliPartsToGregorianDateOnly(1405, 6, 30);
+  const preview = computeSchedulePreview({
+    sessionMinutes: 60,
+    days: [
+      {
+        localDateGregorian: ymd,
+        windows: [{ startLocalTime: "13:00", endLocalTime: "17:00" }],
+      },
+    ],
+  });
+  assert.equal(preview.ok, true);
+  if (preview.ok) assert.equal(preview.totalSlots, 4);
+});
+
 console.log("\ncounselor schedule v2 unit tests passed");

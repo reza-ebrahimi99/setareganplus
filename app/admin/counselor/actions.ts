@@ -18,6 +18,7 @@ import {
   copySchedulePlan,
   deleteSchedulePlan,
   pauseSchedulePlan,
+  saveAndActivateSchedulePlan,
   saveSchedulePlanDraft,
   updateActiveSchedulePlan,
 } from "@/lib/counselor-os/schedule-v2/plan-service";
@@ -563,52 +564,98 @@ function parseSessionKind(raw: string): CounselorScheduleSessionKind {
     : CounselorScheduleSessionKind.FIRST_SESSION;
 }
 
+function buildSchedulePlanPayload(ctx: Awaited<ReturnType<typeof requireCounselorContext>>, formData: FormData) {
+  const planId = field(formData, "planId") || undefined;
+  const versionRaw = field(formData, "version");
+  const expectedVersion = versionRaw ? Number(versionRaw) : undefined;
+  return {
+    ctx,
+    advisorId: field(formData, "advisorId"),
+    sessionKind: parseSessionKind(field(formData, "sessionKind")),
+    sessionMinutes: Number(field(formData, "sessionMinutes")),
+    title: field(formData, "title") || null,
+    note: field(formData, "note") || null,
+    daysJson: field(formData, "daysJson"),
+    planId,
+    expectedVersion: Number.isFinite(expectedVersion)
+      ? expectedVersion
+      : undefined,
+    idempotencyKey: field(formData, "idempotencyKey") || null,
+    planStatus: field(formData, "planStatus"),
+  };
+}
+
 export async function saveSchedulePlanV2Action(
   _prev: CounselorActionState,
   formData: FormData,
 ): Promise<CounselorActionState> {
   const ctx = await requireCounselorContext();
-  const advisorId = field(formData, "advisorId");
-  const planId = field(formData, "planId") || undefined;
-  const status = field(formData, "planStatus");
-  const versionRaw = field(formData, "version");
-  const expectedVersion = versionRaw ? Number(versionRaw) : undefined;
+  const intent = field(formData, "intent") || "save-draft";
+  if (intent === "save-and-activate") {
+    return saveAndActivateSchedulePlanV2Action(_prev, formData);
+  }
   try {
-    const payload = {
-      ctx,
-      advisorId,
-      sessionKind: parseSessionKind(field(formData, "sessionKind")),
-      sessionMinutes: Number(field(formData, "sessionMinutes")),
-      title: field(formData, "title") || null,
-      note: field(formData, "note") || null,
-      daysJson: field(formData, "daysJson"),
-      planId,
-      expectedVersion: Number.isFinite(expectedVersion)
-        ? expectedVersion
-        : undefined,
-      idempotencyKey: field(formData, "idempotencyKey") || null,
-    };
-    let savedPlanId = planId;
-    if (status === "ACTIVE" && planId) {
-      const updated = await updateActiveSchedulePlan({
+    const payload = buildSchedulePlanPayload(ctx, formData);
+    let savedPlanId = payload.planId;
+    if (payload.planStatus === "ACTIVE" && payload.planId) {
+      await updateActiveSchedulePlan({
         ctx,
-        planId,
+        planId: payload.planId,
         sessionMinutes: payload.sessionMinutes,
         title: payload.title,
         note: payload.note,
         daysJson: payload.daysJson,
         expectedVersion: payload.expectedVersion ?? 1,
       });
-      savedPlanId = planId;
-      void updated;
+      savedPlanId = payload.planId;
     } else {
       const saved = await saveSchedulePlanDraft(payload);
       savedPlanId = saved.planId;
     }
     revalidatePath("/admin/counselor/calendar");
-    return { success: "برنامه ذخیره شد.", planId: savedPlanId };
+    revalidatePath("/admin/counselor/appointments");
+    return { success: "پیش‌نویس ذخیره شد.", planId: savedPlanId };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "ذخیره پیش‌نویس انجام نشد." };
+  }
+}
+
+export async function saveAndActivateSchedulePlanV2Action(
+  _prev: CounselorActionState,
+  formData: FormData,
+): Promise<CounselorActionState> {
+  const ctx = await requireCounselorContext();
+  try {
+    const payload = buildSchedulePlanPayload(ctx, formData);
+    if (payload.planStatus === "ACTIVE" && payload.planId) {
+      await updateActiveSchedulePlan({
+        ctx,
+        planId: payload.planId,
+        sessionMinutes: payload.sessionMinutes,
+        title: payload.title,
+        note: payload.note,
+        daysJson: payload.daysJson,
+        expectedVersion: payload.expectedVersion ?? 1,
+      });
+      revalidatePath("/admin/counselor/calendar");
+      revalidatePath("/admin/counselor/appointments");
+      return {
+        success: "برنامه فعال به‌روزرسانی شد.",
+        planId: payload.planId,
+      };
+    }
+    const saved = await saveAndActivateSchedulePlan(payload);
+    revalidatePath("/admin/counselor/calendar");
+    revalidatePath("/admin/counselor/appointments");
+    return {
+      success: "برنامه ذخیره و فعال شد؛ نوبت‌ها ساخته شدند.",
+      planId: saved.planId,
+    };
+  } catch (e) {
+    return {
+      error:
+        e instanceof Error ? e.message : "ذخیره و فعال‌سازی انجام نشد.",
+    };
   }
 }
 

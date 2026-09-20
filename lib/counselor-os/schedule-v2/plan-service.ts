@@ -28,9 +28,12 @@ import {
   parseScheduleDaysJson,
   validateScheduleDays,
 } from "@/lib/counselor-os/schedule-v2/validate";
+import type { Prisma } from "@/generated/prisma/client";
 import { formatJalaliDateLong } from "@/lib/datetime/jalali";
 import { normalizeLocalTimeHm } from "@/lib/datetime/tehran-zone";
 import { prisma } from "@/lib/prisma";
+
+type SchedulePlanDb = Prisma.TransactionClient | typeof prisma;
 
 const DELETE_BLOCKED_MSG =
   "این برنامه دارای رزرو است و قابل حذف نیست؛ ابتدا آن را متوقف کنید.";
@@ -146,11 +149,13 @@ export async function getSchedulePlanDetail(params: {
 }
 
 async function replacePlanDays(params: {
+  db?: SchedulePlanDb;
   organizationId: string;
   planId: string;
   days: ScheduleDayInput[];
 }) {
-  await prisma.counselorScheduleDay.deleteMany({
+  const db = params.db ?? prisma;
+  await db.counselorScheduleDay.deleteMany({
     where: { organizationId: params.organizationId, planId: params.planId },
   });
   for (let i = 0; i < params.days.length; i += 1) {
@@ -160,7 +165,7 @@ async function replacePlanDays(params: {
       throw new Error("تاریخ نامعتبر است.");
     }
     const weekdayLabel = weekdayLabelForGregorianYmd(day.localDateGregorian);
-    const createdDay = await prisma.counselorScheduleDay.create({
+    const createdDay = await db.counselorScheduleDay.create({
       data: {
         organizationId: params.organizationId,
         planId: params.planId,
@@ -176,7 +181,7 @@ async function replacePlanDays(params: {
         normalizeLocalTimeHm(window.startLocalTime) ?? window.startLocalTime;
       const end =
         normalizeLocalTimeHm(window.endLocalTime) ?? window.endLocalTime;
-      await prisma.counselorScheduleWindow.create({
+      await db.counselorScheduleWindow.create({
         data: {
           organizationId: params.organizationId,
           dayId: createdDay.id,
@@ -214,7 +219,11 @@ export async function saveSchedulePlanDraft(params: {
       },
     });
     if (existing) {
-      return { planId: existing.id, version: existing.version };
+      if (existing.status !== CounselorSchedulePlanStatus.DRAFT) {
+        return { planId: existing.id, version: existing.version };
+      }
+      params.planId = existing.id;
+      params.expectedVersion = existing.version;
     }
   }
 
@@ -256,6 +265,7 @@ export async function saveSchedulePlanDraft(params: {
         );
       }
       await replacePlanDays({
+        db: tx,
         organizationId: params.ctx.organizationId,
         planId: params.planId!,
         days,
@@ -281,6 +291,7 @@ export async function saveSchedulePlanDraft(params: {
       },
     });
     await replacePlanDays({
+      db: tx,
       organizationId: params.ctx.organizationId,
       planId: plan.id,
       days,
@@ -335,6 +346,7 @@ export async function updateActiveSchedulePlan(params: {
       throw new Error("ذخیره انجام نشد؛ نسخه برنامه تغییر کرده است.");
     }
     await replacePlanDays({
+      db: tx,
       organizationId: params.ctx.organizationId,
       planId: params.planId,
       days,
@@ -348,6 +360,25 @@ export async function updateActiveSchedulePlan(params: {
 
   const fresh = await loadPlanById(params.ctx.organizationId, params.planId);
   return { version: fresh?.version ?? params.expectedVersion + 1 };
+}
+
+export async function saveAndActivateSchedulePlan(
+  params: Parameters<typeof saveSchedulePlanDraft>[0],
+): Promise<{ planId: string; version: number }> {
+  const saved = await saveSchedulePlanDraft(params);
+  await activateSchedulePlan({
+    ctx: params.ctx,
+    planId: saved.planId,
+    expectedVersion: saved.version,
+    idempotencyKey: params.idempotencyKey
+      ? `${params.idempotencyKey.trim()}:activate`
+      : null,
+  });
+  const fresh = await loadPlanById(params.ctx.organizationId, saved.planId);
+  return {
+    planId: saved.planId,
+    version: fresh?.version ?? saved.version + 1,
+  };
 }
 
 export async function activateSchedulePlan(params: {
@@ -472,8 +503,27 @@ export async function deleteSchedulePlan(params: {
     planId: plan.id,
   });
 
-  await prisma.counselorSchedulePlan.delete({
-    where: { id: plan.id },
+  await prisma.$transaction(async (tx) => {
+    await tx.bookingSlot.updateMany({
+      where: {
+        organizationId: params.ctx.organizationId,
+        schedulePlanId: plan.id,
+      },
+      data: {
+        schedulePlanId: null,
+        scheduleDayId: null,
+        scheduleWindowId: null,
+      },
+    });
+    await tx.counselorScheduleDay.deleteMany({
+      where: {
+        organizationId: params.ctx.organizationId,
+        planId: plan.id,
+      },
+    });
+    await tx.counselorSchedulePlan.delete({
+      where: { id: plan.id },
+    });
   });
 }
 
@@ -511,6 +561,7 @@ export async function copySchedulePlan(params: {
       },
     });
     await replacePlanDays({
+      db: tx,
       organizationId: params.ctx.organizationId,
       planId: plan.id,
       days,

@@ -54,6 +54,8 @@ export type GenerateSlotsInput = {
    */
   /** When true with dryRun, count slots even inside minimum lead time (UI preview). */
   previewIgnoreLeadTime?: boolean;
+  /** Override step between slot starts (counselor schedule v2 matches UI preview). */
+  slotStepMinutes?: number;
   explicitDays?: Array<{
     jalali: JalaliDate;
     windows: Array<{
@@ -134,7 +136,13 @@ async function generateSlotsForExplicitDays(
       ? Math.round(input.durationMinutes)
       : service.durationMinutes;
   const stepMinutes =
-    durationMinutes + service.bufferBeforeMinutes + service.bufferAfterMinutes;
+    typeof input.slotStepMinutes === "number" &&
+    Number.isFinite(input.slotStepMinutes) &&
+    input.slotStepMinutes >= durationMinutes
+      ? Math.round(input.slotStepMinutes)
+      : durationMinutes +
+        service.bufferBeforeMinutes +
+        service.bufferAfterMinutes;
   if (stepMinutes <= 0) {
     return {
       created: 0,
@@ -216,24 +224,39 @@ async function generateSlotsForExplicitDays(
             (found.endsAt.getTime() - startsAt.getTime()) / 60000,
           );
           const sameDuration = existingDuration === durationMinutes;
-          if (
-            !dryRun &&
-            found.status !== BookingSlotStatus.CANCELLED &&
-            found.bookedCount === 0 &&
-            sameDuration
-          ) {
-            await prisma.bookingSlot.update({
-              where: { id: found.id },
-              data: {
-                endsAt,
-                capacity: window.slotCapacity ?? 1,
-                branchId: service.branchId ?? advisor.branchId ?? null,
-                schedulePlanId: window.schedulePlanId ?? found.schedulePlanId,
-                scheduleDayId: window.scheduleDayId ?? found.scheduleDayId,
-                scheduleWindowId:
-                  window.scheduleWindowId ?? found.scheduleWindowId,
-              },
-            });
+          if (!dryRun && found.bookedCount === 0) {
+            if (found.status === BookingSlotStatus.CANCELLED) {
+              await prisma.bookingSlot.update({
+                where: { id: found.id },
+                data: {
+                  status: BookingSlotStatus.OPEN,
+                  endsAt,
+                  capacity: window.slotCapacity ?? 1,
+                  branchId: service.branchId ?? advisor.branchId ?? null,
+                  schedulePlanId: window.schedulePlanId ?? found.schedulePlanId,
+                  scheduleDayId: window.scheduleDayId ?? found.scheduleDayId,
+                  scheduleWindowId:
+                    window.scheduleWindowId ?? found.scheduleWindowId,
+                },
+              });
+              created += 1;
+            } else if (
+              found.status === BookingSlotStatus.OPEN &&
+              sameDuration
+            ) {
+              await prisma.bookingSlot.update({
+                where: { id: found.id },
+                data: {
+                  endsAt,
+                  capacity: window.slotCapacity ?? 1,
+                  branchId: service.branchId ?? advisor.branchId ?? null,
+                  schedulePlanId: window.schedulePlanId ?? found.schedulePlanId,
+                  scheduleDayId: window.scheduleDayId ?? found.scheduleDayId,
+                  scheduleWindowId:
+                    window.scheduleWindowId ?? found.scheduleWindowId,
+                },
+              });
+            }
           }
         } else if (dryRun) {
           created += 1;
