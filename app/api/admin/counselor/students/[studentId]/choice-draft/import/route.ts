@@ -3,9 +3,10 @@ import { NextResponse } from "next/server";
 import { assertCounselorCanAccessStudent } from "@/lib/counselor-os/auth";
 import { runChoiceDraftImport } from "@/lib/counselor-os/choice-draft-import";
 import {
-  assertCounselorMutationOrigin,
+  counselorMutationOriginFailureResponse,
   requireCounselorSessionJson,
 } from "@/lib/counselor-os/http";
+import { validateTrustedMutationOrigin } from "@/lib/http/trusted-mutation-origin";
 
 export const dynamic = "force-dynamic";
 
@@ -23,8 +24,9 @@ export async function POST(
   const started = Date.now();
   const { studentId } = await context.params;
 
-  if (!assertCounselorMutationOrigin(request)) {
-    return NextResponse.json({ ok: false, error: "FORBIDDEN_ORIGIN" }, { status: 403 });
+  const originCheck = validateTrustedMutationOrigin(request);
+  if (!originCheck.ok) {
+    return counselorMutationOriginFailureResponse(request, originCheck.reason);
   }
 
   const auth = await requireCounselorSessionJson();

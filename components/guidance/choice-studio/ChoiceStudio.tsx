@@ -47,6 +47,7 @@ import {
   CHOICE_DRAFT_IMPORT_TIMEOUT_MS,
   postChoiceDraftImport,
 } from "@/lib/guidance/choice-studio/import-api";
+import { MUTATION_ORIGIN_FORBIDDEN_MESSAGE_FA } from "@/lib/http/trusted-mutation-origin";
 
 const empty: CounselorLateState = {};
 
@@ -202,13 +203,25 @@ export function ChoiceStudio(props: {
       }
 
       if (!data || !data.ok) {
+        const apiError =
+          data && "error" in data && typeof data.error === "string" ? data.error : null;
+        const apiCode =
+          data && "code" in data && typeof (data as { code?: string }).code === "string"
+            ? (data as { code: string }).code
+            : null;
         const fallback =
           response.status === 401
             ? "نشست کاربری منقضی شده است. دوباره وارد شوید."
             : response.status === 403
-              ? "مجوز انجام این عملیات را ندارید."
+              ? apiCode === "FORBIDDEN_ORIGIN" || apiError === "FORBIDDEN_ORIGIN"
+                ? MUTATION_ORIGIN_FORBIDDEN_MESSAGE_FA
+                : apiError ?? "مجوز انجام این عملیات را ندارید."
               : "ورود پیش‌نویس انجام نشد.";
-        setImportDialogError(data?.ok === false ? data.error : fallback);
+        setImportDialogError(
+          apiCode === "FORBIDDEN_ORIGIN" || apiError === "FORBIDDEN_ORIGIN"
+            ? MUTATION_ORIGIN_FORBIDDEN_MESSAGE_FA
+            : apiError ?? fallback,
+        );
         return;
       }
 

@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { getCounselorContext } from "@/lib/counselor-os/auth";
+import {
+  MUTATION_ORIGIN_FORBIDDEN_MESSAGE_FA,
+  validateTrustedMutationOrigin,
+} from "@/lib/http/trusted-mutation-origin";
 
 export async function requireCounselorSessionJson(): Promise<
   | { ok: true; ctx: NonNullable<Awaited<ReturnType<typeof getCounselorContext>>> }
@@ -15,24 +19,48 @@ export async function requireCounselorSessionJson(): Promise<
   return { ok: true, ctx };
 }
 
-/** Reject cross-site POSTs when Origin/Referer is present and does not match the request host. */
 export function assertCounselorMutationOrigin(request: Request): boolean {
-  const expectedHost = new URL(request.url).host;
-  const origin = request.headers.get("origin");
-  if (origin) {
-    try {
-      return new URL(origin).host === expectedHost;
-    } catch {
-      return false;
-    }
-  }
+  return validateTrustedMutationOrigin(request).ok;
+}
+
+export function counselorMutationOriginFailureResponse(
+  request: Request,
+  reason: string,
+): NextResponse {
   const referer = request.headers.get("referer");
-  if (referer) {
-    try {
-      return new URL(referer).host === expectedHost;
-    } catch {
-      return false;
-    }
-  }
-  return true;
+  console.info("[choice-studio]", {
+    phase: "import.origin.denied",
+    reason,
+    origin: request.headers.get("origin") ?? undefined,
+    host: request.headers.get("host") ?? undefined,
+    xForwardedHost: request.headers.get("x-forwarded-host") ?? undefined,
+    xForwardedProto: request.headers.get("x-forwarded-proto") ?? undefined,
+    refererOrigin: referer
+      ? (() => {
+          try {
+            const u = new URL(referer);
+            return `${u.protocol}//${u.host}`;
+          } catch {
+            return undefined;
+          }
+        })()
+      : undefined,
+    requestUrlOrigin: (() => {
+      try {
+        const u = new URL(request.url);
+        return `${u.protocol}//${u.host}`;
+      } catch {
+        return undefined;
+      }
+    })(),
+  });
+
+  return NextResponse.json(
+    {
+      ok: false,
+      code: "FORBIDDEN_ORIGIN",
+      error: MUTATION_ORIGIN_FORBIDDEN_MESSAGE_FA,
+    },
+    { status: 403 },
+  );
 }

@@ -28,6 +28,7 @@ export type ChoiceDraftImportClientSuccess = {
 export type ChoiceDraftImportClientFailure = {
   ok: false;
   error: string;
+  code?: string;
 };
 
 export type ChoiceDraftImportClientResponse =
