@@ -31,6 +31,12 @@ import {
   type AppointmentPurpose,
 } from "@/lib/guidance/journey-v2/constants";
 import {
+  assertStudentMayChangeAppointment,
+  canStudentChangeAppointment,
+  labelCounselorAppointmentStatus,
+  STUDENT_LOCKED_MESSAGE,
+} from "@/lib/counselor-os/appointment-lifecycle";
+import {
   labelAppointmentPurpose,
   labelAppointmentStatus,
 } from "@/lib/guidance/journey-v2/labels";
@@ -65,6 +71,8 @@ export type V2AppointmentView = {
   whenLabel: string;
   startsAtIso: string;
   canReschedule: boolean;
+  canCancel: boolean;
+  lockedMessage: string | null;
 };
 
 const LIVE_STATUSES = [...ACTIVE_APPOINTMENT_STATUSES];
@@ -180,14 +188,23 @@ export function mapAppointmentView(
     purpose,
     purposeLabel: labelAppointmentPurpose(purpose),
     status: row.status,
-    statusLabel: labelAppointmentStatus(row.status),
+    statusLabel: labelCounselorAppointmentStatus(
+      row.status,
+      row.bookingReservation.status,
+    ),
     whenLabel: slot.endsAt
       ? formatJalaliDateTimeLabel(startsAt, slot.endsAt)
       : formatJalaliDateTimeShort(startsAt),
     startsAtIso: startsAt.toISOString(),
     canReschedule:
-      (row.status === "BOOKED" || row.status === "CONFIRMED") &&
+      canStudentChangeAppointment(row.status) &&
       startsAt.getTime() > Date.now(),
+    canCancel:
+      canStudentChangeAppointment(row.status) &&
+      startsAt.getTime() > Date.now(),
+    lockedMessage: canStudentChangeAppointment(row.status)
+      ? null
+      : STUDENT_LOCKED_MESSAGE,
   };
 }
 
@@ -420,6 +437,12 @@ export async function cancelV2Session(params: {
     include: { bookingReservation: { include: { slot: true } } },
   });
   if (!appt) return { ok: false, error: "نوبت قابل لغو یافت نشد." };
+  const changeGate = await assertStudentMayChangeAppointment({
+    organizationId: params.organizationId,
+    studentId: params.studentId,
+    appointmentId: params.appointmentId,
+  });
+  if (!changeGate.ok) return changeGate;
   if (appt.bookingReservation.slot.startsAt.getTime() <= Date.now()) {
     return { ok: false, error: "زمان این جلسه گذشته است و از این صفحه قابل لغو نیست." };
   }
@@ -462,6 +485,13 @@ export async function rescheduleV2Session(params: {
     },
   });
   if (!appt) return { ok: false, error: "نوبت قابل جابه‌جایی یافت نشد." };
+
+  const changeGate = await assertStudentMayChangeAppointment({
+    organizationId: params.organizationId,
+    studentId: params.studentId,
+    appointmentId: params.appointmentId,
+  });
+  if (!changeGate.ok) return changeGate;
 
   const slot = await prisma.bookingSlot.findFirst({
     where: {
@@ -513,10 +543,19 @@ export async function rescheduleV2Session(params: {
   });
   if (!result.ok) return result;
 
-  await prisma.counselorAppointment.update({
-    where: { id: appt.id },
-    data: { bookingReservationId: result.newReservationId },
-  });
+  await prisma.$transaction([
+    prisma.bookingReservation.update({
+      where: { id: result.newReservationId },
+      data: { status: "PENDING" },
+    }),
+    prisma.counselorAppointment.update({
+      where: { id: appt.id },
+      data: {
+        bookingReservationId: result.newReservationId,
+        status: CounselorAppointmentStatus.BOOKED,
+      },
+    }),
+  ]);
   return { ok: true };
 }
 

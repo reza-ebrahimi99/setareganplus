@@ -39,6 +39,7 @@
     "test:counselor-schedule-v2:integration": "tsx --env-file=.env scripts/counselor-schedule-v2-save-activate-integration.ts",
     "test:guidance-next-action": "tsx scripts/guidance-next-action-unit-tests.ts",
     "test:guidance-steps-11-18": "tsx scripts/guidance-steps-11-18-workflow-unit-tests.ts",
+    "test:counselor-appointments": "tsx scripts/counselor-appointment-lifecycle-unit-tests.ts",
     "test:counselor-workspace-ui": "tsx scripts/counselor-workspace-ui-wiring-tests.ts",
     "test:choice-studio": "tsx scripts/choice-studio-unit-tests.ts",
     "test:choice-draft-import": "NODE_ENV=test tsx --env-file=.env scripts/choice-draft-import-integration-tests.ts",

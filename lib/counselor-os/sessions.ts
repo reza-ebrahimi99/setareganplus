@@ -113,7 +113,7 @@ export async function createSessionFromAppointment(params: {
     where: {
       id: params.appointmentId,
       organizationId: params.ctx.organizationId,
-      counselorUserId: params.ctx.userId,
+      ...(params.ctx.canReview ? {} : { counselorUserId: params.ctx.userId }),
     },
     include: {
       bookingReservation: { include: { slot: true } },

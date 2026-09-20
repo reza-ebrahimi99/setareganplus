@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CounselorManagementOverview } from "@/components/counselor-os/CounselorManagementOverview";
 import { CounselorWorkQueuePanel } from "@/components/counselor-os/CounselorWorkQueuePanel";
+import { countPendingCounselorConfirmations } from "@/lib/counselor-os/appointment-lifecycle";
 import { requireCounselorContext } from "@/lib/counselor-os/auth";
 import { loadCounselorDashboard } from "@/lib/counselor-os/dashboard";
 import { loadManagementOverview } from "@/lib/counselor-os/management-overview";
@@ -17,12 +18,18 @@ type Props = {
 export default async function CounselorDashboardPage({ searchParams }: Props) {
   const ctx = await requireCounselorContext();
   const sp = await searchParams;
-  const [model, workQueue, mgmt] = await Promise.all([
+  const [model, workQueue, mgmt, pendingConfirmations] = await Promise.all([
     loadCounselorDashboard(ctx),
     loadCounselorWorkQueue(ctx),
     ctx.isSupervisor || ctx.canReview
       ? loadManagementOverview(ctx)
       : Promise.resolve(null),
+    countPendingCounselorConfirmations({
+      organizationId: ctx.organizationId,
+      counselorUserId: ctx.userId,
+      canReview: ctx.canReview,
+      isSupervisor: ctx.isSupervisor,
+    }),
   ]);
 
   const kpis = [
@@ -83,6 +90,18 @@ export default async function CounselorDashboardPage({ searchParams }: Props) {
         </section>
       )}
       <p className="cos-muted">{model.revenueNote}</p>
+
+      {pendingConfirmations > 0 ? (
+        <section className="cos-panel cos-panel--highlight">
+          <h2>جلسات نیازمند تأیید</h2>
+          <p>
+            {toPersianDigits(String(pendingConfirmations))} درخواست منتظر بررسی و تأیید شماست.
+          </p>
+          <Link href="/admin/counselor/appointments" className="cos-btn cos-btn--primary">
+            مشاهده درخواست‌ها
+          </Link>
+        </section>
+      ) : null}
 
       <section className="cos-stat-grid" aria-label="شاخص‌های عملیاتی">
         {kpis.map(([label, value]) => (

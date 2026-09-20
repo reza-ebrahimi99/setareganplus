@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { COUNSELOR_OS_HOME } from "@/lib/counselor-os/constants";
+import { toPersianDigits } from "@/lib/persian";
 
 const NAV_BASE = [
   { href: COUNSELOR_OS_HOME, label: "داشبورد", exact: true },
@@ -17,11 +18,13 @@ export function CounselorShell({
   displayName,
   roleLabel,
   isSupervisor,
+  pendingAppointments = 0,
   children,
 }: {
   displayName: string;
   roleLabel: string;
   isSupervisor: boolean;
+  pendingAppointments?: number;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -52,6 +55,9 @@ export function CounselorShell({
                 aria-current={active ? "page" : undefined}
               >
                 {item.label}
+                {item.href === "/admin/counselor/appointments" && pendingAppointments > 0 ? (
+                  <span className="cos-nav-badge">{toPersianDigits(String(pendingAppointments))}</span>
+                ) : null}
               </Link>
             );
           })}

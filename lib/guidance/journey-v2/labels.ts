@@ -16,7 +16,7 @@ const APPOINTMENT_PURPOSE_LABELS: Record<AppointmentPurpose, string> = {
 };
 
 const APPOINTMENT_STATUS_LABELS: Record<string, string> = {
-  BOOKED: "رزرو شده",
+  BOOKED: "منتظر تأیید مشاور",
   CONFIRMED: "تأیید شده",
   COMPLETED: "انجام شده",
   CANCELLED_BY_STUDENT: "لغو توسط دانش‌آموز",

@@ -16,6 +16,13 @@ export function SessionWorksheetDocument(props: {
   studentName: string;
   counselorName: string;
   sessionLabel: string;
+  dateLabel?: string;
+  timeLabel?: string;
+  trackingCode?: string;
+  appointmentId?: string;
+  generatedAtIso?: string;
+  /** When set, filled report sections render instead of blank lines. */
+  filledSections?: Partial<Record<(typeof SECTIONS)[number], string>>;
 }) {
   return (
     <div className="counselor-report counselor-worksheet" dir="rtl">
@@ -47,24 +54,45 @@ export function SessionWorksheetDocument(props: {
         </div>
         <div>
           <dt>تاریخ</dt>
-          <dd className="counselor-worksheet__blank">........................</dd>
+          <dd className={props.dateLabel ? undefined : "counselor-worksheet__blank"}>
+            {props.dateLabel ?? "........................"}
+          </dd>
         </div>
         <div>
           <dt>ساعت</dt>
-          <dd className="counselor-worksheet__blank">........................</dd>
+          <dd className={props.timeLabel ? undefined : "counselor-worksheet__blank"}>
+            {props.timeLabel ?? "........................"}
+          </dd>
         </div>
+        {props.trackingCode ? (
+          <div>
+            <dt>کد پیگیری</dt>
+            <dd>{props.trackingCode}</dd>
+          </div>
+        ) : null}
       </dl>
 
       {SECTIONS.map((title) => (
         <section key={title} className="counselor-worksheet__block">
           <h2>{title}</h2>
-          <div className="counselor-worksheet__dots" aria-hidden>
-            {Array.from({ length: 5 }, (_, index) => (
-              <span key={index} />
-            ))}
-          </div>
+          {props.filledSections?.[title] ? (
+            <p className="counselor-worksheet__filled">{props.filledSections[title]}</p>
+          ) : (
+            <div className="counselor-worksheet__dots" aria-hidden>
+              {Array.from({ length: 5 }, (_, index) => (
+                <span key={index} />
+              ))}
+            </div>
+          )}
         </section>
       ))}
+
+      {props.appointmentId ? (
+        <footer className="counselor-report__footer">
+          شناسه جلسه: {props.appointmentId}
+          {props.generatedAtIso ? ` · ${props.generatedAtIso}` : ""}
+        </footer>
+      ) : null}
 
       <footer className="counselor-worksheet__signs">
         <div>

@@ -410,6 +410,7 @@ export async function bookCounselorSlotForStudent(params: {
     lastName: params.lastName,
     mobile: params.mobile,
     meetingType: params.meetingType,
+    forcePendingConfirmation: true,
   });
 
   if (!result.ok) {

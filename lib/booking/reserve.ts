@@ -41,6 +41,8 @@ export type CreateReservationInput = {
   notes?: string | null;
   formSubmissionId?: string | null;
   preferWaitingList?: boolean;
+  /** Counselor guidance sessions require manual approval even when autoConfirm is on. */
+  forcePendingConfirmation?: boolean;
 };
 
 export type CreateReservationResult =
@@ -147,9 +149,10 @@ export async function createReservation(
       let status: BookingStatus;
 
       if (claimed) {
-        status = settings.autoConfirm
-          ? BookingStatus.CONFIRMED
-          : BookingStatus.PENDING;
+        status =
+          input.forcePendingConfirmation || !settings.autoConfirm
+            ? BookingStatus.PENDING
+            : BookingStatus.CONFIRMED;
       } else if (settings.allowWaitingList || input.preferWaitingList) {
         const wait = await claimWaitingListSeat(tx, slot.id);
         if (!wait) {
