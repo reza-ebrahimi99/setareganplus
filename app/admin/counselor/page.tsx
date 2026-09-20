@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { CounselorManagementOverview } from "@/components/counselor-os/CounselorManagementOverview";
 import { CounselorWorkQueuePanel } from "@/components/counselor-os/CounselorWorkQueuePanel";
 import { requireCounselorContext } from "@/lib/counselor-os/auth";
 import { loadCounselorDashboard } from "@/lib/counselor-os/dashboard";
+import { loadManagementOverview } from "@/lib/counselor-os/management-overview";
 import { loadCounselorWorkQueue } from "@/lib/counselor-os/work-queue";
 import { labelFollowUpPriority } from "@/lib/counselor-os/labels";
 import { toPersianDigits } from "@/lib/persian";
@@ -15,9 +17,12 @@ type Props = {
 export default async function CounselorDashboardPage({ searchParams }: Props) {
   const ctx = await requireCounselorContext();
   const sp = await searchParams;
-  const [model, workQueue] = await Promise.all([
+  const [model, workQueue, mgmt] = await Promise.all([
     loadCounselorDashboard(ctx),
     loadCounselorWorkQueue(ctx),
+    ctx.isSupervisor || ctx.canReview
+      ? loadManagementOverview(ctx)
+      : Promise.resolve(null),
   ]);
 
   const kpis = [
@@ -87,6 +92,8 @@ export default async function CounselorDashboardPage({ searchParams }: Props) {
           </article>
         ))}
       </section>
+
+      {mgmt ? <CounselorManagementOverview model={mgmt} /> : null}
 
       <CounselorWorkQueuePanel
         model={workQueue}
