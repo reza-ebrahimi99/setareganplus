@@ -93,14 +93,14 @@ export default async function CounselorDashboardPage({ searchParams }: Props) {
         ))}
       </section>
 
-      {mgmt ? <CounselorManagementOverview model={mgmt} /> : null}
-
       <CounselorWorkQueuePanel
         model={workQueue}
         q={sp.q}
         step={sp.step}
-        bucket={sp.bucket}
+        bucket={sp.bucket ?? "all"}
       />
+
+      {mgmt ? <CounselorManagementOverview model={mgmt} /> : null}
 
       <div className="cos-dashboard-grid">
         <section className="cos-panel">

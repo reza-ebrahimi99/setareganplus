@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
-import { CounselorNextActionCard } from "@/components/counselor-os/CounselorNextActionCard";
+import {
+  CounselorNextActionSection,
+  formatWaitingDaysLabel,
+} from "@/components/counselor-os/CounselorNextActionSection";
 import { CounselorStudentCaseActions } from "@/components/counselor-os/CounselorStudentCaseActions";
-import { loadCounselorCaseNextAction } from "@/lib/counselor-os/case-next-action";
 import { CounselorStudentCaseAlerts } from "@/components/counselor-os/CounselorStudentCaseAlerts";
 import { CounselorStudentCaseHeader } from "@/components/counselor-os/CounselorStudentCaseHeader";
 import { CounselorStudentCaseTabs } from "@/components/counselor-os/CounselorStudentCaseTabs";
@@ -11,13 +13,18 @@ import { listCounselorCorrections } from "@/lib/counselor-os/corrections";
 import { listStudentFollowUps } from "@/lib/counselor-os/follow-ups";
 import { listCounselorNotes } from "@/lib/counselor-os/notes";
 import { listStudentSessionHistory } from "@/lib/counselor-os/sessions";
-import { loadCounselorLateJourney } from "@/lib/counselor-os/late-journey";
 import { loadCounselorCaseBundle } from "@/lib/counselor-os/students";
+import { loadSteps1118WorkspaceModel } from "@/lib/counselor-os/steps-11-18-workspace";
+import type { CounselorCaseNavTabId } from "@/lib/counselor-os/case-page-config";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ studentId: string }> };
+
+function waitingDaysFromUpdatedAt(updatedAt: Date): number {
+  return Math.floor((Date.now() - updatedAt.getTime()) / (24 * 60 * 60 * 1000));
+}
 
 export default async function CounselorStudentCasePage({ params }: Props) {
   const { studentId } = await params;
@@ -31,14 +38,14 @@ export default async function CounselorStudentCasePage({ params }: Props) {
   }
 
   const { caseModel, dossier } = bundle;
-  const [sessions, notes, corrections, followUps, counselors, lateJourney, reviewFlag, nextAction] =
+  const [sessions, notes, corrections, followUps, counselors, steps1118, reviewFlag, studentRow] =
     await Promise.all([
       listStudentSessionHistory(ctx, studentId),
       listCounselorNotes(ctx, studentId),
       listCounselorCorrections(ctx, studentId),
       listStudentFollowUps(ctx, studentId),
       ctx.isSupervisor ? listOrgCounselorsForSelect(ctx) : Promise.resolve([]),
-      loadCounselorLateJourney(ctx, studentId),
+      loadSteps1118WorkspaceModel(ctx, studentId),
       prisma.guidancePlan.findFirst({
         where: {
           organizationId: ctx.organizationId,
@@ -48,8 +55,18 @@ export default async function CounselorStudentCasePage({ params }: Props) {
         },
         select: { v2NeedsReviewStep: true },
       }),
-      loadCounselorCaseNextAction(ctx, studentId),
+      prisma.student.findFirst({
+        where: { id: studentId, organizationId: ctx.organizationId },
+        select: { updatedAt: true },
+      }),
     ]);
+
+  const waitingDaysLabel = studentRow
+    ? formatWaitingDaysLabel(waitingDaysFromUpdatedAt(studentRow.updatedAt))
+    : null;
+
+  const defaultTab: CounselorCaseNavTabId =
+    caseModel.currentStep != null && caseModel.currentStep >= 11 ? "late" : "overview";
 
   return (
     <div className="cos-page cos-case-page">
@@ -64,7 +81,10 @@ export default async function CounselorStudentCasePage({ params }: Props) {
         needsReview={reviewFlag ? { step: reviewFlag.v2NeedsReviewStep } : null}
       />
 
-      {nextAction ? <CounselorNextActionCard card={nextAction} /> : null}
+      <CounselorNextActionSection
+        view={steps1118.nextAction}
+        waitingDaysLabel={waitingDaysLabel}
+      />
 
       <CounselorStudentCaseActions studentId={studentId} />
 
@@ -77,7 +97,8 @@ export default async function CounselorStudentCasePage({ params }: Props) {
         followUps={followUps}
         isSupervisor={ctx.isSupervisor}
         counselors={counselors}
-        lateJourney={lateJourney}
+        steps1118={steps1118}
+        defaultTab={defaultTab}
       />
     </div>
   );

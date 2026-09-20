@@ -12,7 +12,8 @@ import {
   type CounselorActionState,
 } from "@/app/admin/counselor/actions";
 import { CounselorHollandPanel } from "@/components/counselor-os/CounselorHollandPanel";
-import { CounselorLateJourneyPanel } from "@/components/counselor-os/CounselorLateJourneyPanel";
+import { CounselorSteps1118Workspace } from "@/components/counselor-os/CounselorSteps1118Workspace";
+import type { Steps1118WorkspaceModel } from "@/lib/counselor-os/steps-11-18-workspace";
 import { JalaliDateTimeFields } from "@/components/datetime/JalaliDateTimeFields";
 import {
   COUNSELOR_EDITABLE_PERSONAL_FIELDS,
@@ -25,7 +26,6 @@ import type {
   CounselorV2Dossier,
   SessionRecordView,
 } from "@/lib/counselor-os/view-models";
-import type { CounselorLateJourneyModel } from "@/lib/counselor-os/late-journey";
 import {
   buildCounselorCaseNavItems,
   type CounselorCaseNavTabId,
@@ -43,7 +43,8 @@ export function CounselorStudentCaseTabs({
   followUps,
   isSupervisor,
   counselors,
-  lateJourney,
+  steps1118,
+  defaultTab = "overview",
 }: {
   caseModel: CounselorStudentCase;
   dossier: CounselorV2Dossier;
@@ -59,10 +60,11 @@ export function CounselorStudentCaseTabs({
   }>;
   isSupervisor: boolean;
   counselors: Array<{ userId: string; name: string }>;
-  lateJourney: CounselorLateJourneyModel | null;
+  steps1118: Steps1118WorkspaceModel;
+  defaultTab?: CounselorCaseNavTabId;
 }) {
   const navId = useId();
-  const [tab, setTab] = useState<CounselorCaseNavTabId>("overview");
+  const [tab, setTab] = useState<CounselorCaseNavTabId>(defaultTab);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [noteState, noteAction, notePending] = useActionState(addCounselorNoteAction, initial);
   const [followState, followAction, followPending] = useActionState(createFollowUpAction, initial);
@@ -261,13 +263,8 @@ export function CounselorStudentCaseTabs({
           </section>
         )}
 
-        {tab === "late" && lateJourney ? (
-          <CounselorLateJourneyPanel model={lateJourney} isSupervisor={isSupervisor} />
-        ) : null}
-        {tab === "late" && !lateJourney ? (
-          <section className="cos-panel">
-            <p className="cos-muted">اطلاعات جلسات و چیدمان برای این پرونده هنوز در دسترس نیست.</p>
-          </section>
+        {tab === "late" ? (
+          <CounselorSteps1118Workspace model={steps1118} isSupervisor={isSupervisor} />
         ) : null}
 
         {tab === "academic" && (

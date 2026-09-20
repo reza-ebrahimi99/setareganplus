@@ -41,7 +41,7 @@ export function buildCounselorCaseNavItems(input: {
   const items: CounselorCaseNavItem[] = [
     { id: "overview", label: "نمای کلی", visible: true },
     { id: "journey", label: "مسیر ۱۸مرحله‌ای", visible: true },
-    { id: "late", label: "جلسات و چیدمان ۱۱–۱۸", visible: true },
+    { id: "late", label: "Workspace مراحل ۱۱–۱۸", visible: true },
     { id: "academic", label: "اطلاعات تحصیلی", visible: input.hasPersonal },
     { id: "holland", label: "آزمون رغبت‌سنجی", visible: true },
     {

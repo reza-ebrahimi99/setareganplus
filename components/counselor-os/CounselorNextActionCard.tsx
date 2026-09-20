@@ -4,6 +4,7 @@ import type { NextActionCard, NextActionState } from "@/lib/guidance/journey-v2/
 
 type Props = {
   card: NextActionCard;
+  waitingDaysLabel?: string | null;
 };
 
 function stateLabel(state: NextActionState): string {
@@ -39,7 +40,7 @@ function chipClass(status: string): string {
   return "cos-next-action__chip";
 }
 
-export function CounselorNextActionCard({ card }: Props) {
+export function CounselorNextActionCard({ card, waitingDaysLabel }: Props) {
   const lateProgress = card.progress11to18.filter((p) => p.step >= 11);
 
   return (
@@ -68,10 +69,23 @@ export function CounselorNextActionCard({ card }: Props) {
             <dd>مرحله {toPersianDigits(String(card.lastCompletedStep))}</dd>
           </div>
         ) : null}
+        {waitingDaysLabel ? (
+          <div>
+            <dt>مدت انتظار</dt>
+            <dd>{waitingDaysLabel}</dd>
+          </div>
+        ) : null}
+        {card.dueLabel ? (
+          <div>
+            <dt>موعد</dt>
+            <dd>{card.dueLabel}</dd>
+          </div>
+        ) : null}
       </dl>
 
       {card.blockerReason ? (
         <p className="cos-alert cos-alert--warn" role="status">
+          <strong>علت توقف: </strong>
           {card.blockerReason}
         </p>
       ) : null}

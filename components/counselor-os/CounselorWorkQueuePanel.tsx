@@ -14,6 +14,31 @@ type Props = {
   bucket?: string;
 };
 
+/** Primary tabs requested for counselor queue UI (always visible). */
+const PRIMARY_TABS: { id: WorkQueueBucketId | "all" | "today_combined"; label: string }[] = [
+  { id: "urgent", label: "فوری" },
+  { id: "today_combined", label: "امروز" },
+  { id: "overdue", label: "عقب‌افتاده" },
+  { id: "waiting_me", label: "منتظر اقدام من" },
+  { id: "waiting_student", label: "منتظر دانش‌آموز" },
+  { id: "ready_finalize", label: "آماده نهایی‌سازی" },
+  { id: "ready_sanjesh", label: "آماده ثبت سنجش" },
+  { id: "all", label: "همه" },
+];
+
+function itemsForTab(
+  all: WorkQueueItem[],
+  tab: (typeof PRIMARY_TABS)[number]["id"],
+): WorkQueueItem[] {
+  if (tab === "all") return all;
+  if (tab === "today_combined") {
+    return all.filter(
+      (i) => i.bucket === "today" || i.bucket === "sessions_today" || i.sessionToday,
+    );
+  }
+  return all.filter((i) => i.bucket === tab);
+}
+
 function WorkQueueList({
   items,
   bucketLabels,
@@ -22,30 +47,38 @@ function WorkQueueList({
   bucketLabels: WorkQueueModel["bucketLabels"];
 }) {
   if (items.length === 0) {
-    return <p className="cos-empty">موردی با این فیلتر نیست.</p>;
+    return (
+      <p className="cos-empty cos-work-queue-panel__empty">
+        در این تب موردی نیست. صف خالی است — فیلتر دیگری را امتحان کنید یا پرونده‌های مرحله ۱۱–۱۸ را از
+        لیست دانش‌آموزان باز کنید.
+      </p>
+    );
   }
   return (
     <ul className="cos-work-queue cos-work-queue--rich">
-      {items.slice(0, 40).map((item) => (
-        <li key={item.studentId}>
-          <Link href={item.href}>
-            <div className="cos-work-queue__row">
-              <strong>{item.studentName}</strong>
-              <span className="cos-work-queue__badge">
-                {bucketLabels[item.bucket]}
-              </span>
-            </div>
-            <span className="cos-work-queue__step">
-              {item.currentStepTitle} · {item.actionLabel}
-            </span>
-            {item.blockerHint ? (
-              <span className="cos-work-queue__warn">{item.blockerHint}</span>
-            ) : null}
-            <span className="cos-work-queue__wait">
-              {item.sessionToday
-                ? "جلسه امروز"
-                : `انتظار ${toPersianDigits(String(item.waitingDays))} روز`}
-            </span>
+      {items.slice(0, 50).map((item) => (
+        <li key={`${item.studentId}-${item.bucket}`}>
+          <div className="cos-work-queue__row">
+            <strong>{item.studentName}</strong>
+            <span className="cos-work-queue__badge">{bucketLabels[item.bucket]}</span>
+          </div>
+          <span className="cos-work-queue__step">
+            {item.currentStepTitle} · {item.actionLabel}
+          </span>
+          <span className="cos-muted">
+            مسئول: {item.blockerHint ? "مشاور" : "—"} · اولویت{" "}
+            {toPersianDigits(String(Math.max(1, 500 - item.priorityScore)))}
+          </span>
+          {item.blockerHint ? (
+            <span className="cos-work-queue__warn">{item.blockerHint}</span>
+          ) : null}
+          <span className="cos-work-queue__wait">
+            {item.sessionToday
+              ? "جلسه امروز"
+              : `انتظار ${toPersianDigits(String(item.waitingDays))} روز`}
+          </span>
+          <Link href={item.href} className="cos-btn cos-btn--primary cos-work-queue__enter">
+            ورود به پرونده
           </Link>
         </li>
       ))}
@@ -55,26 +88,69 @@ function WorkQueueList({
 
 export function CounselorWorkQueuePanel({ model, q, step, bucket }: Props) {
   const stepNum = step && /^\d+$/.test(step) ? Number(step) : undefined;
-  const bucketId =
-    bucket && bucket in model.bucketLabels ? (bucket as WorkQueueBucketId) : undefined;
+  const activeTab =
+    bucket === "all" || bucket === "today_combined" || (bucket && bucket in model.bucketLabels)
+      ? bucket
+      : undefined;
+
+  const resolvedTab = (activeTab ?? "all") as (typeof PRIMARY_TABS)[number]["id"];
+
   const filtered = filterWorkQueueItems(model.all, {
     q,
     step: stepNum,
-    bucket: bucketId,
+    bucket:
+      resolvedTab !== "all" && resolvedTab !== "today_combined" && resolvedTab in model.bucketLabels
+        ? (resolvedTab as WorkQueueBucketId)
+        : undefined,
   });
 
-  const bucketTabs = (
-    Object.entries(model.counts) as [WorkQueueBucketId, number][]
-  ).filter(([, n]) => n > 0);
+  const listItems =
+    resolvedTab === "all"
+      ? filtered
+      : resolvedTab === "today_combined"
+        ? itemsForTab(filtered, "today_combined")
+        : resolvedTab in model.bucketLabels
+          ? filtered
+          : itemsForTab(filtered, resolvedTab);
 
   return (
-    <section className="cos-panel cos-work-queue-panel">
+    <section className="cos-panel cos-work-queue-panel cos-work-queue-panel--primary">
       <header className="cos-work-queue-panel__head">
         <h2>صف کاری من</h2>
-        <p className="cos-muted">اولویت از وضعیت واقعی مراحل ۱۱–۱۸ محاسبه می‌شود.</p>
+        <p className="cos-muted">
+          اولویت از وضعیت واقعی مراحل ۱۱–۱۸ ·{" "}
+          {toPersianDigits(String(model.all.length))} پرونده در صف
+        </p>
       </header>
 
+      <div className="cos-work-queue-panel__tabs" role="tablist">
+        {PRIMARY_TABS.map((tab) => {
+          const count =
+            tab.id === "all"
+              ? model.all.length
+              : itemsForTab(model.all, tab.id).length;
+          const href =
+            tab.id === "all"
+              ? `/admin/counselor?bucket=all${q ? `&q=${encodeURIComponent(q)}` : ""}${step ? `&step=${step}` : ""}`
+              : `/admin/counselor?bucket=${tab.id}${q ? `&q=${encodeURIComponent(q)}` : ""}${step ? `&step=${step}` : ""}`;
+          const isActive = resolvedTab === tab.id;
+          return (
+            <Link
+              key={tab.id}
+              href={href}
+              role="tab"
+              aria-selected={isActive}
+              className={`cos-work-queue-panel__tab${isActive ? " is-active" : ""}`}
+            >
+              {tab.label}
+              <strong>{toPersianDigits(String(count))}</strong>
+            </Link>
+          );
+        })}
+      </div>
+
       <form className="cos-work-queue-panel__filters" method="get" action="/admin/counselor">
+        <input type="hidden" name="bucket" value={resolvedTab} />
         <input
           type="search"
           name="q"
@@ -91,33 +167,12 @@ export function CounselorWorkQueuePanel({ model, q, step, bucket }: Props) {
             </option>
           ))}
         </select>
-        <select name="bucket" defaultValue={bucket ?? ""} className="cos-input" aria-label="صف">
-          <option value="">همه صف‌ها</option>
-          {bucketTabs.map(([id, count]) => (
-            <option key={id} value={id}>
-              {model.bucketLabels[id]} ({toPersianDigits(String(count))})
-            </option>
-          ))}
-        </select>
         <button type="submit" className="cos-btn">
           اعمال فیلتر
         </button>
       </form>
 
-      <div className="cos-work-queue-panel__counts">
-        {bucketTabs.slice(0, 8).map(([id, count]) => (
-          <Link
-            key={id}
-            href={`/admin/counselor?bucket=${id}`}
-            className="cos-work-queue-panel__count"
-          >
-            {model.bucketLabels[id]}
-            <strong>{toPersianDigits(String(count))}</strong>
-          </Link>
-        ))}
-      </div>
-
-      <WorkQueueList items={filtered} bucketLabels={model.bucketLabels} />
+      <WorkQueueList items={listItems} bucketLabels={model.bucketLabels} />
     </section>
   );
 }
