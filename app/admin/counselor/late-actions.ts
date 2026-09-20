@@ -20,7 +20,9 @@ import {
 } from "@/lib/guidance/journey-v2/choices";
 import { CHOICE_LIST_KIND } from "@/lib/guidance/journey-v2/constants";
 import { parseChoiceWorkbook, previewRowsToInputs } from "@/lib/guidance/choice-studio/excel";
+import { takeFirstRowsForDraft } from "@/lib/guidance/choice-studio/preview-limits";
 import type { CanonicalChoiceRow, ChoiceImportPreview } from "@/lib/guidance/choice-studio/types";
+import { SANJESH_ACTIVE_LIMIT } from "@/lib/guidance/choice-studio/types";
 import { correctKonkurField } from "@/lib/guidance/journey-v2/konkur";
 import { loadGuidanceV2Plan } from "@/lib/guidance/journey-v2/plan";
 import { SANJESH_STATUS } from "@/lib/guidance/journey-v2/constants";
@@ -357,6 +359,7 @@ export async function importChoiceExcelAction(
 ): Promise<CounselorLateState> {
   const studentId = field(formData, "studentId");
   const kind = field(formData, "kind") === "FINAL" ? CHOICE_LIST_KIND.FINAL : CHOICE_LIST_KIND.INITIAL;
+  const truncateFirst150 = field(formData, "truncateFirst150") === "1";
   try {
     const { ctx, plan } = await gated(studentId);
     const raw = field(formData, "rows");
@@ -371,20 +374,53 @@ export async function importChoiceExcelAction(
     if (rows.length === 0) {
       return { error: "ردیفی برای ورود وجود ندارد." };
     }
+
+    const importRows = truncateFirst150 ? takeFirstRowsForDraft(rows) : rows;
+    if (!truncateFirst150 && importRows.length > SANJESH_ACTIVE_LIMIT) {
+      const extra = importRows.length - SANJESH_ACTIVE_LIMIT;
+      return {
+        error: `تعداد انتخاب‌ها ${importRows.length} مورد است؛ حداکثر ${SANJESH_ACTIVE_LIMIT} انتخاب مجاز است. ابتدا ${extra} مورد را حذف کنید.`,
+      };
+    }
+    if (truncateFirst150 && rows.length > SANJESH_ACTIVE_LIMIT) {
+      if (field(formData, "truncateAck") !== "1") {
+        return { error: "برای انتقال ۱۵۰ انتخاب اول، تأیید صریح لازم است." };
+      }
+    }
+
+    console.info("[choice-studio] importChoiceExcel", {
+      studentId,
+      kind,
+      previewRows: rows.length,
+      importRows: importRows.length,
+      truncateFirst150,
+    });
+
     const list = await importChoiceRows({
       organizationId: ctx.organizationId,
       planId: plan.id,
       studentId,
       counselorUserId: ctx.userId,
       kind,
-      items: previewRowsToInputs(rows),
+      items: previewRowsToInputs(importRows),
       replaceReady: field(formData, "replaceReady") === "1",
     });
     refresh(studentId);
+    const dropped =
+      truncateFirst150 && rows.length > importRows.length
+        ? rows.length - importRows.length
+        : 0;
     return {
-      success: `${kind === "FINAL" ? "نسخه اصلاح‌شده" : "نسخه اولیه"} با ${rows.length} انتخاب از اکسل ذخیره شد (نسخه ${list.version}).`,
+      success:
+        dropped > 0
+          ? `${importRows.length} انتخاب اول در پیش‌نویس ذخیره شد (${dropped} انتخاب اضافی وارد نشد). نسخه ${list.version}.`
+          : `${kind === "FINAL" ? "نسخه اصلاح‌شده" : "نسخه اولیه"} با ${importRows.length} انتخاب از اکسل ذخیره شد (نسخه ${list.version}).`,
     };
   } catch (e) {
+    console.error("[choice-studio] importChoiceExcel failed", {
+      studentId,
+      message: e instanceof Error ? e.message : "unknown",
+    });
     return { error: e instanceof Error ? e.message : "ورود از اکسل ممکن نشد." };
   }
 }

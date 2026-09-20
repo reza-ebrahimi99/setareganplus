@@ -15,7 +15,10 @@ import {
   type ChoiceFeedbackVerdict,
   type ChoiceListKind,
 } from "@/lib/guidance/journey-v2/constants";
-import { CHOICE_STUDIO_MAX_PARSE_ROWS } from "@/lib/guidance/choice-studio/types";
+import {
+  CHOICE_STUDIO_MAX_PARSE_ROWS,
+  SANJESH_ACTIVE_LIMIT,
+} from "@/lib/guidance/choice-studio/types";
 import { isChoiceBandId, isChoiceFeedbackVerdict } from "@/lib/guidance/journey-v2/labels";
 import { mapSourceFeedback, nextRevisionSourceItemId } from "@/lib/guidance/journey-v2/choice-feedback-map";
 
@@ -394,6 +397,11 @@ export async function importChoiceRows(params: {
 }) {
   if (params.items.length < 1) {
     throw new Error("هیچ ردیف معتبری برای ورود وجود ندارد.");
+  }
+  if (params.items.length > SANJESH_ACTIVE_LIMIT) {
+    throw new Error(
+      `تعداد ${params.items.length} انتخاب برای ذخیره پیش‌نویس مجاز نیست. حداکثر ${SANJESH_ACTIVE_LIMIT} انتخاب فعال در هر پیش‌نویس پذیرفته می‌شود.`,
+    );
   }
   if (params.items.length > CHOICE_STUDIO_MAX_PARSE_ROWS) {
     throw new Error("تعداد ردیف‌ها از سقف ایمنی استودیو بیشتر است.");

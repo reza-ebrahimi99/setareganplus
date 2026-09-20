@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   addChoiceItemAction,
@@ -34,6 +34,11 @@ import { GUIDANCE_EDUCATION_TYPES } from "@/lib/guidance/journey/reference-data/
 import { labelChoiceBand, labelChoiceFeedback } from "@/lib/guidance/journey-v2/labels";
 import type { ChoiceListView } from "@/lib/guidance/journey-v2/choices";
 import type { SanjeshCaseView } from "@/lib/guidance/journey-v2/sanjesh";
+import {
+  CHOICE_DRAFT_ACTIVE_LIMIT,
+  sortPreviewRowsByPriority,
+  takeFirstRowsForDraft,
+} from "@/lib/guidance/choice-studio/preview-limits";
 import { toPersianDigits } from "@/lib/persian";
 
 const empty: CounselorLateState = {};
@@ -74,8 +79,10 @@ export function ChoiceStudio(props: {
   const [showManual, setShowManual] = useState(false);
   const [fileMeta, setFileMeta] = useState<{ name: string; size: number } | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
-  const [confirm, setConfirm] = useState<"import" | "publish" | null>(null);
+  const [confirm, setConfirm] = useState<"import" | "publish" | "import-truncate" | null>(null);
   const [finalTab, setFinalTab] = useState<FinalTab>("revised");
+  const [importTimedOut, setImportTimedOut] = useState(false);
+  const importStartedAt = useRef<number | null>(null);
 
   useEffect(() => {
     if (parseState.preview) setPreview(parseState.preview);
@@ -93,8 +100,32 @@ export function ChoiceStudio(props: {
   useEffect(() => {
     if (!importState.success) return;
     setConfirm(null);
+    setPreview(null);
+    setFileMeta(null);
+    setImportTimedOut(false);
+    importStartedAt.current = null;
     router.refresh();
   }, [importState.success, router]);
+
+  useEffect(() => {
+    if (!importState.error) return;
+    setConfirm(null);
+    setImportTimedOut(false);
+    importStartedAt.current = null;
+  }, [importState.error]);
+
+  useEffect(() => {
+    if (!importPending) {
+      setImportTimedOut(false);
+      importStartedAt.current = null;
+      return;
+    }
+    importStartedAt.current = Date.now();
+    const timer = window.setTimeout(() => {
+      setImportTimedOut(true);
+    }, 90_000);
+    return () => window.clearTimeout(timer);
+  }, [importPending]);
 
   useEffect(() => {
     if (!reviseState.success) return;
@@ -130,6 +161,10 @@ export function ChoiceStudio(props: {
   const confirmed = list?.status === "CONFIRMED";
   const replaceReady = list?.status === "READY";
   const kind = props.phase === "final" ? "FINAL" : "INITIAL";
+  const draftActiveCount = useMemo(
+    () => (list?.items ?? []).filter((i) => i.isActive).length,
+    [list],
+  );
 
   function submitFile(file: File) {
     setFileMeta({ name: file.name, size: file.size });
@@ -140,15 +175,31 @@ export function ChoiceStudio(props: {
     parseAction(data);
   }
 
-  function commitImport() {
+  function commitImport(options?: { truncateFirst150?: boolean }) {
     if (!preview) return;
+    if (importPending) return;
+    if (!options?.truncateFirst150 && !preview.canCommit) return;
+
     const data = new FormData();
     data.set("studentId", props.studentId);
     data.set("kind", kind);
     data.set("rows", JSON.stringify(preview.rows));
     if (replaceReady) data.set("replaceReady", "1");
+    if (options?.truncateFirst150) {
+      data.set("truncateFirst150", "1");
+      data.set("truncateAck", "1");
+    }
+    setImportTimedOut(false);
     importAction(data);
   }
+
+  const truncateExtraPreview = useMemo(() => {
+    if (!preview?.exceedsSanjeshLimit) return null;
+    const ordered = sortPreviewRowsByPriority(preview.rows);
+    const extras = ordered.slice(CHOICE_DRAFT_ACTIVE_LIMIT);
+    const first = takeFirstRowsForDraft(preview.rows);
+    return { extras, firstCount: first.length, total: preview.totalRows };
+  }, [preview]);
 
   if (props.phase === "sanjesh") {
     return (
@@ -339,9 +390,18 @@ export function ChoiceStudio(props: {
                   {preview ? (
                     <ChoiceImportPreview
                       preview={preview}
+                      draftActiveCount={draftActiveCount}
                       pending={importPending}
+                      importTimedOut={importTimedOut}
                       replaceReady={Boolean(replaceReady)}
-                      onCommit={() => setConfirm("import")}
+                      onCommit={() => {
+                        if (!preview.canCommit || importPending) return;
+                        setConfirm("import");
+                      }}
+                      onCommitFirst150={() => {
+                        if (importPending || !preview.exceedsSanjeshLimit) return;
+                        setConfirm("import-truncate");
+                      }}
                     />
                   ) : null}
                 </section>
@@ -366,7 +426,12 @@ export function ChoiceStudio(props: {
                         <option value="review">بازخورد نیازمند توجه</option>
                       </select>
                     </label>
-                    <strong>{toPersianDigits(items.length)} انتخاب</strong>
+                    <strong>
+                      {toPersianDigits(draftActiveCount)} انتخاب در پیش‌نویس
+                      {items.length !== draftActiveCount
+                        ? ` (نمایش ${toPersianDigits(items.length)})`
+                        : ""}
+                    </strong>
                   </header>
 
                   {showManual && !locked && !confirmed ? (
@@ -590,7 +655,26 @@ export function ChoiceStudio(props: {
           if (importPending) return;
           setConfirm(null);
         }}
-        onConfirm={commitImport}
+        onConfirm={() => commitImport()}
+      />
+      <ChoiceConfirmDialog
+        open={confirm === "import-truncate"}
+        title="انتقال ۱۵۰ انتخاب اول"
+        body={
+          truncateExtraPreview
+            ? `از ${toPersianDigits(String(truncateExtraPreview.total))} انتخاب پیش‌نمایش، فقط ${toPersianDigits(String(truncateExtraPreview.firstCount))} انتخاب اول (بر اساس اولویت) ذخیره می‌شود. ${toPersianDigits(String(truncateExtraPreview.extras.length))} انتخاب اضافی وارد پیش‌نویس نمی‌شود: ${truncateExtraPreview.extras
+                .slice(0, 6)
+                .map((r) => r.code || r.major)
+                .join("، ")}${truncateExtraPreview.extras.length > 6 ? " …" : ""}.`
+            : "فقط ۱۵۰ انتخاب اول ذخیره می‌شود."
+        }
+        confirmLabel="تأیید انتقال ۱۵۰ انتخاب"
+        pending={importPending}
+        onCancel={() => {
+          if (importPending) return;
+          setConfirm(null);
+        }}
+        onConfirm={() => commitImport({ truncateFirst150: true })}
       />
       <ChoiceConfirmDialog
         open={confirm === "publish"}

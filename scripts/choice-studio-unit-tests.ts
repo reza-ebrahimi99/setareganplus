@@ -123,14 +123,54 @@ await test("duplicate priorities are blocking", () => {
   assert.equal(preview.issues.some((i) => i.code === "duplicate_priority"), true);
 });
 
-await test("170 rows are kept and Sanjesh limit is only a warning", () => {
-  const rows = Array.from({ length: 170 }, (_, i) =>
+await test("149 rows commit allowed", () => {
+  const rows = Array.from({ length: 149 }, (_, i) =>
     row({ sourceRow: i + 2, priority: i + 1, code: String(10000 + i) }),
   );
   const preview = validateCanonicalRows(rows, "انتخاب‌ها");
-  assert.equal(preview.totalRows, 170);
-  assert.equal(preview.exceedsSanjeshLimit, true);
   assert.equal(preview.canCommit, true);
+  assert.equal(preview.overLimitCount, 0);
+});
+
+await test("150 rows commit allowed", () => {
+  const rows = Array.from({ length: 150 }, (_, i) =>
+    row({ sourceRow: i + 2, priority: i + 1, code: String(10000 + i) }),
+  );
+  const preview = validateCanonicalRows(rows, "انتخاب‌ها");
+  assert.equal(preview.canCommit, true);
+  assert.equal(preview.overLimitCount, 0);
+});
+
+await test("151 rows blocked with one extra", () => {
+  const rows = Array.from({ length: 151 }, (_, i) =>
+    row({ sourceRow: i + 2, priority: i + 1, code: String(10000 + i) }),
+  );
+  const preview = validateCanonicalRows(rows, "انتخاب‌ها");
+  assert.equal(preview.canCommit, false);
+  assert.equal(preview.overLimitCount, 1);
+  assert.match(preview.issues.find((i) => i.code === "over_sanjesh_limit")?.message ?? "", /۱ مورد/);
+});
+
+await test("159 rows blocked with nine extra", () => {
+  const rows = Array.from({ length: 159 }, (_, i) =>
+    row({ sourceRow: i + 2, priority: i + 1, code: String(10000 + i) }),
+  );
+  const preview = validateCanonicalRows(rows, "انتخاب‌ها");
+  assert.equal(preview.canCommit, false);
+  assert.equal(preview.overLimitCount, 9);
+});
+
+await test("previewRowsToInputs preserves priority order", () => {
+  const preview = validateCanonicalRows(
+    [
+      row({ sourceRow: 3, priority: 2, code: "222" }),
+      row({ sourceRow: 2, priority: 1, code: "111" }),
+    ],
+    "انتخاب‌ها",
+  );
+  const inputs = previewRowsToInputs(preview.rows);
+  assert.equal(inputs[0]?.officialCode, "111");
+  assert.equal(inputs[1]?.officialCode, "222");
 });
 
 await test("diff engine classifies add/remove/move", () => {

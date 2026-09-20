@@ -12,6 +12,11 @@ import {
   type ChoiceStudioIssue,
 } from "@/lib/guidance/choice-studio/types";
 import { normalizeChanceLabel } from "@/lib/guidance/choice-studio/normalize";
+import {
+  collectDuplicateCodes,
+  countOverLimit,
+  formatOverLimitBlockMessage,
+} from "@/lib/guidance/choice-studio/preview-limits";
 
 export function validateCanonicalRows(
   rows: CanonicalChoiceRow[],
@@ -93,12 +98,12 @@ export function validateCanonicalRows(
     if (sourceRows.length > 1) {
       for (const sourceRow of sourceRows) {
         issues.push({
-          level: "warning",
+          level: "error",
           code: "duplicate_code",
           message: `کد رشته «${code}» در چند ردیف تکرار شده است.`,
           rowNumber: sourceRow,
         });
-        warningRow.add(sourceRow);
+        errorRow.add(sourceRow);
       }
     }
   }
@@ -130,14 +135,16 @@ export function validateCanonicalRows(
   }
 
   const exceeds = rows.length > SANJESH_ACTIVE_LIMIT;
+  const overLimitCount = countOverLimit(rows.length);
   if (exceeds) {
     issues.push({
-      level: "warning",
+      level: "error",
       code: "over_sanjesh_limit",
-      message: `${rows.length} انتخاب شناسایی شد. سقف عملیاتی سنجش ${SANJESH_ACTIVE_LIMIT} انتخاب فعال است. قبل از انتشار باید فهرست فعال به این سقف برسد. هیچ ردیفی حذف نشده است.`,
+      message: formatOverLimitBlockMessage(rows.length),
     });
   }
 
+  const duplicateCodes = collectDuplicateCodes(rows);
   const hasBlocking = issues.some((i) => i.level === "error") || rows.length === 0;
 
   return {
@@ -148,6 +155,8 @@ export function validateCanonicalRows(
     warningRows: warningRow.size,
     activeSanjeshCount: rows.length,
     exceedsSanjeshLimit: exceeds,
+    overLimitCount,
+    duplicateCodes,
     rows,
     issues,
     canCommit: !hasBlocking,

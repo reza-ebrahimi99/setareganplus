@@ -17298,6 +17298,77 @@ body {
   padding: 1.1rem 1.15rem;
   box-shadow: 0 8px 24px rgba(16, 42, 72, 0.04);
 }
+
+.gcs-preview__counters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+
+.gcs-preview__counter {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.65rem;
+  padding: 0.55rem 0.65rem;
+  background: #f8fafc;
+}
+
+.gcs-preview__counter strong {
+  display: block;
+  font-size: 1.05rem;
+  color: #0f2744;
+}
+
+.gcs-preview__counter small {
+  display: block;
+  margin-top: 0.25rem;
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.gcs-preview__explain {
+  font-size: 0.85rem;
+  color: #475569;
+  margin: 0 0 0.75rem;
+}
+
+.gcs-preview__limit-alert {
+  border: 1px solid #f59e0b;
+  background: #fffbeb;
+  border-radius: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.gcs-preview__limit-alert p {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.gcs-preview__dupes {
+  font-size: 0.82rem;
+  color: #b45309;
+  margin: 0 0 0.65rem;
+}
+
+.gcs-preview__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
+
+.gcs-row--over-limit,
+.gcs-cards li.gcs-row--over-limit {
+  background: #fef2f2 !important;
+  outline: 1px solid #fca5a5;
+}
+
+.gcs-row--over-limit td,
+.gcs-row--over-limit strong {
+  color: #991b1b;
+}
 .gcs-intel h2,
 .gcs-help h2,
 .gcs-sanjesh h2 { margin: 0 0 0.75rem; }

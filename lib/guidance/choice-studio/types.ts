@@ -109,6 +109,9 @@ export type ChoiceImportPreview = {
   warningRows: number;
   activeSanjeshCount: number;
   exceedsSanjeshLimit: boolean;
+  /** Rows beyond SANJESH_ACTIVE_LIMIT (0 when within limit). */
+  overLimitCount: number;
+  duplicateCodes: string[];
   rows: CanonicalChoiceRow[];
   issues: ChoiceStudioIssue[];
   canCommit: boolean;
