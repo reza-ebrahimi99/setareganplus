@@ -14,6 +14,10 @@ import {
   type GuidanceExamGroup,
 } from "@/lib/guidance/journey-v2/constants";
 import { parseGuidancePackageAddons } from "@/lib/guidance/commerce/access";
+import {
+  parseNeedsReviewFlags,
+  parseOpenRevisionSteps,
+} from "@/lib/guidance/journey-v2/step-review/plan-json";
 
 export type GuidanceV2PlanSnapshot = {
   id: string;
@@ -39,6 +43,9 @@ export type GuidanceV2PlanSnapshot = {
   v2SanjeshReference: string | null;
   v2SanjeshNote: string | null;
   v2SanjeshVerifiedAtIso: string | null;
+  v2OpenRevisionSteps: readonly number[];
+  v2StepNeedsReviewFlags: Readonly<Record<string, boolean>>;
+  v2HollandRetakePending: boolean;
   journeyVersion: number;
 };
 
@@ -66,6 +73,9 @@ const PLAN_SELECT = {
   v2SanjeshReference: true,
   v2SanjeshNote: true,
   v2SanjeshVerifiedAt: true,
+  v2OpenRevisionSteps: true,
+  v2StepNeedsReviewFlags: true,
+  v2HollandRetakePending: true,
   journeyVersion: true,
 } as const;
 
@@ -105,6 +115,9 @@ export function mapGuidanceV2Plan(row: {
   v2SanjeshReference: string | null;
   v2SanjeshNote: string | null;
   v2SanjeshVerifiedAt: Date | null;
+  v2OpenRevisionSteps: unknown;
+  v2StepNeedsReviewFlags: unknown;
+  v2HollandRetakePending: boolean;
   journeyVersion: number;
 }): GuidanceV2PlanSnapshot {
   return {
@@ -131,6 +144,9 @@ export function mapGuidanceV2Plan(row: {
     v2SanjeshReference: row.v2SanjeshReference,
     v2SanjeshNote: row.v2SanjeshNote,
     v2SanjeshVerifiedAtIso: row.v2SanjeshVerifiedAt?.toISOString() ?? null,
+    v2OpenRevisionSteps: parseOpenRevisionSteps(row.v2OpenRevisionSteps),
+    v2StepNeedsReviewFlags: parseNeedsReviewFlags(row.v2StepNeedsReviewFlags),
+    v2HollandRetakePending: row.v2HollandRetakePending,
     journeyVersion: row.journeyVersion,
   };
 }

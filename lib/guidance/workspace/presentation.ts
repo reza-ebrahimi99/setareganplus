@@ -83,19 +83,41 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
 };
 
 export const STEP_REVIEW_STATUS_LABELS: Record<
-  "PENDING" | "APPROVED" | "REJECTED" | "NEEDS_REVISION",
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "NEEDS_REVISION"
+  | "UNREVIEWED"
+  | "REVIEWED"
+  | "REVISION_REQUESTED"
+  | "RESUBMITTED"
+  | "COUNSELOR_EDITED",
   string
 > = {
   PENDING: "در انتظار بررسی",
   APPROVED: "تأیید شده",
   REJECTED: "رد شده",
   NEEDS_REVISION: "نیاز به اصلاح",
+  UNREVIEWED: "بررسی‌نشده",
+  REVIEWED: "بررسی شده",
+  REVISION_REQUESTED: "نیازمند اصلاح",
+  RESUBMITTED: "ارسال مجدد",
+  COUNSELOR_EDITED: "ویرایش مشاور",
 };
 
 export function workspaceStepReviewLabel(
-  status: "PENDING" | "APPROVED" | "REJECTED" | "NEEDS_REVISION",
+  status:
+    | "PENDING"
+    | "APPROVED"
+    | "REJECTED"
+    | "NEEDS_REVISION"
+    | "UNREVIEWED"
+    | "REVIEWED"
+    | "REVISION_REQUESTED"
+    | "RESUBMITTED"
+    | "COUNSELOR_EDITED",
 ): string {
-  return STEP_REVIEW_STATUS_LABELS[status];
+  return STEP_REVIEW_STATUS_LABELS[status] ?? status;
 }
 
 export const WORKSPACE_QUEUE_FILTER_LABELS: Record<WorkspaceQueueFilter, string> = {

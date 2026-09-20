@@ -626,6 +626,8 @@ model Organization {
   guidanceDocuments                    GuidanceDocument[]
   guidanceStepReviews                  GuidanceStepReview[]
   guidanceStepReviewEvents             GuidanceStepReviewEvent[]
+  guidanceStepRevisions                GuidanceStepRevision[]
+  guidanceHollandAttempts              GuidanceHollandAttempt[]
   counselorStudentAssignments          CounselorStudentAssignment[]
   counselingSessionRecords             CounselingSessionRecord[]
   counselorNotes                       CounselorNote[]
@@ -742,6 +744,7 @@ model User {
   guidancePlanChoicesApproved  GuidancePlan[]               @relation("GuidancePlanChoicesApprover")
   guidanceStepReviewsApproved  GuidanceStepReview[]         @relation("GuidanceStepReviewApprover")
   guidanceStepReviewsRejected  GuidanceStepReview[]         @relation("GuidanceStepReviewRejector")
+  guidanceStepReviewsCounselor GuidanceStepReview[]         @relation("GuidanceStepReviewCounselor")
   guidanceStepReviewEvents     GuidanceStepReviewEvent[]    @relation("GuidanceStepReviewEventActor")
   counselorStudentAssignments  CounselorStudentAssignment[] @relation("CounselorAssignmentCounselor")
   counselorAssignmentsCreated  CounselorStudentAssignment[] @relation("CounselorAssignmentAssignedBy")
@@ -4858,6 +4861,11 @@ model GuidancePlan {
   /// Student edited a completed earlier step after counselor work began.
   v2NeedsReviewAt           DateTime?
   v2NeedsReviewStep         Int?
+  /// Steps the counselor opened for student correction (does not rewind journey).
+  v2OpenRevisionSteps       Json      @default("[]")
+  /// Downstream steps flagged needsReview after material upstream change.
+  v2StepNeedsReviewFlags    Json      @default("{}")
+  v2HollandRetakePending    Boolean   @default(false)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -4871,6 +4879,7 @@ model GuidancePlan {
   sanjeshVerifiedByUser    User?                     @relation("GuidancePlanSanjeshVerifier", fields: [v2SanjeshVerifiedByUserId], references: [id], onDelete: SetNull)
   documents                GuidanceDocument[]
   stepReviews              GuidanceStepReview[]
+  hollandAttempts          GuidanceHollandAttempt[]
   counselorAppointments    CounselorAppointment[]
   counselingSessionRecords CounselingSessionRecord[]
   choiceLists              GuidanceChoiceList[]
@@ -4934,6 +4943,11 @@ enum GuidanceStepReviewStatus {
   APPROVED
   REJECTED
   NEEDS_REVISION
+  UNREVIEWED
+  REVIEWED
+  REVISION_REQUESTED
+  RESUBMITTED
+  COUNSELOR_EDITED
 }
 
 enum GuidanceStepReviewEventKind {
@@ -4946,6 +4960,12 @@ enum GuidanceStepReviewEventKind {
   DOCUMENT_REPLACED
   DOCUMENT_VERIFIED
   DOCUMENT_REJECTED
+  RESUBMITTED
+  REVISION_CANCELLED
+  MARKED_REVIEWED
+  COUNSELOR_EDITED
+  HOLLAND_RETAKE_REQUESTED
+  HOLLAND_BASIS_SELECTED
 }
 
 model GuidanceStepReview {
@@ -4953,7 +4973,7 @@ model GuidanceStepReview {
   organizationId      String
   planId              String
   stepNumber          Int
-  status              GuidanceStepReviewStatus @default(PENDING)
+  status              GuidanceStepReviewStatus @default(UNREVIEWED)
   privateNote         String?
   studentMessage      String?
   rejectReason        String?
@@ -4962,6 +4982,12 @@ model GuidanceStepReview {
   rejectedAt          DateTime?
   rejectedByUserId    String?
   revisionRequestedAt DateTime?
+  requestedSections   Json?
+  impactMetadata      Json?
+  resolvedAt          DateTime?
+  resubmittedAt       DateTime?
+  counselorUserId     String?
+  retakeFromBeginning Boolean                  @default(false)
   createdAt           DateTime                 @default(now())
   updatedAt           DateTime                 @updatedAt
 
@@ -4969,14 +4995,58 @@ model GuidanceStepReview {
   plan         GuidancePlan              @relation(fields: [organizationId, planId], references: [organizationId, id], onDelete: Restrict)
   approvedBy   User?                     @relation("GuidanceStepReviewApprover", fields: [approvedByUserId], references: [id], onDelete: SetNull)
   rejectedBy   User?                     @relation("GuidanceStepReviewRejector", fields: [rejectedByUserId], references: [id], onDelete: SetNull)
+  counselor    User?                     @relation("GuidanceStepReviewCounselor", fields: [counselorUserId], references: [id], onDelete: SetNull)
   events       GuidanceStepReviewEvent[]
+  revisions    GuidanceStepRevision[]
 
   @@unique([organizationId, planId, stepNumber])
   @@index([organizationId, status])
   @@index([organizationId, planId])
   @@index([approvedByUserId])
   @@index([rejectedByUserId])
+  @@index([counselorUserId])
   @@map("guidance_step_reviews")
+}
+
+model GuidanceStepRevision {
+  id             String   @id @default(cuid())
+  organizationId String
+  reviewId       String
+  version        Int
+  actorType      String
+  actorUserId    String?
+  action         String
+  reason         String?
+  beforeSnapshot Json?
+  afterSnapshot  Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  review       GuidanceStepReview @relation(fields: [reviewId], references: [id], onDelete: Restrict)
+
+  @@unique([reviewId, version])
+  @@index([organizationId, reviewId])
+  @@map("guidance_step_revisions")
+}
+
+model GuidanceHollandAttempt {
+  id                String    @id @default(cuid())
+  organizationId    String
+  planId            String
+  attemptNumber     Int
+  mediaAssetId      String
+  completedAt       DateTime?
+  isActiveBasis     Boolean   @default(false)
+  requestedByUserId String?
+  requestReason     String?
+  createdAt         DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  plan         GuidancePlan @relation(fields: [organizationId, planId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, planId, attemptNumber])
+  @@index([organizationId, planId, isActiveBasis])
+  @@map("guidance_holland_attempts")
 }
 
 model GuidanceStepReviewEvent {

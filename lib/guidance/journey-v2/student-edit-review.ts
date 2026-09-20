@@ -3,12 +3,13 @@
  * a completed earlier step. Does not delete counselor outputs.
  */
 
-import { GuidanceStepReviewStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import {
   isHistoricalEdit,
   studentEditRequiresCounselorReview,
 } from "@/lib/guidance/journey-v2/step-access-policy";
+import { parseOpenRevisionSteps } from "@/lib/guidance/journey-v2/step-review/plan-json";
+import { studentResubmitStep } from "@/lib/guidance/journey-v2/step-review/service";
 
 export async function recordStudentHistoricalEdit(params: {
   organizationId: string;
@@ -28,54 +29,29 @@ export async function recordStudentHistoricalEdit(params: {
     hasCounselorDownstreamWork: params.hasCounselorDownstreamWork,
   });
 
+  const planRow = await prisma.guidancePlan.findFirst({
+    where: { id: params.planId, organizationId: params.organizationId },
+    select: { v2OpenRevisionSteps: true },
+  });
+  const open = parseOpenRevisionSteps(planRow?.v2OpenRevisionSteps);
+  if (open.includes(params.stepId)) {
+    await studentResubmitStep({
+      organizationId: params.organizationId,
+      planId: params.planId,
+      studentUserId: params.actorUserId,
+      stepNumber: params.stepId,
+    });
+    return { needsReview: true };
+  }
+
   if (!needsReview) return { needsReview: false };
 
-  await prisma.$transaction(async (tx) => {
-    await tx.guidancePlan.update({
-      where: { id: params.planId },
-      data: {
-        v2NeedsReviewAt: new Date(),
-        v2NeedsReviewStep: params.stepId,
-      },
-    });
-
-    const review = await tx.guidanceStepReview.upsert({
-      where: {
-        organizationId_planId_stepNumber: {
-          organizationId: params.organizationId,
-          planId: params.planId,
-          stepNumber: params.stepId,
-        },
-      },
-      create: {
-        organizationId: params.organizationId,
-        planId: params.planId,
-        stepNumber: params.stepId,
-        status: GuidanceStepReviewStatus.NEEDS_REVISION,
-        studentMessage: "نیازمند بررسی مجدد",
-        revisionRequestedAt: new Date(),
-      },
-      update: {
-        status: GuidanceStepReviewStatus.NEEDS_REVISION,
-        studentMessage: "نیازمند بررسی مجدد",
-        revisionRequestedAt: new Date(),
-      },
-    });
-
-    await tx.guidanceStepReviewEvent.create({
-      data: {
-        organizationId: params.organizationId,
-        reviewId: review.id,
-        kind: "EDITED",
-        status: GuidanceStepReviewStatus.NEEDS_REVISION,
-        actorUserId: params.actorUserId,
-        studentMessage: "نیازمند بررسی مجدد",
-        metadata: {
-          stepId: params.stepId,
-          summary: params.summary,
-        },
-      },
-    });
+  await prisma.guidancePlan.update({
+    where: { id: params.planId },
+    data: {
+      v2NeedsReviewAt: new Date(),
+      v2NeedsReviewStep: params.stepId,
+    },
   });
 
   return { needsReview: true };

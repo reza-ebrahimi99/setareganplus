@@ -13,6 +13,10 @@ import {
 } from "@/app/admin/counselor/actions";
 import { CounselorHollandPanel } from "@/components/counselor-os/CounselorHollandPanel";
 import { CounselorSteps1118Workspace } from "@/components/counselor-os/CounselorSteps1118Workspace";
+import {
+  CounselorJourney18Control,
+  type Journey18ControlModel,
+} from "@/components/counselor-os/CounselorJourney18Control";
 import type { Steps1118WorkspaceModel } from "@/lib/counselor-os/steps-11-18-workspace";
 import { JalaliDateTimeFields } from "@/components/datetime/JalaliDateTimeFields";
 import {
@@ -44,6 +48,7 @@ export function CounselorStudentCaseTabs({
   isSupervisor,
   counselors,
   steps1118,
+  journey18,
   defaultTab = "overview",
 }: {
   caseModel: CounselorStudentCase;
@@ -61,6 +66,7 @@ export function CounselorStudentCaseTabs({
   isSupervisor: boolean;
   counselors: Array<{ userId: string; name: string }>;
   steps1118: Steps1118WorkspaceModel;
+  journey18: Journey18ControlModel | null;
   defaultTab?: CounselorCaseNavTabId;
 }) {
   const navId = useId();
@@ -235,33 +241,14 @@ export function CounselorStudentCaseTabs({
           </section>
         )}
 
-        {tab === "journey" && (
+        {tab === "journey" && journey18 ? (
+          <CounselorJourney18Control model={journey18} />
+        ) : null}
+        {tab === "journey" && !journey18 ? (
           <section className="cos-panel">
-            <h2>مسیر ۱۸ مرحله‌ای انتخاب رشته</h2>
-            <p className="cos-muted">نمایش اصلی همیشه مسیر V2 است؛ کدهای داخلی نمایش داده نمی‌شوند.</p>
-            <ol className="cos-journey-rail">
-              {dossier.steps.map((step) => (
-                <li key={step.id} data-status={step.status === "current" ? "active" : step.status}>
-                  <span>{toPersianDigits(step.id)}</span>
-                  <div>
-                    <strong>{step.title}</strong>
-                    <em>{labelJourneyStatus(step.status)}</em>
-                    {step.completedAtLabel ? <small>{step.completedAtLabel}</small> : null}
-                    {step.fields.length > 0 ? (
-                      <ul className="cos-field-mini">
-                        {step.fields.slice(0, 6).map((field) => (
-                          <li key={field.label}>
-                            {field.label}: {field.value}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <p className="cos-empty">پرونده V2 برای کنترل مرحله‌ای یافت نشد.</p>
           </section>
-        )}
+        ) : null}
 
         {tab === "late" ? (
           <CounselorSteps1118Workspace model={steps1118} isSupervisor={isSupervisor} />

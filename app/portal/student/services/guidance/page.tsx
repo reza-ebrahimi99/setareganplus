@@ -10,6 +10,8 @@ import { ensureGuidanceCase } from "@/lib/guidance/external-candidate";
 import { isGuidanceEnabled } from "@/lib/guidance/feature-flags";
 import { guidanceJourneyV2StepPath } from "@/lib/guidance/journey-v2/catalog";
 import { requireStudentPortalAccess } from "@/lib/portal/auth";
+import { StudentRevisionAlerts } from "@/components/guidance/StudentRevisionAlerts";
+import { loadStudentOpenRevisions } from "@/lib/guidance/journey-v2/step-review/service";
 
 export const dynamic = "force-dynamic";
 
@@ -71,11 +73,19 @@ export default async function GuidancePortalServicePage({
     (row) => row.studentId === studentId,
   );
 
+  const revisionAlerts = await loadStudentOpenRevisions({
+    organizationId: context.organization.id,
+    studentId,
+  });
+
   return (
-    <GuidancePlatformDashboard
-      studentName={authorized?.studentName || context.user.displayName}
-      journey={null}
-      analysis={null}
-    />
+    <>
+      <StudentRevisionAlerts items={revisionAlerts} />
+      <GuidancePlatformDashboard
+        studentName={authorized?.studentName || context.user.displayName}
+        journey={null}
+        analysis={null}
+      />
+    </>
   );
 }

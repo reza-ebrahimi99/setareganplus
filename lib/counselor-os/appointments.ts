@@ -51,9 +51,12 @@ const appointmentInclude = {
     select: {
       id: true,
       fullName: true,
-      gradeLevel: true,
-      mobile: true,
-      user: { select: { mobile: true } },
+      grade: { select: { name: true } },
+      portalAccountLinks: {
+        where: { deletedAt: null, isActive: true },
+        take: 1,
+        select: { user: { select: { mobile: true } } },
+      },
       guidancePlans: {
         where: { deletedAt: null, journeyVersion: 2 },
         orderBy: { updatedAt: "desc" as const },
@@ -78,9 +81,8 @@ type AppointmentRow = {
   student: {
     id: string;
     fullName: string;
-    gradeLevel: string | null;
-    mobile: string | null;
-    user: { mobile: string | null } | null;
+    grade: { name: string };
+    portalAccountLinks: { user: { mobile: string | null } }[];
     guidancePlans: { examGroup: string }[];
   };
   counselor: { firstName: string; lastName: string };
@@ -108,9 +110,9 @@ function mapRow(
     studentId: r.student.id,
     studentName: r.student.fullName,
     studentPhotoUrl: null,
-    gradeLevel: r.student.gradeLevel,
+    gradeLevel: r.student.grade.name,
     examGroup: r.student.guidancePlans[0]?.examGroup ?? null,
-    studentMobile: r.student.mobile ?? r.student.user?.mobile ?? null,
+    studentMobile: r.student.portalAccountLinks[0]?.user.mobile ?? null,
     whenLabel: formatJalaliDateTimeShort(startsAt),
     timeRangeLabel: `${toPersianDigits(formatTehranTime24(startsAt))}–${toPersianDigits(formatTehranTime24(endsAt))}`,
     dateKey: `${j.jy}-${j.jm}-${j.jd}`,

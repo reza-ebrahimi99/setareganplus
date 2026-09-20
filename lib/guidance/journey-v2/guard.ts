@@ -33,6 +33,7 @@ function asAccessSnapshot(
     | "finalApprovedAtIso"
     | "v2InformedRevisionId"
     | "v2SanjeshStatus"
+    | "v2OpenRevisionSteps"
   >,
 ): StepAccessSnapshot {
   return {
@@ -44,6 +45,7 @@ function asAccessSnapshot(
     finalApprovedAtIso: plan.finalApprovedAtIso,
     informedRevisionId: plan.v2InformedRevisionId,
     sanjeshStatus: plan.v2SanjeshStatus,
+    openRevisionSteps: plan.v2OpenRevisionSteps,
   };
 }
 
@@ -64,6 +66,7 @@ export function canOpenGuidanceV2Step(
     | "finalApprovedAtIso"
     | "v2InformedRevisionId"
     | "v2SanjeshStatus"
+    | "v2OpenRevisionSteps"
   >,
 ): boolean {
   if (stepId === plan.currentStep) return true;

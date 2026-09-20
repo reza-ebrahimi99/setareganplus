@@ -373,7 +373,7 @@ test("FREE plan feature list does not promise arrangement", () => {
     (start?.features as readonly string[]).includes("چیدمان اولیه انتخاب‌ها"),
     false,
   );
-  assert.equal(start?.features.at(-1), "ثبت اولویت رشته، شهر و دوره");
+  assert.equal(start?.features.at(-1), "تشکیل پرونده و ورود اطلاعات");
   assert.equal(packageIncludesArrangement("START"), false);
   assert.equal(assertArrangementEntitlement({ packageCode: "START", stepId: 13 }).ok, false);
 });
@@ -400,7 +400,7 @@ test("Paid plans keep arrangement entitlement and approved catalog prices", () =
   assert.equal(packageIncludesArrangement("PREMIUM"), true);
   assert.deepEqual(
     GUIDANCE_V2_PACKAGES.map((item) => item.code),
-    ["START", "SMART", "SPECIALIZED", "PREMIUM"],
+    ["START", "SMART", "SPECIALIZED", "PREMIUM", "FARHANGIAN"],
   );
   assert.equal(typeof GUIDANCE_V2_ALUMNI_DISCOUNT_RIALS, "number");
   const specialized = calculateGuidanceV2PackagePrice("SPECIALIZED");

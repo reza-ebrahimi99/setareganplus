@@ -29,6 +29,7 @@ import {
   assertArrangementEntitlement,
   assertGuidanceCommercialAccess,
 } from "@/lib/guidance/journey-v2/entitlements";
+import { touchStepReviewOnComplete } from "@/lib/guidance/journey-v2/step-review/service";
 
 export type AdvanceV2Result =
   | { ok: true; plan: GuidanceV2PlanSnapshot }
@@ -144,6 +145,12 @@ export async function advanceGuidanceJourneyV2Step(params: {
   const nextStep = nextV2Step(params.stepId);
   const statusKey = guidanceV2StepCompletedStatus(params.stepId);
   const nextStatus = GuidancePlanStatus[statusKey];
+
+  await touchStepReviewOnComplete({
+    organizationId: params.organizationId,
+    planId: plan.id,
+    stepNumber: params.stepId,
+  });
 
   await prisma.$transaction([
     prisma.guidancePlan.update({

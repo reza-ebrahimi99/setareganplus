@@ -29,6 +29,7 @@ export type StepAccessSnapshot = {
   informedRevisionId?: string | null;
   sanjeshStatus?: string | null;
   hasCounselorDownstreamWork?: boolean;
+  openRevisionSteps?: readonly number[];
 };
 
 export function isStudentOwnedStep(stepId: number): boolean {
@@ -49,6 +50,8 @@ export function resolveGuidanceV2StepAccessMode(
   plan: StepAccessSnapshot,
 ): StepAccessMode {
   if (stepId === plan.currentStep) return "current";
+
+  if (plan.openRevisionSteps?.includes(stepId)) return "edit";
 
   if (stepId === 10) {
     const profile = {

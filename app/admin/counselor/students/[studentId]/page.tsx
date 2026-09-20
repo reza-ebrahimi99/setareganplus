@@ -15,6 +15,8 @@ import { listCounselorNotes } from "@/lib/counselor-os/notes";
 import { listStudentSessionHistory } from "@/lib/counselor-os/sessions";
 import { loadCounselorCaseBundle } from "@/lib/counselor-os/students";
 import { loadSteps1118WorkspaceModel } from "@/lib/counselor-os/steps-11-18-workspace";
+import { loadStepReviewBoard } from "@/lib/guidance/journey-v2/step-review/service";
+import type { Journey18ControlModel } from "@/components/counselor-os/CounselorJourney18Control";
 import type { CounselorCaseNavTabId } from "@/lib/counselor-os/case-page-config";
 import { prisma } from "@/lib/prisma";
 
@@ -38,7 +40,7 @@ export default async function CounselorStudentCasePage({ params }: Props) {
   }
 
   const { caseModel, dossier } = bundle;
-  const [sessions, notes, corrections, followUps, counselors, steps1118, reviewFlag, studentRow] =
+  const [sessions, notes, corrections, followUps, counselors, steps1118, reviewFlag, studentRow, journey18Raw, hollandPlan] =
     await Promise.all([
       listStudentSessionHistory(ctx, studentId),
       listCounselorNotes(ctx, studentId),
@@ -59,7 +61,28 @@ export default async function CounselorStudentCasePage({ params }: Props) {
         where: { id: studentId, organizationId: ctx.organizationId },
         select: { updatedAt: true },
       }),
+      loadStepReviewBoard({ organizationId: ctx.organizationId, studentId }).catch(() => null),
+      prisma.guidancePlan.findFirst({
+        where: {
+          organizationId: ctx.organizationId,
+          studentId,
+          deletedAt: null,
+          journeyVersion: 2,
+        },
+        select: { v2HollandRetakePending: true },
+      }),
     ]);
+
+  const journey18: Journey18ControlModel | null = journey18Raw
+    ? {
+        studentId,
+        publicId: journey18Raw.publicId,
+        planId: journey18Raw.planId,
+        currentStep: journey18Raw.currentStep,
+        steps: journey18Raw.steps,
+        hollandRetakePending: hollandPlan?.v2HollandRetakePending ?? false,
+      }
+    : null;
 
   const waitingDaysLabel = studentRow
     ? formatWaitingDaysLabel(waitingDaysFromUpdatedAt(studentRow.updatedAt))
@@ -98,6 +121,7 @@ export default async function CounselorStudentCasePage({ params }: Props) {
         isSupervisor={ctx.isSupervisor}
         counselors={counselors}
         steps1118={steps1118}
+        journey18={journey18}
         defaultTab={defaultTab}
       />
     </div>

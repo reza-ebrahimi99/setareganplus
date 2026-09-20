@@ -49,7 +49,12 @@ export type WorkspaceStepReviewStatus =
   | "PENDING"
   | "APPROVED"
   | "REJECTED"
-  | "NEEDS_REVISION";
+  | "NEEDS_REVISION"
+  | "UNREVIEWED"
+  | "REVIEWED"
+  | "REVISION_REQUESTED"
+  | "RESUBMITTED"
+  | "COUNSELOR_EDITED";
 
 export type WorkspaceStepRailItem = {
   id: GuidanceJourneyStepId;

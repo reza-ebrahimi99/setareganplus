@@ -37,6 +37,9 @@ function plan(partial: Partial<GuidanceV2PlanSnapshot>): GuidanceV2PlanSnapshot 
     v2SanjeshReference: null,
     v2SanjeshNote: null,
     v2SanjeshVerifiedAtIso: null,
+    v2OpenRevisionSteps: [],
+    v2StepNeedsReviewFlags: {},
+    v2HollandRetakePending: false,
     journeyVersion: 2,
     ...partial,
   };

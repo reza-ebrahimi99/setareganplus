@@ -14,12 +14,19 @@ import {
   type GuidanceJourneyStepId,
 } from "@/lib/guidance/journey/steps";
 import { rewindGuidanceJourneyToStep } from "@/lib/guidance/workspace/rewind";
+import { markStepReviewed, requestStepRevision } from "@/lib/guidance/journey-v2/step-review/service";
+import { isGuidanceV2StepId } from "@/lib/guidance/journey-v2/catalog";
 
 export const STEP_REVIEW_STATUSES = [
   "PENDING",
   "APPROVED",
   "REJECTED",
   "NEEDS_REVISION",
+  "UNREVIEWED",
+  "REVIEWED",
+  "REVISION_REQUESTED",
+  "RESUBMITTED",
+  "COUNSELOR_EDITED",
 ] as const;
 
 export type StepReviewStatus = (typeof STEP_REVIEW_STATUSES)[number];
@@ -61,7 +68,7 @@ function isReviewStatus(value: string): value is StepReviewStatus {
 export function emptyStepReview(stepNumber: GuidanceJourneyStepId): StepReviewRecord {
   return {
     stepNumber,
-    status: "PENDING",
+    status: "UNREVIEWED" as StepReviewStatus,
     privateNote: null,
     studentMessage: null,
     rejectReason: null,
@@ -94,6 +101,7 @@ async function loadPlanRef(params: {
       completedSteps: true,
       completionPercentage: true,
       status: true,
+      journeyVersion: true,
     },
   });
 }
@@ -116,7 +124,7 @@ async function upsertReviewRow(params: {
       organizationId: params.organizationId,
       planId: params.planId,
       stepNumber: params.stepNumber,
-      status: GuidanceStepReviewStatus.PENDING,
+      status: GuidanceStepReviewStatus.UNREVIEWED,
     },
   });
 }
@@ -315,6 +323,29 @@ export async function setStepReviewStatus(params: {
     publicId: params.publicId,
   });
   if (!plan) return { ok: false, error: "پرونده یافت نشد." };
+
+  if (plan.journeyVersion === 2 && isGuidanceV2StepId(params.stepNumber)) {
+    if (params.nextStatus === "APPROVED") {
+      return markStepReviewed({
+        organizationId: params.organizationId,
+        studentId: plan.studentId,
+        stepNumber: params.stepNumber,
+        counselorUserId: params.actorUserId,
+        privateNote: params.privateNote,
+      });
+    }
+    if (params.nextStatus === "NEEDS_REVISION" || params.nextStatus === "REJECTED") {
+      return requestStepRevision({
+        organizationId: params.organizationId,
+        studentId: plan.studentId,
+        stepNumber: params.stepNumber,
+        counselorUserId: params.actorUserId,
+        reason: params.rejectReason?.trim() ?? "",
+        studentMessage: params.studentMessage?.trim() ?? params.rejectReason?.trim() ?? "",
+        notifyStudent: true,
+      });
+    }
+  }
 
   if (
     (params.nextStatus === "REJECTED" || params.nextStatus === "NEEDS_REVISION") &&
