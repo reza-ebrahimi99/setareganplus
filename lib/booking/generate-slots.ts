@@ -52,6 +52,8 @@ export type GenerateSlotsInput = {
   /**
    * Date-specific windows (counselor schedule v2). When set, weekday rules are ignored.
    */
+  /** When true with dryRun, count slots even inside minimum lead time (UI preview). */
+  previewIgnoreLeadTime?: boolean;
   explicitDays?: Array<{
     jalali: JalaliDate;
     windows: Array<{
@@ -174,9 +176,17 @@ async function generateSlotsForExplicitDays(
         );
         const endsAt = new Date(startsAt.getTime() + durationMinutes * 60 * 1000);
 
-        if (startsAt.getTime() < now.getTime() + leadMs) {
+        const insideLead =
+          startsAt.getTime() < now.getTime() + leadMs;
+        if (insideLead && !(dryRun && input.previewIgnoreLeadTime)) {
           cursorMinutes += stepMinutes;
           skipped += 1;
+          continue;
+        }
+
+        if (dryRun && input.previewIgnoreLeadTime) {
+          created += 1;
+          cursorMinutes += stepMinutes;
           continue;
         }
 

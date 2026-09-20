@@ -120,9 +120,9 @@ export default async function CounselorCalendarPage({
     <div className="cos-page cos-cal-page">
       <header className="cos-page__head">
         <div>
-          <h1>تقویم مشاور</h1>
+          <h1>زمان‌بندی جلسات مشاور</h1>
           <p>
-            تعریف برنامه زمانی و مشاهده نوبت‌های آزاد و رزروشده
+            برنامه تاریخ‌محور، پیش‌نمایش نوبت و مدیریت پیش‌نویس/فعال
             {ctx.isSupervisor ? " · حالت ناظر / مدیر" : ""}
           </p>
         </div>

@@ -21,7 +21,6 @@ import {
   saveSchedulePlanDraft,
   updateActiveSchedulePlan,
 } from "@/lib/counselor-os/schedule-v2/plan-service";
-import { previewPlanSlots } from "@/lib/counselor-os/schedule-v2/slot-sync";
 import { linkCounselorBookingAdvisor } from "@/lib/counselor-os/advisor";
 import { correctPersonalInfoField } from "@/lib/counselor-os/corrections";
 import {
@@ -49,6 +48,7 @@ import {
 export type CounselorActionState = {
   error?: string;
   success?: string;
+  planId?: string;
 };
 
 function field(formData: FormData, key: string): string {
@@ -588,8 +588,9 @@ export async function saveSchedulePlanV2Action(
         : undefined,
       idempotencyKey: field(formData, "idempotencyKey") || null,
     };
+    let savedPlanId = planId;
     if (status === "ACTIVE" && planId) {
-      await updateActiveSchedulePlan({
+      const updated = await updateActiveSchedulePlan({
         ctx,
         planId,
         sessionMinutes: payload.sessionMinutes,
@@ -598,14 +599,17 @@ export async function saveSchedulePlanV2Action(
         daysJson: payload.daysJson,
         expectedVersion: payload.expectedVersion ?? 1,
       });
+      savedPlanId = planId;
+      void updated;
     } else {
-      await saveSchedulePlanDraft(payload);
+      const saved = await saveSchedulePlanDraft(payload);
+      savedPlanId = saved.planId;
     }
+    revalidatePath("/admin/counselor/calendar");
+    return { success: "برنامه ذخیره شد.", planId: savedPlanId };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "ذخیره پیش‌نویس انجام نشد." };
   }
-  revalidatePath("/admin/counselor/calendar");
-  return { success: "برنامه ذخیره شد." };
 }
 
 export async function activateSchedulePlanV2Action(
@@ -685,28 +689,36 @@ export async function previewSchedulePlanV2Action(input: {
   advisorId: string;
   sessionMinutes: number;
   daysJson: string;
-  planId?: string;
-}): Promise<{ ok: boolean; totalSlots?: number; error?: string }> {
-  const ctx = await requireCounselorContext();
+}): Promise<{
+  ok: boolean;
+  totalSlots?: number;
+  error?: string;
+  days?: Array<{ jalaliHeading: string; slots: Array<{ label: string }> }>;
+}> {
+  await requireCounselorContext();
   try {
     const { parseScheduleDaysJson } = await import(
       "@/lib/counselor-os/schedule-v2/validate"
     );
-    const days = parseScheduleDaysJson(input.daysJson).map((d) => ({
-      localDateGregorian: d.localDateGregorian,
-      windows: d.windows,
-    }));
-    const preview = await previewPlanSlots({
-      organizationId: ctx.organizationId,
-      advisorId: input.advisorId,
-      sessionMinutes: input.sessionMinutes,
-      planId: input.planId,
+    const { computeSchedulePreview } = await import(
+      "@/lib/counselor-os/schedule-v2/preview-compute"
+    );
+    const days = parseScheduleDaysJson(input.daysJson);
+    const preview = computeSchedulePreview({
       days,
+      sessionMinutes: input.sessionMinutes,
     });
-    if (preview.error) {
+    if (!preview.ok) {
       return { ok: false, error: preview.error };
     }
-    return { ok: true, totalSlots: preview.totalSlots };
+    return {
+      ok: true,
+      totalSlots: preview.totalSlots,
+      days: preview.days.map((d) => ({
+        jalaliHeading: d.jalaliHeading,
+        slots: d.slots.map((s) => ({ label: s.label })),
+      })),
+    };
   } catch (e) {
     return {
       ok: false,

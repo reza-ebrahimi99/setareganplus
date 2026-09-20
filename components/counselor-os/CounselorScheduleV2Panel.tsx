@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { useRouter } from "next/navigation";
 import type { CounselorActionState } from "@/app/admin/counselor/actions";
 import {
@@ -8,17 +15,27 @@ import {
   copySchedulePlanV2Action,
   deleteSchedulePlanV2Action,
   pauseSchedulePlanV2Action,
-  previewSchedulePlanV2Action,
   saveSchedulePlanV2Action,
 } from "@/app/admin/counselor/actions";
 import { JalaliDateField } from "@/components/datetime/JalaliDateField";
-import { CounselorScheduleSessionKind } from "@/generated/prisma/enums";
-import type { SchedulePlanDetail, SchedulePlanListItem } from "@/lib/counselor-os/schedule-v2/types";
+import { PersianTimePicker } from "@/components/datetime/PersianTimePicker";
+import {
+  CounselorSchedulePlanStatus,
+  CounselorScheduleSessionKind,
+} from "@/generated/prisma/enums";
+import type {
+  SchedulePlanDetail,
+  SchedulePlanListItem,
+} from "@/lib/counselor-os/schedule-v2/types";
 import {
   planStatusLabel,
   sessionKindLabel,
 } from "@/lib/counselor-os/schedule-v2/session-kind";
 import { weekdayLabelForGregorianYmd } from "@/lib/counselor-os/schedule-v2/local-date";
+import {
+  computeSchedulePreview,
+  formRowsToScheduleDays,
+} from "@/lib/counselor-os/schedule-v2/preview-compute";
 import { normalizeLocalTimeHm } from "@/lib/datetime/tehran-zone";
 import { toPersianDigits } from "@/lib/persian";
 
@@ -27,94 +44,135 @@ type FormAction = (
   formData: FormData,
 ) => Promise<CounselorActionState>;
 
+type WorkWindow = { id: string; start: string; end: string };
 type WorkDay = {
+  id: string;
   localDateGregorian: string;
-  windows: Array<{ start: string; end: string }>;
-  note: string;
+  windows: WorkWindow[];
 };
 
 type Props = {
   advisorId: string;
+  advisorName: string;
   plans: SchedulePlanListItem[];
   editingPlan: SchedulePlanDetail | null;
   onDirtyChange?: (dirty: boolean) => void;
 };
 
+function newId(prefix: string): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function emptyWindow(): WorkWindow {
+  return { id: newId("win"), start: "09:00", end: "12:00" };
+}
+
 function emptyDay(): WorkDay {
   return {
+    id: newId("day"),
     localDateGregorian: "",
-    windows: [{ start: "09:00", end: "12:00" }],
-    note: "",
+    windows: [emptyWindow()],
   };
 }
 
 function daysFromDetail(plan: SchedulePlanDetail | null): WorkDay[] {
   if (!plan || plan.days.length === 0) return [emptyDay()];
   return plan.days.map((d) => ({
+    id: d.id || newId("day"),
     localDateGregorian: d.localDateGregorian,
     windows: d.windows.map((w) => ({
+      id: w.id || newId("win"),
       start: w.startLocalTime,
       end: w.endLocalTime,
     })),
-    note: d.note ?? "",
   }));
 }
 
-function serializeWorkDays(days: WorkDay[]) {
-  return JSON.stringify(
-    days
-      .filter((d) => d.localDateGregorian)
-      .map((d) => ({
-        localDateGregorian: d.localDateGregorian,
-        note: d.note || null,
-        windows: d.windows.map((w) => ({
-          startLocalTime: normalizeLocalTimeHm(w.start) ?? w.start,
-          endLocalTime: normalizeLocalTimeHm(w.end) ?? w.end,
-        })),
+function serializeWorkDays(days: WorkDay[]): string {
+  const inputs = formRowsToScheduleDays(
+    days.map((d) => ({
+      localDateGregorian: d.localDateGregorian,
+      windows: d.windows.map((w) => ({
+        start: normalizeLocalTimeHm(w.start) ?? w.start,
+        end: normalizeLocalTimeHm(w.end) ?? w.end,
       })),
+    })),
+  );
+  return JSON.stringify(
+    inputs.map((d) => ({
+      localDateGregorian: d.localDateGregorian,
+      windows: d.windows,
+    })),
   );
 }
 
+type PlanFilter = "ALL" | CounselorSchedulePlanStatus;
+
 export function CounselorScheduleV2Panel(props: Props) {
   const router = useRouter();
-  const [sessionKind, setSessionKind] = useState<CounselorScheduleSessionKind>(
+  const [sessionKind, setSessionKind] = useState(
     props.editingPlan?.sessionKind ?? CounselorScheduleSessionKind.FIRST_SESSION,
   );
+  const [planFilter, setPlanFilter] = useState<PlanFilter>("ALL");
   const [planId, setPlanId] = useState(props.editingPlan?.id ?? "");
   const [planStatus, setPlanStatus] = useState(
-    props.editingPlan?.status ?? "DRAFT",
+    props.editingPlan?.status ?? CounselorSchedulePlanStatus.DRAFT,
   );
   const [version, setVersion] = useState(props.editingPlan?.version ?? 1);
   const [sessionMinutes, setSessionMinutes] = useState(
     props.editingPlan?.sessionMinutes ?? 60,
   );
   const [title, setTitle] = useState(props.editingPlan?.title ?? "");
-  const [note, setNote] = useState(props.editingPlan?.note ?? "");
   const [days, setDays] = useState<WorkDay[]>(() =>
     daysFromDetail(props.editingPlan),
   );
-  const [previewCount, setPreviewCount] = useState<number | null>(null);
-  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [dayHint, setDayHint] = useState<string | null>(null);
   const [flash, setFlash] = useState<CounselorActionState>({});
   const [pending, startTransition] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const idempotencyRef = useRef(
-    typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : String(Date.now()),
-  );
-  const initialRevision = useRef(
-    serializeWorkDays(daysFromDetail(props.editingPlan)) +
-      sessionKind +
-      sessionMinutes,
-  );
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const idempotencyRef = useRef(newId("idem"));
+  const initialRevision = useRef("");
+
+  useEffect(() => {
+    const nextDays = daysFromDetail(props.editingPlan);
+    setDays(nextDays);
+    setSessionKind(
+      props.editingPlan?.sessionKind ??
+        CounselorScheduleSessionKind.FIRST_SESSION,
+    );
+    setPlanId(props.editingPlan?.id ?? "");
+    setPlanStatus(
+      props.editingPlan?.status ?? CounselorSchedulePlanStatus.DRAFT,
+    );
+    setVersion(props.editingPlan?.version ?? 1);
+    setSessionMinutes(props.editingPlan?.sessionMinutes ?? 60);
+    setTitle(props.editingPlan?.title ?? "");
+    initialRevision.current =
+      serializeWorkDays(nextDays) +
+      String(props.editingPlan?.sessionKind) +
+      String(props.editingPlan?.sessionMinutes ?? 60);
+  }, [props.editingPlan?.id, props.editingPlan?.version]);
 
   const daysJson = useMemo(() => serializeWorkDays(days), [days]);
+
+  const preview = useMemo(() => {
+    const inputs = formRowsToScheduleDays(
+      days.map((d) => ({
+        localDateGregorian: d.localDateGregorian,
+        windows: d.windows.map((w) => ({ start: w.start, end: w.end })),
+      })),
+    );
+    return computeSchedulePreview({ days: inputs, sessionMinutes });
+  }, [days, sessionMinutes]);
+
   const dirty = useMemo(() => {
-    const rev =
-      daysJson + sessionKind + String(sessionMinutes) + title + note;
+    const rev = daysJson + sessionKind + String(sessionMinutes) + title;
     return rev !== initialRevision.current;
-  }, [daysJson, sessionKind, sessionMinutes, title, note]);
+  }, [daysJson, sessionKind, sessionMinutes, title]);
 
   useEffect(() => {
     props.onDirtyChange?.(dirty);
@@ -130,81 +188,134 @@ export function CounselorScheduleV2Panel(props: Props) {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
 
-  const runPreview = useCallback(async () => {
-    if (!daysJson || daysJson === "[]") {
-      setPreviewCount(0);
-      setPreviewError("حداقل یک روز با تاریخ مشخص اضافه کنید.");
+  const plansForKind = useMemo(
+    () => props.plans.filter((p) => p.sessionKind === sessionKind),
+    [props.plans, sessionKind],
+  );
+
+  const filteredPlans = useMemo(() => {
+    if (planFilter === "ALL") return plansForKind;
+    return plansForKind.filter((p) => p.status === planFilter);
+  }, [plansForKind, planFilter]);
+
+  const stats = useMemo(() => {
+    const draft = plansForKind.filter(
+      (p) => p.status === CounselorSchedulePlanStatus.DRAFT,
+    ).length;
+    const active = plansForKind.filter(
+      (p) => p.status === CounselorSchedulePlanStatus.ACTIVE,
+    ).length;
+    const paused = plansForKind.filter(
+      (p) => p.status === CounselorSchedulePlanStatus.PAUSED,
+    ).length;
+    return { draft, active, paused };
+  }, [plansForKind]);
+
+  const setDayDate = useCallback((dayId: string, ymd: string) => {
+    if (!ymd) {
+      setDays((prev) =>
+        prev.map((d) =>
+          d.id === dayId ? { ...d, localDateGregorian: "" } : d,
+        ),
+      );
       return;
     }
-    const result = await previewSchedulePlanV2Action({
-      advisorId: props.advisorId,
-      sessionMinutes,
-      daysJson,
-      planId: planId || undefined,
+    setDays((prev) => {
+      const duplicate = prev.some(
+        (d) => d.id !== dayId && d.localDateGregorian === ymd,
+      );
+      if (duplicate) {
+        setDayHint(
+          "این تاریخ قبلاً اضافه شده است؛ بازه جدید را داخل همان روز وارد کنید.",
+        );
+        return prev;
+      }
+      setDayHint(null);
+      return prev.map((d) =>
+        d.id === dayId ? { ...d, localDateGregorian: ymd } : d,
+      );
     });
-    if (!result.ok) {
-      setPreviewCount(null);
-      setPreviewError(result.error ?? "پیش‌نمایش ناموفق بود.");
+  }, []);
+
+  function buildFormData(): FormData {
+    const fd = new FormData();
+    fd.set("advisorId", props.advisorId);
+    fd.set("sessionKind", sessionKind);
+    fd.set("sessionMinutes", String(sessionMinutes));
+    fd.set("title", title);
+    fd.set("daysJson", daysJson);
+    fd.set("planStatus", planStatus);
+    fd.set("idempotencyKey", idempotencyRef.current);
+    if (planId) fd.set("planId", planId);
+    fd.set("version", String(version));
+    return fd;
+  }
+
+  function afterSuccess(result: CounselorActionState) {
+    setFlash(result);
+    if (result.error) return;
+    initialRevision.current =
+      daysJson + sessionKind + String(sessionMinutes) + title;
+    idempotencyRef.current = newId("idem");
+    if (result.planId && result.planId !== planId) {
+      router.push(
+        `/admin/counselor/calendar?advisorId=${encodeURIComponent(props.advisorId)}&planId=${encodeURIComponent(result.planId)}`,
+      );
+    } else {
+      router.refresh();
+    }
+  }
+
+  function runSave(thenActivate = false) {
+    if (!preview.ok) {
+      setFlash({ error: preview.error });
       return;
     }
-    setPreviewError(null);
-    setPreviewCount(result.totalSlots ?? 0);
-  }, [daysJson, planId, props.advisorId, sessionMinutes]);
-
-  useEffect(() => {
-    const t = window.setTimeout(() => {
-      void runPreview();
-    }, 400);
-    return () => window.clearTimeout(t);
-  }, [runPreview]);
-
-  function submitWith(action: FormAction, extra?: Record<string, string>) {
     startTransition(async () => {
-      const fd = new FormData();
-      fd.set("advisorId", props.advisorId);
-      fd.set("sessionKind", sessionKind);
-      fd.set("sessionMinutes", String(sessionMinutes));
-      fd.set("title", title);
-      fd.set("note", note);
-      fd.set("daysJson", daysJson);
-      fd.set("planStatus", planStatus);
-      fd.set("idempotencyKey", idempotencyRef.current);
-      if (planId) fd.set("planId", planId);
-      fd.set("version", String(version));
-      if (extra) {
-        for (const [k, v] of Object.entries(extra)) fd.set(k, v);
+      const saveResult = await saveSchedulePlanV2Action({}, buildFormData());
+      if (saveResult.error) {
+        setFlash(saveResult);
+        return;
       }
-      const result = await action({}, fd);
-      setFlash(result);
-      if (!result.error) {
-        initialRevision.current =
-          daysJson + sessionKind + String(sessionMinutes) + title + note;
-        idempotencyRef.current =
-          typeof crypto !== "undefined" && crypto.randomUUID
-            ? crypto.randomUUID()
-            : String(Date.now());
-        router.refresh();
+      const nextPlanId = saveResult.planId ?? planId;
+      if (thenActivate && nextPlanId) {
+        const fd = new FormData();
+        fd.set("planId", nextPlanId);
+        fd.set("idempotencyKey", newId("idem"));
+        const act = await activateSchedulePlanV2Action({}, fd);
+        afterSuccess(act);
+        return;
       }
+      afterSuccess(saveResult);
     });
   }
 
   function loadPlanFromList(id: string) {
+    if (
+      dirty &&
+      !window.confirm("تغییرات ذخیره‌نشده دارید. ادامه می‌دهید؟")
+    ) {
+      return;
+    }
     router.push(
       `/admin/counselor/calendar?advisorId=${encodeURIComponent(props.advisorId)}&planId=${encodeURIComponent(id)}`,
     );
   }
 
   function newDraft(kind: CounselorScheduleSessionKind) {
+    if (
+      dirty &&
+      !window.confirm("تغییرات ذخیره‌نشده دارید. ادامه می‌دهید؟")
+    ) {
+      return;
+    }
     router.push(
       `/admin/counselor/calendar?advisorId=${encodeURIComponent(props.advisorId)}&newPlan=${kind === CounselorScheduleSessionKind.SECOND_SESSION ? "second" : "first"}`,
     );
   }
 
-  const drafts = props.plans.filter((p) => p.status === "DRAFT");
-  const published = props.plans.filter((p) => p.status !== "DRAFT");
-
   return (
-    <div className="cos-cal-v2">
+    <div className="cos-cal-v2 cos-cal-v2--pro">
       {flash.error ? (
         <p className="cos-alert cos-alert--error" role="alert">
           {flash.error}
@@ -215,369 +326,438 @@ export function CounselorScheduleV2Panel(props: Props) {
           {flash.success}
         </p>
       ) : null}
+      {dayHint ? (
+        <p className="cos-alert cos-alert--warn" role="status">
+          {dayHint}
+        </p>
+      ) : null}
 
-      <section className="cos-panel cos-cal-v2__list">
+      <header className="cos-cal-v2__hero">
+        <div>
+          <h2 className="cos-cal-v2__title">زمان‌بندی جلسات مشاور</h2>
+          <p className="cos-muted">{props.advisorName}</p>
+        </div>
+        <div className="cos-cal-v2__stats" aria-label="خلاصه برنامه‌ها">
+          <span>
+            پیش‌نویس: {toPersianDigits(String(stats.draft))}
+          </span>
+          <span>فعال: {toPersianDigits(String(stats.active))}</span>
+          <span>متوقف: {toPersianDigits(String(stats.paused))}</span>
+        </div>
+      </header>
+
+      <div className="cos-cal-v2__tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          className={
+            sessionKind === CounselorScheduleSessionKind.FIRST_SESSION
+              ? "cos-cal-v2__tab cos-cal-v2__tab--active"
+              : "cos-cal-v2__tab"
+          }
+          onClick={() => {
+            if (
+              sessionKind !== CounselorScheduleSessionKind.FIRST_SESSION &&
+              dirty &&
+              !window.confirm("تغییرات ذخیره‌نشده دارید.")
+            ) {
+              return;
+            }
+            setSessionKind(CounselorScheduleSessionKind.FIRST_SESSION);
+          }}
+        >
+          جلسه اول
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={
+            sessionKind === CounselorScheduleSessionKind.SECOND_SESSION
+              ? "cos-cal-v2__tab cos-cal-v2__tab--active"
+              : "cos-cal-v2__tab"
+          }
+          onClick={() => {
+            if (
+              sessionKind !== CounselorScheduleSessionKind.SECOND_SESSION &&
+              dirty &&
+              !window.confirm("تغییرات ذخیره‌نشده دارید.")
+            ) {
+              return;
+            }
+            setSessionKind(CounselorScheduleSessionKind.SECOND_SESSION);
+          }}
+        >
+          جلسه دوم
+        </button>
+      </div>
+
+      <section className="cos-cal-v2__list cos-panel">
         <header className="cos-cal-v2__list-head">
-          <h3>پیش‌نویس‌ها و برنامه‌های زمان‌بندی</h3>
-          <div className="cos-inline-actions">
-            <button
-              type="button"
-              className="cos-btn cos-btn--ghost"
-              onClick={() =>
-                newDraft(CounselorScheduleSessionKind.FIRST_SESSION)
-              }
-            >
-              پیش‌نویس جلسه اول
-            </button>
-            <button
-              type="button"
-              className="cos-btn cos-btn--ghost"
-              onClick={() =>
-                newDraft(CounselorScheduleSessionKind.SECOND_SESSION)
-              }
-            >
-              پیش‌نویس جلسه دوم
-            </button>
-          </div>
+          <h3>برنامه‌های {sessionKindLabel(sessionKind)}</h3>
+          <button
+            type="button"
+            className="cos-btn cos-btn--ghost"
+            onClick={() => newDraft(sessionKind)}
+          >
+            + پیش‌نویس جدید
+          </button>
         </header>
-
-        {drafts.length > 0 ? (
-          <>
-            <h4 className="cos-cal-v2__subhead">پیش‌نویس‌های زمان‌بندی</h4>
-            <ul className="cos-cal-v2__plans">
-              {drafts.map((plan) => (
-                <li key={plan.id}>
-                  <span>
-                    {sessionKindLabel(plan.sessionKind)} ·{" "}
-                    {plan.dayCount} روز · {plan.sessionMinutes} دقیقه
-                  </span>
-                  <div className="cos-inline-actions">
-                    <button
-                      type="button"
-                      className="cos-btn cos-btn--ghost"
-                      onClick={() => loadPlanFromList(plan.id)}
-                    >
-                      ویرایش
-                    </button>
-                    <button
-                      type="button"
-                      className="cos-btn cos-btn--ghost"
-                      disabled={pending}
-                      onClick={() => {
-                        startTransition(async () => {
-                          const r = await copySchedulePlanV2Action(plan.id);
-                          if (r.ok && r.planId) loadPlanFromList(r.planId);
-                          else setFlash({ error: r.error });
-                        });
-                      }}
-                    >
-                      کپی
-                    </button>
-                    <button
-                      type="button"
-                      className="cos-btn cos-btn--primary"
-                      disabled={pending}
-                      onClick={() => {
-                        startTransition(async () => {
-                          const fd = new FormData();
-                          fd.set("planId", plan.id);
-                          fd.set("version", String(plan.version));
-                          fd.set("idempotencyKey", crypto.randomUUID());
-                          const r = await activateSchedulePlanV2Action({}, fd);
-                          setFlash(r);
-                          if (!r.error) router.refresh();
-                        });
-                      }}
-                    >
-                      فعال‌سازی
-                    </button>
-                    <button
-                      type="button"
-                      className="cos-btn"
-                      onClick={() => {
-                        setPlanId(plan.id);
-                        setDeleteOpen(true);
-                      }}
-                    >
-                      حذف
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </>
+        <div className="cos-cal-v2__filters">
+          {(
+            [
+              ["ALL", "همه"],
+              [CounselorSchedulePlanStatus.DRAFT, "پیش‌نویس"],
+              [CounselorSchedulePlanStatus.ACTIVE, "فعال"],
+              [CounselorSchedulePlanStatus.PAUSED, "متوقف"],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              className={
+                planFilter === key
+                  ? "cos-cal-v2__filter cos-cal-v2__filter--on"
+                  : "cos-cal-v2__filter"
+              }
+              onClick={() => setPlanFilter(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {filteredPlans.length === 0 ? (
+          <p className="cos-empty">برنامه‌ای در این فیلتر نیست.</p>
         ) : (
-          <p className="cos-empty">پیش‌نویسی ثبت نشده است.</p>
-        )}
-
-        {published.length > 0 ? (
-          <>
-            <h4 className="cos-cal-v2__subhead">فعال / متوقف</h4>
-            <ul className="cos-cal-v2__plans">
-              {published.map((plan) => (
-                <li key={plan.id}>
-                  <span>
-                    {sessionKindLabel(plan.sessionKind)} ·{" "}
-                    {planStatusLabel(plan.status)} · {plan.dayCount} روز
+          <ul className="cos-cal-v2__plans">
+            {filteredPlans.map((plan) => (
+              <li key={plan.id} className="cos-cal-v2__plan-card">
+                <div className="cos-cal-v2__plan-main">
+                  <strong>{plan.title ?? "بدون عنوان"}</strong>
+                  <span
+                    className={`cos-cal-v2__badge cos-cal-v2__badge--${plan.status.toLowerCase()}`}
+                  >
+                    {planStatusLabel(plan.status)}
                   </span>
-                  <div className="cos-inline-actions">
-                    <button
-                      type="button"
-                      className="cos-btn cos-btn--ghost"
-                      onClick={() => loadPlanFromList(plan.id)}
-                    >
-                      {plan.status === "ACTIVE" ? "ویرایش" : "مشاهده"}
-                    </button>
-                    <button
-                      type="button"
-                      className="cos-btn cos-btn--ghost"
-                      disabled={pending}
-                      onClick={() => {
-                        startTransition(async () => {
-                          const r = await copySchedulePlanV2Action(plan.id);
-                          if (r.ok && r.planId) loadPlanFromList(r.planId);
-                        });
-                      }}
-                    >
-                      کپی
-                    </button>
-                    {plan.status === "ACTIVE" ? (
+                  <span className="cos-muted">
+                    {toPersianDigits(String(plan.dayCount))} روز ·{" "}
+                    {toPersianDigits(String(plan.sessionMinutes))} دقیقه
+                  </span>
+                </div>
+                <div className="cos-cal-v2__plan-actions">
+                  <button
+                    type="button"
+                    className="cos-btn cos-btn--ghost"
+                    onClick={() => loadPlanFromList(plan.id)}
+                  >
+                    {plan.status === CounselorSchedulePlanStatus.ACTIVE
+                      ? "ویرایش"
+                      : "مشاهده"}
+                  </button>
+                  <button
+                    type="button"
+                    className="cos-btn cos-btn--ghost"
+                    disabled={pending}
+                    onClick={() => {
+                      startTransition(async () => {
+                        const r = await copySchedulePlanV2Action(plan.id);
+                        if (r.ok && r.planId) loadPlanFromList(r.planId);
+                        else setFlash({ error: r.error });
+                      });
+                    }}
+                  >
+                    کپی
+                  </button>
+                  {plan.status === CounselorSchedulePlanStatus.DRAFT ? (
+                    <>
                       <button
                         type="button"
-                        className="cos-btn"
+                        className="cos-btn cos-btn--primary"
                         disabled={pending}
                         onClick={() => {
-                          const fd = new FormData();
-                          fd.set("planId", plan.id);
                           startTransition(async () => {
-                            const r = await pauseSchedulePlanV2Action({}, fd);
-                            setFlash(r);
+                            const fd = new FormData();
+                            fd.set("planId", plan.id);
+                            fd.set("version", String(plan.version));
+                            fd.set("idempotencyKey", newId("idem"));
+                            setFlash(await activateSchedulePlanV2Action({}, fd));
                             router.refresh();
                           });
                         }}
                       >
-                        توقف
+                        فعال‌سازی
                       </button>
+                      <button
+                        type="button"
+                        className="cos-btn cos-btn--danger"
+                        onClick={() => {
+                          setDeleteTargetId(plan.id);
+                          setDeleteOpen(true);
+                        }}
+                      >
+                        حذف
+                      </button>
+                    </>
+                  ) : null}
+                  {plan.status === CounselorSchedulePlanStatus.ACTIVE ? (
+                    <button
+                      type="button"
+                      className="cos-btn"
+                      disabled={pending}
+                      onClick={() => {
+                        const fd = new FormData();
+                        fd.set("planId", plan.id);
+                        startTransition(async () => {
+                          setFlash(await pauseSchedulePlanV2Action({}, fd));
+                          router.refresh();
+                        });
+                      }}
+                    >
+                      توقف
+                    </button>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <div className="cos-cal-v2__layout">
+        <section className="cos-cal-v2__editor cos-panel">
+          <header className="cos-cal-v2__editor-head">
+            <h3>
+              {planId ? "ویرایش برنامه" : "برنامه جدید"}
+              {dirty ? (
+                <span className="cos-cal-v2__unsaved">تغییرات ذخیره‌نشده</span>
+              ) : null}
+            </h3>
+            <label className="cos-field cos-field--inline">
+              <span>مدت جلسه (دقیقه)</span>
+              <input
+                type="number"
+                min={15}
+                max={180}
+                value={sessionMinutes}
+                onChange={(e) => setSessionMinutes(Number(e.target.value))}
+              />
+            </label>
+          </header>
+
+          <label className="cos-field">
+            <span>عنوان (اختیاری)</span>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="مثلاً آبان ۱۴۰۵"
+            />
+          </label>
+
+          <div className="cos-cal-v2__days">
+            {days.map((day) => (
+              <article key={day.id} className="cos-cal-v2__day-card">
+                <div className="cos-cal-v2__day-head">
+                  <div className="cos-cal-v2__day-date">
+                    <JalaliDateField
+                      id={`v2-day-${day.id}`}
+                      name={`day-${day.id}`}
+                      defaultValue={day.localDateGregorian || undefined}
+                      required
+                      className="cos-cal-v2__jalali"
+                      onHiddenValueChange={(ymd) => setDayDate(day.id, ymd)}
+                    />
+                    {day.localDateGregorian ? (
+                      <span className="cos-cal-v2__weekday">
+                        {weekdayLabelForGregorianYmd(day.localDateGregorian)}
+                      </span>
                     ) : null}
                   </div>
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : null}
-      </section>
-
-      <section className="cos-panel cos-cal-v2__editor">
-        <header>
-          <h3>
-            {planId ? "ویرایش برنامه" : "برنامه جدید"} —{" "}
-            {sessionKindLabel(sessionKind)}
-          </h3>
-          <p className="cos-muted">
-            برای هر تاریخ شمسی، بازه‌های ساعتی و مدت جلسه را مشخص کنید.
-          </p>
-        </header>
-
-        <div className="cos-cal-v2__kind">
-          <label>
-            <input
-              type="radio"
-              name="kindPick"
-              checked={
-                sessionKind === CounselorScheduleSessionKind.FIRST_SESSION
-              }
-              onChange={() =>
-                setSessionKind(CounselorScheduleSessionKind.FIRST_SESSION)
-              }
-            />
-            جلسه اول
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="kindPick"
-              checked={
-                sessionKind === CounselorScheduleSessionKind.SECOND_SESSION
-              }
-              onChange={() =>
-                setSessionKind(CounselorScheduleSessionKind.SECOND_SESSION)
-              }
-            />
-            جلسه دوم
-          </label>
-        </div>
-
-        <label className="cos-field">
-          <span>مدت هر جلسه (دقیقه)</span>
-          <input
-            type="number"
-            min={15}
-            max={180}
-            value={sessionMinutes}
-            onChange={(e) => setSessionMinutes(Number(e.target.value))}
-          />
-        </label>
-
-        <div className="cos-cal-v2__days">
-          {days.map((day, dayIndex) => (
-            <article key={dayIndex} className="cos-cal-v2__day">
-              <div className="cos-cal-v2__day-head">
-                <JalaliDateField
-                  id={`v2-day-${dayIndex}`}
-                  name={`day-${dayIndex}`}
-                  defaultValue={day.localDateGregorian || undefined}
-                  required
-                  onHiddenValueChange={(hidden) => {
-                    setDays((prev) => {
-                      const next = [...prev];
-                      next[dayIndex] = {
-                        ...next[dayIndex]!,
-                        localDateGregorian: hidden,
-                      };
-                      return next;
-                    });
-                  }}
-                />
-                {day.localDateGregorian ? (
-                  <span className="cos-muted" aria-readonly>
-                    {weekdayLabelForGregorianYmd(day.localDateGregorian)}
-                  </span>
-                ) : null}
-                <button
-                  type="button"
-                  className="cos-btn cos-btn--ghost"
-                  onClick={() =>
-                    setDays((prev) => prev.filter((_, i) => i !== dayIndex))
-                  }
-                >
-                  حذف روز
-                </button>
-              </div>
-              {day.windows.map((window, wi) => (
-                <div key={wi} className="cos-cal-v2__window">
-                  <label>
-                    شروع
-                    <input
-                      type="time"
-                      value={window.start}
-                      onChange={(e) => {
-                        setDays((prev) => {
-                          const next = [...prev];
-                          const windows = [...next[dayIndex]!.windows];
-                          windows[wi] = { ...windows[wi]!, start: e.target.value };
-                          next[dayIndex] = { ...next[dayIndex]!, windows };
-                          return next;
-                        });
-                      }}
-                    />
-                  </label>
-                  <label>
-                    پایان
-                    <input
-                      type="time"
-                      value={window.end}
-                      onChange={(e) => {
-                        setDays((prev) => {
-                          const next = [...prev];
-                          const windows = [...next[dayIndex]!.windows];
-                          windows[wi] = { ...windows[wi]!, end: e.target.value };
-                          next[dayIndex] = { ...next[dayIndex]!, windows };
-                          return next;
-                        });
-                      }}
-                    />
-                  </label>
                   <button
                     type="button"
-                    className="cos-btn cos-btn--ghost"
+                    className="cos-btn cos-btn--danger cos-btn--sm"
+                    disabled={days.length <= 1}
                     onClick={() =>
-                      setDays((prev) => {
-                        const next = [...prev];
-                        const windows = next[dayIndex]!.windows.filter(
-                          (_, i) => i !== wi,
-                        );
-                        next[dayIndex] = {
-                          ...next[dayIndex]!,
-                          windows: windows.length
-                            ? windows
-                            : [{ start: "09:00", end: "12:00" }],
-                        };
-                        return next;
-                      })
+                      setDays((prev) =>
+                        prev.length <= 1
+                          ? prev
+                          : prev.filter((d) => d.id !== day.id),
+                      )
                     }
                   >
-                    حذف بازه
+                    حذف روز
                   </button>
                 </div>
-              ))}
-              <button
-                type="button"
-                className="cos-btn cos-btn--ghost"
-                onClick={() =>
-                  setDays((prev) => {
-                    const next = [...prev];
-                    next[dayIndex] = {
-                      ...next[dayIndex]!,
-                      windows: [
-                        ...next[dayIndex]!.windows,
-                        { start: "13:00", end: "16:00" },
-                      ],
-                    };
-                    return next;
-                  })
-                }
-              >
-                افزودن بازه در همین روز
-              </button>
-            </article>
-          ))}
-        </div>
 
-        <button
-          type="button"
-          className="cos-btn"
-          onClick={() => setDays((prev) => [...prev, emptyDay()])}
-        >
-          افزودن روز کاری
-        </button>
+                <ul className="cos-cal-v2__windows">
+                  {day.windows.map((window) => (
+                    <li key={window.id} className="cos-cal-v2__window-row">
+                      <PersianTimePicker
+                        id={`${day.id}-${window.id}-start`}
+                        label="شروع"
+                        value={window.start}
+                        onChange={(v) =>
+                          setDays((prev) =>
+                            prev.map((d) =>
+                              d.id !== day.id
+                                ? d
+                                : {
+                                    ...d,
+                                    windows: d.windows.map((w) =>
+                                      w.id === window.id
+                                        ? { ...w, start: v ?? "09:00" }
+                                        : w,
+                                    ),
+                                  },
+                            ),
+                          )
+                        }
+                      />
+                      <PersianTimePicker
+                        id={`${day.id}-${window.id}-end`}
+                        label="پایان"
+                        value={window.end}
+                        onChange={(v) =>
+                          setDays((prev) =>
+                            prev.map((d) =>
+                              d.id !== day.id
+                                ? d
+                                : {
+                                    ...d,
+                                    windows: d.windows.map((w) =>
+                                      w.id === window.id
+                                        ? { ...w, end: v ?? "12:00" }
+                                        : w,
+                                    ),
+                                  },
+                            ),
+                          )
+                        }
+                      />
+                      <button
+                        type="button"
+                        className="cos-btn cos-btn--ghost cos-btn--sm"
+                        aria-label="حذف بازه"
+                        onClick={() =>
+                          setDays((prev) =>
+                            prev.map((d) => {
+                              if (d.id !== day.id) return d;
+                              const nextW = d.windows.filter(
+                                (w) => w.id !== window.id,
+                              );
+                              return {
+                                ...d,
+                                windows:
+                                  nextW.length > 0 ? nextW : [emptyWindow()],
+                              };
+                            }),
+                          )
+                        }
+                      >
+                        حذف بازه
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  className="cos-btn cos-btn--ghost cos-btn--sm"
+                  onClick={() =>
+                    setDays((prev) =>
+                      prev.map((d) =>
+                        d.id === day.id
+                          ? {
+                              ...d,
+                              windows: [
+                                ...d.windows,
+                                {
+                                  id: newId("win"),
+                                  start: "13:00",
+                                  end: "16:00",
+                                },
+                              ],
+                            }
+                          : d,
+                      ),
+                    )
+                  }
+                >
+                  + افزودن بازه
+                </button>
+              </article>
+            ))}
+          </div>
 
-        <aside className="cos-cal-v2__preview" aria-live="polite">
-          <strong>پیش‌نمایش نوبت‌ها</strong>
-          {previewError ? (
-            <p className="cos-muted">{previewError}</p>
-          ) : previewCount != null ? (
-            <p>{toPersianDigits(String(previewCount))} نوبت قابل رزرو</p>
-          ) : (
-            <p className="cos-muted">در حال محاسبه…</p>
-          )}
-        </aside>
-      </section>
-
-      <div className="cos-cal-v2__sticky">
-        <button
-          type="button"
-          className="cos-btn cos-btn--primary"
-          disabled={pending}
-          onClick={() =>
-            submitWith(
-              planStatus === "ACTIVE"
-                ? saveSchedulePlanV2Action
-                : saveSchedulePlanV2Action,
-            )
-          }
-        >
-          {planStatus === "ACTIVE" ? "ذخیره برنامه فعال" : "ذخیره پیش‌نویس"}
-        </button>
-        {planStatus === "DRAFT" && planId ? (
           <button
             type="button"
-            className="cos-btn"
-            disabled={pending}
-            onClick={() => submitWith(activateSchedulePlanV2Action)}
+            className="cos-btn cos-btn--ghost"
+            onClick={() => setDays((prev) => [...prev, emptyDay()])}
           >
-            فعال‌سازی
+            + افزودن روز کاری
           </button>
-        ) : null}
+        </section>
+
+        <aside className="cos-cal-v2__aside cos-panel" aria-live="polite">
+          <h3>پیش‌نمایش نوبت‌ها</h3>
+          {!preview.ok ? (
+            <p className="cos-cal-v2__preview-error">{preview.error}</p>
+          ) : preview.totalSlots === 0 ? (
+            <p className="cos-cal-v2__preview-error">
+              نوبتی ساخته نشد؛ بازه‌ها و مدت جلسه را بررسی کنید.
+            </p>
+          ) : (
+            <>
+              <p className="cos-cal-v2__preview-total">
+                {toPersianDigits(String(preview.totalSlots))} نوبت
+              </p>
+              {preview.days.map((group) => (
+                <div key={group.localDateGregorian} className="cos-cal-v2__preview-day">
+                  <h4>
+                    {group.jalaliHeading} · {group.weekdayLabel}
+                  </h4>
+                  <div className="cos-cal-v2__chips">
+                    {group.slots.map((slot) => (
+                      <span key={slot.label} className="cos-cal-v2__chip">
+                        {slot.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </aside>
+      </div>
+
+      <div className="cos-cal-v2__sticky-bar">
+        {planStatus === CounselorSchedulePlanStatus.ACTIVE ? (
+          <button
+            type="button"
+            className="cos-btn cos-btn--primary"
+            disabled={pending || !preview.ok}
+            onClick={() => runSave(false)}
+          >
+            {pending ? "در حال ذخیره…" : "ذخیره تغییرات"}
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="cos-btn cos-btn--primary"
+              disabled={pending || !preview.ok}
+              onClick={() => runSave(false)}
+            >
+              {pending ? "در حال ذخیره…" : "ذخیره پیش‌نویس"}
+            </button>
+            <button
+              type="button"
+              className="cos-btn"
+              disabled={pending || !preview.ok}
+              onClick={() => runSave(true)}
+            >
+              ذخیره و فعال‌سازی
+            </button>
+          </>
+        )}
       </div>
 
       {deleteOpen ? (
@@ -588,17 +768,27 @@ export function CounselorScheduleV2Panel(props: Props) {
               <button
                 type="button"
                 className="cos-btn"
-                onClick={() => setDeleteOpen(false)}
+                onClick={() => {
+                  setDeleteOpen(false);
+                  setDeleteTargetId(null);
+                }}
               >
                 انصراف
               </button>
               <button
                 type="button"
-                className="cos-btn cos-btn--primary"
+                className="cos-btn cos-btn--danger"
                 disabled={pending}
                 onClick={() => {
                   setDeleteOpen(false);
-                  submitWith(deleteSchedulePlanV2Action);
+                  const target = deleteTargetId ?? planId;
+                  if (!target) return;
+                  startTransition(async () => {
+                    const fd = new FormData();
+                    fd.set("planId", target);
+                    setFlash(await deleteSchedulePlanV2Action({}, fd));
+                    router.refresh();
+                  });
                 }}
               >
                 حذف

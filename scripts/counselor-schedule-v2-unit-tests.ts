@@ -4,6 +4,7 @@ import { jalaliPartsToGregorianDateOnly } from "../lib/datetime/jalali-form";
 import { gregorianDateOnlyToJalaliParts } from "../lib/datetime/jalali-form";
 import { weekdayLabelForGregorianYmd } from "../lib/counselor-os/schedule-v2/local-date";
 import { validateScheduleDays } from "../lib/counselor-os/schedule-v2/validate";
+import { computeSchedulePreview } from "../lib/counselor-os/schedule-v2/preview-compute";
 
 function test(name: string, fn: () => void) {
   fn();
@@ -37,6 +38,43 @@ test("1405/06/30 Monday 09-16 single window yields 7 slots at 60min", () => {
     ],
     60,
   );
+});
+
+test("1405/06/31 preview compute yields 3 slots 09-12 at 60min", () => {
+  const ymd = jalaliPartsToGregorianDateOnly(1405, 6, 31);
+  assert.equal(weekdayLabelForGregorianYmd(ymd), "سه‌شنبه");
+  const preview = computeSchedulePreview({
+    sessionMinutes: 60,
+    days: [
+      {
+        localDateGregorian: ymd,
+        windows: [{ startLocalTime: "09:00", endLocalTime: "12:00" }],
+      },
+    ],
+  });
+  assert.equal(preview.ok, true);
+  if (preview.ok) {
+    assert.equal(preview.totalSlots, 3);
+    assert.equal(preview.days[0]?.slots.length, 3);
+  }
+});
+
+test("duplicate localDate rejected in preview", () => {
+  const ymd = jalaliPartsToGregorianDateOnly(1405, 6, 31);
+  const preview = computeSchedulePreview({
+    sessionMinutes: 60,
+    days: [
+      {
+        localDateGregorian: ymd,
+        windows: [{ startLocalTime: "09:00", endLocalTime: "12:00" }],
+      },
+      {
+        localDateGregorian: ymd,
+        windows: [{ startLocalTime: "13:00", endLocalTime: "16:00" }],
+      },
+    ],
+  });
+  assert.equal(preview.ok, false);
 });
 
 test("two windows 09-12 and 13-16 yield 6 slots at 60min", () => {

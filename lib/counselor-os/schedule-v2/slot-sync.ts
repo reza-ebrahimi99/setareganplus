@@ -99,20 +99,20 @@ export async function previewPlanSlots(params: {
 
   const from = explicit[0]!.jalali;
   const to = explicit[explicit.length - 1]!.jalali;
-  const result = await generateSlotsForRange({
-    organizationId: params.organizationId,
-    serviceId: service.id,
-    advisorId: params.advisorId,
-    from,
-    to,
-    durationMinutes: params.sessionMinutes,
-    dryRun: true,
-    explicitDays: explicit,
+  const { computeSchedulePreview } = await import(
+    "@/lib/counselor-os/schedule-v2/preview-compute"
+  );
+  const computed = computeSchedulePreview({
+    days: dayRows.map((d) => ({
+      localDateGregorian: d.localDateGregorian,
+      windows: d.windows,
+    })),
+    sessionMinutes: params.sessionMinutes,
   });
-  if (result.error) {
-    return { totalSlots: 0, error: result.error };
+  if (!computed.ok) {
+    return { totalSlots: 0, error: computed.error };
   }
-  return { totalSlots: result.created };
+  return { totalSlots: computed.totalSlots };
 }
 
 export async function materializeActivePlanSlots(params: {

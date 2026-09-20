@@ -59,7 +59,9 @@ export function validateScheduleDays(
       throw new Error("تاریخ گذشته قابل ثبت نیست.");
     }
     if (seen.has(day.localDateGregorian)) {
-      throw new Error("تاریخ تکراری در همین برنامه مجاز نیست.");
+      throw new Error(
+        "این تاریخ قبلاً اضافه شده است؛ بازه جدید را داخل همان روز وارد کنید.",
+      );
     }
     seen.add(day.localDateGregorian);
     if (day.windows.length === 0) {

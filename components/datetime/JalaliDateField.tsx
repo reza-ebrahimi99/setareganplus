@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   buildJalaliDateFromParts,
   jalaliMonthLength,
@@ -126,20 +126,19 @@ export function JalaliDateField({
   const hiddenValue = composeHiddenValue(draft);
   const controlClass = selectClass(hasError);
 
-  useEffect(() => {
-    onHiddenValueChange?.(hiddenValue);
-  }, [hiddenValue, onHiddenValueChange]);
-
   function update(partial: Partial<Draft>) {
     setDraft((prev) => {
       const next = { ...prev, ...partial };
       next.day = clampDay(next.year, next.month, next.day);
+      const composed = composeHiddenValue(next);
+      onHiddenValueChange?.(composed);
       return next;
     });
   }
 
   function clearAll() {
     setDraft({ year: "", month: "", day: "" });
+    onHiddenValueChange?.("");
   }
 
   return (

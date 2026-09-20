@@ -143,18 +143,11 @@ export function CounselorCalendarWorkspace(props: Props) {
         </section>
       ) : null}
 
-      <section className="cos-panel" id="schedule-panel">
-        <header className="cos-cal-workspace__form-head">
-          <div>
-            <h2>زمان‌بندی تاریخ‌محور</h2>
-            <p className="cos-muted">
-              {props.advisorName} — هر روز با تاریخ شمسی مشخص؛ جلسه اول و دوم مستقل
-            </p>
-          </div>
-        </header>
+      <section className="cos-panel cos-cal-v2-shell" id="schedule-panel">
         <CounselorScheduleV2Panel
           key={`${props.advisorId}-${props.editingPlan?.id ?? "new"}-${props.editingPlan?.version ?? 0}`}
           advisorId={props.advisorId}
+          advisorName={props.advisorName}
           plans={props.schedulePlans}
           editingPlan={props.editingPlan}
           onDirtyChange={setDirty}
