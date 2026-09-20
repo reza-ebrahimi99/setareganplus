@@ -465,6 +465,18 @@ enum BookingMeetingType {
   PHONE
 }
 
+/// Counselor OS — date-based schedule plans (v2). DRAFT hidden from students; PAUSED keeps history.
+enum CounselorSchedulePlanStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+}
+
+enum CounselorScheduleSessionKind {
+  FIRST_SESSION
+  SECOND_SESSION
+}
+
 enum BookingCheckInMethod {
   QR
   MANUAL
@@ -619,6 +631,9 @@ model Organization {
   counselorNotes                       CounselorNote[]
   counselorFollowUps                   CounselorFollowUp[]
   counselorAppointments                CounselorAppointment[]
+  counselorSchedulePlans               CounselorSchedulePlan[]
+  counselorScheduleDays                CounselorScheduleDay[]
+  counselorScheduleWindows             CounselorScheduleWindow[]
   counselorCaseCorrections             CounselorCaseCorrection[]
   guidanceChoiceLists                  GuidanceChoiceList[]
   guidanceChoiceItems                  GuidanceChoiceItem[]
@@ -2044,6 +2059,7 @@ model BookingAdvisor {
   availabilityRules BookingAvailabilityRule[]
   exceptions        BookingAvailabilityException[]
   slots             BookingSlot[]
+  counselorSchedulePlans CounselorSchedulePlan[]
 
   @@unique([organizationId, id])
   @@index([organizationId, isActive])
@@ -2116,6 +2132,75 @@ model BookingAvailabilityException {
   @@map("booking_availability_exceptions")
 }
 
+/// Per-date counselor availability plan (replaces confusing weekday+range for new schedules).
+model CounselorSchedulePlan {
+  id              String                       @id @default(cuid())
+  organizationId  String
+  advisorId       String
+  sessionKind     CounselorScheduleSessionKind
+  status          CounselorSchedulePlanStatus  @default(DRAFT)
+  sessionMinutes  Int
+  title           String?
+  note            String?                      @db.Text
+  version         Int                          @default(1)
+  idempotencyKey  String?
+  legacySourceKey String?
+  legacyMeta      Json?
+  activatedAt     DateTime?
+  pausedAt        DateTime?
+  createdByUserId String?
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  advisor      BookingAdvisor         @relation(fields: [organizationId, advisorId], references: [organizationId, id], onDelete: Restrict)
+  days         CounselorScheduleDay[]
+  slots        BookingSlot[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, advisorId, sessionKind, status])
+  @@map("counselor_schedule_plans")
+}
+
+model CounselorScheduleDay {
+  id             String   @id @default(cuid())
+  organizationId String
+  planId         String
+  /// Gregorian civil date (@db.Date) for the Tehran calendar day — see jalaliPartsToGregorianDateOnly.
+  localDate      DateTime @db.Date
+  weekdayLabel   String?
+  note           String?
+  sortOrder      Int      @default(0)
+
+  organization Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  plan         CounselorSchedulePlan     @relation(fields: [organizationId, planId], references: [organizationId, id], onDelete: Restrict)
+  windows      CounselorScheduleWindow[]
+  slots        BookingSlot[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, planId, localDate])
+  @@index([organizationId, localDate])
+  @@map("counselor_schedule_days")
+}
+
+model CounselorScheduleWindow {
+  id             String @id @default(cuid())
+  organizationId String
+  dayId          String
+  startLocalTime String
+  endLocalTime   String
+  sortOrder      Int    @default(0)
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  day          CounselorScheduleDay @relation(fields: [organizationId, dayId], references: [organizationId, id], onDelete: Cascade)
+  slots        BookingSlot[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, dayId])
+  @@map("counselor_schedule_windows")
+}
+
 model BookingSlot {
   id             String            @id @default(cuid())
   organizationId String
@@ -2128,6 +2213,9 @@ model BookingSlot {
   bookedCount    Int               @default(0)
   waitingCount   Int               @default(0)
   status         BookingSlotStatus @default(OPEN)
+  schedulePlanId   String?
+  scheduleDayId    String?
+  scheduleWindowId String?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
@@ -2135,6 +2223,9 @@ model BookingSlot {
   service      BookingService       @relation(fields: [organizationId, serviceId], references: [organizationId, id], onDelete: Restrict)
   advisor      BookingAdvisor       @relation(fields: [organizationId, advisorId], references: [organizationId, id], onDelete: Restrict)
   branch       Branch?              @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  schedulePlan   CounselorSchedulePlan?   @relation(fields: [organizationId, schedulePlanId], references: [organizationId, id], onDelete: SetNull)
+  scheduleDay    CounselorScheduleDay?    @relation(fields: [organizationId, scheduleDayId], references: [organizationId, id], onDelete: SetNull)
+  scheduleWindow CounselorScheduleWindow? @relation(fields: [organizationId, scheduleWindowId], references: [organizationId, id], onDelete: SetNull)
   reservations BookingReservation[]
 
   @@unique([organizationId, serviceId, advisorId, startsAt])
@@ -2143,6 +2234,7 @@ model BookingSlot {
   @@index([organizationId, advisorId, startsAt, status])
   @@index([organizationId, branchId, startsAt])
   @@index([organizationId, status, startsAt])
+  @@index([organizationId, schedulePlanId, startsAt])
   @@map("booking_slots")
 }
 

@@ -19310,3 +19310,117 @@ body {
     max-height: none;
   }
 }
+
+.cos-cal-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cos-cal-v2__list-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cos-cal-v2__subhead {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.cos-cal-v2__plans {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cos-cal-v2__plans li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 0.75rem;
+}
+
+.cos-cal-v2__kind {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0.75rem 0;
+}
+
+.cos-cal-v2__day {
+  border: 1px dashed var(--border, #e5e7eb);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.cos-cal-v2__day-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.cos-cal-v2__window {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.5rem;
+  align-items: end;
+  margin-bottom: 0.5rem;
+}
+
+.cos-cal-v2__preview {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--secondary, #6366f1) 8%, transparent);
+}
+
+.cos-cal-v2__sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+  background: linear-gradient(
+    to top,
+    var(--background, #fff) 70%,
+    transparent
+  );
+}
+
+.cos-cal-legacy {
+  margin-top: 1rem;
+}
+
+.cos-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 45%);
+  padding: 1rem;
+}
+
+.cos-modal {
+  max-width: 24rem;
+  width: 100%;
+  background: var(--background, #fff);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 18%);
+}

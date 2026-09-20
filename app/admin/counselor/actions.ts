@@ -12,6 +12,16 @@ import {
   saveCounselorSchedule,
   upsertCounselorDateException,
 } from "@/lib/counselor-os/schedule";
+import { CounselorScheduleSessionKind } from "@/generated/prisma/enums";
+import {
+  activateSchedulePlan,
+  copySchedulePlan,
+  deleteSchedulePlan,
+  pauseSchedulePlan,
+  saveSchedulePlanDraft,
+  updateActiveSchedulePlan,
+} from "@/lib/counselor-os/schedule-v2/plan-service";
+import { previewPlanSlots } from "@/lib/counselor-os/schedule-v2/slot-sync";
 import { linkCounselorBookingAdvisor } from "@/lib/counselor-os/advisor";
 import { correctPersonalInfoField } from "@/lib/counselor-os/corrections";
 import {
@@ -545,4 +555,162 @@ export async function uploadCounselorPhotoAction(
   revalidatePath(`/admin/counselor/counselors/${counselorUserId}`);
   revalidatePath("/admin/counselor/counselors");
   return { success: "تصویر پروفایل ذخیره شد." };
+}
+
+function parseSessionKind(raw: string): CounselorScheduleSessionKind {
+  return raw === "SECOND_SESSION"
+    ? CounselorScheduleSessionKind.SECOND_SESSION
+    : CounselorScheduleSessionKind.FIRST_SESSION;
+}
+
+export async function saveSchedulePlanV2Action(
+  _prev: CounselorActionState,
+  formData: FormData,
+): Promise<CounselorActionState> {
+  const ctx = await requireCounselorContext();
+  const advisorId = field(formData, "advisorId");
+  const planId = field(formData, "planId") || undefined;
+  const status = field(formData, "planStatus");
+  const versionRaw = field(formData, "version");
+  const expectedVersion = versionRaw ? Number(versionRaw) : undefined;
+  try {
+    const payload = {
+      ctx,
+      advisorId,
+      sessionKind: parseSessionKind(field(formData, "sessionKind")),
+      sessionMinutes: Number(field(formData, "sessionMinutes")),
+      title: field(formData, "title") || null,
+      note: field(formData, "note") || null,
+      daysJson: field(formData, "daysJson"),
+      planId,
+      expectedVersion: Number.isFinite(expectedVersion)
+        ? expectedVersion
+        : undefined,
+      idempotencyKey: field(formData, "idempotencyKey") || null,
+    };
+    if (status === "ACTIVE" && planId) {
+      await updateActiveSchedulePlan({
+        ctx,
+        planId,
+        sessionMinutes: payload.sessionMinutes,
+        title: payload.title,
+        note: payload.note,
+        daysJson: payload.daysJson,
+        expectedVersion: payload.expectedVersion ?? 1,
+      });
+    } else {
+      await saveSchedulePlanDraft(payload);
+    }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "ذخیره پیش‌نویس انجام نشد." };
+  }
+  revalidatePath("/admin/counselor/calendar");
+  return { success: "برنامه ذخیره شد." };
+}
+
+export async function activateSchedulePlanV2Action(
+  _prev: CounselorActionState,
+  formData: FormData,
+): Promise<CounselorActionState> {
+  const ctx = await requireCounselorContext();
+  const planId = field(formData, "planId");
+  if (!planId) return { error: "شناسه برنامه نامعتبر است." };
+  try {
+    const versionRaw = field(formData, "version");
+    await activateSchedulePlan({
+      ctx,
+      planId,
+      expectedVersion: versionRaw ? Number(versionRaw) : undefined,
+      idempotencyKey: field(formData, "idempotencyKey") || null,
+    });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "فعال‌سازی انجام نشد." };
+  }
+  revalidatePath("/admin/counselor/calendar");
+  revalidatePath("/admin/counselor/appointments");
+  return { success: "برنامه فعال شد و نوبت‌ها ساخته شدند." };
+}
+
+export async function pauseSchedulePlanV2Action(
+  _prev: CounselorActionState,
+  formData: FormData,
+): Promise<CounselorActionState> {
+  const ctx = await requireCounselorContext();
+  const planId = field(formData, "planId");
+  if (!planId) return { error: "شناسه برنامه نامعتبر است." };
+  try {
+    await pauseSchedulePlan({ ctx, planId });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "توقف برنامه انجام نشد." };
+  }
+  revalidatePath("/admin/counselor/calendar");
+  return { success: "رزرو جدید برای این برنامه متوقف شد." };
+}
+
+export async function deleteSchedulePlanV2Action(
+  _prev: CounselorActionState,
+  formData: FormData,
+): Promise<CounselorActionState> {
+  const ctx = await requireCounselorContext();
+  const planId = field(formData, "planId");
+  if (!planId) return { error: "شناسه برنامه نامعتبر است." };
+  try {
+    await deleteSchedulePlan({ ctx, planId });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "حذف انجام نشد." };
+  }
+  revalidatePath("/admin/counselor/calendar");
+  return { success: "پیش‌نویس حذف شد." };
+}
+
+export async function copySchedulePlanV2Action(planId: string): Promise<{
+  ok: boolean;
+  planId?: string;
+  error?: string;
+}> {
+  const ctx = await requireCounselorContext();
+  try {
+    const result = await copySchedulePlan({ ctx, planId });
+    revalidatePath("/admin/counselor/calendar");
+    return { ok: true, planId: result.planId };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "کپی انجام نشد.",
+    };
+  }
+}
+
+export async function previewSchedulePlanV2Action(input: {
+  advisorId: string;
+  sessionMinutes: number;
+  daysJson: string;
+  planId?: string;
+}): Promise<{ ok: boolean; totalSlots?: number; error?: string }> {
+  const ctx = await requireCounselorContext();
+  try {
+    const { parseScheduleDaysJson } = await import(
+      "@/lib/counselor-os/schedule-v2/validate"
+    );
+    const days = parseScheduleDaysJson(input.daysJson).map((d) => ({
+      localDateGregorian: d.localDateGregorian,
+      windows: d.windows,
+    }));
+    const preview = await previewPlanSlots({
+      organizationId: ctx.organizationId,
+      advisorId: input.advisorId,
+      sessionMinutes: input.sessionMinutes,
+      planId: input.planId,
+      days,
+    });
+    if (preview.error) {
+      return { ok: false, error: preview.error };
+    }
+    return { ok: true, totalSlots: preview.totalSlots };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "پیش‌نمایش ناموفق بود.",
+    };
+  }
 }

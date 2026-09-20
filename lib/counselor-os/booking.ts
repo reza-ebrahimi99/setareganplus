@@ -21,6 +21,10 @@ import {
   ymdToUtcNoon,
 } from "@/lib/counselor-os/schedule";
 import { slotMatchesProgram } from "@/lib/counselor-os/schedule-windows";
+import { findActiveSchedulePlan } from "@/lib/counselor-os/schedule-v2/active-plan";
+import { sessionKindFromPurpose } from "@/lib/counselor-os/schedule-v2/session-kind";
+import { slotMatchesActivePlan } from "@/lib/counselor-os/schedule-v2/slot-match";
+import { materializeActivePlanSlots } from "@/lib/counselor-os/schedule-v2/slot-sync";
 import { prisma } from "@/lib/prisma";
 import {
   formatJalaliDateTimeLabel,
@@ -75,14 +79,24 @@ export async function loadCounselorAvailableSlots(params: {
   purpose?: AppointmentPurpose | null;
 }) {
   const service = await ensureCounselorBookingService(params.organizationId);
+  const sessionKind = sessionKindFromPurpose(params.purpose);
+  const activePlan = await findActiveSchedulePlan({
+    organizationId: params.organizationId,
+    advisorId: params.advisorId,
+    sessionKind,
+  });
+
   const durations = readCounselorSessionDurations(
     service.settings,
     params.advisorId,
   );
-  const durationMinutes =
+  const legacyDurationMinutes =
     params.purpose === APPOINTMENT_PURPOSE.SECOND_SESSION
       ? durations.secondSessionMinutes
       : durations.firstSessionMinutes;
+  const durationMinutes = activePlan
+    ? activePlan.sessionMinutes
+    : legacyDurationMinutes;
 
   const now = new Date();
   const horizonDays = Math.min(
@@ -92,6 +106,7 @@ export async function loadCounselorAvailableSlots(params: {
   const endDate = new Date(now.getTime() + horizonDays * 24 * 60 * 60 * 1000);
   const from = utcToJalaliInTehran(now);
   const to = utcToJalaliInTehran(endDate);
+
   const stored = readStoredPrograms(service.settings, params.advisorId);
   const programDays =
     params.purpose === APPOINTMENT_PURPOSE.SECOND_SESSION
@@ -105,24 +120,32 @@ export async function loadCounselorAvailableSlots(params: {
     params.purpose === APPOINTMENT_PURPOSE.SECOND_SESSION
       ? stored?.secondValidUntilYmd
       : stored?.firstValidUntilYmd;
-  const rangeFrom = ymdToUtcNoon(fromYmd ?? "") ?? now;
-  const rangeUntil = ymdToUtcNoon(untilYmd ?? "") ?? endDate;
-  const windowsOverride =
-    programDays && programDays.some((day) => day.enabled)
-      ? daysToWindowOverride(programDays, rangeFrom, rangeUntil)
-      : undefined;
 
-  await generateSlotsForRange({
-    organizationId: params.organizationId,
-    serviceId: service.id,
-    advisorId: params.advisorId,
-    from,
-    to,
-    durationMinutes,
-    exceptionWindows: "append",
-    windowsOverride:
-      windowsOverride && windowsOverride.length > 0 ? windowsOverride : undefined,
-  });
+  if (activePlan) {
+    await materializeActivePlanSlots({
+      organizationId: params.organizationId,
+      planId: activePlan.id,
+    });
+  } else {
+    const rangeFrom = ymdToUtcNoon(fromYmd ?? "") ?? now;
+    const rangeUntil = ymdToUtcNoon(untilYmd ?? "") ?? endDate;
+    const windowsOverride =
+      programDays && programDays.some((day) => day.enabled)
+        ? daysToWindowOverride(programDays, rangeFrom, rangeUntil)
+        : undefined;
+
+    await generateSlotsForRange({
+      organizationId: params.organizationId,
+      serviceId: service.id,
+      advisorId: params.advisorId,
+      from,
+      to,
+      durationMinutes,
+      exceptionWindows: "append",
+      windowsOverride:
+        windowsOverride && windowsOverride.length > 0 ? windowsOverride : undefined,
+    });
+  }
 
   const slots = await prisma.bookingSlot.findMany({
     where: {
@@ -161,7 +184,18 @@ export async function loadCounselorAvailableSlots(params: {
       }
       const tehran = getTehranParts(slot.startsAt);
       const ymd = `${tehran.year}-${String(tehran.month).padStart(2, "0")}-${String(tehran.day).padStart(2, "0")}`;
-      if (
+      if (activePlan) {
+        if (
+          !slotMatchesActivePlan({
+            slot,
+            plan: activePlan,
+            durationMinutes,
+            tehranYmd: ymd,
+          })
+        ) {
+          return false;
+        }
+      } else if (
         !slotMatchesProgram({
           startMinutes: tehran.hour * 60 + tehran.minute,
           durationMinutes,
@@ -238,12 +272,20 @@ export async function bookCounselorSlotForStudent(params: {
     return { ok: false as const, error: "این زمان برای جلسه مشاوره معتبر نیست." };
   }
   if (params.purpose) {
+    const activePlan = await findActiveSchedulePlan({
+      organizationId: params.organizationId,
+      advisorId: slot.advisorId,
+      sessionKind: sessionKindFromPurpose(
+        params.purpose as AppointmentPurpose,
+      ),
+    });
     const durations = readCounselorSessionDurations(
       service.settings,
       slot.advisorId,
     );
-    const expected =
-      params.purpose === APPOINTMENT_PURPOSE.SECOND_SESSION
+    const expected = activePlan
+      ? activePlan.sessionMinutes
+      : params.purpose === APPOINTMENT_PURPOSE.SECOND_SESSION
         ? durations.secondSessionMinutes
         : durations.firstSessionMinutes;
     if (slotDurationMinutes(slot.startsAt, slot.endsAt) !== expected) {

@@ -49,6 +49,20 @@ export type GenerateSlotsInput = {
     validUntil?: Date | null;
     slotCapacity?: number;
   }>;
+  /**
+   * Date-specific windows (counselor schedule v2). When set, weekday rules are ignored.
+   */
+  explicitDays?: Array<{
+    jalali: JalaliDate;
+    windows: Array<{
+      startLocalTime: string;
+      endLocalTime: string;
+      slotCapacity?: number;
+      schedulePlanId?: string;
+      scheduleDayId?: string;
+      scheduleWindowId?: string;
+    }>;
+  }>;
 };
 
 export type GenerateSlotsResult = {
@@ -92,6 +106,154 @@ function eachJalaliDay(from: JalaliDate, to: JalaliDate): JalaliDate[] {
 export function countJalaliDaysInclusive(from: JalaliDate, to: JalaliDate): number {
   if (compareJalali(from, to) > 0) return 0;
   return eachJalaliDay(from, to).length;
+}
+
+async function generateSlotsForExplicitDays(
+  input: GenerateSlotsInput,
+  service: {
+    durationMinutes: number;
+    bufferBeforeMinutes: number;
+    bufferAfterMinutes: number;
+    minimumLeadTimeMinutes: number;
+    branchId: string | null;
+  },
+  advisor: { branchId: string | null },
+): Promise<GenerateSlotsResult> {
+  const days = input.explicitDays ?? [];
+  if (days.length === 0) {
+    return { created: 0, existing: 0, skipped: 0, dayCount: 0 };
+  }
+
+  const durationMinutes =
+    typeof input.durationMinutes === "number" &&
+    Number.isFinite(input.durationMinutes) &&
+    input.durationMinutes >= 15 &&
+    input.durationMinutes <= 180
+      ? Math.round(input.durationMinutes)
+      : service.durationMinutes;
+  const stepMinutes =
+    durationMinutes + service.bufferBeforeMinutes + service.bufferAfterMinutes;
+  if (stepMinutes <= 0) {
+    return {
+      created: 0,
+      existing: 0,
+      skipped: 0,
+      dayCount: days.length,
+      error: "مدت جلسه و بافر نامعتبر است.",
+    };
+  }
+
+  const now = new Date();
+  const leadMs = service.minimumLeadTimeMinutes * 60 * 1000;
+  const dryRun = input.dryRun === true;
+  let created = 0;
+  let existing = 0;
+  let skipped = 0;
+
+  for (const day of days) {
+    for (const window of day.windows) {
+      const startHm = parseLocalTimeHm(window.startLocalTime);
+      const endHm = parseLocalTimeHm(window.endLocalTime);
+      if (!startHm || !endHm) {
+        skipped += 1;
+        continue;
+      }
+
+      let cursorMinutes = startHm.hour * 60 + startHm.minute;
+      const endMinutes = endHm.hour * 60 + endHm.minute;
+
+      while (cursorMinutes + durationMinutes <= endMinutes) {
+        const hour = Math.floor(cursorMinutes / 60);
+        const minute = cursorMinutes % 60;
+        const startsAt = jalaliTehranLocalToUtc(
+          day.jalali.jy,
+          day.jalali.jm,
+          day.jalali.jd,
+          hour,
+          minute,
+        );
+        const endsAt = new Date(startsAt.getTime() + durationMinutes * 60 * 1000);
+
+        if (startsAt.getTime() < now.getTime() + leadMs) {
+          cursorMinutes += stepMinutes;
+          skipped += 1;
+          continue;
+        }
+
+        const found = await prisma.bookingSlot.findUnique({
+          where: {
+            organizationId_serviceId_advisorId_startsAt: {
+              organizationId: input.organizationId,
+              serviceId: input.serviceId,
+              advisorId: input.advisorId,
+              startsAt,
+            },
+          },
+          select: {
+            id: true,
+            status: true,
+            endsAt: true,
+            bookedCount: true,
+            schedulePlanId: true,
+            scheduleDayId: true,
+            scheduleWindowId: true,
+          },
+        });
+
+        if (found) {
+          existing += 1;
+          const existingDuration = Math.round(
+            (found.endsAt.getTime() - startsAt.getTime()) / 60000,
+          );
+          const sameDuration = existingDuration === durationMinutes;
+          if (
+            !dryRun &&
+            found.status !== BookingSlotStatus.CANCELLED &&
+            found.bookedCount === 0 &&
+            sameDuration
+          ) {
+            await prisma.bookingSlot.update({
+              where: { id: found.id },
+              data: {
+                endsAt,
+                capacity: window.slotCapacity ?? 1,
+                branchId: service.branchId ?? advisor.branchId ?? null,
+                schedulePlanId: window.schedulePlanId ?? found.schedulePlanId,
+                scheduleDayId: window.scheduleDayId ?? found.scheduleDayId,
+                scheduleWindowId:
+                  window.scheduleWindowId ?? found.scheduleWindowId,
+              },
+            });
+          }
+        } else if (dryRun) {
+          created += 1;
+        } else {
+          await prisma.bookingSlot.create({
+            data: {
+              organizationId: input.organizationId,
+              serviceId: input.serviceId,
+              advisorId: input.advisorId,
+              branchId: service.branchId ?? advisor.branchId ?? null,
+              startsAt,
+              endsAt,
+              capacity: window.slotCapacity ?? 1,
+              bookedCount: 0,
+              waitingCount: 0,
+              status: BookingSlotStatus.OPEN,
+              schedulePlanId: window.schedulePlanId ?? null,
+              scheduleDayId: window.scheduleDayId ?? null,
+              scheduleWindowId: window.scheduleWindowId ?? null,
+            },
+          });
+          created += 1;
+        }
+
+        cursorMinutes += stepMinutes;
+      }
+    }
+  }
+
+  return { created, existing, skipped, dayCount: days.length };
 }
 
 export async function generateSlotsForRange(
@@ -152,6 +314,10 @@ export async function generateSlotsForRange(
       dayCount,
       error: "مشاور فعال یافت نشد.",
     };
+  }
+
+  if (input.explicitDays && input.explicitDays.length > 0) {
+    return generateSlotsForExplicitDays(input, service, advisor);
   }
 
   const rules = input.windowsOverride

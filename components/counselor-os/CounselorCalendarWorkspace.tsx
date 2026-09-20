@@ -5,6 +5,11 @@ import Link from "next/link";
 import type { CounselorActionState } from "@/app/admin/counselor/actions";
 import { CounselorCalendarSelect } from "@/components/counselor-os/CounselorCalendarSelect";
 import { CounselorScheduleForm } from "@/components/counselor-os/CounselorScheduleForm";
+import { CounselorScheduleV2Panel } from "@/components/counselor-os/CounselorScheduleV2Panel";
+import type {
+  SchedulePlanDetail,
+  SchedulePlanListItem,
+} from "@/lib/counselor-os/schedule-v2/types";
 
 type CounselorFormAction = (
   state: CounselorActionState,
@@ -49,6 +54,8 @@ type Props = {
   };
   firstPreviewDays: CalendarPreviewDay[];
   secondPreviewDays: CalendarPreviewDay[];
+  schedulePlans: SchedulePlanListItem[];
+  editingPlan: SchedulePlanDetail | null;
   saveAction: CounselorFormAction;
   exceptionAction: CounselorFormAction;
   deleteExceptionAction: CounselorFormAction;
@@ -136,13 +143,33 @@ export function CounselorCalendarWorkspace(props: Props) {
         </section>
       ) : null}
 
+      <section className="cos-panel" id="schedule-panel">
+        <header className="cos-cal-workspace__form-head">
+          <div>
+            <h2>زمان‌بندی تاریخ‌محور</h2>
+            <p className="cos-muted">
+              {props.advisorName} — هر روز با تاریخ شمسی مشخص؛ جلسه اول و دوم مستقل
+            </p>
+          </div>
+        </header>
+        <CounselorScheduleV2Panel
+          key={`${props.advisorId}-${props.editingPlan?.id ?? "new"}-${props.editingPlan?.version ?? 0}`}
+          advisorId={props.advisorId}
+          plans={props.schedulePlans}
+          editingPlan={props.editingPlan}
+          onDirtyChange={setDirty}
+        />
+      </section>
+
+      <details className="cos-panel cos-cal-legacy">
+        <summary>برنامه هفتگی قدیمی (Legacy)</summary>
       <div className="cos-cal-workspace">
-        <section className="cos-panel cos-cal-workspace__form" id="schedule-panel">
+        <section className="cos-panel cos-cal-workspace__form">
           <header className="cos-cal-workspace__form-head">
             <div>
-              <h2>تنظیم برنامه زمانی</h2>
+              <h2>تنظیم برنامه زمانی (قدیم)</h2>
               <p className="cos-muted">
-                {props.advisorName} — جلسه اول و دوم مستقل؛ استراحت با چند بازه در یک روز
+                فقط در صورت نبود برنامه فعال v2 برای رزرو دانش‌آموز استفاده می‌شود.
               </p>
             </div>
             <Link href="/admin/counselor/appointments" className="cos-btn cos-btn--ghost">
@@ -184,6 +211,7 @@ export function CounselorCalendarWorkspace(props: Props) {
           />
         </aside>
       </div>
+      </details>
     </>
   );
 }

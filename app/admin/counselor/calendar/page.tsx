@@ -16,6 +16,14 @@ import {
   ensureOrgCounselorAdvisorLinks,
 } from "@/lib/counselor-os/profiles";
 import { loadCounselorSchedule } from "@/lib/counselor-os/schedule";
+import {
+  CounselorSchedulePlanStatus,
+  CounselorScheduleSessionKind,
+} from "@/generated/prisma/enums";
+import {
+  getSchedulePlanDetail,
+  listSchedulePlans,
+} from "@/lib/counselor-os/schedule-v2/plan-service";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +72,38 @@ export default async function CounselorCalendarPage({
   const schedule = selectedAdvisor
     ? await loadCounselorSchedule(ctx, selectedAdvisor.id)
     : null;
+
+  const planIdParam = firstSearchValue(params.planId);
+  const newPlanParam = firstSearchValue(params.newPlan);
+  const schedulePlans =
+    selectedAdvisor != null
+      ? await listSchedulePlans({
+          ctx,
+          advisorId: selectedAdvisor.id,
+        })
+      : [];
+  let editingPlan = planIdParam
+    ? await getSchedulePlanDetail({ ctx, planId: planIdParam })
+    : null;
+  if (!editingPlan && newPlanParam && selectedAdvisor) {
+    editingPlan = {
+      id: "",
+      advisorId: selectedAdvisor.id,
+      sessionKind:
+        newPlanParam === "second"
+          ? CounselorScheduleSessionKind.SECOND_SESSION
+          : CounselorScheduleSessionKind.FIRST_SESSION,
+      status: CounselorSchedulePlanStatus.DRAFT,
+      sessionMinutes:
+        newPlanParam === "second"
+          ? schedule?.secondSessionMinutes ?? 60
+          : schedule?.firstSessionMinutes ?? 45,
+      title: null,
+      note: null,
+      version: 1,
+      days: [],
+    };
+  }
   const calendarPreview =
     selectedAdvisor && schedule
       ? await listCounselorCalendarDays({
@@ -133,6 +173,8 @@ export default async function CounselorCalendarPage({
           advisorName={selectedAdvisor.displayName}
           advisors={advisors}
           schedule={schedule}
+          schedulePlans={schedulePlans}
+          editingPlan={editingPlan}
           firstPreviewDays={calendarPreview.firstDays}
           secondPreviewDays={calendarPreview.secondDays}
           saveAction={saveCounselorScheduleAction}

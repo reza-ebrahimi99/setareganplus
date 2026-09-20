@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   buildJalaliDateFromParts,
   jalaliMonthLength,
@@ -26,6 +26,8 @@ export type JalaliDateFieldProps = {
   minYear?: number;
   maxYear?: number;
   "aria-describedby"?: string;
+  /** Fired when composed Gregorian hidden value changes. */
+  onHiddenValueChange?: (gregorianYmd: string) => void;
 };
 
 type Draft = {
@@ -88,7 +90,9 @@ export function JalaliDateField({
   minYear,
   maxYear,
   "aria-describedby": ariaDescribedBy,
-}: JalaliDateFieldProps) {  const today = todayJalaliInTehran();
+  onHiddenValueChange,
+}: JalaliDateFieldProps) {
+  const today = todayJalaliInTehran();
   const resolvedMaxYear = maxYear ?? today.jy + 10;
   const resolvedMinYear = minYear ?? today.jy - 100;
 
@@ -121,6 +125,10 @@ export function JalaliDateField({
 
   const hiddenValue = composeHiddenValue(draft);
   const controlClass = selectClass(hasError);
+
+  useEffect(() => {
+    onHiddenValueChange?.(hiddenValue);
+  }, [hiddenValue, onHiddenValueChange]);
 
   function update(partial: Partial<Draft>) {
     setDraft((prev) => {
