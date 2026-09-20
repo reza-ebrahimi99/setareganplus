@@ -19822,6 +19822,16 @@ body {
   color: #b45309;
 }
 
+.cos-mgmt-overview__steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.35rem 0.75rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
 .cos-cal-v2__sticky-bar {
   position: fixed;
   bottom: 0;
