@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "9mb",
     },
     webpackMemoryOptimizations: true,
+    /** Low-RAM deploy hosts — avoid a second webpack worker OOM-killing the build. */
+    webpackBuildWorker: false,
   },
   async redirects() {
     return [

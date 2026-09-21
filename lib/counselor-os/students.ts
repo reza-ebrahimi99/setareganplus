@@ -27,7 +27,10 @@ import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import { prisma } from "@/lib/prisma";
 
 const STALE_DAYS = 14;
-const PAGE_SIZE = 40;
+export const COUNSELOR_STUDENTS_PAGE_SIZE = 40;
+const PAGE_SIZE = COUNSELOR_STUDENTS_PAGE_SIZE;
+/** Upper bound for export / full filtered lists (same filter pipeline as the table). */
+export const COUNSELOR_STUDENTS_EXPORT_MAX = 5000;
 
 export type CounselorStudentListFilters = {
   q?: string;
@@ -81,10 +84,56 @@ function lastActivityAt(input: {
   return dates.reduce((latest, d) => (d > latest ? d : latest));
 }
 
-export async function listCounselorStudents(
-  ctx: CounselorContext,
+type CounselorStudentListItemWithMeta = CounselorStudentListItem & {
+  _meta: {
+    neverStarted: boolean;
+    inactive: boolean;
+    completed: boolean;
+    active: boolean;
+    packageCode: string;
+    packagePaid: boolean;
+    track: string;
+  };
+};
+
+function applyCounselorStudentListFilters(
+  items: CounselorStudentListItemWithMeta[],
   options?: CounselorStudentListFilters,
-): Promise<CounselorStudentListResult> {
+): CounselorStudentListItem[] {
+  const filtered = items.filter((item) => {
+    if (options?.activity === "never" && !item._meta.neverStarted) return false;
+    if (options?.activity === "inactive" && !item._meta.inactive) return false;
+    if (options?.activity === "active" && !item._meta.active) return false;
+    if (options?.activity === "completed" && !item._meta.completed) return false;
+    if (options?.activity === "followup" && !item.needsFollowUp) return false;
+    if (options?.step && String(item.currentStep ?? "") !== options.step) return false;
+    if (options?.package && item._meta.packageCode !== options.package) return false;
+    if (options?.track && item._meta.track !== options.track) return false;
+    if (options?.finance === "holland" && !item.hollandPaid) return false;
+    if (options?.finance === "guidance" && !item._meta.packagePaid) return false;
+    if (options?.finance === "unpaid" && (item._meta.packagePaid || item.hollandPaid)) return false;
+    if (options?.finance === "none" && (item._meta.packagePaid || item.hollandPaid)) return false;
+    return true;
+  });
+  return filtered.map(({ _meta: _ignored, ...rest }) => {
+    void _ignored;
+    return rest;
+  });
+}
+
+export async function listCounselorStudentsFiltered(
+  ctx: CounselorContext,
+  options?: CounselorStudentListFilters & { maxCandidates?: number },
+): Promise<{ items: CounselorStudentListItem[]; total: number }> {
+  const built = await buildCounselorStudentListItems(ctx, options);
+  const items = applyCounselorStudentListFilters(built, options);
+  return { items, total: items.length };
+}
+
+async function buildCounselorStudentListItems(
+  ctx: CounselorContext,
+  options?: CounselorStudentListFilters & { maxCandidates?: number },
+): Promise<CounselorStudentListItemWithMeta[]> {
   const filter = await resolveAccessibleStudentFilter({
     organizationId: ctx.organizationId,
     counselorUserId: ctx.userId,
@@ -93,8 +142,11 @@ export async function listCounselorStudents(
   });
 
   const q = options?.q?.trim();
-  const page = Math.max(1, Number(options?.page ?? 1) || 1);
   const access = studentIdFilter(filter);
+  const take = Math.min(
+    Math.max(1, options?.maxCandidates ?? 400),
+    COUNSELOR_STUDENTS_EXPORT_MAX,
+  );
 
   const students = await prisma.student.findMany({
     where: {
@@ -120,7 +172,7 @@ export async function listCounselorStudents(
       ...(options?.grade ? { gradeId: options.grade } : {}),
     },
     orderBy: { updatedAt: "desc" },
-    take: 400,
+    take,
     select: {
       id: true,
       fullName: true,
@@ -187,7 +239,7 @@ export async function listCounselorStudents(
   const followUpByStudent = new Map(followUps.map((f) => [f.studentId, f._count._all]));
   const staleBefore = new Date(Date.now() - STALE_DAYS * 24 * 60 * 60 * 1000);
 
-  const items: CounselorStudentListItem[] = students.map((s) => {
+  const items: CounselorStudentListItemWithMeta[] = students.map((s) => {
     const plan = s.guidancePlans[0];
     const user = s.portalAccountLinks[0]?.user;
     const activity = lastActivityAt({
@@ -241,54 +293,20 @@ export async function listCounselorStudents(
         packagePaid,
         track: plan?.examGroup ?? "",
       },
-    } as CounselorStudentListItem & {
-      _meta: {
-        neverStarted: boolean;
-        inactive: boolean;
-        completed: boolean;
-        active: boolean;
-        packageCode: string;
-        packagePaid: boolean;
-        track: string;
-      };
     };
   });
 
-  const filtered = items.filter((raw) => {
-    const item = raw as CounselorStudentListItem & {
-      _meta: {
-        neverStarted: boolean;
-        inactive: boolean;
-        completed: boolean;
-        active: boolean;
-        packageCode: string;
-        packagePaid: boolean;
-        track: string;
-      };
-    };
-    if (options?.activity === "never" && !item._meta.neverStarted) return false;
-    if (options?.activity === "inactive" && !item._meta.inactive) return false;
-    if (options?.activity === "active" && !item._meta.active) return false;
-    if (options?.activity === "completed" && !item._meta.completed) return false;
-    if (options?.activity === "followup" && !item.needsFollowUp) return false;
-    if (options?.step && String(item.currentStep ?? "") !== options.step) return false;
-    if (options?.package && item._meta.packageCode !== options.package) return false;
-    if (options?.track && item._meta.track !== options.track) return false;
-    if (options?.finance === "holland" && !item.hollandPaid) return false;
-    if (options?.finance === "guidance" && !item._meta.packagePaid) return false;
-    if (options?.finance === "unpaid" && (item._meta.packagePaid || item.hollandPaid)) return false;
-    if (options?.finance === "none" && (item._meta.packagePaid || item.hollandPaid)) return false;
-    return true;
-  });
+  return items;
+}
 
-  const total = filtered.length;
+export async function listCounselorStudents(
+  ctx: CounselorContext,
+  options?: CounselorStudentListFilters,
+): Promise<CounselorStudentListResult> {
+  const page = Math.max(1, Number(options?.page ?? 1) || 1);
+  const { items: filtered, total } = await listCounselorStudentsFiltered(ctx, options);
   const start = (page - 1) * PAGE_SIZE;
-  const pageItems = filtered.slice(start, start + PAGE_SIZE).map((item) => {
-    const { _meta: _ignored, ...rest } = item as CounselorStudentListItem & { _meta?: unknown };
-    void _ignored;
-    return rest;
-  });
-
+  const pageItems = filtered.slice(start, start + PAGE_SIZE);
   return { items: pageItems, total, page, pageSize: PAGE_SIZE };
 }
 

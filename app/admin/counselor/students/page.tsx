@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CounselorStudentsExcelExport } from "@/components/counselor-os/CounselorStudentsExcelExport";
 import { requireCounselorContext } from "@/lib/counselor-os/auth";
 import { COUNSELOR_V2_STEPS } from "@/lib/counselor-os/v2-catalog";
 import { listCounselorStudents } from "@/lib/counselor-os/students";
@@ -49,6 +50,7 @@ export default async function CounselorStudentsPage({ searchParams }: Props) {
         </div>
       </header>
 
+      <div className="cos-filters-bar">
       <form className="cos-filters" method="get">
         <input
           type="search"
@@ -98,6 +100,8 @@ export default async function CounselorStudentsPage({ searchParams }: Props) {
           اعمال فیلتر
         </button>
       </form>
+      <CounselorStudentsExcelExport queryString={keep.toString()} />
+      </div>
 
       {result.items.length === 0 ? (
         <p className="cos-empty cos-empty--panel">دانش‌آموزی با این فیلتر یافت نشد.</p>

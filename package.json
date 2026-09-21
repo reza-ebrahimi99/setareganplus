@@ -41,6 +41,7 @@
     "test:guidance-steps-11-18": "tsx scripts/guidance-steps-11-18-workflow-unit-tests.ts",
     "test:guidance-v2-step-review": "tsx scripts/guidance-v2-step-review-unit-tests.ts && NODE_ENV=test tsx --env-file=.env scripts/guidance-v2-step-review-integration-tests.ts",
     "test:counselor-appointments": "tsx scripts/counselor-appointment-lifecycle-unit-tests.ts && tsx scripts/counselor-timeline-compute-unit-tests.ts",
+    "test:counselor-students-export": "tsx scripts/counselor-students-export-unit-tests.ts && NODE_ENV=test tsx --env-file=.env scripts/counselor-students-export-integration-tests.ts",
     "test:counselor-workspace-ui": "tsx scripts/counselor-workspace-ui-wiring-tests.ts",
     "test:choice-studio": "tsx scripts/choice-studio-unit-tests.ts",
     "test:choice-draft-import": "NODE_ENV=test tsx --env-file=.env scripts/choice-draft-import-integration-tests.ts",
