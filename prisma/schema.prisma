@@ -644,6 +644,20 @@ model Organization {
   guidanceChoiceItems                  GuidanceChoiceItem[]
   guidanceChoiceFeedback               GuidanceChoiceFeedback[]
   guidanceDiscountCodes                GuidanceDiscountCode[]
+  academySettings                      AcademySettings?
+  academyCourses                       AcademyCourse[]
+  academySections                      AcademySection[]
+  academyLessons                       AcademyLesson[]
+  academyVideoAssets                   AcademyVideoAsset[]
+  academyOrders                        AcademyOrder[]
+  academyOrderItems                    AcademyOrderItem[]
+  academyEntitlements                  AcademyContentEntitlement[]
+  academyDiscountCodes                 AcademyDiscountCode[]
+  academyDiscountRedemptions           AcademyDiscountRedemption[]
+  academyVideoProgress                 AcademyVideoProgress[]
+  academyPlaybackSessions              AcademyPlaybackSession[]
+  academyUserDevices                   AcademyUserDevice[]
+  academySecurityEvents                AcademySecurityEvent[]
 
   @@map("organizations")
 }
@@ -760,6 +774,12 @@ model User {
   guidanceChoiceListsReadyBy   GuidanceChoiceList[]         @relation("GuidanceChoiceListReadyBy")
   guidancePlansSanjeshVerified GuidancePlan[]               @relation("GuidancePlanSanjeshVerifier")
   guidanceChoiceFeedback       GuidanceChoiceFeedback[]     @relation("GuidanceChoiceFeedbackStudent")
+  academyEntitlements          AcademyContentEntitlement[]
+  academyEntitlementsGranted   AcademyContentEntitlement[]  @relation("AcademyEntitlementGrantActor")
+  academyOrders                AcademyOrder[]
+  academyVideoProgress         AcademyVideoProgress[]
+  academyPlaybackSessions      AcademyPlaybackSession[]
+  academyUserDevices           AcademyUserDevice[]
 
   @@index([status])
   @@index([deletedAt])
@@ -3715,6 +3735,8 @@ enum PaymentPayableType {
   /// Holland standalone report checkout — dedicated holland/payment.ts flow.
   /// Not routed through shared verifyPaymentCallback() for Registration/Commerce.
   GUIDANCE_HOLLAND_REPORT
+  /// Star Academy checkout — verified by lib/academy/payment.ts (dedicated callback).
+  ACADEMY_ORDER
   /// Reserved for future domains — do not create intents with these until wired.
   BOOKING
   TUITION
@@ -5470,4 +5492,405 @@ model GuidanceDiscountCode {
   @@unique([organizationId, code], map: "gdc_org_code_uid")
   @@index([organizationId, isActive], map: "gdc_org_active_idx")
   @@map("guidance_discount_codes")
+}
+// ─── Star Academy (آکادمی ستارگان) ───────────────────────────────────────────
+
+enum AcademyCourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AcademyLessonType {
+  VIDEO
+  FILE
+  TEXT
+  QUIZ
+}
+
+enum AcademyLessonStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AcademyVideoAssetStatus {
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
+  ARCHIVED
+}
+
+enum AcademyOrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+  FAILED
+  REFUNDED
+}
+
+enum AcademyEntitlementSource {
+  PURCHASE
+  ADMIN_GRANT
+  PROMOTION
+  MIGRATION
+}
+
+enum AcademyDiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum AcademySecurityEventType {
+  LOGIN_RATE_LIMITED
+  INVALID_PLAYBACK_TOKEN
+  DEVICE_LIMIT_REACHED
+  SESSION_REVOKED
+  ENTITLEMENT_DENIED
+  CONCURRENT_PLAYBACK_BLOCKED
+  SUSPICIOUS_REQUEST
+}
+
+model AcademySettings {
+  id                      String   @id @default(cuid())
+  organizationId          String   @unique
+  title                   String   @default("آکادمی ستارگان")
+  maxDevices              Int      @default(2)
+  maxConcurrentStreams    Int      @default(1)
+  watermarkEnabled        Boolean  @default(true)
+  watermarkIntervalMinSec Int      @default(20)
+  watermarkIntervalMaxSec Int      @default(45)
+  completionThresholdPct  Int      @default(90)
+  defaultAccessDays       Int?
+  supportEmail            String?
+  supportPhone            String?
+  supportNote             String?  @db.Text
+  defaultSeoTitle         String?
+  defaultSeoDescription   String?  @db.Text
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@map("academy_settings")
+}
+
+model AcademyCourse {
+  id                  String              @id @default(cuid())
+  organizationId      String
+  title               String
+  slug                String
+  subtitle            String?
+  shortDescription    String?             @db.Text
+  description         String?             @db.Text
+  instructorName      String?
+  thumbnailStorageKey String?
+  coverStorageKey     String?
+  status              AcademyCourseStatus @default(DRAFT)
+  priceRials          Int                 @default(0)
+  compareAtPriceRials Int?
+  accessDurationDays  Int?
+  lifetimeAccess      Boolean             @default(false)
+  featured            Boolean             @default(false)
+  sortOrder           Int                 @default(0)
+  seoTitle            String?
+  seoDescription      String?             @db.Text
+  publishedAt         DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  deletedAt           DateTime?
+
+  organization  Organization                @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  sections      AcademySection[]
+  lessons       AcademyLesson[]
+  orderItems    AcademyOrderItem[]
+  entitlements  AcademyContentEntitlement[]
+  videoProgress AcademyVideoProgress[]
+
+  @@unique([organizationId, slug], map: "ac_course_org_slug")
+  @@index([organizationId, status, featured], map: "ac_course_org_st_feat")
+  @@index([organizationId, deletedAt], map: "ac_course_org_del")
+  @@map("academy_courses")
+}
+
+model AcademySection {
+  id             String   @id @default(cuid())
+  organizationId String
+  courseId       String
+  title          String
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  course       AcademyCourse   @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  lessons      AcademyLesson[]
+
+  @@index([organizationId, courseId, sortOrder], map: "ac_sec_org_course_ord")
+  @@map("academy_sections")
+}
+
+model AcademyLesson {
+  id                    String              @id @default(cuid())
+  organizationId        String
+  courseId              String
+  sectionId             String?
+  title                 String
+  slug                  String
+  description           String?             @db.Text
+  lessonType            AcademyLessonType   @default(VIDEO)
+  status                AcademyLessonStatus @default(DRAFT)
+  sortOrder             Int                 @default(0)
+  isPreview             Boolean             @default(false)
+  sellIndividually      Boolean             @default(false)
+  individualPriceRials  Int?
+  durationSeconds       Int?
+  videoAssetId          String?
+  publishedAt           DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  organization      Organization                @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  course            AcademyCourse               @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  section           AcademySection?             @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  videoAsset        AcademyVideoAsset?          @relation(fields: [videoAssetId], references: [id], onDelete: SetNull)
+  orderItems        AcademyOrderItem[]
+  entitlements      AcademyContentEntitlement[]
+  videoProgress     AcademyVideoProgress[]
+  playbackSessions  AcademyPlaybackSession[]
+
+  @@unique([organizationId, courseId, slug], map: "ac_lesson_org_course_slug")
+  @@index([organizationId, courseId, status], map: "ac_lesson_org_course_st")
+  @@index([organizationId, sellIndividually, status], map: "ac_lesson_individual")
+  @@map("academy_lessons")
+}
+
+model AcademyVideoAsset {
+  id               String                  @id @default(cuid())
+  organizationId   String
+  storageKey       String
+  hlsStoragePrefix String?
+  status           AcademyVideoAssetStatus @default(UPLOADING)
+  originalFilename String?
+  mimeType         String?
+  sizeBytes        BigInt?
+  durationSeconds  Int?
+  errorMessage     String?                 @db.Text
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lessons      AcademyLesson[]
+
+  @@index([organizationId, status], map: "ac_video_org_st")
+  @@map("academy_video_assets")
+}
+
+model AcademyOrder {
+  id                String             @id @default(cuid())
+  organizationId    String
+  userId            String
+  orderNumber       String
+  status            AcademyOrderStatus @default(PENDING)
+  subtotalRials     Int
+  discountRials     Int                @default(0)
+  totalRials        Int
+  discountCodeId    String?
+  discountCodeLabel String?
+  idempotencyKey    String?
+  paidAt            DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  organization Organization                @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User                        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items        AcademyOrderItem[]
+  entitlements AcademyContentEntitlement[]
+  redemptions  AcademyDiscountRedemption[]
+
+  @@unique([organizationId, orderNumber], map: "ac_order_org_num")
+  @@index([organizationId, userId, status], map: "ac_order_org_user_st")
+  @@index([organizationId, status, createdAt], map: "ac_order_org_st_at")
+  @@map("academy_orders")
+}
+
+model AcademyOrderItem {
+  id                 String   @id @default(cuid())
+  organizationId     String
+  orderId            String
+  courseId           String?
+  lessonId           String?
+  titleSnapshot      String
+  unitPriceRials     Int
+  compareAtPriceRials Int?
+  quantity           Int      @default(1)
+  lineTotalRials     Int
+  createdAt          DateTime @default(now())
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  order        AcademyOrder  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  course       AcademyCourse? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  lesson       AcademyLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, orderId], map: "ac_oi_org_order")
+  @@map("academy_order_items")
+}
+
+model AcademyContentEntitlement {
+  id             String                   @id @default(cuid())
+  organizationId String
+  userId         String
+  courseId       String?
+  lessonId       String?
+  source         AcademyEntitlementSource
+  orderId        String?
+  startsAt       DateTime                 @default(now())
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  grantedByUserId String?
+  note           String?                  @db.Text
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  course       AcademyCourse? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  lesson       AcademyLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  order        AcademyOrder? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  grantedBy    User?         @relation("AcademyEntitlementGrantActor", fields: [grantedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, userId, revokedAt], map: "ac_ent_org_user_rev")
+  @@index([organizationId, courseId], map: "ac_ent_org_course")
+  @@index([organizationId, lessonId], map: "ac_ent_org_lesson")
+  @@index([userId, expiresAt], map: "ac_ent_user_exp")
+  @@map("academy_content_entitlements")
+}
+
+model AcademyDiscountCode {
+  id               String              @id @default(cuid())
+  organizationId   String
+  code             String
+  type             AcademyDiscountType
+  value            Int
+  startsAt         DateTime?
+  endsAt           DateTime?
+  maxUses          Int?
+  usageCount       Int                 @default(0)
+  perUserLimit     Int                 @default(1)
+  minCartRials     Int?
+  isActive         Boolean             @default(true)
+  courseId         String?
+  note             String?             @db.Text
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  organization Organization                @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  redemptions  AcademyDiscountRedemption[]
+
+  @@unique([organizationId, code], map: "ac_disc_org_code")
+  @@index([organizationId, isActive], map: "ac_disc_org_active")
+  @@map("academy_discount_codes")
+}
+
+model AcademyDiscountRedemption {
+  id             String   @id @default(cuid())
+  organizationId String
+  discountCodeId String
+  userId         String
+  orderId        String
+  createdAt      DateTime @default(now())
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  discountCode AcademyDiscountCode @relation(fields: [discountCodeId], references: [id], onDelete: Restrict)
+  order        AcademyOrder        @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, discountCodeId], map: "ac_red_org_code")
+  @@index([organizationId, userId, discountCodeId], map: "ac_red_org_user_code")
+  @@map("academy_discount_redemptions")
+}
+
+model AcademyVideoProgress {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  userId               String
+  courseId             String
+  lessonId             String
+  lastPositionSeconds  Int       @default(0)
+  maxPositionSeconds   Int       @default(0)
+  durationSeconds      Int?
+  completed            Boolean   @default(false)
+  completedAt          DateTime?
+  lastViewedAt         DateTime  @default(now())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  course       AcademyCourse @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  lesson       AcademyLesson @relation(fields: [lessonId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, userId, lessonId], map: "ac_prog_org_user_lesson")
+  @@index([organizationId, userId, lastViewedAt], map: "ac_prog_org_user_viewed")
+  @@map("academy_video_progress")
+}
+
+model AcademyPlaybackSession {
+  id                  String    @id @default(cuid())
+  organizationId      String
+  userId              String
+  lessonId            String
+  deviceId            String?
+  sessionTokenHash    String    @unique
+  ipHash              String?
+  userAgent           String?   @db.Text
+  startedAt           DateTime  @default(now())
+  lastHeartbeatAt     DateTime  @default(now())
+  endedAt             DateTime?
+  revokedAt           DateTime?
+  lastPositionSeconds Int       @default(0)
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  lesson       AcademyLesson @relation(fields: [lessonId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, userId, revokedAt, endedAt], map: "ac_play_org_user_active")
+  @@index([organizationId, lessonId], map: "ac_play_org_lesson")
+  @@map("academy_playback_sessions")
+}
+
+model AcademyUserDevice {
+  id             String    @id @default(cuid())
+  organizationId String
+  userId         String
+  deviceKey      String
+  browserLabel   String?
+  osLabel        String?
+  deviceType     String?
+  firstSeenAt    DateTime  @default(now())
+  lastSeenAt     DateTime  @default(now())
+  trustedAt      DateTime?
+  revokedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, userId, deviceKey], map: "ac_dev_org_user_key")
+  @@index([organizationId, userId, revokedAt], map: "ac_dev_org_user_rev")
+  @@map("academy_user_devices")
+}
+
+model AcademySecurityEvent {
+  id             String                   @id @default(cuid())
+  organizationId String
+  userId         String?
+  type           AcademySecurityEventType
+  lessonId       String?
+  metadata       Json?
+  createdAt      DateTime                 @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, type, createdAt], map: "ac_sec_org_type_at")
+  @@map("academy_security_events")
 }

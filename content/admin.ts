@@ -136,6 +136,35 @@ export const adminNavGroups: ReadonlyArray<{
         ],
       },
       {
+        href: "/admin/academy",
+        label: "آکادمی ستارگان",
+        icon: "courses",
+        enabled: true,
+        permission: "academy.view",
+        children: [
+          {
+            href: "/admin/academy",
+            label: "داشبورد",
+            permission: "academy.view",
+          },
+          {
+            href: "/admin/academy/courses",
+            label: "دوره‌ها",
+            permission: "academy.manage",
+          },
+          {
+            href: "/admin/academy/orders",
+            label: "سفارش‌ها",
+            permission: "academy.view",
+          },
+          {
+            href: "/admin/academy/settings",
+            label: "تنظیمات",
+            permission: "academy.manage",
+          },
+        ],
+      },
+      {
         href: "/admin/commerce",
         label: "فروشگاه",
         icon: "courses",

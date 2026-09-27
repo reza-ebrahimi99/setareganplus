@@ -73,6 +73,7 @@
     "test:staff": "tsx --env-file=scripts/staff-test.env --env-file=.env scripts/staff-integration-tests.ts",
     "test:books-catalog": "tsx scripts/books-catalog-unit-tests.ts",
     "test:starbook-play": "tsx scripts/starbook-play-unit-tests.ts",
+    "test:academy": "tsx scripts/academy-unit-tests.ts",
     "books:set-flag": "tsx --env-file=.env scripts/books-set-org-flag.ts"
   },
   "dependencies": {

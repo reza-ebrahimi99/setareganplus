@@ -46,6 +46,8 @@ export const PERMISSIONS = [
   "books.export",
   "guidance.view",
   "guidance.review",
+  "academy.view",
+  "academy.manage",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -177,6 +179,8 @@ const ROLE_PERMISSIONS: Readonly<Partial<Record<SystemRoleValue, ReadonlySet<Per
     "commerce.view",
     "commerce.categories.manage",
     "commerce.products.manage",
+    "academy.view",
+    "academy.manage",
   ]),
   TEACHER: new Set([
     "booking.view_assigned",
