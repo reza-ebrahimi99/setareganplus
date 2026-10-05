@@ -210,7 +210,7 @@ export function CounselorStudentCaseTabs({
         {tab === "journey" && (
           <section className="cos-panel">
             <h2>مسیر ۱۸ مرحله‌ای انتخاب رشته</h2>
-            <p className="cos-muted">نمایش اصلی همیشه مسیر V2 است؛ کدهای داخلی نمایش داده نمی‌شوند.</p>
+            <p className="cos-muted">نمایش اصلی همان مسیر هدایت تحصیلی است.</p>
             <ol className="cos-journey-rail">
               {dossier.steps.map((step) => (
                 <li key={step.id} data-status={step.status === "current" ? "active" : step.status}>

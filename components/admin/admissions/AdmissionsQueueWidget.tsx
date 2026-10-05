@@ -1,6 +1,11 @@
 import Link from "next/link";
 import type { WidgetPayload } from "@/lib/dashboard/contracts/widget";
 import { AdmissionsWidgetFrame } from "@/components/admin/admissions/AdmissionsWidgetFrame";
+import {
+  opsEntityLabel,
+  opsPriorityLabel,
+  opsSlaLabel,
+} from "@/lib/admin/labels";
 import { formatJalaliDateTimeShort } from "@/lib/datetime/jalali";
 import { toPersianDigits } from "@/lib/persian";
 
@@ -10,6 +15,8 @@ type QueueItemView = {
   priority: string;
   dueAt: string | null;
   slaState: string;
+  displayName?: string | null;
+  leadId?: string | null;
 };
 
 function readQueue(data: unknown): { count: number; items: QueueItemView[] } {
@@ -29,9 +36,14 @@ function readQueue(data: unknown): { count: number; items: QueueItemView[] } {
   return { count, items };
 }
 
-function entityHref(entityType: string, entityId: string): string | null {
-  if (entityType === "LEAD") return `/admin/leads/${entityId}`;
-  if (entityType === "REGISTRATION") return `/admin/registrations/${entityId}`;
+function entityHref(item: QueueItemView): string | null {
+  if (item.entityType === "LEAD") return `/admin/leads/${item.entityId}`;
+  if (item.entityType === "REGISTRATION") {
+    return `/admin/registrations/${item.entityId}`;
+  }
+  if (item.entityType === "CRM_TASK" && item.leadId) {
+    return `/admin/leads/${item.leadId}`;
+  }
   return null;
 }
 
@@ -53,12 +65,13 @@ export function AdmissionsQueueWidget({
   return (
     <AdmissionsWidgetFrame widget={widget} riseClassName={riseClassName}>
       <p className="mb-3 text-xs text-muted">
-        {toPersianDigits(count)} مورد در پیش‌نمایش
+        {toPersianDigits(count)} مورد
       </p>
       <ul className="divide-y divide-border/80">
         {items.map((item) => {
-          const href = entityHref(item.entityType, item.entityId);
-          const label = `${item.entityType} · ${item.entityId.slice(0, 8)}`;
+          const href = entityHref(item);
+          const label =
+            item.displayName?.trim() || opsEntityLabel(item.entityType);
           return (
             <li
               key={`${item.entityType}:${item.entityId}`}
@@ -78,7 +91,7 @@ export function AdmissionsQueueWidget({
                   </span>
                 )}
                 <p className="mt-0.5 text-xs text-muted">
-                  اولویت {item.priority}
+                  اولویت {opsPriorityLabel(item.priority)}
                   {item.dueAt
                     ? ` · ${formatJalaliDateTimeShort(new Date(item.dueAt))}`
                     : ""}
@@ -87,7 +100,7 @@ export function AdmissionsQueueWidget({
               <span
                 className={`shrink-0 text-[11px] font-medium ${slaTone(item.slaState)}`}
               >
-                {item.slaState}
+                {opsSlaLabel(item.slaState)}
               </span>
             </li>
           );

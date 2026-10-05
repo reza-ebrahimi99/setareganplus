@@ -12,6 +12,21 @@ import {
 import { scoreBandPriority, taskPriorityToOps } from "@/lib/ops/priority";
 import { prisma } from "@/lib/prisma";
 
+function registrationDisplayName(reg: {
+  registrationNumber: string;
+  studentFirstName: string | null;
+  studentLastName: string | null;
+  lead: { firstName: string; lastName: string } | null;
+}): string {
+  const student = `${reg.studentFirstName ?? ""} ${reg.studentLastName ?? ""}`.trim();
+  if (student) return student;
+  const leadName = reg.lead
+    ? `${reg.lead.firstName} ${reg.lead.lastName}`.trim()
+    : "";
+  if (leadName) return leadName;
+  return `ثبت‌نام ${reg.registrationNumber}`;
+}
+
 export async function listCallQueue(
   query: OpsQueueListQuery,
 ): Promise<OperationalQueueItem[]> {
@@ -46,7 +61,14 @@ export async function listCallQueue(
       priority: true,
       dueAt: true,
       createdAt: true,
-      lead: { select: { ownerUserId: true, scoreBand: true } },
+      lead: {
+        select: {
+          ownerUserId: true,
+          scoreBand: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
     },
   });
 
@@ -69,6 +91,8 @@ export async function listCallQueue(
         leadId: task.leadId,
         scoreBand: task.lead.scoreBand,
         kind: "CALL_TASK",
+        displayName:
+          `${task.lead.firstName} ${task.lead.lastName}`.trim() || "متقاضی",
       },
     });
   }
@@ -90,9 +114,12 @@ export async function listCallQueue(
         id: true,
         organizationId: true,
         leadId: true,
+        registrationNumber: true,
+        studentFirstName: true,
+        studentLastName: true,
         createdAt: true,
         updatedAt: true,
-        lead: { select: { ownerUserId: true } },
+        lead: { select: { ownerUserId: true, firstName: true, lastName: true } },
       },
     });
     for (const reg of regs) {
@@ -109,6 +136,7 @@ export async function listCallQueue(
         metadata: {
           leadId: reg.leadId,
           kind: "REGISTRATION_NEEDS_CALL",
+          displayName: registrationDisplayName(reg),
         },
       });
     }
@@ -142,6 +170,8 @@ export async function listCallQueue(
         createdAt: true,
         lastContactAt: true,
         scoreBand: true,
+        firstName: true,
+        lastName: true,
       },
     });
     for (const lead of noContact) {
@@ -163,6 +193,7 @@ export async function listCallQueue(
         metadata: {
           kind: "NO_CONTACT",
           scoreBand: lead.scoreBand,
+          displayName: `${lead.firstName} ${lead.lastName}`.trim() || "متقاضی",
         },
       });
     }

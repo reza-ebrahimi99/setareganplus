@@ -2,7 +2,8 @@ import type { DashboardComposeContext } from "@/lib/dashboard/contracts/widget";
 import { getTehranParts, tehranDayBoundsUtc } from "@/lib/datetime/tehran-zone";
 import { computeKpis } from "@/lib/kpi/compute";
 import { sumKpiPoints } from "@/lib/kpi/run-formula";
-import type { KpiKey } from "@/lib/kpi/types";
+import type { KpiKey, KpiSeriesPoint } from "@/lib/kpi/types";
+import { prisma } from "@/lib/prisma";
 
 function dayBounds() {
   const now = new Date();
@@ -86,8 +87,42 @@ export async function loadKpiPipeline(
     branchIds: ctx.allBranches ? undefined : ctx.branchIds,
     ttlSeconds: 120,
   });
+  const owned = bundle.results.leads_owned_count?.points ?? [];
+  const created = bundle.results.leads_created_count?.points ?? [];
+  const ownerIds = [
+    ...new Set(
+      [...owned, ...created]
+        .map((point) => point.dimensions.ownerUserId)
+        .filter((id): id is string => Boolean(id) && id !== "none"),
+    ),
+  ];
+  const users =
+    ownerIds.length === 0
+      ? []
+      : await prisma.user.findMany({
+          where: { id: { in: ownerIds } },
+          select: { id: true, firstName: true, lastName: true },
+        });
+  const names = new Map(
+    users.map((user) => [
+      user.id,
+      `${user.firstName} ${user.lastName}`.trim(),
+    ]),
+  );
+  const withOwnerName = (points: KpiSeriesPoint[]) =>
+    points.map((point) => {
+      const ownerUserId = point.dimensions.ownerUserId;
+      const ownerName =
+        ownerUserId && ownerUserId !== "none"
+          ? names.get(ownerUserId) || null
+          : null;
+      return {
+        ...point,
+        dimensions: { ...point.dimensions, ownerName },
+      };
+    });
   return {
-    ownedByOwner: bundle.results.leads_owned_count?.points ?? [],
-    createdByOwner: bundle.results.leads_created_count?.points ?? [],
+    ownedByOwner: withOwnerName(owned),
+    createdByOwner: withOwnerName(created),
   };
 }

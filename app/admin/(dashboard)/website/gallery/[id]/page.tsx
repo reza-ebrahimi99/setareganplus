@@ -12,8 +12,8 @@ type PageProps = { params: Promise<{ id: string }> };
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { id } = await params;
-  return { title: `آلبوم ${id.slice(0, 8)}` };
+  await params;
+  return { title: "آلبوم" };
 }
 
 export default async function AdminGalleryAlbumDetailPage({

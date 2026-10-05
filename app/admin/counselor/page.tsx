@@ -28,7 +28,7 @@ export default async function CounselorDashboardPage() {
         <p className="cos-page__lead">
           {model.viewingAsCounselor
             ? "فقط پرونده‌های تخصیص‌یافته به شما."
-            : "نمای ناظر روی مسیر هدایت تحصیلی V2."}
+            : "نمای ناظر روی مسیر هدایت تحصیلی."}
         </p>
       </header>
 

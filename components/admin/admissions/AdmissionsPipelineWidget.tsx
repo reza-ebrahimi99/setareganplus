@@ -18,12 +18,14 @@ function readPoints(raw: unknown): SeriesPoint[] {
 }
 
 function pointLabel(point: SeriesPoint): string {
+  const name = point.dimensions?.ownerName?.trim();
+  if (name) return name;
   const owner =
     point.dimensions?.ownerUserId ??
     point.dimensions?.attributedUserId ??
     null;
   if (!owner || owner === "none") return "بدون مالک";
-  return owner.slice(0, 12);
+  return "بدون نام";
 }
 
 function topPoints(points: SeriesPoint[], limit = 6): SeriesPoint[] {
@@ -63,7 +65,7 @@ export function AdmissionsPipelineWidget({
             return (
               <li key={`${key}-${index}`}>
                 <div className="mb-1 flex items-center justify-between gap-2 text-xs">
-                  <span className="truncate text-muted" dir="ltr">
+                  <span className="truncate text-muted">
                     {pointLabel(point)}
                   </span>
                   <span className="font-medium text-primary">

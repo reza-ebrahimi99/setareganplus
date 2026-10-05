@@ -23,8 +23,8 @@ export const dynamic = "force-dynamic";
 type PageProps = { params: Promise<{ publicId: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { publicId } = await params;
-  return { title: `چیدمان هوشمند ${publicId.slice(0, 8)}` };
+  await params;
+  return { title: "چیدمان هوشمند" };
 }
 
 export default async function AdminGuidanceChoicesPage({ params }: PageProps) {

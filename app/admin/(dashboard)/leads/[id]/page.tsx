@@ -22,6 +22,7 @@ import {
   logLeadCallAction,
 } from "@/app/admin/(dashboard)/leads/actions";
 import { adminBreadcrumbs } from "@/content/admin";
+import { leadSourceLabel, leadSourceTypeLabel } from "@/lib/admin/labels";
 import { loadLeadDetail } from "@/lib/crm/load-lead-detail";
 import { toPersianDigits } from "@/lib/persian";
 
@@ -85,7 +86,9 @@ export default async function LeadDetailPage({ params }: PageProps) {
           <ul className="space-y-1 text-sm leading-7 text-muted">
             <li>موبایل: <span dir="ltr">{lead.mobileMasked}</span></li>
             <li>شعبه: {lead.branchName}</li>
-            <li>منبع: {lead.source} ({lead.sourceType})</li>
+            <li>
+              منبع: {leadSourceLabel(lead.source)} ({leadSourceTypeLabel(lead.sourceType)})
+            </li>
             <li>مرحله: {lead.stageName ?? "—"}</li>
             <li className="flex items-center gap-2">
               <span>مسئول:</span>

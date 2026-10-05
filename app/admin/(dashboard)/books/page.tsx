@@ -29,7 +29,7 @@ function SoonCard({ label }: { label: string }) {
       <p className="text-sm font-medium text-muted">{label}</p>
       <p className="mt-3 text-2xl font-bold tracking-tight text-primary/40">به‌زودی</p>
       <p className="mt-2 text-xs text-muted">
-        پس از راه‌اندازی انبار و فروش در فاز بعدی نمایش داده می‌شود.
+        پس از راه‌اندازی انبار و فروش نمایش داده می‌شود.
       </p>
     </div>
   );
@@ -58,7 +58,7 @@ export default async function BooksExecutiveOverviewPage() {
     <div>
       <AdminPageHeader
         title="نمای کلی اجرایی بازرگانی کتاب"
-        description="فاز A — پایه و کاتالوگ. انبار، فروش، خزانه، بازاریابی و پورسانت در فازهای بعدی تأیید و پیاده‌سازی می‌شوند."
+        description="نمای کاتالوگ کتاب. انبار، فروش، خزانه، بازاریابی و پورسانت بعداً به این بخش اضافه می‌شوند."
         breadcrumbs={adminBreadcrumbs.books}
       />
 
@@ -69,7 +69,7 @@ export default async function BooksExecutiveOverviewPage() {
         <h2 id="books-overview-catalog" className="sr-only">
           آمار کاتالوگ
         </h2>
-        <StatCard label="تعداد کتاب (SKU)" value={toPersianDigits(skuCount)} />
+        <StatCard label="تعداد کتاب" value={toPersianDigits(skuCount)} />
         <StatCard label="کتاب‌های فعال" value={toPersianDigits(activeSkuCount)} />
         <StatCard label="ناشران ثبت‌شده" value={toPersianDigits(publisherCount)} />
         <StatCard

@@ -21,7 +21,7 @@ export default async function AdminCommerceReviewsPage() {
         compact
       />
       <article className="max-w-2xl rounded-2xl border border-border bg-surface p-5 text-sm leading-8 text-muted">
-        متن پیشنهاد دبیر/مشاور از توضیح BookTitle و ویژگی‌های BookSku می‌آید. برای تغییر، همان
+        متن پیشنهاد دبیر/مشاور از توضیح کتاب و ویژگی‌های همان محصول می‌آید. برای تغییر، همان
         محصول را در کاتالوگ ویرایش کنید. امتیاز ستاره‌ای دانش‌آموز در مرورگر است تا سفارش و
         کاتالوگ واحد دست‌نخورده بماند.
       </article>

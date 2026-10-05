@@ -88,13 +88,12 @@ export default async function AdminFormsPage() {
         title="فرم‌ساز"
         description="ساخت و مدیریت فرم‌های ثبت‌نام، رویدادها و کلاس‌ها"
         breadcrumbs={adminBreadcrumbs.forms}
-        showNotice
         compact
       />
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">
-          برای مدیریت پرسش‌ها وارد ویرایش‌گر هر فرم شوید. انتشار هنوز فعال نیست.
+          برای مدیریت پرسش‌ها و انتشار، وارد ویرایش‌گر هر فرم شوید.
         </p>
         {createAction}
       </div>

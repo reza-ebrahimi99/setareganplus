@@ -55,7 +55,6 @@ export default async function AdminFormEditorPage({
           title="ویرایش فرم"
           description="بارگذاری ویرایش‌گر فرم"
           breadcrumbs={adminBreadcrumbs.forms}
-          showNotice
           compact
         />
         <div
@@ -223,7 +222,6 @@ export default async function AdminFormEditorPage({
           { label: "فرم‌ساز", href: "/admin/forms" },
           { label: headerTitle },
         ]}
-        showNotice
         compact
       />
 
