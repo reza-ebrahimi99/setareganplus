@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { AdminQuickActionItem } from "@/content/admin";
+import { ADMIN_ROADMAP_BADGE, type AdminQuickActionItem } from "@/content/admin";
 
 type AdminQuickActionProps = {
   action: AdminQuickActionItem;
@@ -31,7 +31,7 @@ export function AdminQuickAction({ action }: AdminQuickActionProps) {
       <div className="flex items-start justify-between gap-2">
         <span className="text-sm font-medium text-muted">{action.label}</span>
         <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] text-muted">
-          در نقشه توسعه
+          {ADMIN_ROADMAP_BADGE}
         </span>
       </div>
       <span className="mt-2 text-xs leading-6 text-muted">{action.description}</span>

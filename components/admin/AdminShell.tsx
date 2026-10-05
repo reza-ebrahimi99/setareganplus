@@ -22,7 +22,10 @@ export function AdminShell({
       >
         پرش به محتوای مدیریت
       </a>
-      <AdminSidebar permissions={permissions} />
+      <AdminSidebar
+        permissions={permissions}
+        userDisplayName={userDisplayName}
+      />
       <div className="flex min-w-0 flex-1 flex-col">
         <AdminHeader
           userDisplayName={userDisplayName}

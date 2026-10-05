@@ -10,6 +10,21 @@ import {
 import { scoreBandPriority } from "@/lib/ops/priority";
 import { prisma } from "@/lib/prisma";
 
+function registrationDisplayName(reg: {
+  registrationNumber: string;
+  studentFirstName: string | null;
+  studentLastName: string | null;
+  lead: { firstName: string; lastName: string } | null;
+}): string {
+  const student = `${reg.studentFirstName ?? ""} ${reg.studentLastName ?? ""}`.trim();
+  if (student) return student;
+  const leadName = reg.lead
+    ? `${reg.lead.firstName} ${reg.lead.lastName}`.trim()
+    : "";
+  if (leadName) return leadName;
+  return `ثبت‌نام ${reg.registrationNumber}`;
+}
+
 export async function listSlaQueue(
   query: OpsQueueListQuery,
 ): Promise<OperationalQueueItem[]> {
@@ -46,6 +61,8 @@ export async function listSlaQueue(
       lastContactAt: true,
       nextFollowUpAt: true,
       scoreBand: true,
+      firstName: true,
+      lastName: true,
     },
   });
 
@@ -72,6 +89,7 @@ export async function listSlaQueue(
       metadata: {
         clock: "FIRST_CONTACT",
         scoreBand: lead.scoreBand,
+        displayName: `${lead.firstName} ${lead.lastName}`.trim() || "متقاضی",
       },
     });
   }
@@ -99,6 +117,8 @@ export async function listSlaQueue(
         createdAt: true,
         nextFollowUpAt: true,
         scoreBand: true,
+        firstName: true,
+        lastName: true,
       },
     });
     for (const lead of followUps) {
@@ -119,7 +139,11 @@ export async function listSlaQueue(
         dueAt: lead.nextFollowUpAt.toISOString(),
         slaState,
         createdAt: lead.createdAt.toISOString(),
-        metadata: { clock: "FOLLOW_UP", scoreBand: lead.scoreBand },
+        metadata: {
+          clock: "FOLLOW_UP",
+          scoreBand: lead.scoreBand,
+          displayName: `${lead.firstName} ${lead.lastName}`.trim() || "متقاضی",
+        },
       });
     }
   }
@@ -143,9 +167,12 @@ export async function listSlaQueue(
         id: true,
         organizationId: true,
         leadId: true,
+        registrationNumber: true,
+        studentFirstName: true,
+        studentLastName: true,
         createdAt: true,
         updatedAt: true,
-        lead: { select: { ownerUserId: true } },
+        lead: { select: { ownerUserId: true, firstName: true, lastName: true } },
       },
     });
     for (const reg of regs) {
@@ -165,6 +192,7 @@ export async function listSlaQueue(
         metadata: {
           clock: "REGISTRATION_NEEDS_CALL",
           leadId: reg.leadId,
+          displayName: registrationDisplayName(reg),
         },
       });
     }

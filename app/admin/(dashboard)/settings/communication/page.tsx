@@ -33,7 +33,6 @@ export default async function AdminCommunicationSettingsPage() {
           title="ارتباطات و پیامک"
           description="وضعیت ارائه‌دهنده، OTP و صف پیامک"
           breadcrumbs={[...adminBreadcrumbs.communication]}
-          showNotice
           compact
         />
         <div
@@ -54,7 +53,6 @@ export default async function AdminCommunicationSettingsPage() {
         title="ارتباطات و پیامک"
         description="زیرساخت ارائه‌دهنده خنثی برای پیامک و کد یک‌بارمصرف — کلیدهای API فقط در متغیرهای محیطی هستند"
         breadcrumbs={[...adminBreadcrumbs.communication]}
-        showNotice
         compact
       />
 

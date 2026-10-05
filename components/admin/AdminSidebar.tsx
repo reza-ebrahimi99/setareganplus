@@ -2,7 +2,13 @@ import Link from "next/link";
 import { siteConfig } from "@/content/site";
 import { AdminNavigation } from "./AdminNavigation";
 
-export function AdminSidebar({ permissions }: { permissions: readonly string[] }) {
+export function AdminSidebar({
+  permissions,
+  userDisplayName,
+}: {
+  permissions: readonly string[];
+  userDisplayName: string;
+}) {
   return (
     <>
       <aside
@@ -16,16 +22,13 @@ export function AdminSidebar({ permissions }: { permissions: readonly string[] }
           >
             <p className="text-base font-bold text-white">{siteConfig.name}</p>
             <p className="mt-1 text-xs text-slate-400">پنل مدیریت</p>
-            <p className="mt-0.5 text-[11px] text-slate-500">پیش‌نمایش توسعه</p>
           </Link>
         </div>
         <nav className="flex-1 overflow-y-auto px-2 py-4">
           <AdminNavigation permissions={permissions} />
         </nav>
         <div className="border-t border-white/10 px-4 py-4">
-          <p className="mb-2 text-[11px] leading-5 text-slate-500">
-            کاربر مدیر پس از ورود نمایش داده می‌شود
-          </p>
+          <p className="mb-2 text-sm font-medium text-white">{userDisplayName}</p>
           <Link
             href="/"
             className="text-sm text-slate-300 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"

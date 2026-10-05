@@ -29,6 +29,8 @@ export async function listAssignmentQueue(
       scoreBand: true,
       sourceType: true,
       source: true,
+      firstName: true,
+      lastName: true,
     },
   });
 
@@ -46,6 +48,7 @@ export async function listAssignmentQueue(
       sourceType: lead.sourceType,
       source: lead.source,
       scoreBand: lead.scoreBand,
+      displayName: `${lead.firstName} ${lead.lastName}`.trim() || "متقاضی",
     },
   }));
 }

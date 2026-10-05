@@ -14,7 +14,6 @@ export default function AdminCreateFormPage() {
         title="ساخت فرم جدید"
         description="یک فرم والد با نسخه پیش‌نویس اولیه ساخته می‌شود. افزودن پرسش‌ها در مرحله بعدی است."
         breadcrumbs={adminBreadcrumbs.formsNew}
-        showNotice
         compact
       />
       <div className="mx-auto max-w-2xl">

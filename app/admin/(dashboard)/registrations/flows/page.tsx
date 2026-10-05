@@ -81,9 +81,6 @@ export default async function AdminRegistrationFlowsPage() {
               >
                 <div className="min-w-0">
                   <p className="font-semibold text-primary">{flow.title}</p>
-                  <p className="mt-1 text-xs text-muted" dir="ltr">
-                    {flow.flowKey}
-                  </p>
                   <p className="mt-2 text-sm text-muted">
                     ظرفیت:{" "}
                     {flow.capacity == null

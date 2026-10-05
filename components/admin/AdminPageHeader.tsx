@@ -1,5 +1,4 @@
 import { AdminBreadcrumbs } from "./AdminBreadcrumbs";
-import { AdminNotice } from "./AdminNotice";
 import type { AdminBreadcrumbItem } from "@/content/admin";
 
 type AdminPageHeaderProps = {
@@ -7,7 +6,6 @@ type AdminPageHeaderProps = {
   description?: string;
   id?: string;
   breadcrumbs?: readonly AdminBreadcrumbItem[];
-  showNotice?: boolean;
   compact?: boolean;
 };
 
@@ -16,7 +14,6 @@ export function AdminPageHeader({
   description,
   id = "admin-page-heading",
   breadcrumbs,
-  showNotice = false,
   compact = false,
 }: AdminPageHeaderProps) {
   return (
@@ -34,11 +31,6 @@ export function AdminPageHeader({
         >
           {description}
         </p>
-      ) : null}
-      {showNotice ? (
-        <div className="mt-4">
-          <AdminNotice />
-        </div>
       ) : null}
     </header>
   );

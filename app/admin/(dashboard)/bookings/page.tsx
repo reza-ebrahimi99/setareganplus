@@ -19,7 +19,7 @@ export default async function BookingsPage() {
   const visible = hasPermission(session, "settings.manage")
     ? items
     : items.filter((item) => item[2] === "/admin/bookings/calendar" || item[2] === "/admin/bookings/export");
-  return <><AdminPageHeader title="رزرو نوبت" description="مدیریت خدمت‌ها، زمان‌های آزاد و پذیرش مراجعه‌کنندگان" breadcrumbs={adminBreadcrumbs.bookings} showNotice compact />
+  return <><AdminPageHeader title="رزرو نوبت" description="مدیریت خدمت‌ها، زمان‌های آزاد و پذیرش مراجعه‌کنندگان" breadcrumbs={adminBreadcrumbs.bookings} compact />
     <div className="grid gap-4 md:grid-cols-3">{visible.map(([title, description, href]) => <Link key={href} href={href} className="admin-card p-5 transition hover:border-secondary"><h2 className="font-semibold text-primary">{title}</h2><p className="mt-2 text-sm leading-7 text-muted">{description}</p><span className="mt-4 inline-block text-sm font-medium text-secondary">ورود به بخش ←</span></Link>)}</div>
   </>;
 }

@@ -53,7 +53,6 @@ export default async function AdminSubmissionDetailPage({
         <AdminPageHeader
           title="جزئیات پاسخ"
           description="بارگذاری جزئیات پاسخ"
-          showNotice
           compact
         />
         <div
@@ -81,7 +80,6 @@ export default async function AdminSubmissionDetailPage({
           { label: "پاسخ‌ها", href: `/admin/forms/${form.id}/responses` },
           { label: "جزئیات" },
         ]}
-        showNotice
         compact
       />
 

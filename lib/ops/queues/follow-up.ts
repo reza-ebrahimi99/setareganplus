@@ -41,6 +41,8 @@ export async function listFollowUpQueue(
       createdAt: true,
       nextFollowUpAt: true,
       scoreBand: true,
+      firstName: true,
+      lastName: true,
     },
   });
 
@@ -78,6 +80,7 @@ export async function listFollowUpQueue(
       createdAt: lead.createdAt.toISOString(),
       metadata: {
         scoreBand: lead.scoreBand,
+        displayName: `${lead.firstName} ${lead.lastName}`.trim() || "متقاضی",
         secondaryOverdueTaskId: secondary?.id ?? null,
         secondaryTaskDueAt: secondary?.dueAt?.toISOString() ?? null,
       },

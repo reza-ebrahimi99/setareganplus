@@ -50,32 +50,22 @@ export function AdminNavigation({ permissions }: { permissions: readonly string[
 
   return (
     <div className="space-y-5">
-      {adminNavGroups.map((group) => (
+      {adminNavGroups.map((group) => {
+        const visibleCount = group.items.filter(
+          (item) =>
+            item.enabled &&
+            resolveEnabledAdminNavItem(item, permissions).visible,
+        ).length;
+        if (visibleCount === 0) return null;
+
+        return (
         <div key={group.label}>
           <p className="mb-2 px-3 text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
             {group.label}
           </p>
           <ul className="space-y-0.5">
             {group.items.map((item) => {
-              if (!item.enabled) {
-                return (
-                  <li key={item.label}>
-                    <span
-                      aria-disabled="true"
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-500"
-                    >
-                      <AdminNavIconComponent
-                        name={item.icon}
-                        className="size-[18px] opacity-50"
-                      />
-                      <span className="flex-1">{item.label}</span>
-                      <span className="rounded-full border border-white/10 px-1.5 py-0.5 text-[10px] text-slate-500">
-                        ╪»╪▒ ┘┘é╪┤┘ç ╪ز┘ê╪│╪╣┘ç
-                      </span>
-                    </span>
-                  </li>
-                );
-              }
+              if (!item.enabled) return null;
 
               const resolved = resolveEnabledAdminNavItem(item, permissions);
               if (!resolved.visible) return null;
@@ -140,7 +130,8 @@ export function AdminNavigation({ permissions }: { permissions: readonly string[
             })}
           </ul>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

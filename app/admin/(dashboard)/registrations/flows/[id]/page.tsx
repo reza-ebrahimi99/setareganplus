@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
 type PageProps = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { id } = await params;
-  return { title: `ویرایش جریان ${id.slice(0, 8)}` };
+  await params;
+  return { title: "ویرایش جریان ثبت‌نام" };
 }
 
 export default async function AdminRegistrationFlowDetailPage({
