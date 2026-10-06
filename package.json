@@ -25,8 +25,6 @@
     "test:communication-smoke": "tsx scripts/communication-smoke.ts && tsx scripts/smsir-provider-smoke.ts",
     "test:smsir": "tsx --env-file=.env scripts/test-smsir-provider.ts",
     "communication:worker-once": "tsx --env-file=.env scripts/communication-worker-once.ts",
-    "challenge:bootstrap": "tsx --env-file=.env scripts/challenge-bootstrap.ts",
-    "challenge:seed-questions": "tsx --env-file=.env scripts/challenge-seed-question-bank.ts",
     "crm:automation-worker-once": "tsx --env-file=.env scripts/crm-automation-worker-once.ts",
     "crm:scheduled-worker-once": "tsx --env-file=.env scripts/crm-scheduled-worker-once.ts",
     "sxp:experience-engine-once": "tsx --env-file=.env scripts/sxp-experience-engine-once.ts",
@@ -75,8 +73,6 @@
     "test:staff": "tsx --env-file=scripts/staff-test.env --env-file=.env scripts/staff-integration-tests.ts",
     "test:books-catalog": "tsx scripts/books-catalog-unit-tests.ts",
     "test:starbook-play": "tsx scripts/starbook-play-unit-tests.ts",
-    "test:academy": "tsx scripts/academy-unit-tests.ts",
-    "test:challenge": "tsx scripts/challenge-unit-tests.ts",
     "books:set-flag": "tsx --env-file=.env scripts/books-set-org-flag.ts"
   },
   "dependencies": {

@@ -138,54 +138,6 @@ export const adminNavGroups: ReadonlyArray<{
         ],
       },
       {
-        href: "/admin/academy",
-        label: "آکادمی ستارگان",
-        icon: "courses",
-        enabled: true,
-        permission: "academy.view",
-        children: [
-          {
-            href: "/admin/academy",
-            label: "داشبورد",
-            permission: "academy.view",
-          },
-          {
-            href: "/admin/academy/courses",
-            label: "دوره‌ها",
-            permission: "academy.manage",
-          },
-          {
-            href: "/admin/academy/orders",
-            label: "سفارش‌ها",
-            permission: "academy.view",
-          },
-          {
-            href: "/admin/academy/settings",
-            label: "تنظیمات",
-            permission: "academy.manage",
-          },
-        ],
-      },
-      {
-        href: "/admin/challenges",
-        label: "چالش‌های گروهی",
-        icon: "exams",
-        enabled: true,
-        permission: "challenges.view",
-        children: [
-          {
-            href: "/admin/challenges",
-            label: "داشبورد کمپین",
-            permission: "challenges.view",
-          },
-          {
-            href: "/admin/challenges/new",
-            label: "کمپین جدید",
-            permission: "challenges.manage",
-          },
-        ],
-      },
-      {
         href: "/admin/commerce",
         label: "فروشگاه",
         icon: "courses",
