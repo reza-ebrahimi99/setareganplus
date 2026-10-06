@@ -16,6 +16,8 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "auth:bootstrap-admin": "tsx scripts/bootstrap-admin.ts",
+    "leads:export": "tsx scripts/leads-full-export.ts",
+    "leads:soft-delete": "tsx scripts/leads-soft-delete-all.ts",
     "test:booking": "tsx --env-file=.env scripts/booking-integration-tests.ts",
     "test:form-versioning": "tsx --env-file=scripts/staff-test.env --env-file=.env scripts/form-version-lifecycle-tests.ts",
     "test:jalali": "tsx --env-file=.env lib/booking/jalali-smoke.ts",
