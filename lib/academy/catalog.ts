@@ -77,6 +77,29 @@ export async function getPublishedCourseBySlug(
   });
 }
 
+export async function listRecentVideoProgress(
+  organizationId: string,
+  userId: string,
+  limit = 4,
+) {
+  return prisma.academyVideoProgress.findMany({
+    where: { organizationId, userId, completed: false },
+    orderBy: { lastViewedAt: "desc" },
+    take: limit,
+    select: {
+      lastPositionSeconds: true,
+      lesson: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          course: { select: { title: true, slug: true } },
+        },
+      },
+    },
+  });
+}
+
 export async function listIndividualVideoProducts(organizationId: string) {
   return prisma.academyLesson.findMany({
     where: {

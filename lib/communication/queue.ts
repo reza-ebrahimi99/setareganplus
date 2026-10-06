@@ -47,6 +47,12 @@ export type SmsTemplateDeliveryDescriptor =
         name: string;
         tracking: string;
       };
+    }
+  | {
+      version: 1;
+      kind: "pattern";
+      templateCode: string;
+      parameters: Record<string, string>;
     };
 
 export type EnqueueSmsInput = {
@@ -81,6 +87,27 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function parsePatternParameters(
+  value: unknown,
+): Record<string, string> | null {
+  if (!isObject(value)) return null;
+  const entries = Object.entries(value);
+  if (entries.length === 0 || entries.length > 10) return null;
+  const parameters: Record<string, string> = {};
+  for (const [name, rawValue] of entries) {
+    if (
+      !/^[A-Za-z][A-Za-z0-9_]{0,49}$/.test(name) ||
+      typeof rawValue !== "string"
+    ) {
+      return null;
+    }
+    const normalized = rawValue.trim();
+    if (!normalized || normalized.length > 25) return null;
+    parameters[name] = normalized;
+  }
+  return parameters;
+}
+
 export function parseSmsTemplateDelivery(
   metadata: unknown,
 ): ParsedTemplateDelivery {
@@ -89,14 +116,28 @@ export function parseSmsTemplateDelivery(
   }
 
   const candidate = metadata.templateDelivery;
-  if (
-    !isObject(candidate) ||
-    candidate.version !== 1 ||
-    !isObject(candidate.variables)
-  ) {
+  if (!isObject(candidate) || candidate.version !== 1) {
     return { state: "invalid" };
   }
 
+  if (
+    candidate.kind === "pattern" &&
+    typeof candidate.templateCode === "string" &&
+    /^\d+$/.test(candidate.templateCode.trim())
+  ) {
+    const parameters = parsePatternParameters(candidate.parameters);
+    if (!parameters) return { state: "invalid" };
+    return {
+      state: "valid",
+      descriptor: {
+        version: 1,
+        kind: "pattern",
+        templateCode: candidate.templateCode.trim(),
+        parameters,
+      },
+    };
+  }
+  if (!isObject(candidate.variables)) return { state: "invalid" };
   const variables = candidate.variables;
   if (
     candidate.kind === "booking" &&
@@ -321,7 +362,21 @@ export async function processSmsMessage(messageId: string): Promise<{
       : "";
 
   let result: SmsSendResult;
-  if (patternCode && templateDelivery.state === "valid") {
+  if (
+    templateDelivery.state === "valid" &&
+    templateDelivery.descriptor.kind === "pattern"
+  ) {
+    result = await sendPatternTemplate({
+      toMobile: message.toMobile,
+      templateCode: templateDelivery.descriptor.templateCode,
+      parameters: templateDelivery.descriptor.parameters,
+      correlationId: message.id,
+    });
+  } else if (
+    patternCode &&
+    templateDelivery.state === "valid" &&
+    templateDelivery.descriptor.kind !== "pattern"
+  ) {
     // Per-form / per-flow SMS.ir pattern override (admin-configured code).
     const parameters: Record<string, string> =
       templateDelivery.descriptor.kind === "booking"
@@ -341,7 +396,10 @@ export async function processSmsMessage(messageId: string): Promise<{
       parameters,
       correlationId: message.id,
     });
-  } else if (templateDelivery.state === "valid") {
+  } else if (
+    templateDelivery.state === "valid" &&
+    templateDelivery.descriptor.kind !== "pattern"
+  ) {
     if (templateDelivery.descriptor.kind === "booking") {
       result = await sendTemplateMessage({
         kind: "booking",

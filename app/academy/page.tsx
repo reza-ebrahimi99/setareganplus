@@ -1,61 +1,113 @@
 import Link from "next/link";
+import { AcademyBenefitGrid } from "@/components/academy/AcademyBenefitGrid";
+import { AcademyHeroVisual } from "@/components/academy/AcademyHeroVisual";
 import { AcademyShell } from "@/components/academy/AcademyShell";
 import { AcademyCourseCard } from "@/components/academy/AcademyCourseCard";
+import { resolveAcademySession } from "@/lib/academy/auth/session";
 import { getAcademyOrganizationId } from "@/lib/academy/config";
 import {
   listIndividualVideoProducts,
   listPublishedCourses,
+  listRecentVideoProgress,
 } from "@/lib/academy/catalog";
 import { formatTomanFromRials } from "@/lib/academy/money";
 
 export default async function AcademyHomePage() {
   const organizationId = await getAcademyOrganizationId();
-  const [courses, videos] = await Promise.all([
+  const session = await resolveAcademySession();
+  const [courses, videos, recentProgress] = await Promise.all([
     listPublishedCourses(organizationId),
     listIndividualVideoProducts(organizationId),
+    session
+      ? listRecentVideoProgress(organizationId, session.userId)
+      : Promise.resolve([]),
   ]);
   const featured = courses.filter((c) => c.featured).slice(0, 6);
   const displayCourses = featured.length > 0 ? featured : courses.slice(0, 6);
 
   return (
-    <AcademyShell activePath="/">
-      <section className="academy-hero px-4 py-16 sm:py-24">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-sm font-medium text-secondary">Star Academy</p>
-          <h1 className="mt-3 max-w-2xl text-3xl font-bold leading-snug sm:text-4xl">
-            یاد بگیر. تمرین کن. مسلط شو.
-          </h1>
-          <p className="mt-4 max-w-xl text-base leading-relaxed text-white/80">
-            دوره‌ها و ویدئوهای آموزشی پریمیوم با دسترسی شخصی، ادامه تماشا از آخرین
-            نقطه، و پخش امن روی موبایل و کامپیوتر.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/courses" className="academy-btn-primary">
-              مشاهده دوره‌ها
-            </Link>
-            <Link href="/login" className="academy-btn-ghost">
-              ورود به حساب
-            </Link>
+    <AcademyShell>
+      <section className="academy-hero">
+        <div className="academy-container academy-hero-grid">
+          <div>
+            <span className="academy-hero-badge">آکادمی ستارگان</span>
+            <h1 className="academy-hero-title">یاد بگیر. تمرین کن. مسلط شو.</h1>
+            <p className="academy-hero-lead">
+              دوره‌ها و ویدئوهای آموزشی پریمیوم با دسترسی شخصی، ادامه تماشا از آخرین
+              نقطه، و پخش امن روی موبایل و کامپیوتر.
+            </p>
+            <div className="academy-hero-actions">
+              <Link href="/courses" className="academy-btn academy-btn-primary">
+                مشاهده دوره‌ها
+              </Link>
+              {session ? (
+                <Link href="/account/library" className="academy-btn academy-btn-ghost">
+                  کتابخانه من
+                </Link>
+              ) : (
+                <Link href="/login" className="academy-btn academy-btn-ghost">
+                  ورود به حساب
+                </Link>
+              )}
+            </div>
           </div>
+          <AcademyHeroVisual />
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-14">
-        <div className="mb-8 flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-bold text-primary">دوره‌های منتخب</h2>
-            <p className="mt-1 text-sm text-muted">مسیر یادگیری ساختاریافته</p>
+      {session && recentProgress.length > 0 ? (
+        <section className="academy-section academy-container">
+          <div className="academy-section-head">
+            <div>
+              <h2 className="academy-section-title">ادامه تماشا</h2>
+              <p className="academy-section-sub">از همان لحظه‌ای که متوقف کردید</p>
+            </div>
+            <Link href="/account/library" className="academy-btn academy-btn-link">
+              کتابخانه
+            </Link>
           </div>
-          <Link href="/courses" className="text-sm font-medium text-secondary">
+          <div className="academy-continue-list">
+            {recentProgress.map((row) => (
+              <Link
+                key={row.lesson.id}
+                href={`/watch/${row.lesson.id}`}
+                className="academy-continue-item"
+              >
+                <div>
+                  <p className="text-xs text-muted">{row.lesson.course.title}</p>
+                  <p className="font-semibold">{row.lesson.title}</p>
+                </div>
+                <span className="academy-btn academy-btn-secondary academy-btn-sm">
+                  ادامه
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="academy-section academy-container">
+        <div className="academy-section-head">
+          <div>
+            <h2 className="academy-section-title">دوره‌های منتخب</h2>
+            <p className="academy-section-sub">مسیر یادگیری ساختاریافته</p>
+          </div>
+          <Link href="/courses" className="academy-btn academy-btn-link">
             همه دوره‌ها
           </Link>
         </div>
         {displayCourses.length === 0 ? (
-          <div className="academy-card p-10 text-center text-muted">
-            به‌زودی دوره‌های جدید منتشر می‌شود.
+          <div className="academy-card academy-empty">
+            <div className="academy-empty-icon" aria-hidden>
+              ★
+            </div>
+            <p className="academy-empty-title">دوره‌های جدید به‌زودی منتشر می‌شوند.</p>
+            <p className="academy-empty-desc">
+              به محض انتشار اولین دوره، از همین صفحه دسترسی خواهید داشت.
+            </p>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="academy-course-grid">
             {displayCourses.map((course) => (
               <AcademyCourseCard key={course.id} course={course} />
             ))}
@@ -63,32 +115,17 @@ export default async function AcademyHomePage() {
         )}
       </section>
 
-      <section className="border-y border-border bg-surface px-4 py-14">
-        <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-2 lg:grid-cols-4">
-          {[
-            { t: "آموزش هدفمند", d: "سرفصل مرحله‌به‌مرحله با تمرکز بر نتیجه" },
-            { t: "دسترسی شخصی", d: "کتابخانه اختصاصی پس از خرید" },
-            { t: "موبایل و دسکتاپ", d: "تجربه یکسان در همه دستگاه‌ها" },
-            { t: "ادامه تماشا", d: "از همان لحظه‌ای که متوقف شدید" },
-          ].map((item) => (
-            <div key={item.t}>
-              <h3 className="font-semibold text-primary">{item.t}</h3>
-              <p className="mt-2 text-sm text-muted leading-relaxed">{item.d}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {videos.length > 0 ? (
-        <section className="mx-auto max-w-6xl px-4 py-14">
-          <h2 className="text-xl font-bold text-primary">جدیدترین ویدئوها</h2>
-          <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+        <section className="academy-section academy-container">
+          <h2 className="academy-section-title">جدیدترین ویدئوها</h2>
+          <p className="academy-section-sub">خرید تکی درس‌های منتخب</p>
+          <ul className="academy-course-grid mt-6">
             {videos.slice(0, 4).map((v) => (
-              <li key={v.id} className="academy-card p-4">
+              <li key={v.id} className="academy-card academy-course-body">
                 <Link href={`/videos/${v.slug}`} className="block">
-                  <p className="text-xs text-muted">{v.course.title}</p>
-                  <p className="mt-1 font-semibold text-primary">{v.title}</p>
-                  <p className="mt-2 text-sm text-secondary" dir="ltr">
+                  <p className="academy-course-meta">{v.course.title}</p>
+                  <p className="academy-course-title">{v.title}</p>
+                  <p className="academy-course-price mt-3" dir="ltr">
                     {formatTomanFromRials(v.individualPriceRials ?? 0)}
                   </p>
                 </Link>
@@ -98,21 +135,48 @@ export default async function AcademyHomePage() {
         </section>
       ) : null}
 
-      <section className="mx-auto max-w-6xl px-4 pb-20">
-        <h2 className="text-center text-xl font-bold text-primary">چطور کار می‌کند؟</h2>
-        <ol className="mt-8 grid gap-4 sm:grid-cols-4">
+      <section className="academy-section academy-section-surface">
+        <div className="academy-container">
+          <h2 className="academy-section-title text-center">چرا آکادمی ستارگان؟</h2>
+          <p className="academy-section-sub text-center mx-auto max-w-xl">
+            تجربه‌ای شبیه پلتفرم‌های آموزشی حرفه‌ای، با تمرکز بر نتیجه و دسترسی امن.
+          </p>
+          <div className="mt-8">
+            <AcademyBenefitGrid />
+          </div>
+        </div>
+      </section>
+
+      <section className="academy-section academy-container">
+        <h2 className="academy-section-title text-center">چطور کار می‌کند؟</h2>
+        <ol className="academy-steps mt-8">
           {["ثبت‌نام", "خرید", "کتابخانه من", "تماشا"].map((step, i) => (
-            <li
-              key={step}
-              className="academy-card flex flex-col items-center p-5 text-center"
-            >
-              <span className="flex size-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
-                {i + 1}
-              </span>
-              <span className="mt-3 font-medium">{step}</span>
+            <li key={step} className="academy-card academy-step-card">
+              <span className="academy-step-num">{i + 1}</span>
+              <span className="mt-3 block font-medium">{step}</span>
             </li>
           ))}
         </ol>
+      </section>
+
+      <section className="academy-section academy-container pb-16">
+        <div className="academy-cta-band">
+          <h2 className="text-lg font-bold">آماده شروع یادگیری هستید؟</h2>
+          <p className="mt-2 text-sm text-muted leading-relaxed">
+            دوره‌ها را مرور کنید یا وارد کتابخانه شخصی خود شوید.
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <Link href="/courses" className="academy-btn academy-btn-primary">
+              مشاهده دوره‌ها
+            </Link>
+            <Link
+              href={session ? "/account/library" : "/login"}
+              className="academy-btn academy-btn-secondary"
+            >
+              {session ? "کتابخانه من" : "ورود"}
+            </Link>
+          </div>
+        </div>
       </section>
     </AcademyShell>
   );

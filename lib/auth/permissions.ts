@@ -48,6 +48,8 @@ export const PERMISSIONS = [
   "guidance.review",
   "academy.view",
   "academy.manage",
+  "challenges.view",
+  "challenges.manage",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -76,6 +78,8 @@ const CRM_MANAGER = new Set<Permission>([
   "registration_flows.manage",
   "guidance.view",
   "guidance.review",
+  "challenges.view",
+  "challenges.manage",
 ]);
 
 const BRANCH_COMMERCE_OPS = new Set<Permission>([
@@ -181,6 +185,8 @@ const ROLE_PERMISSIONS: Readonly<Partial<Record<SystemRoleValue, ReadonlySet<Per
     "commerce.products.manage",
     "academy.view",
     "academy.manage",
+    "challenges.view",
+    "challenges.manage",
   ]),
   TEACHER: new Set([
     "booking.view_assigned",

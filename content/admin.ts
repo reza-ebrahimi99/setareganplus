@@ -165,6 +165,25 @@ export const adminNavGroups: ReadonlyArray<{
         ],
       },
       {
+        href: "/admin/challenges",
+        label: "چالش‌های گروهی",
+        icon: "exams",
+        enabled: true,
+        permission: "challenges.view",
+        children: [
+          {
+            href: "/admin/challenges",
+            label: "داشبورد کمپین",
+            permission: "challenges.view",
+          },
+          {
+            href: "/admin/challenges/new",
+            label: "کمپین جدید",
+            permission: "challenges.manage",
+          },
+        ],
+      },
+      {
         href: "/admin/commerce",
         label: "فروشگاه",
         icon: "courses",

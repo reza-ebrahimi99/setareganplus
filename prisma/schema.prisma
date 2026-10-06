@@ -658,6 +658,17 @@ model Organization {
   academyPlaybackSessions              AcademyPlaybackSession[]
   academyUserDevices                   AcademyUserDevice[]
   academySecurityEvents                AcademySecurityEvent[]
+  challengeCampaigns                   ChallengeCampaign[]
+  challengeParticipants                ChallengeParticipant[]
+  challengeTeams                       ChallengeTeam[]
+  challengeInvitations                 ChallengeInvitation[]
+  challengeExams                       ChallengeExam[]
+  challengeQuestions                   ChallengeQuestion[]
+  challengeChoices                     ChallengeChoice[]
+  challengeAttempts                    ChallengeAttempt[]
+  challengeAnswers                     ChallengeAnswer[]
+  challengeScholarshipTiers            ChallengeScholarshipTier[]
+  challengeCertificates                ChallengeCertificate[]
 
   @@map("organizations")
 }
@@ -725,61 +736,62 @@ model User {
   updatedAt        DateTime   @updatedAt
   deletedAt        DateTime?
 
-  memberships                  OrganizationMembership[]
-  auditLogs                    AuditLog[]                   @relation("AuditLogActor")
-  adminSessions                AdminSession[]
-  mediaAssets                  MediaAsset[]                 @relation("MediaAssetCreator")
-  bookingAdvisors              BookingAdvisor[]
-  bookingCheckIns              BookingCheckIn[]
-  ownedLeads                   Lead[]                       @relation("LeadOwner")
-  assignedCrmTasks             CrmTask[]                    @relation("CrmTaskAssignee")
-  createdCrmTasks              CrmTask[]                    @relation("CrmTaskCreator")
-  crmActivities                CrmActivity[]                @relation("CrmActivityActor")
-  crmLeadImportReports         CrmLeadImportReport[]        @relation("CrmLeadImportActor")
-  portalAccountLinks           PortalAccountLink[]
-  registrationDocumentReviews  RegistrationDocument[]       @relation("RegistrationDocumentReviewer")
-  registrationNotes            RegistrationNote[]           @relation("RegistrationNoteActor")
-  registrationActivities       RegistrationActivity[]       @relation("RegistrationActivityActor")
-  commerceOrdersDelivered      CommerceOrder[]              @relation("CommerceOrderDeliveredBy")
-  commerceOrdersReadyForPickup CommerceOrder[]              @relation("CommerceOrderReadyForPickupBy")
-  commerceOrdersHandover       CommerceOrder[]              @relation("CommerceOrderHandoverStaff")
-  commerceOrderEvents          CommerceOrderEvent[]         @relation("CommerceOrderEventActor")
-  leadOwnershipHistoryAsOwner  LeadOwnershipHistory[]       @relation("LeadOwnershipHistoryOwner")
-  leadOwnershipHistoryAsActor  LeadOwnershipHistory[]       @relation("LeadOwnershipHistoryActor")
-  attributedSnapshots          AttributionSnapshot[]        @relation("AttributionSnapshotUser")
-  staffNotifications           StaffNotification[]
-  experienceProfiles           ExperienceProfile[]
-  experienceTimelineEvents     ExperienceTimelineEvent[]
-  experienceWidgetSnapshots    ExperienceWidgetSnapshot[]
-  bookSkuPricesCreated         BookSkuPrice[]               @relation("BookSkuPriceCreator")
-  bookImportJobsCreated        BookImportJob[]              @relation("BookImportJobCreator")
-  guidancePlans                GuidancePlan[]               @relation("GuidancePlanUser")
-  guidanceDocumentsVerified    GuidanceDocument[]           @relation("GuidanceDocumentVerifier")
-  guidancePlanChoicesApproved  GuidancePlan[]               @relation("GuidancePlanChoicesApprover")
-  guidanceStepReviewsApproved  GuidanceStepReview[]         @relation("GuidanceStepReviewApprover")
-  guidanceStepReviewsRejected  GuidanceStepReview[]         @relation("GuidanceStepReviewRejector")
-  guidanceStepReviewsCounselor GuidanceStepReview[]         @relation("GuidanceStepReviewCounselor")
-  guidanceStepReviewEvents     GuidanceStepReviewEvent[]    @relation("GuidanceStepReviewEventActor")
-  counselorStudentAssignments  CounselorStudentAssignment[] @relation("CounselorAssignmentCounselor")
-  counselorAssignmentsCreated  CounselorStudentAssignment[] @relation("CounselorAssignmentAssignedBy")
-  counselingSessionRecords     CounselingSessionRecord[]    @relation("CounselingSessionCounselor")
-  counselingSessionsUpdated    CounselingSessionRecord[]    @relation("CounselingSessionUpdatedBy")
-  counselorAppointmentAuditLogs CounselorAppointmentAuditLog[] @relation("CounselorAppointmentAuditActor")
+  memberships                             OrganizationMembership[]
+  auditLogs                               AuditLog[]                        @relation("AuditLogActor")
+  adminSessions                           AdminSession[]
+  mediaAssets                             MediaAsset[]                      @relation("MediaAssetCreator")
+  bookingAdvisors                         BookingAdvisor[]
+  bookingCheckIns                         BookingCheckIn[]
+  ownedLeads                              Lead[]                            @relation("LeadOwner")
+  assignedCrmTasks                        CrmTask[]                         @relation("CrmTaskAssignee")
+  createdCrmTasks                         CrmTask[]                         @relation("CrmTaskCreator")
+  crmActivities                           CrmActivity[]                     @relation("CrmActivityActor")
+  crmLeadImportReports                    CrmLeadImportReport[]             @relation("CrmLeadImportActor")
+  portalAccountLinks                      PortalAccountLink[]
+  registrationDocumentReviews             RegistrationDocument[]            @relation("RegistrationDocumentReviewer")
+  registrationNotes                       RegistrationNote[]                @relation("RegistrationNoteActor")
+  registrationActivities                  RegistrationActivity[]            @relation("RegistrationActivityActor")
+  commerceOrdersDelivered                 CommerceOrder[]                   @relation("CommerceOrderDeliveredBy")
+  commerceOrdersReadyForPickup            CommerceOrder[]                   @relation("CommerceOrderReadyForPickupBy")
+  commerceOrdersHandover                  CommerceOrder[]                   @relation("CommerceOrderHandoverStaff")
+  commerceOrderEvents                     CommerceOrderEvent[]              @relation("CommerceOrderEventActor")
+  leadOwnershipHistoryAsOwner             LeadOwnershipHistory[]            @relation("LeadOwnershipHistoryOwner")
+  leadOwnershipHistoryAsActor             LeadOwnershipHistory[]            @relation("LeadOwnershipHistoryActor")
+  attributedSnapshots                     AttributionSnapshot[]             @relation("AttributionSnapshotUser")
+  staffNotifications                      StaffNotification[]
+  experienceProfiles                      ExperienceProfile[]
+  experienceTimelineEvents                ExperienceTimelineEvent[]
+  experienceWidgetSnapshots               ExperienceWidgetSnapshot[]
+  bookSkuPricesCreated                    BookSkuPrice[]                    @relation("BookSkuPriceCreator")
+  bookImportJobsCreated                   BookImportJob[]                   @relation("BookImportJobCreator")
+  guidancePlans                           GuidancePlan[]                    @relation("GuidancePlanUser")
+  guidanceDocumentsVerified               GuidanceDocument[]                @relation("GuidanceDocumentVerifier")
+  guidancePlanChoicesApproved             GuidancePlan[]                    @relation("GuidancePlanChoicesApprover")
+  guidanceStepReviewsApproved             GuidanceStepReview[]              @relation("GuidanceStepReviewApprover")
+  guidanceStepReviewsRejected             GuidanceStepReview[]              @relation("GuidanceStepReviewRejector")
+  guidanceStepReviewsCounselor            GuidanceStepReview[]              @relation("GuidanceStepReviewCounselor")
+  guidanceStepReviewEvents                GuidanceStepReviewEvent[]         @relation("GuidanceStepReviewEventActor")
+  counselorStudentAssignments             CounselorStudentAssignment[]      @relation("CounselorAssignmentCounselor")
+  counselorAssignmentsCreated             CounselorStudentAssignment[]      @relation("CounselorAssignmentAssignedBy")
+  counselingSessionRecords                CounselingSessionRecord[]         @relation("CounselingSessionCounselor")
+  counselingSessionsUpdated               CounselingSessionRecord[]         @relation("CounselingSessionUpdatedBy")
+  counselorAppointmentAuditLogs           CounselorAppointmentAuditLog[]    @relation("CounselorAppointmentAuditActor")
   counselorAppointmentAltProposalsCreated CounselorAppointmentAltProposal[] @relation("CounselorAltProposalCreator")
-  counselorNotes               CounselorNote[]              @relation("CounselorNoteAuthor")
-  counselorFollowUps           CounselorFollowUp[]          @relation("CounselorFollowUpCounselor")
-  counselorAppointments        CounselorAppointment[]       @relation("CounselorAppointmentCounselor")
-  counselorCaseCorrections     CounselorCaseCorrection[]    @relation("CounselorCaseCorrectionActor")
-  guidanceChoiceListsAuthored  GuidanceChoiceList[]         @relation("GuidanceChoiceListCounselor")
-  guidanceChoiceListsReadyBy   GuidanceChoiceList[]         @relation("GuidanceChoiceListReadyBy")
-  guidancePlansSanjeshVerified GuidancePlan[]               @relation("GuidancePlanSanjeshVerifier")
-  guidanceChoiceFeedback       GuidanceChoiceFeedback[]     @relation("GuidanceChoiceFeedbackStudent")
-  academyEntitlements          AcademyContentEntitlement[]
-  academyEntitlementsGranted   AcademyContentEntitlement[]  @relation("AcademyEntitlementGrantActor")
-  academyOrders                AcademyOrder[]
-  academyVideoProgress         AcademyVideoProgress[]
-  academyPlaybackSessions      AcademyPlaybackSession[]
-  academyUserDevices           AcademyUserDevice[]
+  counselorNotes                          CounselorNote[]                   @relation("CounselorNoteAuthor")
+  counselorFollowUps                      CounselorFollowUp[]               @relation("CounselorFollowUpCounselor")
+  counselorAppointments                   CounselorAppointment[]            @relation("CounselorAppointmentCounselor")
+  counselorCaseCorrections                CounselorCaseCorrection[]         @relation("CounselorCaseCorrectionActor")
+  guidanceChoiceListsAuthored             GuidanceChoiceList[]              @relation("GuidanceChoiceListCounselor")
+  guidanceChoiceListsReadyBy              GuidanceChoiceList[]              @relation("GuidanceChoiceListReadyBy")
+  guidancePlansSanjeshVerified            GuidancePlan[]                    @relation("GuidancePlanSanjeshVerifier")
+  guidanceChoiceFeedback                  GuidanceChoiceFeedback[]          @relation("GuidanceChoiceFeedbackStudent")
+  academyEntitlements                     AcademyContentEntitlement[]
+  academyEntitlementsGranted              AcademyContentEntitlement[]       @relation("AcademyEntitlementGrantActor")
+  academyOrders                           AcademyOrder[]
+  academyVideoProgress                    AcademyVideoProgress[]
+  academyPlaybackSessions                 AcademyPlaybackSession[]
+  academyUserDevices                      AcademyUserDevice[]
+  challengeParticipants                   ChallengeParticipant[]
 
   @@index([status])
   @@index([deletedAt])
@@ -935,24 +947,25 @@ model Lead {
   updatedAt                  DateTime        @updatedAt
   deletedAt                  DateTime?
 
-  organization         Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch               Branch                 @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  duplicateOf          Lead?                  @relation("LeadDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
-  duplicates           Lead[]                 @relation("LeadDuplicates")
-  pipeline             CrmPipeline?           @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
-  stage                CrmPipelineStage?      @relation(fields: [organizationId, stageId], references: [organizationId, id], onDelete: Restrict)
-  owner                User?                  @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
-  activities           LeadActivity[]
-  consents             ConsentRecord[]
-  formSubmissions      FormSubmission[]
-  crmTasks             CrmTask[]
-  crmActivities        CrmActivity[]
-  crmCallLogs          CrmCallLog[]
-  bookingReservations  BookingReservation[]
-  registrations        Registration[]
-  commerceOrders       CommerceOrder[]
-  ownershipHistories   LeadOwnershipHistory[]
-  attributionSnapshots AttributionSnapshot[]
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch                Branch                 @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  duplicateOf           Lead?                  @relation("LeadDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates            Lead[]                 @relation("LeadDuplicates")
+  pipeline              CrmPipeline?           @relation(fields: [organizationId, pipelineId], references: [organizationId, id], onDelete: Restrict)
+  stage                 CrmPipelineStage?      @relation(fields: [organizationId, stageId], references: [organizationId, id], onDelete: Restrict)
+  owner                 User?                  @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  activities            LeadActivity[]
+  consents              ConsentRecord[]
+  formSubmissions       FormSubmission[]
+  crmTasks              CrmTask[]
+  crmActivities         CrmActivity[]
+  crmCallLogs           CrmCallLog[]
+  bookingReservations   BookingReservation[]
+  registrations         Registration[]
+  commerceOrders        CommerceOrder[]
+  ownershipHistories    LeadOwnershipHistory[]
+  attributionSnapshots  AttributionSnapshot[]
+  challengeParticipants ChallengeParticipant[]
 
   @@unique([organizationId, branchId, id])
   @@unique([organizationId, id])
@@ -2080,14 +2093,14 @@ model BookingAdvisor {
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  organization      Organization                   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch            Branch?                        @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  user              User?                          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  photoMedia        MediaAsset?                    @relation("BookingAdvisorPhoto", fields: [photoMediaId], references: [id], onDelete: SetNull)
-  serviceLinks      BookingAdvisorService[]
-  availabilityRules BookingAvailabilityRule[]
-  exceptions        BookingAvailabilityException[]
-  slots             BookingSlot[]
+  organization           Organization                   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch                 Branch?                        @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  user                   User?                          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  photoMedia             MediaAsset?                    @relation("BookingAdvisorPhoto", fields: [photoMediaId], references: [id], onDelete: SetNull)
+  serviceLinks           BookingAdvisorService[]
+  availabilityRules      BookingAvailabilityRule[]
+  exceptions             BookingAvailabilityException[]
+  slots                  BookingSlot[]
   counselorSchedulePlans CounselorSchedulePlan[]
 
   @@unique([organizationId, id])
@@ -2231,31 +2244,31 @@ model CounselorScheduleWindow {
 }
 
 model BookingSlot {
-  id             String            @id @default(cuid())
-  organizationId String
-  serviceId      String
-  advisorId      String
-  branchId       String?
-  startsAt       DateTime
-  endsAt         DateTime
-  capacity       Int
-  bookedCount    Int               @default(0)
-  waitingCount   Int               @default(0)
-  status         BookingSlotStatus @default(OPEN)
+  id               String            @id @default(cuid())
+  organizationId   String
+  serviceId        String
+  advisorId        String
+  branchId         String?
+  startsAt         DateTime
+  endsAt           DateTime
+  capacity         Int
+  bookedCount      Int               @default(0)
+  waitingCount     Int               @default(0)
+  status           BookingSlotStatus @default(OPEN)
   schedulePlanId   String?
   scheduleDayId    String?
   scheduleWindowId String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
-  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  service      BookingService       @relation(fields: [organizationId, serviceId], references: [organizationId, id], onDelete: Restrict)
-  advisor      BookingAdvisor       @relation(fields: [organizationId, advisorId], references: [organizationId, id], onDelete: Restrict)
-  branch       Branch?              @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  service        BookingService           @relation(fields: [organizationId, serviceId], references: [organizationId, id], onDelete: Restrict)
+  advisor        BookingAdvisor           @relation(fields: [organizationId, advisorId], references: [organizationId, id], onDelete: Restrict)
+  branch         Branch?                  @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
   schedulePlan   CounselorSchedulePlan?   @relation(fields: [organizationId, schedulePlanId], references: [organizationId, id], onDelete: SetNull)
   scheduleDay    CounselorScheduleDay?    @relation(fields: [organizationId, scheduleDayId], references: [organizationId, id], onDelete: SetNull)
   scheduleWindow CounselorScheduleWindow? @relation(fields: [organizationId, scheduleWindowId], references: [organizationId, id], onDelete: SetNull)
-  reservations BookingReservation[]
+  reservations   BookingReservation[]
 
   @@unique([organizationId, serviceId, advisorId, startsAt])
   @@unique([organizationId, id])
@@ -2380,6 +2393,7 @@ enum OtpPurpose {
   VERIFY_MOBILE
   BOOKING
   FORM
+  CHALLENGE_LOGIN
   GENERIC
 }
 
@@ -2389,6 +2403,36 @@ enum OtpChallengeStatus {
   CONSUMED
   EXPIRED
   LOCKED
+}
+
+// ─── Five-person campaign challenge ─────────────────────────────────────────
+
+enum ChallengeCampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ENDED
+  ARCHIVED
+}
+
+enum ChallengeInvitationStatus {
+  PENDING
+  SENT
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+  FAILED
+}
+
+enum ChallengeAttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
+}
+
+enum ChallengeCertificateStatus {
+  ISSUED
+  REVOKED
 }
 
 enum CrmCallOutcome {
@@ -4059,11 +4103,11 @@ model CommerceCategory {
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
 
-  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  branch       Branch?                @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  parent       CommerceCategory?      @relation("CommerceCategoryTree", fields: [organizationId, parentId], references: [organizationId, id], onDelete: Restrict)
-  children     CommerceCategory[]     @relation("CommerceCategoryTree")
-  imageAsset   MediaAsset?            @relation("CommerceCategoryImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch?            @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  parent       CommerceCategory?  @relation("CommerceCategoryTree", fields: [organizationId, parentId], references: [organizationId, id], onDelete: Restrict)
+  children     CommerceCategory[] @relation("CommerceCategoryTree")
+  imageAsset   MediaAsset?        @relation("CommerceCategoryImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
   skuLinks     BookSkuCategory[]
 
   @@unique([organizationId, slug])
@@ -4611,15 +4655,15 @@ model BookSku {
   updatedAt           DateTime             @updatedAt
   deletedAt           DateTime?
 
-  organization  Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  title         BookTitle              @relation(fields: [organizationId, titleId], references: [organizationId, id], onDelete: Restrict)
-  branch        Branch?                @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
-  primaryImage  MediaAsset?            @relation("BookSkuPrimaryImage", fields: [primaryImageAssetId], references: [id], onDelete: SetNull)
-  prices        BookSkuPrice[]
-  tags          BookSkuTag[]
-  importRows    BookImportRowResult[]
-  categoryLinks BookSkuCategory[]
-  orderItems    CommerceOrderItem[]
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  title          BookTitle             @relation(fields: [organizationId, titleId], references: [organizationId, id], onDelete: Restrict)
+  branch         Branch?               @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict)
+  primaryImage   MediaAsset?           @relation("BookSkuPrimaryImage", fields: [primaryImageAssetId], references: [id], onDelete: SetNull)
+  prices         BookSkuPrice[]
+  tags           BookSkuTag[]
+  importRows     BookImportRowResult[]
+  categoryLinks  BookSkuCategory[]
+  orderItems     CommerceOrderItem[]
   stockMovements BookStockMovement[]
 
   @@unique([organizationId, internalCode])
@@ -4861,7 +4905,7 @@ model GuidancePlan {
   /// Step 3 — selected guidance package + payment completion snapshot.
   guidancePackageCode     String?
   /// V2 add-on codes at purchase time, e.g. ["FARHANGIAN_ADDON"].
-  guidancePackageAddons   Json      @default("[]")
+  guidancePackageAddons   Json           @default("[]")
   packagePaidAt           DateTime?
   /// Step 10 — counselor review/approval of the AI-arranged 150-choice list.
   choicesApprovedAt       DateTime?
@@ -5168,25 +5212,25 @@ model CounselorStudentAssignment {
 
 /// Bridges BookingReservation to guidance student context.
 model CounselorAppointment {
-  id                   String                     @id @default(cuid())
-  organizationId       String
-  studentId            String
-  counselorUserId      String
-  guidancePlanId       String?
-  bookingReservationId String                     @unique
-  status               CounselorAppointmentStatus @default(BOOKED)
+  id                      String                     @id @default(cuid())
+  organizationId          String
+  studentId               String
+  counselorUserId         String
+  guidancePlanId          String?
+  bookingReservationId    String                     @unique
+  status                  CounselorAppointmentStatus @default(BOOKED)
   /// V2 session purpose: FIRST_SESSION | SECOND_SESSION. Null = generic counseling booking.
-  purpose              String?
+  purpose                 String?
   /// Legacy BOOKED + CONFIRMED reservation resolved by admin.
   inconsistencyResolvedAt DateTime?
-  createdAt            DateTime                   @default(now())
-  updatedAt            DateTime                   @updatedAt
+  createdAt               DateTime                   @default(now())
+  updatedAt               DateTime                   @updatedAt
 
-  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  student            Student            @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
-  counselor          User               @relation("CounselorAppointmentCounselor", fields: [counselorUserId], references: [id], onDelete: Restrict)
-  guidancePlan       GuidancePlan?      @relation(fields: [organizationId, guidancePlanId], references: [organizationId, id], onDelete: SetNull)
-  bookingReservation BookingReservation @relation(fields: [organizationId, bookingReservationId], references: [organizationId, id], onDelete: Restrict)
+  organization       Organization                      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  student            Student                           @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
+  counselor          User                              @relation("CounselorAppointmentCounselor", fields: [counselorUserId], references: [id], onDelete: Restrict)
+  guidancePlan       GuidancePlan?                     @relation(fields: [organizationId, guidancePlanId], references: [organizationId, id], onDelete: SetNull)
+  bookingReservation BookingReservation                @relation(fields: [organizationId, bookingReservationId], references: [organizationId, id], onDelete: Restrict)
   auditLogs          CounselorAppointmentAuditLog[]
   altProposals       CounselorAppointmentAltProposal[]
 
@@ -5209,7 +5253,7 @@ model CounselorAppointmentAuditLog {
   afterJson      Json?
   createdAt      DateTime @default(now())
 
-  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   appointment  CounselorAppointment @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
   actor        User                 @relation("CounselorAppointmentAuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
 
@@ -5230,7 +5274,7 @@ model CounselorAppointmentAltProposal {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   appointment  CounselorAppointment @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
   createdBy    User                 @relation("CounselorAltProposalCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
 
@@ -5260,35 +5304,35 @@ model StudentPortalNotification {
 
 /// Persistent counseling session documentation (institutional knowledge).
 model CounselingSessionRecord {
-  id                   String                        @id @default(cuid())
-  organizationId       String
-  studentId            String
-  counselorUserId      String
-  guidancePlanId       String?
-  bookingReservationId String?                       @unique
-  scheduledAt          DateTime?
-  startedAt            DateTime?
-  endedAt              DateTime?
-  durationMinutes      Int?
-  sessionType          CounselingSessionType         @default(IN_PERSON)
-  status               CounselingSessionRecordStatus @default(SCHEDULED)
-  subject              String?
-  body                 String?                       @db.Text
-  keyPoints            String?                       @db.Text
-  decisions            String?                       @db.Text
-  studentActionItems   String?                       @db.Text
-  counselorActionItems String?                       @db.Text
-  summary              String?                       @db.Text
-  nextFollowUpAt       DateTime?
-  isDraft              Boolean                       @default(false)
-  layoutChangeNotes    String?                       @db.Text
-  counselorInternalNotes String?                     @db.Text
-  sessionOutcome       String?
-  reportLockedAt       DateTime?
-  reportUnlockedReason String?                       @db.Text
-  updatedByUserId      String?
-  createdAt            DateTime                      @default(now())
-  updatedAt            DateTime                      @updatedAt
+  id                     String                        @id @default(cuid())
+  organizationId         String
+  studentId              String
+  counselorUserId        String
+  guidancePlanId         String?
+  bookingReservationId   String?                       @unique
+  scheduledAt            DateTime?
+  startedAt              DateTime?
+  endedAt                DateTime?
+  durationMinutes        Int?
+  sessionType            CounselingSessionType         @default(IN_PERSON)
+  status                 CounselingSessionRecordStatus @default(SCHEDULED)
+  subject                String?
+  body                   String?                       @db.Text
+  keyPoints              String?                       @db.Text
+  decisions              String?                       @db.Text
+  studentActionItems     String?                       @db.Text
+  counselorActionItems   String?                       @db.Text
+  summary                String?                       @db.Text
+  nextFollowUpAt         DateTime?
+  isDraft                Boolean                       @default(false)
+  layoutChangeNotes      String?                       @db.Text
+  counselorInternalNotes String?                       @db.Text
+  sessionOutcome         String?
+  reportLockedAt         DateTime?
+  reportUnlockedReason   String?                       @db.Text
+  updatedByUserId        String?
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
 
   organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   student            Student             @relation(fields: [organizationId, studentId], references: [organizationId, id], onDelete: Restrict)
@@ -5493,6 +5537,7 @@ model GuidanceDiscountCode {
   @@index([organizationId, isActive], map: "gdc_org_active_idx")
   @@map("guidance_discount_codes")
 }
+
 // ─── Star Academy (آکادمی ستارگان) ───────────────────────────────────────────
 
 enum AcademyCourseStatus {
@@ -5632,33 +5677,33 @@ model AcademySection {
 }
 
 model AcademyLesson {
-  id                    String              @id @default(cuid())
-  organizationId        String
-  courseId              String
-  sectionId             String?
-  title                 String
-  slug                  String
-  description           String?             @db.Text
-  lessonType            AcademyLessonType   @default(VIDEO)
-  status                AcademyLessonStatus @default(DRAFT)
-  sortOrder             Int                 @default(0)
-  isPreview             Boolean             @default(false)
-  sellIndividually      Boolean             @default(false)
-  individualPriceRials  Int?
-  durationSeconds       Int?
-  videoAssetId          String?
-  publishedAt           DateTime?
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
+  id                   String              @id @default(cuid())
+  organizationId       String
+  courseId             String
+  sectionId            String?
+  title                String
+  slug                 String
+  description          String?             @db.Text
+  lessonType           AcademyLessonType   @default(VIDEO)
+  status               AcademyLessonStatus @default(DRAFT)
+  sortOrder            Int                 @default(0)
+  isPreview            Boolean             @default(false)
+  sellIndividually     Boolean             @default(false)
+  individualPriceRials Int?
+  durationSeconds      Int?
+  videoAssetId         String?
+  publishedAt          DateTime?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
 
-  organization      Organization                @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  course            AcademyCourse               @relation(fields: [courseId], references: [id], onDelete: Restrict)
-  section           AcademySection?             @relation(fields: [sectionId], references: [id], onDelete: SetNull)
-  videoAsset        AcademyVideoAsset?          @relation(fields: [videoAssetId], references: [id], onDelete: SetNull)
-  orderItems        AcademyOrderItem[]
-  entitlements      AcademyContentEntitlement[]
-  videoProgress     AcademyVideoProgress[]
-  playbackSessions  AcademyPlaybackSession[]
+  organization     Organization                @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  course           AcademyCourse               @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  section          AcademySection?             @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  videoAsset       AcademyVideoAsset?          @relation(fields: [videoAssetId], references: [id], onDelete: SetNull)
+  orderItems       AcademyOrderItem[]
+  entitlements     AcademyContentEntitlement[]
+  videoProgress    AcademyVideoProgress[]
+  playbackSessions AcademyPlaybackSession[]
 
   @@unique([organizationId, courseId, slug], map: "ac_lesson_org_course_slug")
   @@index([organizationId, courseId, status], map: "ac_lesson_org_course_st")
@@ -5716,20 +5761,20 @@ model AcademyOrder {
 }
 
 model AcademyOrderItem {
-  id                 String   @id @default(cuid())
-  organizationId     String
-  orderId            String
-  courseId           String?
-  lessonId           String?
-  titleSnapshot      String
-  unitPriceRials     Int
+  id                  String   @id @default(cuid())
+  organizationId      String
+  orderId             String
+  courseId            String?
+  lessonId            String?
+  titleSnapshot       String
+  unitPriceRials      Int
   compareAtPriceRials Int?
-  quantity           Int      @default(1)
-  lineTotalRials     Int
-  createdAt          DateTime @default(now())
+  quantity            Int      @default(1)
+  lineTotalRials      Int
+  createdAt           DateTime @default(now())
 
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  order        AcademyOrder  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  order        AcademyOrder   @relation(fields: [orderId], references: [id], onDelete: Restrict)
   course       AcademyCourse? @relation(fields: [courseId], references: [id], onDelete: SetNull)
   lesson       AcademyLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
 
@@ -5738,27 +5783,27 @@ model AcademyOrderItem {
 }
 
 model AcademyContentEntitlement {
-  id             String                   @id @default(cuid())
-  organizationId String
-  userId         String
-  courseId       String?
-  lessonId       String?
-  source         AcademyEntitlementSource
-  orderId        String?
-  startsAt       DateTime                 @default(now())
-  expiresAt      DateTime?
-  revokedAt      DateTime?
+  id              String                   @id @default(cuid())
+  organizationId  String
+  userId          String
+  courseId        String?
+  lessonId        String?
+  source          AcademyEntitlementSource
+  orderId         String?
+  startsAt        DateTime                 @default(now())
+  expiresAt       DateTime?
+  revokedAt       DateTime?
   grantedByUserId String?
-  note           String?                  @db.Text
-  createdAt      DateTime                 @default(now())
-  updatedAt      DateTime                 @updatedAt
+  note            String?                  @db.Text
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
 
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Restrict)
   course       AcademyCourse? @relation(fields: [courseId], references: [id], onDelete: SetNull)
   lesson       AcademyLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
-  order        AcademyOrder? @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  grantedBy    User?         @relation("AcademyEntitlementGrantActor", fields: [grantedByUserId], references: [id], onDelete: SetNull)
+  order        AcademyOrder?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  grantedBy    User?          @relation("AcademyEntitlementGrantActor", fields: [grantedByUserId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, userId, revokedAt], map: "ac_ent_org_user_rev")
   @@index([organizationId, courseId], map: "ac_ent_org_course")
@@ -5768,22 +5813,22 @@ model AcademyContentEntitlement {
 }
 
 model AcademyDiscountCode {
-  id               String              @id @default(cuid())
-  organizationId   String
-  code             String
-  type             AcademyDiscountType
-  value            Int
-  startsAt         DateTime?
-  endsAt           DateTime?
-  maxUses          Int?
-  usageCount       Int                 @default(0)
-  perUserLimit     Int                 @default(1)
-  minCartRials     Int?
-  isActive         Boolean             @default(true)
-  courseId         String?
-  note             String?             @db.Text
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  id             String              @id @default(cuid())
+  organizationId String
+  code           String
+  type           AcademyDiscountType
+  value          Int
+  startsAt       DateTime?
+  endsAt         DateTime?
+  maxUses        Int?
+  usageCount     Int                 @default(0)
+  perUserLimit   Int                 @default(1)
+  minCartRials   Int?
+  isActive       Boolean             @default(true)
+  courseId       String?
+  note           String?             @db.Text
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
 
   organization Organization                @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   redemptions  AcademyDiscountRedemption[]
@@ -5811,19 +5856,19 @@ model AcademyDiscountRedemption {
 }
 
 model AcademyVideoProgress {
-  id                   String    @id @default(cuid())
-  organizationId       String
-  userId               String
-  courseId             String
-  lessonId             String
-  lastPositionSeconds  Int       @default(0)
-  maxPositionSeconds   Int       @default(0)
-  durationSeconds      Int?
-  completed            Boolean   @default(false)
-  completedAt          DateTime?
-  lastViewedAt         DateTime  @default(now())
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  id                  String    @id @default(cuid())
+  organizationId      String
+  userId              String
+  courseId            String
+  lessonId            String
+  lastPositionSeconds Int       @default(0)
+  maxPositionSeconds  Int       @default(0)
+  durationSeconds     Int?
+  completed           Boolean   @default(false)
+  completedAt         DateTime?
+  lastViewedAt        DateTime  @default(now())
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
@@ -5893,4 +5938,340 @@ model AcademySecurityEvent {
 
   @@index([organizationId, type, createdAt], map: "ac_sec_org_type_at")
   @@map("academy_security_events")
+}
+
+// ─── Five-person challenge campaign module ──────────────────────────────────
+// Isolated from the academic assessment models. It reuses the shared OTP,
+// portal-session, SMS queue, and CRM foundations without changing their rules.
+
+model ChallengeCampaign {
+  id                    String                  @id @default(cuid())
+  organizationId        String
+  title                 String
+  slug                  String
+  eyebrow               String                  @default("چالش گروهی ستارگان")
+  summary               String                  @db.Text
+  description           String                  @db.Text
+  terms                 String?                 @db.Text
+  status                ChallengeCampaignStatus @default(DRAFT)
+  teamSize              Int                     @default(5)
+  startsAt              DateTime?
+  endsAt                DateTime?
+  examOpensAt           DateTime?
+  examClosesAt          DateTime?
+  scoringConfig         Json                    @default("{\"correct\":3,\"wrong\":-1,\"unanswered\":0}")
+  inviteSmsTemplate     String                  @default("{{inviterName}} شما را به {{campaignTitle}} دعوت کرده است: {{inviteUrl}}") @db.Text
+  completionSmsTemplate String                  @default("نتیجه تیم شما در {{campaignTitle}} آماده شد: {{resultUrl}}") @db.Text
+  certificateTitle      String                  @default("گواهی حضور در چالش ۵ نفره ریاضی")
+  certificateSubtitle   String                  @default("با افتخار به پاس تلاش و همراهی در این چالش اهدا می‌شود.") @db.Text
+  certificateSignatory  String                  @default("مجموعه آموزشی ستارگان پلاس")
+  certificateRole       String                  @default("مدیریت آموزش")
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  deletedAt             DateTime?
+
+  organization     Organization               @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  participants     ChallengeParticipant[]
+  teams            ChallengeTeam[]
+  invitations      ChallengeInvitation[]
+  exams            ChallengeExam[]
+  attempts         ChallengeAttempt[]
+  scholarshipTiers ChallengeScholarshipTier[]
+  certificates     ChallengeCertificate[]
+
+  @@unique([organizationId, slug], map: "ch_campaign_org_slug")
+  @@unique([organizationId, id], map: "ch_campaign_org_id")
+  @@index([organizationId, status, startsAt], map: "ch_campaign_org_status")
+  @@index([organizationId, deletedAt], map: "ch_campaign_org_deleted")
+  @@map("challenge_campaigns")
+}
+
+model ChallengeTeam {
+  id                String    @id @default(cuid())
+  organizationId    String
+  campaignId        String
+  name              String
+  inviteCode        String    @unique
+  capacity          Int       @default(5)
+  lockedAt          DateTime?
+  resultUnlockedAt  DateTime?
+  teamScore         Float?
+  averagePercentage Float?
+  totalCorrect      Int?
+  totalWrong        Int?
+  totalUnanswered   Int?
+  scholarshipTierId String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  organization    Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  campaign        ChallengeCampaign         @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  scholarshipTier ChallengeScholarshipTier? @relation(fields: [scholarshipTierId], references: [id], onDelete: SetNull)
+  participants    ChallengeParticipant[]
+  invitations     ChallengeInvitation[]
+  certificates    ChallengeCertificate[]
+
+  @@unique([campaignId, name], map: "ch_team_campaign_name")
+  @@index([organizationId, campaignId, createdAt], map: "ch_team_org_campaign")
+  @@index([campaignId, resultUnlockedAt], map: "ch_team_campaign_result")
+  @@map("challenge_teams")
+}
+
+model ChallengeParticipant {
+  id               String    @id @default(cuid())
+  organizationId   String
+  campaignId       String
+  userId           String
+  leadId           String?
+  teamId           String?
+  fullName         String
+  normalizedMobile String
+  gradeKey         String
+  gradeLabel       String
+  majorKey         String?
+  majorLabel       String?
+  school           String?
+  city             String?
+  source           String    @default("DIRECT")
+  isCaptain        Boolean   @default(false)
+  consentAt        DateTime
+  joinedAt         DateTime  @default(now())
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization    Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  campaign        ChallengeCampaign      @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  lead            Lead?                  @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  team            ChallengeTeam?         @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  invitationsSent ChallengeInvitation[]  @relation("ChallengeInvitationInviter")
+  acceptedInvite  ChallengeInvitation?   @relation("ChallengeInvitationAcceptedParticipant")
+  attempts        ChallengeAttempt[]
+  certificates    ChallengeCertificate[]
+
+  @@unique([campaignId, userId], map: "ch_participant_campaign_user")
+  @@unique([campaignId, normalizedMobile], map: "ch_participant_campaign_mobile")
+  @@unique([organizationId, id], map: "ch_participant_org_id")
+  @@index([organizationId, campaignId, gradeKey, majorKey], map: "ch_participant_filters")
+  @@index([campaignId, teamId], map: "ch_participant_team")
+  @@index([leadId], map: "ch_participant_lead")
+  @@index([createdAt], map: "ch_participant_created")
+  @@map("challenge_participants")
+}
+
+model ChallengeInvitation {
+  id                    String                    @id @default(cuid())
+  organizationId        String
+  campaignId            String
+  teamId                String
+  inviterParticipantId  String
+  acceptedParticipantId String?                   @unique
+  inviteeName           String
+  normalizedMobile      String
+  tokenHash             String                    @unique
+  status                ChallengeInvitationStatus @default(PENDING)
+  sentAt                DateTime?
+  acceptedAt            DateTime?
+  expiresAt             DateTime
+  lastSentAt            DateTime?
+  resendCount           Int                       @default(0)
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+
+  organization        Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  campaign            ChallengeCampaign     @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  team                ChallengeTeam         @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  inviter             ChallengeParticipant  @relation("ChallengeInvitationInviter", fields: [inviterParticipantId], references: [id], onDelete: Restrict)
+  acceptedParticipant ChallengeParticipant? @relation("ChallengeInvitationAcceptedParticipant", fields: [acceptedParticipantId], references: [id], onDelete: SetNull)
+
+  @@unique([teamId, normalizedMobile], map: "ch_invite_team_mobile")
+  @@index([organizationId, campaignId, status], map: "ch_invite_org_campaign_status")
+  @@index([normalizedMobile, status], map: "ch_invite_mobile_status")
+  @@index([expiresAt, status], map: "ch_invite_expiry_status")
+  @@map("challenge_invitations")
+}
+
+model ChallengeExam {
+  id                 String    @id @default(cuid())
+  organizationId     String
+  campaignId         String
+  audienceKey        String
+  gradeKey           String
+  gradeLabel         String
+  majorKey           String?
+  majorLabel         String?
+  title              String
+  instructions       String?   @db.Text
+  durationMinutes    Int       @default(20)
+  maxAttempts        Int       @default(1)
+  questionLimit      Int?
+  randomizeQuestions Boolean   @default(true)
+  randomizeOptions   Boolean   @default(true)
+  isPublished        Boolean   @default(false)
+  publishedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  campaign     ChallengeCampaign   @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  questions    ChallengeQuestion[]
+  attempts     ChallengeAttempt[]
+
+  @@unique([campaignId, audienceKey], map: "ch_exam_campaign_audience")
+  @@index([organizationId, campaignId, isPublished], map: "ch_exam_org_campaign_pub")
+  @@index([campaignId, gradeKey, majorKey], map: "ch_exam_grade_major")
+  @@map("challenge_exams")
+}
+
+model ChallengeQuestion {
+  id             String    @id @default(cuid())
+  organizationId String
+  examId         String
+  prompt         String    @db.Text
+  imageUrl       String?
+  explanation    String?   @db.Text
+  points         Float     @default(3)
+  negativePoints Float     @default(1)
+  sortOrder      Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  exam         ChallengeExam     @relation(fields: [examId], references: [id], onDelete: Restrict)
+  choices      ChallengeChoice[]
+  answers      ChallengeAnswer[]
+
+  @@index([organizationId, examId, isActive, sortOrder], map: "ch_question_exam_order")
+  @@map("challenge_questions")
+}
+
+model ChallengeChoice {
+  id             String   @id @default(cuid())
+  organizationId String
+  questionId     String
+  label          String   @db.Text
+  imageUrl       String?
+  isCorrect      Boolean  @default(false)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  question     ChallengeQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers      ChallengeAnswer[]
+
+  @@index([organizationId, questionId, sortOrder], map: "ch_choice_question_order")
+  @@map("challenge_choices")
+}
+
+model ChallengeAttempt {
+  id              String                 @id @default(cuid())
+  organizationId  String
+  campaignId      String
+  participantId   String
+  examId          String
+  attemptNumber   Int                    @default(1)
+  status          ChallengeAttemptStatus @default(IN_PROGRESS)
+  questionOrder   Json                   @default("[]")
+  optionOrder     Json                   @default("{}")
+  startedAt       DateTime               @default(now())
+  expiresAt       DateTime
+  submittedAt     DateTime?
+  rawScore        Float?
+  maxScore        Float?
+  percentage      Float?
+  correctCount    Int?
+  wrongCount      Int?
+  unansweredCount Int?
+  ipHash          String?
+  userAgentHash   String?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  campaign     ChallengeCampaign    @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  participant  ChallengeParticipant @relation(fields: [participantId], references: [id], onDelete: Restrict)
+  exam         ChallengeExam        @relation(fields: [examId], references: [id], onDelete: Restrict)
+  answers      ChallengeAnswer[]
+
+  @@unique([participantId, examId, attemptNumber], map: "ch_attempt_part_exam_no")
+  @@index([organizationId, campaignId, status], map: "ch_attempt_org_campaign_status")
+  @@index([participantId, status], map: "ch_attempt_part_status")
+  @@index([expiresAt, status], map: "ch_attempt_expiry_status")
+  @@map("challenge_attempts")
+}
+
+model ChallengeAnswer {
+  id             String   @id @default(cuid())
+  organizationId String
+  attemptId      String
+  questionId     String
+  choiceId       String?
+  isCorrect      Boolean?
+  pointsAwarded  Float    @default(0)
+  answeredAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  attempt      ChallengeAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question     ChallengeQuestion @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  choice       ChallengeChoice?  @relation(fields: [choiceId], references: [id], onDelete: SetNull)
+
+  @@unique([attemptId, questionId], map: "ch_answer_attempt_question")
+  @@index([organizationId, attemptId], map: "ch_answer_org_attempt")
+  @@map("challenge_answers")
+}
+
+model ChallengeScholarshipTier {
+  id             String   @id @default(cuid())
+  organizationId String
+  campaignId     String
+  title          String
+  description    String?  @db.Text
+  prizeLabel     String
+  minPercentage  Float
+  maxPercentage  Float?
+  sortOrder      Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  campaign     ChallengeCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  teams        ChallengeTeam[]
+
+  @@unique([campaignId, title], map: "ch_tier_campaign_title")
+  @@index([organizationId, campaignId, isActive, minPercentage], map: "ch_tier_threshold")
+  @@map("challenge_scholarship_tiers")
+}
+
+model ChallengeCertificate {
+  id               String                     @id @default(cuid())
+  organizationId   String
+  campaignId       String
+  teamId           String
+  participantId    String
+  verificationCode String                     @unique
+  serialNumber     String                     @unique
+  status           ChallengeCertificateStatus @default(ISSUED)
+  issuedAt         DateTime                   @default(now())
+  revokedAt        DateTime?
+  metadata         Json?
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  campaign     ChallengeCampaign    @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  team         ChallengeTeam        @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  participant  ChallengeParticipant @relation(fields: [participantId], references: [id], onDelete: Restrict)
+
+  @@unique([campaignId, participantId], map: "ch_cert_campaign_participant")
+  @@index([organizationId, issuedAt], map: "ch_cert_org_issued")
+  @@index([teamId], map: "ch_cert_team")
+  @@map("challenge_certificates")
 }

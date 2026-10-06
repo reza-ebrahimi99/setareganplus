@@ -47,13 +47,14 @@ export function AcademyLoginForm({ next }: { next?: string }) {
               autoComplete="tel"
               placeholder="09123456789"
               dir="ltr"
-              className="mt-1 w-full rounded-xl border border-border px-4 py-3 text-left"
+              className="academy-field text-left"
               required
             />
           </label>
           <OtpSubmitButton
             idleLabel="دریافت کد ورود"
             pendingLabel="در حال ارسال…"
+            className="academy-btn academy-btn-primary w-full"
           />
         </form>
       ) : (
@@ -68,11 +69,15 @@ export function AcademyLoginForm({ next }: { next?: string }) {
               inputMode="numeric"
               autoComplete="one-time-code"
               dir="ltr"
-              className="mt-1 w-full rounded-xl border border-border px-4 py-3 text-center tracking-widest"
+              className="academy-field text-center tracking-widest"
               required
             />
           </label>
-          <OtpSubmitButton idleLabel="ورود" pendingLabel="در حال بررسی…" />
+          <OtpSubmitButton
+            idleLabel="ورود"
+            pendingLabel="در حال بررسی…"
+            className="academy-btn academy-btn-primary w-full"
+          />
         </form>
       )}
     </div>

@@ -10,22 +10,28 @@ export default async function AcademyCoursesPage() {
   const courses = await listPublishedCourses(organizationId);
 
   return (
-    <AcademyShell activePath="/courses">
-      <div className="mx-auto max-w-6xl px-4 py-12">
-        <h1 className="text-2xl font-bold text-primary">دوره‌های آموزشی</h1>
-        <p className="mt-2 text-muted">مسیرهای یادگیری ساختاریافته آکادمی ستارگان</p>
+    <AcademyShell>
+      <section className="academy-section academy-container">
+        <h1 className="academy-section-title">دوره‌های آموزشی</h1>
+        <p className="academy-section-sub">مسیرهای یادگیری ساختاریافته آکادمی ستارگان</p>
         {courses.length === 0 ? (
-          <div className="academy-card mt-10 p-12 text-center text-muted">
-            هنوز دوره‌ای منتشر نشده است.
+          <div className="academy-card academy-empty mt-8">
+            <div className="academy-empty-icon" aria-hidden>
+              ★
+            </div>
+            <p className="academy-empty-title">دوره‌های جدید به‌زودی منتشر می‌شوند.</p>
+            <p className="academy-empty-desc">
+              به محض انتشار اولین دوره، از همین صفحه دسترسی خواهید داشت.
+            </p>
           </div>
         ) : (
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="academy-course-grid mt-8">
             {courses.map((course) => (
               <AcademyCourseCard key={course.id} course={course} />
             ))}
           </div>
         )}
-      </div>
+      </section>
     </AcademyShell>
   );
 }

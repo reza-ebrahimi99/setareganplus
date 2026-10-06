@@ -10,12 +10,24 @@ const HIDDEN_PREFIXES = [
   "/staff",
   "/atrin",
   "/guidance/pre-register",
+  "/academy",
 ] as const;
+
+function isAcademyPublicHost(): boolean {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname.toLowerCase();
+  return (
+    host === "academy.setareganplus.ir" ||
+    host === "academy.localhost" ||
+    host.startsWith("academy.")
+  );
+}
 
 function shouldHideAssistant(pathname: string | null): boolean {
   // Only hide on known private/embed routes. Never hide when pathname is
   // temporarily unavailable (SSR/hydration) — that would unmount Atrin.
   if (!pathname) return false;
+  if (isAcademyPublicHost()) return true;
   return HIDDEN_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
