@@ -45,7 +45,7 @@ export default async function CounselorStudentsPage({ searchParams }: Props) {
         <div>
           <h1>دانش‌آموزان مسیر هدایت تحصیلی</h1>
           <p>
-            فقط کاربران Guidance V2 — {toPersianDigits(result.total)} نفر
+            دانش‌آموزان مسیر هدایت تحصیلی — {toPersianDigits(result.total)} نفر
           </p>
         </div>
       </header>

@@ -52,7 +52,7 @@ async function gated(studentId: string) {
     organizationId: ctx.organizationId,
     studentId,
   });
-  if (!plan) throw new Error("پرونده V2 یافت نشد.");
+  if (!plan) throw new Error("پرونده هدایت تحصیلی یافت نشد.");
   return { ctx, plan };
 }
 

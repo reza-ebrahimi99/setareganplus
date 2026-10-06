@@ -115,7 +115,7 @@ export function StarBookCart({
         <div className="lg:col-span-2">
           <StarBookRail
             title="معمولاً کنار همین سبد"
-            subtitle="پیشنهاد از همان کاتالوگ BookSku"
+            subtitle="پیشنهاد از همین فروشگاه"
             products={recommendations}
           />
         </div>

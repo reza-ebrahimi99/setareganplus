@@ -20,7 +20,7 @@ export default async function AdminCommerceSeoPage() {
     <>
       <AdminPageHeader
         title="سئو"
-        description="metaTitle و metaDescription روی همان BookSku"
+        description="عنوان و توضیح متا روی همان کتاب"
         breadcrumbs={adminBreadcrumbs.commerceSeo}
         compact
       />

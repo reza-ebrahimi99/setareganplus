@@ -14,32 +14,20 @@ import {
 } from "@/lib/guidance/canonical-entry";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/registration/flows/public-url";
 import {
-  ACADEMY_APP_PREFIX,
-  ACADEMY_PUBLIC_HOST,
-  getAcademyPublicOrigin,
-  isAcademyHost,
-} from "@/lib/academy/host";
-import {
   getStarBookPublicOrigin,
   isStarBookHost,
   STARBOOK_APP_PREFIX,
   STARBOOK_PUBLIC_HOST,
 } from "@/lib/starbook/host";
-import {
-  CHALLENGE_APP_PREFIX,
-  CHALLENGE_PUBLIC_HOST,
-  getChallengePublicOrigin,
-  isChallengeHost,
-} from "@/lib/challenge/host";
 
 /**
  * Next.js 16 Proxy (formerly middleware).
  *
  * Hostname routing — same Next.js process for both domains:
  * - shop.setareganplus.ir  → StarBook (rewrite to /starbook…, URL unchanged)
- * - academy.setareganplus.ir → Academy (rewrite to /academy…, URL unchanged)
- * - challenge.setareganplus.ir → Five-person challenge (rewrite to /challenge…)
  * - setareganplus.ir/shop  → booklet store (never rewritten to StarBook)
+ * - academy.setareganplus.ir and challenge.setareganplus.ir → home
+ *   (Academy and the five-person challenge are no longer served)
  */
 
 function requestHost(request: NextRequest): string {
@@ -50,11 +38,6 @@ function requestHost(request: NextRequest): string {
   return raw.toLowerCase().split(":")[0] ?? "";
 }
 
-function isAcademyRequestHost(host: string): boolean {
-  if (host === ACADEMY_PUBLIC_HOST) return true;
-  return isAcademyHost(host);
-}
-
 function isStarBookRequestHost(host: string): boolean {
   // Literal production hostname for Host-based StarBook routing (grep-visible).
   if (host === "shop.setareganplus.ir") return true;
@@ -62,9 +45,20 @@ function isStarBookRequestHost(host: string): boolean {
   return isStarBookHost(host);
 }
 
-function isChallengeRequestHost(host: string): boolean {
-  if (host === CHALLENGE_PUBLIC_HOST) return true;
-  return isChallengeHost(host);
+/** Retired product hosts. Pages are gone; send visitors to the public site. */
+function isRetiredProductHost(host: string): boolean {
+  const academy = process.env.ACADEMY_HOST?.toLowerCase().trim();
+  const challenge = process.env.CHALLENGE_HOST?.toLowerCase().trim();
+  if (academy && host === academy) return true;
+  if (challenge && host === challenge) return true;
+  return (
+    host === "academy.setareganplus.ir" ||
+    host === "academy.localhost" ||
+    host.startsWith("academy.127.0.0.1") ||
+    host === "challenge.setareganplus.ir" ||
+    host === "challenge.localhost" ||
+    host.startsWith("challenge.127.0.0.1")
+  );
 }
 
 function isSharedInfrastructure(pathname: string): boolean {
@@ -93,82 +87,37 @@ function rewriteTo(request: NextRequest, pathname: string) {
   return response;
 }
 
-function academyRewriteTo(request: NextRequest, pathname: string) {
-  const url = new URL(request.url);
-  url.pathname = pathname;
-  url.search = request.nextUrl.search;
-  const response = NextResponse.rewrite(url);
-  response.headers.set("x-academy-rewrite", pathname);
-  return response;
-}
-
-function challengeRewriteTo(request: NextRequest, pathname: string) {
-  const url = new URL(request.url);
-  url.pathname = pathname;
-  url.search = request.nextUrl.search;
-  const response = NextResponse.rewrite(url);
-  response.headers.set("x-challenge-rewrite", pathname);
-  return response;
+function redirectToPublicHome() {
+  return NextResponse.redirect(new URL("/", PUBLIC_SITE_ORIGIN));
 }
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = requestHost(request);
 
-  // ── Five-person challenge: challenge.setareganplus.ir ───────────────────
-  if (isChallengeRequestHost(host)) {
-    if (isSharedInfrastructure(pathname)) {
-      // Shared assets and admin/API routes keep their canonical paths.
-    } else if (
-      pathname === CHALLENGE_APP_PREFIX ||
-      pathname.startsWith(`${CHALLENGE_APP_PREFIX}/`)
-    ) {
-      return NextResponse.next();
-    } else {
-      const internal =
-        pathname === "/" || pathname === ""
-          ? CHALLENGE_APP_PREFIX
-          : `${CHALLENGE_APP_PREFIX}${pathname}`;
-      return challengeRewriteTo(request, internal);
-    }
-  } else if (
-    pathname === CHALLENGE_APP_PREFIX ||
-    pathname.startsWith(`${CHALLENGE_APP_PREFIX}/`)
+  if (
+    pathname === "/academy" ||
+    pathname.startsWith("/academy/") ||
+    pathname === "/challenge" ||
+    pathname.startsWith("/challenge/")
   ) {
-    const rest = pathname.slice(CHALLENGE_APP_PREFIX.length) || "/";
-    const destination = new URL(
-      `${rest === "" ? "/" : rest}${request.nextUrl.search}`,
-      getChallengePublicOrigin(),
-    );
-    return NextResponse.redirect(destination);
+    return redirectToPublicHome();
   }
 
-  // ── Star Academy subdomain: academy.setareganplus.ir ────────────────────
-  if (isAcademyRequestHost(host)) {
-    if (isSharedInfrastructure(pathname)) {
-      // Shared infrastructure — fall through to auth gates below when needed.
-    } else if (
-      pathname === ACADEMY_APP_PREFIX ||
-      pathname.startsWith(`${ACADEMY_APP_PREFIX}/`)
-    ) {
-      return NextResponse.next();
-    } else {
-      const internal =
-        pathname === "/" || pathname === ""
-          ? ACADEMY_APP_PREFIX
-          : `${ACADEMY_APP_PREFIX}${pathname}`;
-      return academyRewriteTo(request, internal);
-    }
-  } else if (
-    pathname === ACADEMY_APP_PREFIX ||
-    pathname.startsWith(`${ACADEMY_APP_PREFIX}/`)
+  if (
+    pathname === "/admin/academy" ||
+    pathname.startsWith("/admin/academy/") ||
+    pathname === "/admin/challenges" ||
+    pathname.startsWith("/admin/challenges/")
   ) {
-    const rest = pathname.slice(ACADEMY_APP_PREFIX.length) || "/";
-    const dest = new URL(
-      `${rest === "" ? "/" : rest}${request.nextUrl.search}`,
-      getAcademyPublicOrigin(),
-    );
-    return NextResponse.redirect(dest);
+    const target = request.nextUrl.clone();
+    target.pathname = "/admin";
+    target.search = "";
+    return NextResponse.redirect(target);
+  }
+
+  if (isRetiredProductHost(host) && !isSharedInfrastructure(pathname)) {
+    return redirectToPublicHome();
   }
 
   // ── StarBook subdomain: shop.setareganplus.ir ───────────────────────────

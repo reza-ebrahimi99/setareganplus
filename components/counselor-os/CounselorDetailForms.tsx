@@ -113,7 +113,7 @@ export function CounselorDetailForms({
 
       {isSupervisor ? (
         <form action={assignAction} className="cos-panel cos-form-stack">
-          <h2>تخصیص دانش‌آموز مسیر V2</h2>
+          <h2>تخصیص دانش‌آموز</h2>
           <input type="hidden" name="counselorUserId" value={counselorUserId} />
           <select name="studentId" required defaultValue="">
             <option value="" disabled>

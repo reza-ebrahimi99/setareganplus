@@ -34,8 +34,8 @@ type PageProps = { params: Promise<{ id: string }> };
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { id } = await params;
-  return { title: `ثبت‌نام ${id.slice(0, 8)}` };
+  await params;
+  return { title: "جزئیات ثبت‌نام" };
 }
 
 export default async function AdminRegistrationDetailPage({

@@ -1,5 +1,7 @@
 import type { Permission } from "@/lib/auth/permissions";
 
+export const ADMIN_ROADMAP_BADGE = "در نقشه توسعه" as const;
+
 export const adminNotice =
   "این بخش در حال اتصال به سامانه احراز هویت و پایگاه داده است." as const;
 
@@ -132,54 +134,6 @@ export const adminNavGroups: ReadonlyArray<{
             href: "/admin/registrations/flows",
             label: "جریان‌های ثبت‌نام",
             permission: "registration_flows.view",
-          },
-        ],
-      },
-      {
-        href: "/admin/academy",
-        label: "آکادمی ستارگان",
-        icon: "courses",
-        enabled: true,
-        permission: "academy.view",
-        children: [
-          {
-            href: "/admin/academy",
-            label: "داشبورد",
-            permission: "academy.view",
-          },
-          {
-            href: "/admin/academy/courses",
-            label: "دوره‌ها",
-            permission: "academy.manage",
-          },
-          {
-            href: "/admin/academy/orders",
-            label: "سفارش‌ها",
-            permission: "academy.view",
-          },
-          {
-            href: "/admin/academy/settings",
-            label: "تنظیمات",
-            permission: "academy.manage",
-          },
-        ],
-      },
-      {
-        href: "/admin/challenges",
-        label: "چالش‌های گروهی",
-        icon: "exams",
-        enabled: true,
-        permission: "challenges.view",
-        children: [
-          {
-            href: "/admin/challenges",
-            label: "داشبورد کمپین",
-            permission: "challenges.view",
-          },
-          {
-            href: "/admin/challenges/new",
-            label: "کمپین جدید",
-            permission: "challenges.manage",
           },
         ],
       },
@@ -720,12 +674,13 @@ export const dashboardQuickActions: readonly AdminQuickActionItem[] = [
   },
   {
     label: "ثبت متقاضی از پنل",
-    description: "پس از اتصال CRM و احراز هویت فعال می‌شود",
-    enabled: false,
+    description: "ثبت یک متقاضی جدید از داخل پنل",
+    href: "/admin/leads/new",
+    enabled: true,
   },
   {
     label: "برنامه پیگیری مشاوره",
-    description: "در نقشه توسعه — پس از فعال‌سازی گردش‌کار CRM",
+    description: "میانبر پیگیری روزانه هنوز به این کارت وصل نشده است",
     enabled: false,
   },
   {
@@ -765,17 +720,17 @@ export const platformReadiness: ReadonlyArray<{
   },
   {
     label: "احراز هویت",
-    status: "در نقشه توسعه",
+    status: ADMIN_ROADMAP_BADGE,
     tone: "planned",
   },
   {
     label: "فرم پیش‌ثبت‌نام واقعی",
-    status: "در نقشه توسعه",
+    status: ADMIN_ROADMAP_BADGE,
     tone: "planned",
   },
   {
     label: "CRM داده‌محور",
-    status: "در نقشه توسعه",
+    status: ADMIN_ROADMAP_BADGE,
     tone: "planned",
   },
 ];
@@ -784,24 +739,24 @@ export const recentActivityEmpty = {
   title: "آخرین فعالیت‌ها",
   message: "هنوز فعالیت عملیاتی ثبت نشده است.",
   description:
-    "پس از فعال شدن ورود مدیر و اتصال CRM، تغییر وضعیت‌ها و پیگیری‌ها در این بخش ثبت خواهند شد.",
+    "تغییر وضعیت‌ها و پیگیری‌ها پس از ثبت فعالیت در این بخش دیده می‌شوند.",
 } as const;
 
 export const todayTasksEmpty = {
   title: "پیگیری‌های امروز",
   message: "موردی برای پیگیری امروز وجود ندارد.",
   description:
-    "پس از فعال‌سازی گردش‌کار CRM، وظایف روزانه بر اساس وضعیت متقاضیان و جلسات مشاوره در این بخش نمایش داده می‌شوند.",
+    "وظایف روزانه بر اساس وضعیت متقاضیان و جلسات مشاوره در این بخش نمایش داده می‌شوند.",
 } as const;
 
 export const systemEnvironment = {
   title: "وضعیت سامانه",
   items: [
-    { label: "محیط فعلی", value: "پیش‌نمایش توسعه" },
+    { label: "محیط فعلی", value: "پنل مدیریت" },
     { label: "رابط عمومی", value: "آماده" },
-    { label: "رابط مدیریت", value: "آماده برای اتصال" },
-    { label: "پایگاه داده عملیاتی", value: "متصل نیست" },
-    { label: "نسخه", value: "نسخه توسعه" },
+    { label: "رابط مدیریت", value: "آماده" },
+    { label: "پایگاه داده عملیاتی", value: "متصل" },
+    { label: "نسخه", value: "جاری" },
   ],
 } as const;
 
@@ -863,12 +818,6 @@ export const leadDetailUnavailable = {
 
 export const adminHeaderCopy = {
   panelLabel: "پنل مدیریت",
-  previewLabel: "پیش‌نمایش توسعه",
-  systemStatus:
-    "اتصال عملیاتی پس از راه‌اندازی PostgreSQL و احراز هویت",
-  searchLabel: "جستجوی سامانه",
-  searchPlaceholder: "جستجو در سامانه — پیش‌نمایش (غیرفعال)",
-  userPlaceholder: "کاربر مدیر پس از ورود نمایش داده می‌شود",
 } as const;
 
 export function getAdminPageContext(pathname: string): {

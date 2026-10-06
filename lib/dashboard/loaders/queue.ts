@@ -26,6 +26,12 @@ async function queueSummary(
       dueAt: item.dueAt,
       slaState: item.slaState,
       ownerUserId: item.ownerUserId,
+      displayName:
+        typeof item.metadata.displayName === "string"
+          ? item.metadata.displayName
+          : null,
+      leadId:
+        typeof item.metadata.leadId === "string" ? item.metadata.leadId : null,
     })),
   };
 }

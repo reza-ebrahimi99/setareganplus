@@ -41,7 +41,7 @@ export default async function AdminCommerceReportsPage() {
   ]);
 
   const catalog = [
-    { label: "کل BookSku", value: skuCount },
+    { label: "کل کتاب‌ها", value: skuCount },
     { label: "نمایان در استاربوک", value: visibleCount },
     { label: "ویژه خانه", value: featuredCount },
     { label: "موجودی کم", value: lowStock },
@@ -51,7 +51,7 @@ export default async function AdminCommerceReportsPage() {
     <>
       <AdminPageHeader
         title="گزارش فروشگاه"
-        description="فروش و موجودی از همان سفارش‌ها و BookSku موجود — بدون انبار موازی"
+        description="فروش و موجودی از همان سفارش‌ها و کتاب‌های موجود — بدون انبار موازی"
         breadcrumbs={adminBreadcrumbs.commerceReports}
         compact
       />

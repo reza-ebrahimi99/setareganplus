@@ -246,7 +246,7 @@ export function CounselorStudentCaseTabs({
         ) : null}
         {tab === "journey" && !journey18 ? (
           <section className="cos-panel">
-            <p className="cos-empty">پرونده V2 برای کنترل مرحله‌ای یافت نشد.</p>
+            <p className="cos-empty">پرونده هدایت تحصیلی برای کنترل مرحله‌ای یافت نشد.</p>
           </section>
         ) : null}
 

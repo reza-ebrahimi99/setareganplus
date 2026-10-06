@@ -32,7 +32,7 @@ export default async function AdminCommerceCategoriesPage({ searchParams }: Page
     <>
       <AdminPageHeader
         title="کالکشن‌ها"
-        description="دسته‌بندی فروشگاهی روی همان BookSku — بدون کاتالوگ دوم"
+        description="دسته‌بندی فروشگاهی روی همان کاتالوگ کتاب — بدون کاتالوگ دوم"
         breadcrumbs={adminBreadcrumbs.commerceCategories}
         compact
       />
