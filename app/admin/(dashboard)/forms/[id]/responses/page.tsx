@@ -54,7 +54,6 @@ export default async function AdminFormResponsesPage({
         <AdminPageHeader
           title="پاسخ‌های فرم"
           description="مدیریت پاسخ‌های ثبت‌شده"
-          showNotice
           compact
         />
         <div
@@ -88,7 +87,6 @@ export default async function AdminFormResponsesPage({
           { label: form.title, href: `/admin/forms/${form.id}` },
           { label: "پاسخ‌ها" },
         ]}
-        showNotice
         compact
       />
 

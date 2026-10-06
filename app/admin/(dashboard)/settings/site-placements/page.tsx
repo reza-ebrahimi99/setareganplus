@@ -21,7 +21,6 @@ export default async function AdminSitePlacementsPage() {
           title="جایگاه‌های سایت"
           description="اتصال فرم و رزرو به صفحات عمومی"
           breadcrumbs={[...adminBreadcrumbs.sitePlacements]}
-          showNotice
           compact
         />
         <div
@@ -42,7 +41,6 @@ export default async function AdminSitePlacementsPage() {
         title="جایگاه‌های سایت"
         description="انتخاب فرم‌ها و خدمت‌های رزرو برای صفحات پیش‌ثبت‌نام و مشاوره — بدون نیاز به ویرایش سرور"
         breadcrumbs={[...adminBreadcrumbs.sitePlacements]}
-        showNotice
         compact
       />
 

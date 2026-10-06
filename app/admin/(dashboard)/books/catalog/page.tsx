@@ -60,7 +60,7 @@ export default async function BookCatalogPage({ searchParams }: PageProps) {
     <div>
       <AdminPageHeader
         title="کاتالوگ کتاب"
-        description="کاتالوگ داده اصلی است، نه موجودی. تعداد فقط در فاز انبار مشخص می‌شود."
+        description="این صفحه کاتالوگ است، نه موجودی انبار."
         breadcrumbs={adminBreadcrumbs.booksCatalog}
       />
 

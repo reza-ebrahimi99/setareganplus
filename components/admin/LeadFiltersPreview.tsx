@@ -1,4 +1,4 @@
-import { leadStatusFilterPreview } from "@/content/admin";
+import { ADMIN_ROADMAP_BADGE, leadStatusFilterPreview } from "@/content/admin";
 import { LeadStatusBadge } from "./LeadStatusBadge";
 
 export function LeadFiltersPreview() {
@@ -68,7 +68,7 @@ export function LeadFiltersPreview() {
       <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
         <LeadStatusBadge label="فیلترها غیرفعال" tone="neutral" />
         <span className="text-xs text-muted">
-          خروجی، اختصاص و تغییر وضعیت گروهی — در نقشه توسعه
+          خروجی، اختصاص و تغییر وضعیت گروهی — {ADMIN_ROADMAP_BADGE}
         </span>
       </div>
     </div>

@@ -44,24 +44,6 @@ export function AdminHeader({
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
-          <div>
-            <label
-              htmlFor="admin-global-search"
-              className="mb-1.5 block text-xs font-medium text-muted"
-            >
-              {adminHeaderCopy.searchLabel}
-            </label>
-            <input
-              id="admin-global-search"
-              type="search"
-              disabled
-              aria-disabled="true"
-              placeholder={adminHeaderCopy.searchPlaceholder}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-muted md:max-w-md"
-            />
-          </div>
-        </div>
       </div>
     </header>
   );

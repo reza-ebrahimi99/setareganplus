@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 const links = [
   {
     href: "/admin/commerce/products",
-    title: "کاتالوگ BookSku",
+    title: "کاتالوگ کتاب",
     description: "همان کتاب واحد استاربوک؛ ویژه، تصویر، موجودی",
   },
   {
@@ -41,7 +41,7 @@ const links = [
   {
     href: "/admin/books/catalog/import",
     title: "ورود اکسل",
-    description: "بالک کاتالوگ روی BookSku",
+    description: "ورود گروهی کاتالوگ کتاب",
   },
   {
     href: "/admin/commerce/payments",
@@ -61,7 +61,7 @@ const links = [
   {
     href: "/admin/commerce/seo",
     title: "سئو",
-    description: "متای BookSku برای گوگل",
+    description: "عنوان و توضیح متا روی همان کتاب",
   },
   {
     href: "/admin/commerce/coupons",
@@ -106,7 +106,7 @@ export default async function AdminCommerceHomePage() {
     <>
       <AdminPageHeader
         title="استاربوک"
-        description="مدیریت فروشگاه عمومی روی همان BookSku واحد — بدون کاتالوگ دوم"
+        description="مدیریت فروشگاه عمومی روی همان کاتالوگ کتاب — بدون کاتالوگ دوم"
         breadcrumbs={adminBreadcrumbs.commerce}
         compact
       />

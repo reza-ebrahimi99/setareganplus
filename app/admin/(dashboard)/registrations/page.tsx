@@ -12,6 +12,7 @@ import {
   parseRegistrationListFilters,
 } from "@/lib/registration/admin-list";
 import { listRegistrationCatalogs } from "@/lib/registration/catalog-registry";
+import { PRODUCT_TYPE_LABELS } from "@/lib/registration/flows/constants";
 import {
   REGISTRATION_PAYMENT_LABELS,
   REGISTRATION_STATUS_LABELS,
@@ -194,7 +195,7 @@ export default async function AdminRegistrationsPage({
             <option value="">همه</option>
             {Object.values(RegistrationProductType).map((value) => (
               <option key={value} value={value}>
-                {value}
+                {PRODUCT_TYPE_LABELS[value]}
               </option>
             ))}
           </select>

@@ -26,7 +26,7 @@ export default async function AdminCommerceMerchPage() {
     <>
       <AdminPageHeader
         title="استودیو ویترین"
-        description="بنر خانه، کتاب ویژه و کمپین‌ها — همه روی BookSku و CommerceCategory"
+        description="بنر خانه، کتاب ویژه و کمپین‌ها — همه روی کتاب و دسته‌بندی فروشگاه"
         breadcrumbs={adminBreadcrumbs.commerceMerch}
         compact
       />

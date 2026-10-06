@@ -7,6 +7,7 @@ import { LeadOwnerBadge } from "@/components/admin/crm/LeadOwnerBadge";
 import { LeadSmsAction } from "@/components/admin/crm/LeadSmsAction";
 import { LeadStageControl } from "@/components/admin/crm/LeadStageControl";
 import { adminBreadcrumbs } from "@/content/admin";
+import { leadSourceLabel } from "@/lib/admin/labels";
 import { loadCrmPipelineBoard } from "@/lib/crm/load-crm-board";
 import { toPersianDigits } from "@/lib/persian";
 import { LeadScoreBand, LeadSourceType } from "@/generated/prisma/enums";
@@ -194,7 +195,7 @@ export default async function AdminCrmBoardPage({
                         ) : null}
                       </div>
                       <p className="mt-2 text-[11px] text-muted">
-                        منبع: {lead.source}
+                        منبع: {leadSourceLabel(lead.source)}
                         {lead.nextFollowUpLabel ? ` · پیگیری: ${lead.nextFollowUpLabel}` : ""}
                         {lead.lastActivityLabel ? ` · فعالیت: ${lead.lastActivityLabel}` : ""}
                       </p>

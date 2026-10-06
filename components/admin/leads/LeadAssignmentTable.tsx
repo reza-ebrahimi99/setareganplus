@@ -9,6 +9,7 @@ import {
 } from "@/app/admin/(dashboard)/leads/actions";
 import { LeadOwnerBadge } from "@/components/admin/crm/LeadOwnerBadge";
 import { LeadOwnerSelect } from "@/components/admin/crm/LeadOwnerSelect";
+import { leadSourceLabel, scoreBandLabel } from "@/lib/admin/labels";
 import type { LeadListFilters } from "@/lib/crm/lead-list-filters";
 import { toPersianDigits } from "@/lib/persian";
 
@@ -236,12 +237,12 @@ export function LeadAssignmentTable({
                 </td>
                 <td className="px-3 py-2">{lead.stageName ?? "—"}</td>
                 <td className="px-3 py-2">
-                  {toPersianDigits(lead.score)} · {lead.scoreBand}
+                  {toPersianDigits(lead.score)} · {scoreBandLabel(lead.scoreBand)}
                 </td>
                 <td className="px-3 py-2">
                   <LeadOwnerBadge ownerName={lead.ownerName} />
                 </td>
-                <td className="px-3 py-2">{lead.source}</td>
+                <td className="px-3 py-2">{leadSourceLabel(lead.source)}</td>
               </tr>
             ))}
             {rows.length === 0 ? (

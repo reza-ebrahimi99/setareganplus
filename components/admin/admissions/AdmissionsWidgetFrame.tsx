@@ -65,12 +65,6 @@ export function AdmissionsWidgetFrame({
         >
           {widget.title}
         </h2>
-        <span
-          className="shrink-0 rounded-md border border-border/80 bg-background/60 px-2 py-0.5 text-[10px] font-medium tracking-wide text-muted"
-          dir="ltr"
-        >
-          {widget.dataSource}
-        </span>
       </div>
 
       {message ? (

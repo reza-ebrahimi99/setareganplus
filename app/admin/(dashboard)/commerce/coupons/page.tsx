@@ -16,7 +16,7 @@ export default async function AdminCommerceCouponsPage() {
     <>
       <AdminPageHeader
         title="کوپن‌ها"
-        description="کد STAR7 فعلاً نمایشی است و به CommerceOrder.discountRials وصل نشده تا درگاه تک‌کتاب نشکند."
+        description="کد STAR7 فعلاً نمایشی است و هنوز روی مبلغ تخفیف سفارش اعمال نمی‌شود."
         breadcrumbs={adminBreadcrumbs.commerceCoupons}
         compact
       />
@@ -26,7 +26,7 @@ export default async function AdminCommerceCouponsPage() {
           STAR7
         </h2>
         <p className="mt-3 text-sm leading-7 text-muted">
-          ۷٪ تخفیف نمایشی در سبد دانش‌آموز. پرداخت واقعی همان قیمت BookSkuPrice است.
+          ۷٪ تخفیف نمایشی در سبد دانش‌آموز. پرداخت واقعی همان قیمت فروش کتاب است.
         </p>
       </article>
     </>

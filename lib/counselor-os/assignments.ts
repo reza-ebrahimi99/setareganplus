@@ -165,7 +165,7 @@ export async function assignStudentToCounselor(params: {
     select: { id: true, fullName: true },
   });
   if (!student) {
-    throw new Error("دانش‌آموز در مسیر هدایت تحصیلی V2 یافت نشد.");
+    throw new Error("دانش‌آموز در مسیر هدایت تحصیلی یافت نشد.");
   }
 
   const counselor = await prisma.organizationMembership.findFirst({
