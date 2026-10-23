@@ -1,0 +1,29 @@
+# deps / build output
+node_modules/
+.next/
+.next-build/
+.next.prev/
+out/
+generated/
+*.tsbuildinfo
+next-env.d.ts
+
+# env & secrets
+.env
+.env.*
+!.env.example
+.admin-dev-credentials
+*.pem
+*.key
+
+# runtime data (uploads incl. private form files)
+storage/
+
+# misc
+.DS_Store
+npm-debug.log*
+screenshots/*.tmp
+*.dump
+
+# screenshots stay on the dev box (keeps the server clone small)
+screenshots/

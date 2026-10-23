@@ -1,0 +1,920 @@
+{
+ "team": [
+  {
+   "name": "رضا ابراهیمی",
+   "roles": [
+    "مدیریت موسسه",
+    "مدرس ریاضی"
+   ],
+   "education": null,
+   "department": "مدیریت مؤسسه",
+   "bio": [
+    "فارغ التحصیل دانشگاه صنعتی امیرکبیر",
+    "رتبه 451 کنکور سراسری",
+    "مسئول نمایندگی قلم چی",
+    "مشاور تحصیلی به مدت 13 سال",
+    "مدرس درس ریاضی کنکور در موسسات برتر کشور"
+   ],
+   "photo": "media__team__618cb232d41e4a2209ff593a5fd9c22d-960.webp"
+  },
+  {
+   "name": "معصومه خلیلی نسب",
+   "roles": [
+    "مدیر ارشد موسسه ستارگان"
+   ],
+   "education": "فارغ التحصیل دانشگاه علامه طباطبایی",
+   "department": "مدیران واحدها",
+   "bio": [
+    "فارغ التحصیل دانشگاه علامه طباطبایی تهران",
+    "مشاور تحصیلی به مدت 7 سال",
+    "مدرس زبان",
+    "مدیر ارشد موسسه ستارگان"
+   ],
+   "photo": "media__team__e64c064ba4e6879e0c5bc2912732f2e6-960.webp"
+  },
+  {
+   "name": "مهسا ابراهیمی",
+   "roles": [
+    "مدیر ارشد انفورماتیک"
+   ],
+   "education": "فارغ التحصیل مهندسی کامپیوتر دانشگاه رجایی",
+   "department": "مدیران واحدها",
+   "bio": [
+    "فارغ التحصیل مهندسی کامپیوتر دانشگاه شهید رجایی",
+    "رتبه 375 کنکور سراسری",
+    "مشاور تحصیلی",
+    "مدرس IT",
+    "مدرس فیزیک کنکور"
+   ],
+   "photo": "media__team__e61207f5941d42ed2b102b349db07946-960.webp"
+  },
+  {
+   "name": "فراز ابراهیمی",
+   "roles": [
+    "مدیر ارشد علمی",
+    "مشاور تحصیلی ارشد",
+    "مدرس شیمی"
+   ],
+   "education": "فارغ التحصیل داروسازی دانشگاه شهید بهشتی",
+   "department": "مدیران واحدها",
+   "bio": [
+    "فارغ التحصیل داروسازی دانشگاه شهید بهشتی",
+    "مشاور تحصیلی رتبه های برتر کنکور",
+    "مدرس درس شیمی در موسسات برتر کشور",
+    "طراح سوالات آزمون های آزمایشی"
+   ],
+   "photo": "media__team__3f5113bf594c7582a63cf36a907fc764-960.webp"
+  },
+  {
+   "name": "توحید افشارپور",
+   "roles": [
+    "مدیر دبستان ستارگان آینده"
+   ],
+   "education": "فارغ التحصیل کارشناسی ارشد رشته روانشناسی",
+   "department": "مدیران واحدها",
+   "bio": [
+    "فارغ التحصیل کارشناسی ارشد رشته روانشناسی",
+    "مدرس دوره های اختلالات یادگیری",
+    "مشاور تحصیلی"
+   ],
+   "photo": "media__team__942eb39021115d85efbaf908c048bf19-960.webp"
+  },
+  {
+   "name": "آیدا صمدزاده",
+   "roles": [
+    "کارشناسی ارشد مدیریت"
+   ],
+   "education": "کارشناسی ارشد مدیریت",
+   "department": "مدیران واحدها",
+   "bio": [],
+   "photo": "media__team__1d5cd6fbce8a25226d479125cd2d1f6d-960.webp"
+  },
+  {
+   "name": "طلیعه دیندار",
+   "roles": [
+    "مشاور تحصیلی"
+   ],
+   "education": null,
+   "department": "مشاوران",
+   "bio": [
+    "دانشجوی ژنتیک دانشگاه ایران"
+   ],
+   "photo": "media__team__45f523a64d68e51450b829465eb0ee07-960.webp"
+  },
+  {
+   "name": "آرمان فرشاد",
+   "roles": [
+    "مدرس زیست"
+   ],
+   "education": null,
+   "department": "مدرسان و همکاران آموزشی",
+   "bio": [
+    "پزشک عمومی",
+    "دکتری حرفه ای پزشکی دانشگاه تهران",
+    "مدرس زیست شناسی کنکور و پایه",
+    "پژوهشگر آموزشی و مولف جزوات تخصصی زیست",
+    "سابقه تدریس در مدارس و آموزشگاه های برتر کشور",
+    "طراحی آزمون های استاندارد",
+    "تولید متحوی آموزشی و کتاب های معتبر کمک آموزشی"
+   ],
+   "photo": "media__team__0fef94a56566365063dca4fab1876d9f-960.webp"
+  },
+  {
+   "name": "حجت عمویی",
+   "roles": [
+    "مدرس درس عربی"
+   ],
+   "education": "مدرس عربی",
+   "department": "مدرسان و همکاران آموزشی",
+   "bio": [
+    "کارشناسی ارشد مدیریت دانشگاه تهران",
+    "۱۸سال سابقه تدریس",
+    "مدارس دانشجو، دکترحسابی، حکمت، پروین اعتصامی،نمونه آرمیتا،نمونه شهیدی و ...",
+    "آموزشگاه های سرآمد،ذهن پویا، قلم چی شهرقدس، قلم چی مشیریه، قلم چی شهرری، ملاصدرا پاکدشت و...",
+    "شهرهای شیراز، بندرعباس، کرمان، ماهشهر، اراک، بیرجند و ...",
+    "همکاری با انتشارات کانون فرهنگی آموزش قلم چی، بیست، مهر و ماه"
+   ],
+   "photo": "media__team__5156a728a3601d9623019da0140bdf28-960.webp"
+  },
+  {
+   "name": "علیرضا علینقی",
+   "roles": [
+    "مدرس فیزیک"
+   ],
+   "education": null,
+   "department": "مدرسان و همکاران آموزشی",
+   "bio": [
+    "فارغ تحصیل رشته فیزیک دانشگاه شهید رجایی تهران",
+    "۱۵ سال سابقه تدریس",
+    "تدریس در مدارس و آموزشگاه های معتبر تهران و شهرستان ها",
+    "مولف سوالات آزمون های آزمایشی",
+    "آموزش با متدهای نوین و تکنیک‌های اختصاصی حل مسئله",
+    "ارتقای هم‌زمان مهارت‌های تشریحی و تستی دانش‌آموزان",
+    "بهره‌گیری از روش‌های نوین آموزشی، شبیه‌سازی و هوش مصنوعی"
+   ],
+   "photo": "media__team__d841a1ed84ad308f0b2137f7f138825b-960.webp"
+  },
+  {
+   "name": "مسیح آراسته",
+   "roles": [
+    "مدرس ادبیات"
+   ],
+   "education": null,
+   "department": "مدرسان و همکاران آموزشی",
+   "bio": [
+    "مدرس زبان و ادبیات فارسی پایه تا کنکور با 30 سال سابقه در مدارس و موسسات برتر کشور (مدارس تیزهوشان،نمونه دولتی ،شاهدو.. آموزشگاههای خصوصی مثل: قلم چی و..)"
+   ],
+   "photo": "media__team__03e66e909f61f74550fb99197c02b054-960.webp"
+  },
+  {
+   "name": "زینب احمدی",
+   "roles": [
+    "دبیر ریاضی"
+   ],
+   "education": "دبیر ریاضی",
+   "department": "آموزگاران و معلمان",
+   "bio": [
+    "فارغ التحصیل دانشگاه فرهنگیان"
+   ],
+   "photo": "media__team__8ef1137b0254bd37907072cd5039caad-960.webp"
+  },
+  {
+   "name": "علی پازوکی",
+   "roles": [
+    "مدرس ریاضی و زبان موسسه"
+   ],
+   "education": null,
+   "department": "آموزگاران و معلمان",
+   "bio": [],
+   "photo": "media__team__ad20641c6e7cf49636078d5b86ea48d0-960.webp"
+  },
+  {
+   "name": "نازیلا عبدی",
+   "roles": [
+    "مدرس ریاضی"
+   ],
+   "education": "مدرس ریاضی",
+   "department": "آموزگاران و معلمان",
+   "bio": [
+    "فارغ التحصیل دانشگاه فرهنگیان"
+   ],
+   "photo": "media__team__e8a3347be9727cb115030123ae1e1d32-960.webp"
+  },
+  {
+   "name": "زهرا جعفری",
+   "roles": [
+    "امور اداری و اجرایی"
+   ],
+   "education": null,
+   "department": "امور اداری و اجرایی",
+   "bio": [],
+   "photo": "media__team__664ca1aa53e5fe79fbeb6dbbd1bf5488-960.webp"
+  },
+  {
+   "name": "فاطمه مرادی",
+   "roles": [
+    "امور اداری و اجرایی"
+   ],
+   "education": null,
+   "department": "امور اداری و اجرایی",
+   "bio": [],
+   "photo": "media__team__126deeceb5402096855baf5156b24fc5-960.webp"
+  }
+ ],
+ "achievements": [
+  {
+   "category": "GIFTED",
+   "name": "سارینا گنجی",
+   "grade": "ششم",
+   "detail": "تیزهوشان فرزانگان قائمیه",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__83331d5fa5ad09baf3f135b3f2baa0c8-960.webp",
+   "slug": "achievement-msp91ihb"
+  },
+  {
+   "category": "GIFTED",
+   "name": "زهرا مرادی",
+   "grade": "نهم",
+   "detail": "تیزهوشان فرزانگان چهاردانگه رشته علوم تجربی",
+   "year": "۱۴۰۵-۱۴۰۶",
+   "featured": true,
+   "photo": "media__achievements__covers__c867618a4f2de2ee325dc7451a80af4b-960.webp",
+   "slug": "achievement-msoylba8"
+  },
+  {
+   "category": "GIFTED",
+   "name": "ساینا بدرلو",
+   "grade": "نهم",
+   "detail": "تیزهوشان فرزانگان ۵ منطقه ۱۸ تهران- رشته علوم تجربی",
+   "year": "۱۴۰۵-۱۴۰۶",
+   "featured": true,
+   "photo": "media__achievements__covers__362caa73ec6785afff8643086547cf0d-960.webp",
+   "slug": "5-18"
+  },
+  {
+   "category": "GIFTED",
+   "name": "امیرطاها یوسف زاده",
+   "grade": "نهم",
+   "detail": "تیزهوشان علامه حلّی رشته ریاضی فیزیک",
+   "year": "۱۴۰۵-۱۴۰۶",
+   "featured": true,
+   "photo": "media__achievements__covers__3f5e249a6e419c3935c1c40dc213fd3a-960.webp",
+   "slug": "achievement-msoyuaid"
+  },
+  {
+   "category": "GIFTED",
+   "name": "مهیا محمدی",
+   "grade": "نهم",
+   "detail": "نمونه دولتی ولایت/ ریاضی فیزیک",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__4f0642766289f3e890947123aac3733f-960.webp",
+   "slug": "achievement-msp96x9h"
+  },
+  {
+   "category": "GIFTED",
+   "name": "نرجس حسین پور",
+   "grade": "نهم",
+   "detail": "نمونه دولتی ولایت / علوم تجربی",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__60fe3f19297df3a53ae78984baf019eb-960.webp",
+   "slug": "achievement-msp980ct"
+  },
+  {
+   "category": "GIFTED",
+   "name": "زینب همتی",
+   "grade": "نهم",
+   "detail": "نمونه دولتی ولایت/ علوم انسانی",
+   "year": null,
+   "featured": true,
+   "photo": "media__achievements__covers__863c08c15ba79aa455d73fc4a6b3e5d0-960.webp",
+   "slug": "achievement-msp9jmx8"
+  },
+  {
+   "category": "GIFTED",
+   "name": "پریا حاج زاده",
+   "grade": "نهم",
+   "detail": "نمونه دولتی ولایت/ ریاضی فیزیک",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__64aab7f774e1124a4c81ccfa070af028-960.webp",
+   "slug": "achievement-msp9fptn"
+  },
+  {
+   "category": "GIFTED",
+   "name": "نازنین زهرا مهری نشان",
+   "grade": "نهم",
+   "detail": "نمونه دولتی ولایت/ علوم تجربی",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__f9393d341458191f9b387974b3bc94d8-960.webp",
+   "slug": "achievement-msp95t6k"
+  },
+  {
+   "category": "GIFTED",
+   "name": "نازنین فاطمه جلالی",
+   "grade": "نهم",
+   "detail": "نمونه دولتی ولایت/ علوم انسانی",
+   "year": null,
+   "featured": true,
+   "photo": "media__achievements__covers__a264b4b5191eb921244be3d0d32cf59a-960.webp",
+   "slug": "achievement-msp9ip9a"
+  },
+  {
+   "category": "GIFTED",
+   "name": "صبا سیرم",
+   "grade": "نهم",
+   "detail": null,
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__0ceb21cb956f9dee39882eb6ba5cb743-960.webp",
+   "slug": "achievement-msp9een5"
+  },
+  {
+   "category": "GIFTED",
+   "name": "کمیل نجفی",
+   "grade": "نهم",
+   "detail": null,
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__26a013758e85eb5258a5039391595b34-960.webp",
+   "slug": "achievement-msp9eyvc"
+  },
+  {
+   "category": "GIFTED",
+   "name": "اسرا نیک زاد",
+   "grade": "نهم",
+   "detail": null,
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__0485d3cd502e21745c242f1b6a96fe3f-960.webp",
+   "slug": "achievement-msp9ckz2"
+  },
+  {
+   "category": "GIFTED",
+   "name": "ستایش روحانی",
+   "grade": "نهم",
+   "detail": "نمونه دولتی ولایت/علوم انسانی",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__5dfbe4b466f41259d2db890f66673c56-960.webp",
+   "slug": "achievement-msp9byes"
+  },
+  {
+   "category": "GIFTED",
+   "name": "زهرا پرنلو",
+   "grade": "نهم",
+   "detail": "نمونه دولتی ولایت/ علوم تجربی",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__41fa889a9fdfb984e461035bf877447a-960.webp",
+   "slug": "achievement-msp9mj06"
+  },
+  {
+   "category": "GIFTED",
+   "name": "یگانه قلی پور",
+   "grade": "نهم",
+   "detail": "نمونه دولتی فاطمیه اسلامشهر/ علوم تجربی",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__69b20982a3a8ac411aa9d4be68c10502-960.webp",
+   "slug": "achievement-msp9hn7s"
+  },
+  {
+   "category": "GIFTED",
+   "name": "زهرا سادات جلالپور",
+   "grade": "نهم",
+   "detail": "نمونه دولتی ولایت/ علوم انسانی",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__4ad6dc44c6cb9a349a0eb3ca0d1c4863-960.webp",
+   "slug": "achievement-msp9klnd"
+  },
+  {
+   "category": "GIFTED",
+   "name": "سودا محمدیون",
+   "grade": "نهم",
+   "detail": "نمونه دولتی ولایت/ ریاضی فیزیک",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__536c41c6f3422811baca90f7f82951c9-960.webp",
+   "slug": "achievement-msp9lfl9"
+  },
+  {
+   "category": "KONKUR",
+   "name": "ندا افشارکیا",
+   "grade": "دوازدهم",
+   "detail": "پزشکي دانشگاه تهران",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__4d2e0cbb779c63406a295be0889db944-960.webp",
+   "slug": "achievement-mrxmmceb"
+  },
+  {
+   "category": "GIFTED",
+   "name": "محمدامین عبدالکریمی",
+   "grade": "نهم",
+   "detail": "تيزهوشان شهيدرجايي",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__f5c8fcc0a5ca89aefec14b4d041a95b9-960.webp",
+   "slug": "achievement-ms0m7aw6"
+  },
+  {
+   "category": "GIFTED",
+   "name": "رقیه عمران زاده",
+   "grade": "ششم",
+   "detail": "تيزهوشان فرزانگان ۱",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__627a0d5a687a87c79da39efb4d2c4f6a-960.webp",
+   "slug": "achievement-ms0m8vji"
+  },
+  {
+   "category": "KONKUR",
+   "name": "زهرا افشارکیا",
+   "grade": "دوازدهم",
+   "detail": "پرستاري دانشگاه علوم پزشکي تهران",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__21966a859ff5babc383cf1f49118e4b2-960.webp",
+   "slug": "achievement-mrxm257v"
+  },
+  {
+   "category": "KONKUR",
+   "name": "مهگل رمضان",
+   "grade": "دوازدهم",
+   "detail": "پرستاري دانشگاه شاهد - تهران",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__77dcc4dfed19fc80782e4a85b050fb99-960.webp",
+   "slug": "achievement-mrw8r964"
+  },
+  {
+   "category": "KONKUR",
+   "name": "زهرا بلقیسی",
+   "grade": "دوازدهم",
+   "detail": "حقوق دانشگاه شهید بهشتی-تهران",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": true,
+   "photo": "media__achievements__covers__5c3cc5ce519098ad80184ebf4d5a22e9-960.webp",
+   "slug": "achievement-ms0mejd4"
+  },
+  {
+   "category": "GIFTED",
+   "name": "احسان علی محمدی",
+   "grade": "نهم",
+   "detail": "نمونه دولتي شیخ کلینی",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__cef5c0bac2fdeec208312c197ca999d5-480.webp",
+   "slug": "achievement-ms0ly5rp"
+  },
+  {
+   "category": "GIFTED",
+   "name": "محمدطاها محمدی",
+   "grade": "نهم",
+   "detail": "نمونه دولتي شهدای علم و فناوری",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__cd1f7722b562d3b0505de583f038c43f-480.webp",
+   "slug": "achievement-ms0m2nmx"
+  },
+  {
+   "category": "GIFTED",
+   "name": "ستایش امیدی",
+   "grade": "نهم",
+   "detail": "نمونه دولتي ولایت",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__0e3610073ac5190bc87b74aaf0af3177-480.webp",
+   "slug": "achievement-ms0m3jta"
+  },
+  {
+   "category": "GIFTED",
+   "name": "هلیا احسانی",
+   "grade": "نهم",
+   "detail": "نمونه دولتي ولایت",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__4dbcc7269f7952fac7282e60314c9354-480.webp",
+   "slug": "achievement-ms0m4fa5"
+  },
+  {
+   "category": "GIFTED",
+   "name": "زهرا احدزاده",
+   "grade": "نهم",
+   "detail": "نمونه دولتي ولایت",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__44b6deac12afb144ff9dfe286a98583a-480.webp",
+   "slug": "achievement-ms0m5e0k"
+  },
+  {
+   "category": "GIFTED",
+   "name": "غزل حاج زاده",
+   "grade": "نهم",
+   "detail": "نمونه دولتي فاطمیه",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__640e0dc5c82574f0561c297d24a0f1d9-480.webp",
+   "slug": "achievement-ms0m68vw"
+  },
+  {
+   "category": "KONKUR",
+   "name": "ابوالفضل پیرلای",
+   "grade": "دوازدهم",
+   "detail": "آموزش زبان عربي پرديس شهيد مفتح",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__8cd4537b94e4378f2a3f3e532c85b946-480.webp",
+   "slug": "achievement-mrxn5d4f"
+  },
+  {
+   "category": "KONKUR",
+   "name": "مهدی صفرپور",
+   "grade": "دوازدهم",
+   "detail": "آموزش رياضي دانشگاه تربيت دبير شهيد رجايي_تهران",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__05240afdac6a4f8bf609832a6ad0edb1-480.webp",
+   "slug": "achievement-mrw2elg6"
+  },
+  {
+   "category": "KONKUR",
+   "name": "حدیثه عباسی",
+   "grade": "دوازدهم",
+   "detail": "مديريت امور بانکي دانشگاه خاتم - تهران",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__25ac14b2491f872e624d6d97d320cc44-480.webp",
+   "slug": "achievement-mrxn47i4"
+  },
+  {
+   "category": "KONKUR",
+   "name": "فاطمه واحدی",
+   "grade": "دوازدهم",
+   "detail": "آموزش الهيات پرديس زينبيه",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__c034ab09836cead392957addb9f81aec-480.webp",
+   "slug": "achievement-mrxlmusy"
+  },
+  {
+   "category": "KONKUR",
+   "name": "ابوالفضل دهقانی",
+   "grade": "دوازدهم",
+   "detail": "آموزش الهيات پرديس شهيد مفتح - شهرري",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__9559771a1a9b8066d54663a5caf36f50-480.webp",
+   "slug": "achievement-mrwbp8o1"
+  },
+  {
+   "category": "KONKUR",
+   "name": "حسین محمدی فرد",
+   "grade": "دوازدهم",
+   "detail": "مهندسي کامپيوتر دانشگاه سمنان",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__fd75619fbdeb0ce3040887b0c2fa24dd-480.webp",
+   "slug": "achievement-mrwblmyv"
+  },
+  {
+   "category": "KONKUR",
+   "name": "دیانا سادات حسینی",
+   "grade": "دوازدهم",
+   "detail": "آموزش ابتدايي پرديس زينبيه - پيشوا (ورامين)",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__35528312afd1350ebc6f2cb9b2ffdf47-480.webp",
+   "slug": "achievement-mrwbhpew"
+  },
+  {
+   "category": "KONKUR",
+   "name": "حنانه ایرانیان",
+   "grade": "دوازدهم",
+   "detail": "آموزش علوم اجتماعي پرديس نسيبه - تهران",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__dbe45cd0e3df886c4ce55d99eb03e59b-480.webp",
+   "slug": "achievement-mrwalvma"
+  },
+  {
+   "category": "KONKUR",
+   "name": "زینب حسین زاده",
+   "grade": "دوازدهم",
+   "detail": "حقوق دانشگاه ارشاد",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__071ee0a84bdb0e03cc9b38f2417dcdea-480.webp",
+   "slug": "achievement-mrwa19tu"
+  },
+  {
+   "category": "KONKUR",
+   "name": "محمداسماعیل برزه کار",
+   "grade": "دوازدهم",
+   "detail": "مهندسي نقشه برداري دانشگاه صنعتي اراك",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__2e51f84daf0bff9b443033ea144db142-480.webp",
+   "slug": "achievement-mrw9xr8r"
+  },
+  {
+   "category": "KONKUR",
+   "name": "ندا خلیلی",
+   "grade": "دوازدهم",
+   "detail": "مشاوره دانشگاه محقق اردبيلي - اردبيل",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__36b7a7c1dde62f18a85438a0ab88524a-480.webp",
+   "slug": "achievement-mrw9uyx4"
+  },
+  {
+   "category": "KONKUR",
+   "name": "مائده اسودی",
+   "grade": "دوازدهم",
+   "detail": "مهندسي وعلم مواد دانشگاه شهيد مدني آذربايجان - تبريز",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__8f309322ce59a1e4fc7a0554538b75d3-480.webp",
+   "slug": "achievement-mrw8klwn"
+  },
+  {
+   "category": "KONKUR",
+   "name": "فاطمه عبادی",
+   "grade": "دوازدهم",
+   "detail": "گردشگري دانشگاه تبريز",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__a3f3418ba26eb732ac56dc22ed4eb33c-480.webp",
+   "slug": "achievement-mrw8ibu4"
+  },
+  {
+   "category": "KONKUR",
+   "name": "سارا نیکی",
+   "grade": "دوازدهم",
+   "detail": "اقتصاد دانشگاه علم و فرهنگ - تهران",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__1c986692b7f57040cdcf81d5957ecdbe-480.webp",
+   "slug": "achievement-mrw83n6d"
+  },
+  {
+   "category": "KONKUR",
+   "name": "نرگس مرادی",
+   "grade": "دوازدهم",
+   "detail": "مديريت بازرگاني دانشگاه ارشاد",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__ad7a575b296b5cd4efcec3b278930974-480.webp",
+   "slug": "achievement-mrw819z2"
+  },
+  {
+   "category": "KONKUR",
+   "name": "سیده نگین حسینی",
+   "grade": "دوازدهم",
+   "detail": "زيست شناسي سلولي مولکولي دانشگاه دامغان",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__39dc97705ff16297bafa6afe895f5020-480.webp",
+   "slug": "achievement-mrw7y93t"
+  },
+  {
+   "category": "KONKUR",
+   "name": "لعيا جددي",
+   "grade": "دوازدهم",
+   "detail": "حقوق دانشگاه علامه طباطبايي",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__00d2b13a8dcc2cdb23bf0e4022ddae2d-480.webp",
+   "slug": "achievement-mrw7tpe3"
+  },
+  {
+   "category": "KONKUR",
+   "name": "زهرا بخشي دونيقي",
+   "grade": "دوازدهم",
+   "detail": "مديريت بازرگاني دانشگاه ارشاد",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__2d967c0b609b3a0ecb30014fbc73c193-480.webp",
+   "slug": "achievement-mrw4utnn"
+  },
+  {
+   "category": "KONKUR",
+   "name": "رویا میرزایی سنزیق",
+   "grade": "دوازدهم",
+   "detail": "زيست شناسي گياهي دانشگاه الزهرا(س) - تهران",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__033c0473c0452243db75cc0b14ef27b4-480.webp",
+   "slug": "achievement-mrw43qp2"
+  },
+  {
+   "category": "KONKUR",
+   "name": "فاطمه اسدي خاتونکي",
+   "grade": "دوازدهم",
+   "detail": "گردشگري دانشگاه تهران",
+   "year": "۱۴۰۴-۱۴۰۵",
+   "featured": false,
+   "photo": "media__achievements__covers__b7fe9dcf045cfa7c6a2510949f748a90-480.webp",
+   "slug": "achievement-mrw3u3y3"
+  }
+ ],
+ "albums": [
+  {
+   "slug": "album-mrxkm70v",
+   "title": "جلسات مشاوره ای توضیح برنامه راهبردی_تابستان۱۴۰۵",
+   "photos": [
+    {
+     "file": "media__library__51a85b1aa361cdd62fa10dc9d542d0a3.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان۱۴۰۵"
+    },
+    {
+     "file": "media__library__943ccfe34fb39e05cfa1323fda2de12c.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان۱۴۰۵"
+    },
+    {
+     "file": "media__library__3f33b01ff0d4242da5bdded4d13f145a.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان۱۴۰۵"
+    },
+    {
+     "file": "media__library__2b93704ea82786f59cf797c234a714c8.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان۱۴۰۵"
+    },
+    {
+     "file": "media__library__083c8bed4f7e0ed5eaf98bbcd74cb7b3.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان۱۴۰۵"
+    },
+    {
+     "file": "media__library__b021aad3d2171dfc01f9a062e782da63.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان۱۴۰۵"
+    },
+    {
+     "file": "media__library__1ba1b86f4d859d08e219ece13d114da0.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان۱۴۰۵"
+    },
+    {
+     "file": "media__library__f6adaafdd8e230fba660610d87f0d8de.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان۱۴۰۵"
+    },
+    {
+     "file": "media__library__e57957d8cb2e621d3d252bd8f9884f27.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان۱۴۰۵"
+    },
+    {
+     "file": "media__library__99af7dd7b7f59029255a32104cef28f3.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان۱۴۰۵"
+    },
+    {
+     "file": "media__library__9f7f15f235fee2d27dc19ae28140ea05.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان۱۴۰۵"
+    },
+    {
+     "file": "media__library__e7e319d485b0507cd1c67d475cf9e7e6.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان۱۴۰۵"
+    },
+    {
+     "file": "media__library__a723b530fd0cf43ead16602f07d656cb.jpg",
+     "caption": "کاور جلسه مشاروه"
+    },
+    {
+     "file": "media__library__802a4b80c1a04757ce65a495caad38d0.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان ۱۴۰۵"
+    },
+    {
+     "file": "media__library__ed2cd36630c0e02cee44aecccc85fe52.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان ۱۴۰۵"
+    },
+    {
+     "file": "media__library__9e102ccc54187859fd3abf12e0bb7b28.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان ۱۴۰۵"
+    },
+    {
+     "file": "media__library__ed568937723eba4110cf950509868145.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان ۱۴۰۵"
+    },
+    {
+     "file": "media__library__5b1177a7d8b6f28c6c8b0e99b853712b.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان ۱۴۰۵"
+    },
+    {
+     "file": "media__library__81fea79c6cfa5dab68ea362f08f3e1fa.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان ۱۴۰۵"
+    },
+    {
+     "file": "media__library__f59c8d08839a3593649db2921cbaaaf2.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان ۱۴۰۵"
+    },
+    {
+     "file": "media__library__66527335f211aa723127fc6e4de7e45e.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان ۱۴۰۵"
+    },
+    {
+     "file": "media__library__c52108faf10b2100f28dfc0b7f148867.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان ۱۴۰۵"
+    },
+    {
+     "file": "media__library__df958c8949f58c348a7a351ee82b2768.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان ۱۴۰۵"
+    },
+    {
+     "file": "media__library__e040eff5c907a305725ce1ebbcfcfa98.jpg",
+     "caption": "جلسه توضیح برنامه راهبردی قلم چی_ تابستان ۱۴۰۵"
+    },
+    {
+     "file": "media__library__316d953b1808b9db2d8ea2e4e49ec098.jpg",
+     "caption": "برگزاری جلسات توضیح برنامه راهبردی قلم چی"
+    },
+    {
+     "file": "media__library__b8b394818ae1fa1b3fbcbaeff7ca5335.jpg",
+     "caption": "برگزاری جلسات توضیح برنامه راهبردی قلم چی"
+    },
+    {
+     "file": "media__library__63760aaac7ad69bd7729c498a98f153f.jpg",
+     "caption": "برگزاری جلسات توضیح برنامه راهبردی قلم چی"
+    },
+    {
+     "file": "media__library__b6fcd042d92d3d2d37210ec7764a5882.jpg",
+     "caption": "برگزاری جلسات توضیح برنامه راهبردی قلم چی"
+    },
+    {
+     "file": "media__library__d744f3a2bf0a0401d6f93573682b42ea.jpg",
+     "caption": "برگزاری جلسات توضیح برنامه راهبردی قلم چی"
+    },
+    {
+     "file": "media__library__8e8242d13a684acb519302b16756bd55.jpg",
+     "caption": "برگزاری جلسات توضیح برنامه راهبردی قلم چی"
+    },
+    {
+     "file": "media__library__eeba65a1cf762ca0808c042a0c787122.jpg",
+     "caption": "برگزاری جلسات توضیح برنامه راهبردی قلم چی"
+    },
+    {
+     "file": "media__library__aa704ee9d69fce50d2c26ed3cd608bff.jpg",
+     "caption": "برگزاری جلسات توضیح برنامه راهبردی قلم چی"
+    },
+    {
+     "file": "media__library__7a280212f2c57f751e79dabb4f96aa96.jpg",
+     "caption": "برگزاری جلسات توضیح برنامه راهبردی قلم چی"
+    },
+    {
+     "file": "media__library__369dfa73d677e9b9fea686af557dd8e4.jpg",
+     "caption": "برگزاری جلسات توضیح برنامه راهبردی قلم چی"
+    },
+    {
+     "file": "media__library__693dd8a569e205255cec95dc6166a384.jpg",
+     "caption": "برگزاری جلسات توضیح برنامه راهبردی قلم چی"
+    },
+    {
+     "file": "media__library__c1a9b35b766aee41f21dd5e0700d6206.jpg",
+     "caption": "برگزاری جلسات توضیح برنامه راهبردی قلم چی"
+    }
+   ]
+  },
+  {
+   "slug": "azmon02051405",
+   "title": "آزمون 2 مرداد قلم چی",
+   "photos": [
+    {
+     "file": "media__library__f93afd0665c6b9518b5e91162768c9c0.jpg",
+     "caption": "آزمون 2 مرداد قلم چی"
+    },
+    {
+     "file": "media__library__e000bb87ad5c12a430d9b327095a2d3e.jpg",
+     "caption": "آزمون 2 مرداد قلم چی"
+    },
+    {
+     "file": "media__library__ec9dc6eb85f8fc8f43f24e3415a0c60e.jpg",
+     "caption": "آزمون 2 مرداد قلم چی"
+    },
+    {
+     "file": "media__library__7836a25d94ff0195bedf16e1402b2d58.jpg",
+     "caption": "آزمون 2 مرداد قلم چی"
+    },
+    {
+     "file": "media__library__be60d8b9235f71871204d74cdb006270.jpg",
+     "caption": "آزمون 2 مرداد قلم چی"
+    },
+    {
+     "file": "media__library__bb0d89796c7803ddc592eee0d763da1b.jpg",
+     "caption": "آزمون 2 مرداد قلم چی"
+    },
+    {
+     "file": "media__library__1496982a959e428c3350cee9514460db.jpg",
+     "caption": "جلسات تحلیل آزمون قلم چی 2 مرداد"
+    },
+    {
+     "file": "media__library__4f3ca6b7bb853aeb50c79b4757eca205.jpg",
+     "caption": "جلسات تحلیل آزمون قلم چی 2 مرداد"
+    },
+    {
+     "file": "media__library__b7b69ed5c6d8a49706bf5d88d8577522.jpg",
+     "caption": "جلسات تحلیل آزمون قلم چی 2 مرداد"
+    }
+   ]
+  }
+ ]
+}

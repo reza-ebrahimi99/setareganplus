@@ -1,0 +1,157 @@
+// Setaregan Plus (lean) — public site + small admin.
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Key/value site settings (contact, hours, social, stats, home copy, about copy).
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+/// The two centers: آموزشگاه تقویتی و کنکور ستارگان / نمایندگی قلم‌چی نسیم‌شهر
+model Center {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  name       String
+  shortName  String
+  tagline    String?
+  intro      String?  @db.Text
+  /// Free text; blank line = new paragraph
+  body       String?  @db.Text
+  /// [{title, text}]
+  highlights Json     @default("[]")
+  /// [{name, address, mapUrl}]
+  branches   Json     @default("[]")
+  heroImage  String?
+  /// Slug of a builder form embedded on the center page
+  formSlug   String?
+  sortOrder  Int      @default(0)
+  published  Boolean  @default(true)
+  updatedAt  DateTime @updatedAt
+}
+
+model TeamMember {
+  id         String   @id @default(cuid())
+  name       String
+  /// e.g. "مدیر ارشد علمی · مدرس شیمی"
+  role       String
+  education  String?
+  department String?
+  /// One item per line
+  bio        String?  @db.Text
+  photo      String?
+  featured   Boolean  @default(false)
+  published  Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+}
+
+enum AchievementCategory {
+  KONKUR
+  GIFTED
+  OTHER
+}
+
+model Achievement {
+  id        String              @id @default(cuid())
+  name      String
+  category  AchievementCategory @default(GIFTED)
+  grade     String?
+  /// School / major / university
+  detail    String?
+  /// e.g. ۱۴۰۴-۱۴۰۵
+  year      String?
+  photo     String?
+  featured  Boolean             @default(false)
+  published Boolean             @default(true)
+  sortOrder Int                 @default(0)
+  createdAt DateTime            @default(now())
+}
+
+model GalleryAlbum {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  title       String
+  description String?        @db.Text
+  center      String?
+  cover       String?
+  published   Boolean        @default(true)
+  sortOrder   Int            @default(0)
+  createdAt   DateTime       @default(now())
+  photos      GalleryPhoto[]
+}
+
+model GalleryPhoto {
+  id        String       @id @default(cuid())
+  albumId   String
+  album     GalleryAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  path      String
+  caption   String?
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+
+  @@index([albumId, sortOrder])
+}
+
+model Faq {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String   @db.Text
+  published Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+enum FormStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+/// Form builder. `fields` is an ordered JSON array of FieldDef (see lib/forms/types.ts).
+model Form {
+  id             String       @id @default(cuid())
+  slug           String       @unique
+  title          String
+  description    String?      @db.Text
+  fields         Json         @default("[]")
+  status         FormStatus   @default(DRAFT)
+  submitLabel    String       @default("ثبت درخواست")
+  successMessage String       @default("درخواست شما ثبت شد. همکاران ما به‌زودی با شما تماس می‌گیرند.")
+  /// Built-in forms (e.g. pre-registration) cannot be deleted
+  isSystem       Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  submissions    Submission[]
+}
+
+enum SubmissionStatus {
+  NEW
+  CONTACTED
+  ENROLLED
+  ARCHIVED
+}
+
+model Submission {
+  id        String           @id @default(cuid())
+  formId    String
+  form      Form             @relation(fields: [formId], references: [id], onDelete: Cascade)
+  /// { [fieldId]: value }
+  data      Json
+  /// Snapshot of field labels at submit time { [fieldId]: label }
+  labels    Json             @default("{}")
+  status    SubmissionStatus @default(NEW)
+  note      String?          @db.Text
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([formId, createdAt])
+  @@index([status])
+}

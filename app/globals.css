@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+:root {
+  --navy: #0b1f3a;
+  --navy-2: #13305a;
+  --gold: #e9a80b;
+  --gold-ink: #7a5600;
+  --ivory: #faf8f3;
+  --paper: #ffffff;
+  --ink: #1b2433;
+  --muted: #5b6577;
+  --line: #e6e1d6;
+  --edu: #2c6cb0;
+  --edu-soft: #eaf1f9;
+  --gc: #c8363d;
+  --gc-soft: #fbecec;
+}
+
+@theme inline {
+  --color-navy: var(--navy);
+  --color-navy-2: var(--navy-2);
+  --color-gold: var(--gold);
+  --color-gold-ink: var(--gold-ink);
+  --color-ivory: var(--ivory);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-edu: var(--edu);
+  --color-edu-soft: var(--edu-soft);
+  --color-gc: var(--gc);
+  --color-gc-soft: var(--gc-soft);
+  --font-sans: var(--font-vazir), Tahoma, sans-serif;
+  --radius-card: 1.25rem;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+body {
+  background: var(--ivory);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01";
+  line-height: 1.85;
+  -webkit-font-smoothing: antialiased;
+}
+::selection {
+  background: color-mix(in srgb, var(--gold) 35%, transparent);
+}
+:focus-visible {
+  outline: 2px solid var(--edu);
+  outline-offset: 2px;
+}
+
+@utility container-x {
+    @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
+  }
+@utility btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-[0.95rem] font-semibold transition-colors duration-150 disabled:opacity-60;
+  }
+@utility btn-gold {
+    @apply btn bg-gold text-navy hover:bg-[#f4b72a];
+  }
+@utility btn-ghost {
+    @apply btn border border-line bg-paper text-ink hover:border-navy/30;
+  }
+@utility btn-ghost-dark {
+    @apply btn border border-white/25 text-white hover:bg-white/10;
+  }
+@utility card {
+    @apply rounded-[var(--radius-card)] border border-line bg-paper;
+  }
+@utility eyebrow {
+    @apply inline-flex items-center gap-2 text-sm font-semibold tracking-wide text-muted;
+  }
+@utility h-section {
+    @apply text-2xl leading-snug font-extrabold text-navy sm:text-[2rem];
+  }
+.prose-fa p {
+    @apply mb-4 leading-[2.05] text-ink/90;
+  }
+@utility input {
+    @apply w-full rounded-xl border border-line bg-paper px-3.5 py-2.5 text-[0.95rem] text-ink placeholder:text-muted/60 focus:border-edu focus:outline-none focus:ring-2 focus:ring-edu/15;
+  }
+@utility label {
+    @apply mb-1.5 block text-sm font-semibold text-ink;
+  }
+@utility chip {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
