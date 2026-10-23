@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { parseFields, type FormValues } from "@/lib/forms/types";
 import { isVisible, validateValues } from "@/lib/forms/validate";
 import { savePrivateFile } from "@/lib/uploads";
+import { submissionRef } from "@/lib/submissions";
 
 // naive in-memory rate limit: 8 submissions / 10 min / IP
 const hits = new Map<string, number[]>();
@@ -57,12 +58,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   }
   if (Object.keys(errors).length) return NextResponse.json({ error: "لطفاً خطاهای فرم را برطرف کنید.", errors }, { status: 422 });
 
-  await prisma.submission.create({
+  const sub = await prisma.submission.create({
     data: {
       formId: form.id,
       data: data as object,
       labels: Object.fromEntries(fields.map((f) => [f.id, f.label])),
     },
   });
-  return NextResponse.json({ message: form.successMessage });
+  return NextResponse.json({ message: form.successMessage, ref: submissionRef(sub.id) });
 }

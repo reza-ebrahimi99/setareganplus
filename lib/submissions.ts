@@ -2,6 +2,10 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { parseFields } from "@/lib/forms/types";
+import { toEn } from "@/lib/format";
+
+/** Short tracking code shown to the visitor after submitting (last 6 chars of the id). */
+export const submissionRef = (id: string) => id.slice(-6).toUpperCase();
 
 export type SubFilters = { form?: string; status?: string; q?: string; period?: string; page?: string };
 const STATUSES = ["NEW", "CONTACTED", "ENROLLED", "ARCHIVED"] as const;
@@ -17,8 +21,10 @@ export function buildWhere(f: SubFilters): Prisma.SubmissionWhereInput {
 }
 
 /** IDs whose JSON data contains q (simple text search on data::text). */
-export async function searchIds(q: string): Promise<string[]> {
-  const rows = await prisma.$queryRaw<{ id: string }[]>`SELECT id FROM "Submission" WHERE data::text ILIKE ${"%" + q + "%"} OR coalesce(note,'') ILIKE ${"%" + q + "%"} LIMIT 5000`;
+export async function searchIds(raw: string): Promise<string[]> {
+  const q = raw.trim();
+  const en = toEn(q);
+  const rows = await prisma.$queryRaw<{ id: string }[]>`SELECT id FROM "Submission" WHERE data::text ILIKE ${"%" + q + "%"} OR data::text ILIKE ${"%" + en + "%"} OR coalesce(note,'') ILIKE ${"%" + q + "%"} OR upper(right(id, 6)) = ${en.toUpperCase()} LIMIT 5000`;
   return rows.map((r) => r.id);
 }
 

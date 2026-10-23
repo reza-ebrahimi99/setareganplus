@@ -6,9 +6,12 @@ import { prettyPhone, telHref } from "@/lib/format";
 import { Star, Eyebrow, SectionHead } from "@/components/site/Star";
 import { CenterCard, StatsBand, AchievementCard, TeamCard } from "@/components/site/cards";
 import { BranchList } from "@/components/site/BranchList";
+import { listProducts } from "@/lib/shop/catalog";
+import { getShopSettings } from "@/lib/shop/settings";
+import { ProductCard } from "@/components/shop/ProductCard";
 
 export default async function Home() {
-  const [s, centers, achievements, team, albums] = await Promise.all([
+  const [s, centers, achievements, team, albums, booklets, shop] = await Promise.all([
     getSettings(),
     prisma.center.findMany({ where: { published: true }, orderBy: { sortOrder: "asc" } }),
     prisma.achievement.findMany({ where: { published: true }, orderBy: [{ featured: "desc" }, { sortOrder: "asc" }], take: 8 }),
@@ -18,6 +21,8 @@ export default async function Home() {
       orderBy: { sortOrder: "asc" },
       include: { photos: { orderBy: { sortOrder: "asc" }, take: 3 } },
     }),
+    listProducts({}, 4).catch(() => []),
+    getShopSettings(),
   ]);
   const { home, about, contact, stats } = s;
   const founder = about.founder;
@@ -37,7 +42,8 @@ export default async function Home() {
             <p className="mt-4 text-gold">{home.slogan}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/register" className="btn-gold">پیش‌ثبت‌نام</Link>
-              <a href="#centers" className="btn-ghost-dark">آشنایی با مراکز</a>
+              <Link href="/shop" className="btn-ghost-dark">خرید جزوه</Link>
+              <a href="#centers" className="btn-ghost-dark hidden sm:inline-flex">آشنایی با مراکز</a>
             </div>
           </div>
           <div className="relative">
@@ -74,6 +80,25 @@ export default async function Home() {
           ))}
         </div>
       </section>
+
+      {/* Booklet shop */}
+      {shop.open && booklets.length > 0 && (
+        <section className="pb-16 sm:pb-20">
+          <div className="container-x">
+            <div className="mb-8 flex flex-wrap items-end justify-between gap-4 rounded-[1.5rem] border border-gold/40 bg-gold/10 p-6 sm:p-8">
+              <div>
+                <Eyebrow>فروشگاه جزوه</Eyebrow>
+                <h2 className="mt-2 text-2xl font-extrabold text-navy sm:text-3xl">جزوه‌های آموزشی ستارگان</h2>
+                <p className="mt-2 max-w-xl text-muted">خرید آنلاین، پرداخت امن زیبال و تحویل حضوری با کد QR در شعبه — بدون صف و معطلی.</p>
+              </div>
+              <Link href="/shop" className="btn-gold">همه جزوه‌ها ←</Link>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+              {booklets.map((p) => <ProductCard key={p.id} p={p} />)}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Achievements */}
       <section className="border-y border-line bg-paper py-16 sm:py-20">

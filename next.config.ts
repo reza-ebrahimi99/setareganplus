@@ -1,9 +1,11 @@
 import type { NextConfig } from "next";
 
+// Booklet shop paths (/shop, /booklet, /order, /o, /payments) are intentionally NOT
+// redirected: nginx routes them to the old app until the booklet store is rebuilt here.
+// Temporary (307) so browsers do not cache them; removed sections may come back later.
 const toHome = [
   "/discover/:path*",
   "/portal/:path*",
-  "/shop/:path*",
   "/starbook/:path*",
   "/atrin/:path*",
   "/guidance/:path*",
@@ -17,11 +19,7 @@ const toHome = [
   "/entekhab/:path*",
   "/ms/:path*",
   "/staff/:path*",
-  "/booklet/:path*",
-  "/order/:path*",
-  "/o/:path*",
   "/p/:path*",
-  "/payments/:path*",
   // former primary school (دبستان ستارگان آینده) URLs
   "/school/:path*",
   "/dabestan/:path*",
@@ -66,7 +64,7 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      ...toHome.map((source) => ({ source, destination: "/", permanent: true })),
+      ...toHome.map((source) => ({ source, destination: "/", permanent: false })),
       ...map.map(([source, destination]) => ({ source, destination, permanent: true })),
     ];
   },

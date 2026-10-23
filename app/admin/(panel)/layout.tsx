@@ -15,12 +15,12 @@ async function logout() {
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin();
-  const newCount = await prisma.submission.count({ where: { status: "NEW" } });
+  const [newCount, todoCount] = await Promise.all([prisma.submission.count({ where: { status: "NEW" } }), prisma.order.count({ where: { stage: "PAID" } })]);
   return (
     <div className="min-h-dvh bg-ivory">
-      <Sidebar newCount={newCount} logout={logout} />
+      <Sidebar newCount={newCount} todoCount={todoCount} logout={logout} />
       <div className="lg:mr-64">
-        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">{children}</div>
+        <main className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">{children}</main>
       </div>
     </div>
   );

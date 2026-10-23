@@ -155,3 +155,175 @@ model Submission {
   @@index([formId, createdAt])
   @@index([status])
 }
+
+// ───────────────────────── Booklet shop (فروشگاه جزوه) ─────────────────────────
+
+/// A printed booklet. Prices are stored in Rials (Zibal works in Rials); the site shows Toman.
+model Product {
+  id             String      @id @default(cuid())
+  slug           String      @unique
+  title          String
+  /// Teacher / author, e.g. «مهندس رضا ابراهیمی»
+  author         String?
+  summary        String?
+  description    String?     @db.Text
+  cover          String?
+  priceRials     Int
+  /// Optional "was" price (crossed out)
+  compareAtRials Int?
+  subject        String?
+  /// One of GRADES (lib/shop/config.ts), e.g. «دوازدهم»
+  grade          String?
+  /// Any of MAJORS; empty = all majors
+  majors         String[]    @default([])
+  /// "ghalamchi" | "education" | null (both)
+  center         String?
+  pageCount      Int?
+  /// Free "key: value" lines (print, binding, size, …)
+  specs          String?     @db.Text
+  /// null = unlimited
+  stock          Int?
+  active         Boolean     @default(true)
+  featured       Boolean     @default(false)
+  sortOrder      Int         @default(0)
+  legacyId       String?     @unique
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  items          OrderItem[]
+
+  @@index([active, sortOrder])
+}
+
+enum OrderStage {
+  REGISTERED
+  PAID
+  IN_PRODUCTION
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum PayStatus {
+  UNPAID
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Order {
+  id             String       @id @default(cuid())
+  /// ORD-YYYYMMDD-NNNNN (same format as the old shop)
+  number         String       @unique
+  /// 6-char code used in SMS links: /o/{shortCode}
+  shortCode      String       @unique
+  /// Secret token of the pickup ticket: /booklet/{qrToken}
+  qrToken        String       @unique
+  stage          OrderStage   @default(REGISTERED)
+  payStatus      PayStatus    @default(UNPAID)
+  /// ONLINE | CASH | CARD | TRANSFER | OTHER
+  payMethod      String       @default("ONLINE")
+  buyerName      String
+  mobile         String
+  nationalCode   String?
+  parentName     String?
+  grade          String?
+  major          String?
+  /// BOYS | GIRLS (| ELEMENTARY for legacy orders)
+  branch         String
+  /// Buyer's note at checkout
+  customerNote   String?      @db.Text
+  /// Staff-only note
+  adminNote      String?      @db.Text
+  subtotalRials  Int
+  totalRials     Int
+  paidAt         DateTime?
+  inProductionAt DateTime?
+  readyAt        DateTime?
+  deliveredAt    DateTime?
+  /// Who picked it up (name), set at the pickup desk
+  deliveredTo    String?
+  /// web | admin | legacy
+  source         String       @default("web")
+  legacyId       String?      @unique
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  items          OrderItem[]
+  events         OrderEvent[]
+  payments       Payment[]
+
+  @@index([stage, createdAt])
+  @@index([payStatus, paidAt])
+  @@index([mobile])
+  @@index([branch])
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String?
+  product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  title      String
+  unitRials  Int
+  qty        Int      @default(1)
+  totalRials Int
+  legacyId   String?  @unique
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model OrderEvent {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// STAGE | NOTE | PAYMENT | SMS | SYSTEM
+  type      String
+  stage     OrderStage?
+  text      String
+  legacyId  String?     @unique
+  createdAt DateTime    @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+/// One online payment attempt (Zibal). Verification is idempotent: only one PENDING→PAID transition per row.
+model Payment {
+  id          String    @id @default(cuid())
+  orderId     String
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider    String    @default("zibal")
+  amountRials Int
+  status      PayStatus @default(PENDING)
+  /// Secret token in our callback URL
+  token       String    @unique
+  trackId     String?   @unique
+  refNumber   String?
+  cardNumber  String?
+  /// Last Zibal result code
+  result      Int?
+  message     String?
+  paidAt      DateTime?
+  legacyId    String?   @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([orderId])
+  @@index([status, createdAt])
+}
+
+model SmsLog {
+  id        String   @id @default(cuid())
+  orderId   String?
+  /// purchase | ready | admin
+  kind      String
+  mobile    String
+  /// SENT | FAILED | SKIPPED
+  status    String
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([createdAt])
+}

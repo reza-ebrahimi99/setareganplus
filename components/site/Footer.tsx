@@ -7,7 +7,7 @@ import { Star } from "./Star";
 export function Footer({ contact }: { contact: ContactSettings }) {
   const year = new Intl.DateTimeFormat("fa-IR-u-ca-persian", { year: "numeric" }).format(new Date());
   return (
-    <footer className="relative mt-20 overflow-hidden bg-navy text-white/80">
+    <footer className="print:hidden relative mt-20 overflow-hidden bg-navy text-white/80">
       <Star filled={false} className="pointer-events-none absolute -bottom-24 -right-16 size-96 text-white/5" />
       <div className="container-x relative grid gap-10 py-14 md:grid-cols-[1.3fr_1fr_1fr]">
         <div>

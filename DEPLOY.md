@@ -155,14 +155,29 @@ The schemas differ, so there is no automatic import. Recommended:
 3. Old uploaded files: copy them into `$UPLOAD_DIR/private/legacy/` and store `{"key":"legacy/<file>","name":"<file>"}` as the field value.
 4. Take a `pg_dump` of the old DB before you decommission it.
 
-## 8. Updating
+## 8. Updating (one command, also moves the booklet shop into this app)
 ```bash
-git pull && npm ci && npx prisma migrate deploy && <build as above> && pm2 reload setareganplus
+cd /var/www/setareganplus-lean && git fetch --depth 1 origin lean-redesign && git reset --hard FETCH_HEAD && bash deploy/lean/update.sh
 ```
+`deploy/lean/update.sh` does the following:
+1. Resets the code to `origin/lean-redesign`.
+2. Copies `ZIBAL_*`, `SMSIR_*` and `STAROS_SMS_*` from the old `/var/www/setareganplus/.env` into the lean `.env` without printing them. Keys that are already set are kept unless you pass `--resync-secrets`.
+3. Runs `npm ci`, builds into `.next-build` and runs `prisma migrate deploy`. It **never** runs the seed.
+4. Imports booklets and orders from the old DB with `scripts/migrate-old-shop.ts`. This is read-only on the old DB and safe to repeat. It skips «آزمایشی» items and keeps order numbers, QR tokens and short codes, so old SMS and QR links keep working.
+5. Swaps the build, runs `pm2 reload` and health-checks. If anything fails it restores the previous build.
+6. Rewrites `/etc/nginx/snippets/sp-booklet.conf` so that `/shop`, `/booklet`, `/order` and `/o` are served by this app. Only `/payments/*` (legacy Zibal callbacks), `/ghalamchi/register/receipt/` and `/images/` stay on the old app. If `nginx -t` or the live checks fail, it rolls back automatically.
+7. Imports again, then schedules two silent re-syncs (+20 min and +2 h; log in `/var/backups/setareganplus-lean/resync.log`).
+
+Useful commands:
+- Rollback: `bash deploy/lean/update-rollback.sh`. This only touches nginx and sends the shop back to the old app. Add `--app` to also restore the previous code and build.
+- Manual re-sync of old orders: `bash deploy/lean/resync-old-shop.sh`.
+- Flags: `--skip-nginx`, `--skip-migrate`, `--resync-secrets`.
+
+After the switch, manage booklet orders **only** in `/admin/shop`. The old admin no longer sees new orders.
 
 ## 9. Backups
 - `pg_dump -Fc setareganplus > /backups/sp-$(date +%F).dump` (nightly cron)
 - `rsync -a /var/www/setareganplus/shared/uploads/ /backups/uploads/`
 
 ## 10. Smoke test after deploy
-`/`, `/education`, `/ghalamchi`, `/contact`, `/register` (submit a test, then archive it in `/admin/submissions`), `/admin/login`, and an export from `/admin/submissions`.
+`/`, `/shop` (open a booklet; do one real small purchase), `/education`, `/ghalamchi`, `/contact`, `/register` (submit a test, then archive it in `/admin/submissions`), `/admin/login`, and an export from `/admin/submissions`.
