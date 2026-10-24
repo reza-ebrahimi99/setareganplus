@@ -282,6 +282,8 @@ model OrderEvent {
   type      String
   stage     OrderStage?
   text      String
+  /// Who did it (staff display name), null = system / buyer
+  actor     String?
   legacyId  String?     @unique
   createdAt DateTime    @default(now())
 
@@ -325,5 +327,37 @@ model SmsLog {
   createdAt DateTime @default(now())
 
   @@index([orderId])
+  @@index([createdAt])
+}
+
+/// Admin-panel staff accounts (the owner stays in .env: ADMIN_USERNAME / ADMIN_PASSWORD_HASH).
+model StaffUser {
+  id             String    @id @default(cuid())
+  /// lowercase, [a-z0-9._-]
+  username       String    @unique
+  fullName       String
+  mobile         String?
+  /// scrypt:<saltHex>:<hashHex> (same format as ADMIN_PASSWORD_HASH)
+  passwordHash   String
+  /// permission keys, see lib/perms.ts
+  permissions    String[]  @default([])
+  active         Boolean   @default(true)
+  /// bumped on password reset / deactivation -> old sessions die
+  sessionVersion Int       @default(1)
+  lastLoginAt    DateTime?
+  createdBy      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+/// Simple activity log of key admin actions.
+model AdminLog {
+  id        String   @id @default(cuid())
+  actor     String
+  action    String
+  text      String
+  target    String?
+  createdAt DateTime @default(now())
+
   @@index([createdAt])
 }

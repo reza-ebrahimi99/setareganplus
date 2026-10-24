@@ -1,18 +1,19 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { s, sn, b, n, imageField } from "@/lib/admin";
 import { PageTitle, Panel, Field, Check, ImageInput, SaveBar } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 
 export default async function AchEdit({ params }: { params: Promise<{ id: string }> }) {
+  await requirePerm("content.achievements");
   const { id } = await params;
   const isNew = id === "new";
   const a = isNew ? null : await prisma.achievement.findUnique({ where: { id } });
   if (!isNew && !a) notFound();
   async function save(fd: FormData) {
     "use server";
-    await requireAdmin();
+    await requirePerm("content.achievements");
     const cat = s(fd, "category");
     const data = {
       name: s(fd, "name"),
@@ -31,7 +32,7 @@ export default async function AchEdit({ params }: { params: Promise<{ id: string
   }
   async function remove() {
     "use server";
-    await requireAdmin();
+    await requirePerm("content.achievements");
     await prisma.achievement.delete({ where: { id } });
     redirect("/admin/achievements?ok=1");
   }

@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { s, b, n } from "@/lib/admin";
 import { PageTitle, Panel, Field, Area, Check, Flash } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 
 async function save(fd: FormData) {
   "use server";
-  await requireAdmin();
+  await requirePerm("content.faq");
   const id = s(fd, "id");
   const data = { question: s(fd, "question"), answer: s(fd, "answer"), published: b(fd, "published"), sortOrder: n(fd, "sortOrder") };
   if (!data.question) return;
@@ -19,12 +19,13 @@ async function save(fd: FormData) {
 }
 async function remove(fd: FormData) {
   "use server";
-  await requireAdmin();
+  await requirePerm("content.faq");
   await prisma.faq.delete({ where: { id: s(fd, "id") } });
   redirect("/admin/faq?ok=1");
 }
 
 export default async function FaqAdmin({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
+  await requirePerm("content.faq");
   const { ok } = await searchParams;
   const items = await prisma.faq.findMany({ orderBy: { sortOrder: "asc" } });
   return (

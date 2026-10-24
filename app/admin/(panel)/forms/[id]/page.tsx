@@ -1,18 +1,19 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { parseFields, FIELD_TYPES, type FieldDef } from "@/lib/forms/types";
 import { slugify } from "@/lib/format";
 import { FormBuilder, type BuilderPayload } from "@/components/admin/FormBuilder";
 
 export default async function FormEdit({ params }: { params: Promise<{ id: string }> }) {
+  await requirePerm("forms.builder");
   const { id } = await params;
   const f = await prisma.form.findUnique({ where: { id }, include: { _count: { select: { submissions: true } } } });
   if (!f) notFound();
 
   async function save(p: BuilderPayload): Promise<{ ok: boolean; error?: string }> {
     "use server";
-    await requireAdmin();
+    await requirePerm("forms.builder");
     if (!["DRAFT", "PUBLISHED", "CLOSED"].includes(p.status)) return { ok: false, error: "وضعیت نامعتبر است." };
     const valid = new Set<string>(FIELD_TYPES.map((t) => t.type));
     const ids = new Set<string>();
@@ -54,7 +55,7 @@ export default async function FormEdit({ params }: { params: Promise<{ id: strin
   }
   async function remove() {
     "use server";
-    await requireAdmin();
+    await requirePerm("forms.builder");
     const cur = await prisma.form.findUnique({ where: { id } });
     if (cur?.isSystem) return;
     await prisma.form.delete({ where: { id } });

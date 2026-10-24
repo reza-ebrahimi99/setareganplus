@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import { getAdmin } from "@/lib/auth";
+import { permOr403 } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { querySubmissions, columnsFor } from "@/lib/submissions";
 import { displayValue } from "@/lib/forms/validate";
@@ -8,7 +8,8 @@ import { jalaliDateTime } from "@/lib/format";
 const ST: Record<string, string> = { NEW: "جدید", CONTACTED: "تماس گرفته شد", ENROLLED: "ثبت‌نام شد", ARCHIVED: "بایگانی" };
 
 export async function GET(req: Request) {
-  if (!(await getAdmin())) return new Response("Unauthorized", { status: 401 });
+  const me = await permOr403("submissions");
+  if (me instanceof Response) return me;
   const sp = Object.fromEntries(new URL(req.url).searchParams);
   const { items } = await querySubmissions(sp);
   const form = sp.form ? await prisma.form.findUnique({ where: { id: sp.form } }) : null;

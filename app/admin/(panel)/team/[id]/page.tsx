@@ -1,11 +1,12 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { s, sn, b, n, imageField } from "@/lib/admin";
 import { PageTitle, Panel, Field, Area, Check, ImageInput, SaveBar } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 
 export default async function TeamEdit({ params }: { params: Promise<{ id: string }> }) {
+  await requirePerm("content.team");
   const { id } = await params;
   const isNew = id === "new";
   const m = isNew ? null : await prisma.teamMember.findUnique({ where: { id } });
@@ -13,7 +14,7 @@ export default async function TeamEdit({ params }: { params: Promise<{ id: strin
 
   async function save(fd: FormData) {
     "use server";
-    await requireAdmin();
+    await requirePerm("content.team");
     const data = {
       name: s(fd, "name"),
       role: s(fd, "role"),
@@ -32,7 +33,7 @@ export default async function TeamEdit({ params }: { params: Promise<{ id: strin
   }
   async function remove() {
     "use server";
-    await requireAdmin();
+    await requirePerm("content.team");
     await prisma.teamMember.delete({ where: { id } });
     redirect("/admin/team?ok=1");
   }

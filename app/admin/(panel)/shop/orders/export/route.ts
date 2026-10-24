@@ -1,11 +1,12 @@
 import ExcelJS from "exceljs";
-import { getAdmin } from "@/lib/auth";
+import { permOr403 } from "@/lib/auth";
 import { queryOrders, type OrderQuery } from "@/lib/shop/admin";
 import { STAGE, BRANCH_LABEL, PAY_METHOD, toman } from "@/lib/shop/config";
 import { jalaliDateTime } from "@/lib/format";
 
 export async function GET(req: Request) {
-  if (!(await getAdmin())) return new Response("Unauthorized", { status: 401 });
+  const me = await permOr403("shop.orders.view");
+  if (me instanceof Response) return me;
   const sp = Object.fromEntries(new URL(req.url).searchParams) as OrderQuery & { format?: string };
   const { items } = await queryOrders(sp, true);
   const header = ["شماره سفارش", "کد تحویل", "تاریخ ثبت", "تاریخ پرداخت", "نام خریدار", "موبایل", "کد ملی", "پایه", "رشته", "شعبه", "جزوه", "تعداد", "مبلغ (تومان)", "روش پرداخت", "وضعیت", "تحویل‌گیرنده", "یادداشت"];

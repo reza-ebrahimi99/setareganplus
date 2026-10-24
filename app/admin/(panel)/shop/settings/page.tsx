@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm, logAction } from "@/lib/auth";
 import { s, b } from "@/lib/admin";
 import { PageTitle, Panel, Area, Check, SaveBar, Flash } from "@/components/admin/ui";
 import { getShopSettings, saveShopSettings } from "@/lib/shop/settings";
@@ -11,6 +11,7 @@ export const metadata = { title: "تنظیمات فروشگاه" };
 const KIND: Record<string, string> = { purchase: "پیامک خرید به خریدار", ready: "پیامک «آماده تحویل» به خریدار", admin: "پیامک سفارش جدید به مدیر" };
 
 export default async function ShopSettingsPage({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
+  await requirePerm("shop.settings");
   const { ok } = await searchParams;
   const st = await getShopSettings();
   const sms = smsStatus();
@@ -18,9 +19,10 @@ export default async function ShopSettingsPage({ searchParams }: { searchParams:
 
   async function save(fd: FormData) {
     "use server";
-    await requireAdmin();
+    const me = await requirePerm("shop.settings");
     const adminMobiles = [...new Set(s(fd, "adminMobiles").split(/[\s,،]+/).map((m) => normalizeIranMobile(m)).filter((m): m is string => !!m))];
     await saveShopSettings({ open: b(fd, "open"), notice: s(fd, "notice"), adminSms: b(fd, "adminSms"), adminMobiles });
+    await logAction(me, "shop.settings", `تنظیمات فروشگاه ذخیره شد (فروش ${b(fd, "open") ? "باز" : "بسته"})`);
     redirect("/admin/shop/settings?ok=1");
   }
 

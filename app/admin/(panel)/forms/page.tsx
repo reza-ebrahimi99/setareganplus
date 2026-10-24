@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { s } from "@/lib/admin";
 import { fa, jalaliDate, slugify } from "@/lib/format";
 import { parseFields } from "@/lib/forms/types";
@@ -12,7 +12,7 @@ const ST = { PUBLISHED: ["منتشرشده", "bg-emerald-50 text-emerald-700"], 
 
 async function create(fd: FormData) {
   "use server";
-  await requireAdmin();
+  await requirePerm("forms.builder");
   const title = s(fd, "title") || "فرم جدید";
   let slug = slugify(s(fd, "slug") || "form");
   if (await prisma.form.findUnique({ where: { slug } })) slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
@@ -30,6 +30,7 @@ async function create(fd: FormData) {
 }
 
 export default async function Forms() {
+  await requirePerm("forms.builder");
   const forms = await prisma.form.findMany({ orderBy: [{ isSystem: "desc" }, { createdAt: "desc" }], include: { _count: { select: { submissions: true } } } });
   const news = await prisma.submission.groupBy({ by: ["formId"], where: { status: "NEW" }, _count: true });
   return (

@@ -1,3 +1,4 @@
+import { requirePerm } from "@/lib/auth";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
@@ -14,6 +15,7 @@ export const metadata: Metadata = { title: "فروش جزوه" };
 const paidSince = (d: Date) => ({ payStatus: "PAID" as const, stage: { not: "CANCELLED" as const }, paidAt: { gte: d } });
 
 export default async function ShopDashboard() {
+  await requirePerm("shop.dashboard");
   const [t0, w0, m0, d14] = [tehranDayStart(0), tehranDayStart(6), tehranDayStart(29), tehranDayStart(13)];
   const sum = (d: Date) => prisma.order.aggregate({ where: paidSince(d), _sum: { totalRials: true }, _count: true });
   const [today, week, month, stageCounts, top, daily, recent, settings] = await Promise.all([

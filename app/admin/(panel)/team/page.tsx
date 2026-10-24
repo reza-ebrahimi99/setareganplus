@@ -1,3 +1,4 @@
+import { requirePerm } from "@/lib/auth";
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
@@ -5,6 +6,7 @@ import { fa } from "@/lib/format";
 import { PageTitle, Flash } from "@/components/admin/ui";
 
 export default async function TeamList({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
+  await requirePerm("content.team");
   const { ok } = await searchParams;
   const team = await prisma.teamMember.findMany({ orderBy: { sortOrder: "asc" } });
   return (

@@ -2,7 +2,7 @@
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { s, sn, b, n } from "@/lib/admin";
 import { saveImage } from "@/lib/uploads";
 import { fa } from "@/lib/format";
@@ -10,6 +10,7 @@ import { PageTitle, Panel, Field, Area, Check, Flash } from "@/components/admin/
 import { SubmitButton } from "@/components/admin/SubmitButton";
 
 export default async function AlbumAdmin({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; e?: string }> }) {
+  await requirePerm("content.gallery");
   const { id } = await params;
   const { ok, e } = await searchParams;
   const al = await prisma.galleryAlbum.findUnique({ where: { id }, include: { photos: { orderBy: { sortOrder: "asc" } } } });
@@ -18,7 +19,7 @@ export default async function AlbumAdmin({ params, searchParams }: { params: Pro
 
   async function saveAlbum(fd: FormData) {
     "use server";
-    await requireAdmin();
+    await requirePerm("content.gallery");
     await prisma.galleryAlbum.update({
       where: { id },
       data: { title: s(fd, "title"), description: sn(fd, "description"), center: sn(fd, "center"), published: b(fd, "published"), sortOrder: n(fd, "sortOrder") },
@@ -27,7 +28,7 @@ export default async function AlbumAdmin({ params, searchParams }: { params: Pro
   }
   async function upload(fd: FormData) {
     "use server";
-    await requireAdmin();
+    await requirePerm("content.gallery");
     const files = fd.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
     const max = (await prisma.galleryPhoto.aggregate({ where: { albumId: id }, _max: { sortOrder: true } }))._max.sortOrder ?? -1;
     let i = max + 1;
@@ -46,7 +47,7 @@ export default async function AlbumAdmin({ params, searchParams }: { params: Pro
   }
   async function photoAction(fd: FormData) {
     "use server";
-    await requireAdmin();
+    await requirePerm("content.gallery");
     const pid = s(fd, "pid");
     const op = s(fd, "op");
     const photos = await prisma.galleryPhoto.findMany({ where: { albumId: id }, orderBy: { sortOrder: "asc" } });
@@ -71,7 +72,7 @@ export default async function AlbumAdmin({ params, searchParams }: { params: Pro
   }
   async function removeAlbum() {
     "use server";
-    await requireAdmin();
+    await requirePerm("content.gallery");
     await prisma.galleryAlbum.delete({ where: { id } });
     redirect("/admin/gallery?ok=1");
   }

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { permForPath } from "@/lib/perms";
 
 const NAV = [
   { href: "/admin", label: "داشبورد", icon: "M3 12l9-8 9 8M5 10v10h14V10" },
@@ -20,12 +21,33 @@ const NAV = [
   { href: "/admin/gallery", label: "گالری", icon: "M4 5h16v14H4zM4 15l5-5 4 4 3-3 4 4" },
   { href: "/admin/faq", label: "سؤالات متداول", icon: "M9 9a3 3 0 115 2c-1 1-2 1.5-2 3M12 18h.01" },
   { href: "/admin/settings", label: "تنظیمات سایت", icon: "M12 15a3 3 0 100-6 3 3 0 000 6zM4 12h2M18 12h2M12 4v2M12 18v2" },
+  { sep: "حساب" },
+  { href: "/admin/users", label: "همکاران", icon: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8" },
+  { href: "/admin/account", label: "حساب من", icon: "M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0" },
 ] as const;
 
-export function Sidebar({ newCount, todoCount = 0, logout }: { newCount: number; todoCount?: number; logout: () => Promise<void> }) {
+type Item = Extract<(typeof NAV)[number], { href: string }>;
+type Entry = (typeof NAV)[number];
+
+/** Keep only links the user may open; drop section titles that end up empty. */
+function visibleNav(perms: string[]): Entry[] {
+  const ok = (n: Item) => {
+    const p = permForPath(n.href);
+    return p === null || perms.includes(p);
+  };
+  const out: Entry[] = [];
+  for (const n of NAV) {
+    if ("sep" in n) out.push(n);
+    else if (ok(n)) out.push(n);
+  }
+  return out.filter((n, i) => !("sep" in n) || (out[i + 1] && !("sep" in out[i + 1])));
+}
+
+export function Sidebar({ newCount, todoCount = 0, logout, perms, user }: { newCount: number; todoCount?: number; logout: () => Promise<void>; perms: string[]; user: { name: string; username: string; owner: boolean } }) {
   const path = usePathname();
+  const nav = visibleNav(perms);
   // Longest matching href wins, so /admin/shop/orders does not also light up /admin/shop.
-  const active = NAV.filter((n): n is Extract<(typeof NAV)[number], { href: string }> => "href" in n && (n.href === "/admin" ? path === "/admin" : path === n.href || path.startsWith(n.href + "/")))
+  const active = nav.filter((n): n is Item => "href" in n && (n.href === "/admin" ? path === "/admin" : path === n.href || path.startsWith(n.href + "/")))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
   return (
     <aside className="flex flex-col bg-navy text-white/80 lg:fixed lg:inset-y-0 lg:right-0 lg:w-64">
@@ -33,11 +55,11 @@ export function Sidebar({ newCount, todoCount = 0, logout }: { newCount: number;
         <span className="flex size-10 items-center justify-center rounded-xl bg-white"><Image src="/brand/logo.png" alt="" width={30} height={25} /></span>
         <div className="leading-tight">
           <p className="font-extrabold text-white">ستارگان پلاس</p>
-          <p className="text-xs text-white/50">پنل مدیریت</p>
+          <p className="text-xs text-white/50">{user.owner ? "پنل مدیریت" : `${user.name} · همکار`}</p>
         </div>
       </div>
       <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-1 lg:flex-col lg:overflow-visible">
-        {NAV.map((n, i) =>
+        {nav.map((n, i) =>
           "sep" in n ? (
             <p key={i} className="mt-4 mb-1 hidden px-3 text-xs font-semibold text-white/35 lg:block">{n.sep}</p>
           ) : (
@@ -58,6 +80,7 @@ export function Sidebar({ newCount, todoCount = 0, logout }: { newCount: number;
       </nav>
       <div className="hidden border-t border-white/10 p-3 lg:block">
         <Link href="/" target="_blank" className="block rounded-xl px-3 py-2 text-sm hover:bg-white/5">مشاهده سایت ↗</Link>
+        <p className="px-3 pb-1 pt-2 text-[11px] text-white/35" dir="ltr">{user.username}</p>
         <form action={logout}><button className="w-full rounded-xl px-3 py-2 text-right text-sm hover:bg-white/5">خروج</button></form>
       </div>
     </aside>

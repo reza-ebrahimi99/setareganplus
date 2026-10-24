@@ -195,7 +195,7 @@ const STAMP: Partial<Record<OrderStage, "paidAt" | "inProductionAt" | "readyAt" 
 };
 
 /** Staff stage change (single or bulk). Sends the "ready" SMS when an order becomes READY. */
-export async function setStage(ids: string[], stage: OrderStage, extra: { deliveredTo?: string | null; payMethod?: string } = {}) {
+export async function setStage(ids: string[], stage: OrderStage, extra: { deliveredTo?: string | null; payMethod?: string; actor?: string | null } = {}) {
   let changed = 0;
   for (const id of ids) {
     const o = await prisma.order.findUnique({ where: { id } });
@@ -214,7 +214,7 @@ export async function setStage(ids: string[], stage: OrderStage, extra: { delive
     await prisma.order.update({ where: { id }, data });
     if (offlinePaid) await adjustStock(id, -1);
     if (stage === "CANCELLED" && o.payStatus === "PAID" && o.stage !== "DELIVERED") await adjustStock(id, +1);
-    await prisma.orderEvent.create({ data: { orderId: id, type: "STAGE", stage, text: `وضعیت: ${STAGE[stage].label}${stage === "DELIVERED" && extra.deliveredTo ? ` — تحویل‌گیرنده: ${extra.deliveredTo}` : ""}` } });
+    await prisma.orderEvent.create({ data: { orderId: id, type: "STAGE", stage, text: `وضعیت: ${STAGE[stage].label}${stage === "DELIVERED" && extra.deliveredTo ? ` — تحویل‌گیرنده: ${extra.deliveredTo}` : ""}`, actor: extra.actor ?? null } });
     if (stage === "READY") await notifyReady(id);
     changed++;
   }

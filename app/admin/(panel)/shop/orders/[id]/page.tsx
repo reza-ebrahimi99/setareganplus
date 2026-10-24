@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm, logAction, actorName, can } from "@/lib/auth";
 import { s, sn } from "@/lib/admin";
 import { PageTitle, Panel } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/SubmitButton";
@@ -15,6 +15,8 @@ const PAY_ST: Record<string, string> = { PENDING: "در انتظار", PAID: "م
 const SMS_KIND: Record<string, string> = { purchase: "خرید", ready: "آماده‌بودن", admin: "مدیر" };
 
 export default async function OrderDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; v?: string }> }) {
+  const viewer = await requirePerm("shop.orders.view");
+  const canEdit = can(viewer, "shop.orders.edit");
   const { id } = await params;
   const { ok, v } = await searchParams;
   const o = await prisma.order.findUnique({ where: { id }, include: { items: { include: { product: { select: { slug: true } } } }, events: { orderBy: { createdAt: "desc" } }, payments: { orderBy: { createdAt: "desc" } } } });
@@ -25,32 +27,34 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
 
   async function changeStage(fd: FormData) {
     "use server";
-    await requireAdmin();
+    const me = await requirePerm("shop.orders.edit");
     const stage = s(fd, "stage") as OrderStage;
-    await setStage([id], stage, { deliveredTo: sn(fd, "deliveredTo"), payMethod: sn(fd, "payMethod") ?? undefined });
+    await setStage([id], stage, { deliveredTo: sn(fd, "deliveredTo"), payMethod: sn(fd, "payMethod") ?? undefined, actor: actorName(me) });
+    await logAction(me, "order.stage", `سفارش ${o!.number}: «${STAGE[stage]?.label ?? stage}»`, id);
     redirect(`${here}?ok=1`);
   }
   async function saveInfo(fd: FormData) {
     "use server";
-    await requireAdmin();
+    const me = await requirePerm("shop.orders.edit");
     const note = sn(fd, "adminNote");
     const cur = await prisma.order.findUnique({ where: { id }, select: { adminNote: true } });
     await prisma.order.update({
       where: { id },
       data: { adminNote: note, buyerName: s(fd, "buyerName") || undefined, branch: s(fd, "branch") || undefined, grade: sn(fd, "grade"), major: sn(fd, "major"), parentName: sn(fd, "parentName") },
     });
-    if ((cur?.adminNote ?? null) !== note && note) await prisma.orderEvent.create({ data: { orderId: id, type: "NOTE", text: `یادداشت: ${note.slice(0, 300)}` } });
+    if ((cur?.adminNote ?? null) !== note && note) await prisma.orderEvent.create({ data: { orderId: id, type: "NOTE", text: `یادداشت: ${note.slice(0, 300)}`, actor: actorName(me) } });
+    await logAction(me, "order.edit", `ویرایش اطلاعات سفارش ${o!.number}`, id);
     redirect(`${here}?ok=1`);
   }
   async function recheck(fd: FormData) {
     "use server";
-    await requireAdmin();
+    const me = await requirePerm("shop.orders.edit");
     const r = await verifyPayment(s(fd, "pid"));
     redirect(`${here}?v=${r.kind}`);
   }
   async function resendReady() {
     "use server";
-    await requireAdmin();
+    const me = await requirePerm("shop.orders.edit");
     await notifyReady(id);
     redirect(`${here}?ok=1`);
   }
@@ -61,7 +65,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
       <PageTitle
         title={o.buyerName}
         sub={`سفارش ${fa(o.number)} · ثبت ${jalaliDateTime(o.createdAt)}${o.source === "legacy" ? " · منتقل‌شده از سایت قبلی" : o.source === "admin" ? " · ثبت دستی" : ""}`}
-        action={<div className="flex gap-2"><Link href={ticketPath(o.qrToken)} target="_blank" className="btn-ghost px-4 py-2 text-sm">رسید خریدار ↗</Link><Link href={`/admin/labels?ids=${o.id}`} target="_blank" className="btn-ghost px-4 py-2 text-sm">چاپ برچسب</Link></div>}
+        action={<div className="flex gap-2"><Link href={ticketPath(o.qrToken)} target="_blank" className="btn-ghost px-4 py-2 text-sm">رسید خریدار ↗</Link>{can(viewer, "shop.labels") && <Link href={`/admin/labels?ids=${o.id}`} target="_blank" className="btn-ghost px-4 py-2 text-sm">چاپ برچسب</Link>}</div>}
       />
       {ok && <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">✓ ذخیره شد.</div>}
       {v && <div className={`mb-4 rounded-xl border px-4 py-3 text-sm font-semibold ${v === "paid" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900"}`}>نتیجهٔ استعلام از زیبال: {v === "paid" ? "پرداخت تأیید شد ✓" : v === "failed" ? "پرداخت انجام نشده است." : "پاسخ قطعی دریافت نشد؛ بعداً دوباره امتحان کنید."}</div>}
@@ -76,13 +80,13 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
           ))}
           {o.stage === "CANCELLED" && <span className={`rounded-full px-3 py-1 text-xs font-bold ${STAGE.CANCELLED.cls}`}>لغوشده</span>}
         </div>
-        <form action={changeStage} className="mt-5 grid gap-3 border-t border-line pt-5 sm:grid-cols-[1fr_1fr_1fr_auto]">
+        {canEdit && <form action={changeStage} className="mt-5 grid gap-3 border-t border-line pt-5 sm:grid-cols-[1fr_1fr_1fr_auto]">
           <select name="stage" defaultValue={idx >= 0 && idx < STAGES.length - 1 ? STAGES[idx + 1] : o.stage} className="input">{[...STAGES, "CANCELLED" as const].map((st) => <option key={st} value={st}>{STAGE[st].label}</option>)}</select>
           <input name="deliveredTo" placeholder="تحویل‌گیرنده (برای تحویل)" className="input" />
           <select name="payMethod" defaultValue="" className="input" disabled={o.payStatus === "PAID"}><option value="">{o.payStatus === "PAID" ? `پرداخت: ${PAY_METHOD[o.payMethod] ?? o.payMethod}` : "روش پرداخت حضوری…"}</option>{Object.entries(PAY_METHOD).filter(([k]) => k !== "ONLINE").map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
           <SubmitButton className="btn-gold px-5 py-2 text-sm">ثبت وضعیت</SubmitButton>
-        </form>
-        {o.payStatus !== "PAID" && <p className="mt-2 text-xs text-muted">این سفارش هنوز پرداخت نشده؛ اگر وضعیت را جلو ببرید، پرداخت حضوری (پیش‌فرض: نقدی) ثبت می‌شود.</p>}
+        </form>}
+        {canEdit && o.payStatus !== "PAID" && <p className="mt-2 text-xs text-muted">این سفارش هنوز پرداخت نشده؛ اگر وضعیت را جلو ببرید، پرداخت حضوری (پیش‌فرض: نقدی) ثبت می‌شود.</p>}
       </Panel>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -101,7 +105,12 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
           </Panel>
 
           <Panel title="اطلاعات و یادداشت">
-            <form action={saveInfo} className="grid gap-4 sm:grid-cols-2">
+            {!canEdit ? (
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                <Row k="نام ولی">{o.parentName || "—"}</Row>
+                <Row k="یادداشت داخلی">{o.adminNote || "—"}</Row>
+              </dl>
+            ) : <form action={saveInfo} className="grid gap-4 sm:grid-cols-2">
               <label className="block"><span className="label">نام خریدار</span><input name="buyerName" defaultValue={o.buyerName} className="input" /></label>
               <label className="block"><span className="label">شعبهٔ تحویل</span><select name="branch" defaultValue={o.branch} className="input">{Object.entries(BRANCHES).map(([k, b]) => <option key={k} value={k}>{b.short}</option>)}{!(o.branch in BRANCHES) && <option value={o.branch}>{BRANCH_LABEL[o.branch] ?? o.branch}</option>}</select></label>
               <label className="block"><span className="label">پایه</span><select name="grade" defaultValue={o.grade ?? ""} className="input"><option value="">—</option>{GRADES.map((g) => <option key={g}>{g}</option>)}{o.grade && !(GRADES as readonly string[]).includes(o.grade) && <option>{o.grade}</option>}</select></label>
@@ -109,7 +118,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
               <label className="block sm:col-span-2"><span className="label">نام ولی</span><input name="parentName" defaultValue={o.parentName ?? ""} className="input" /></label>
               <label className="block sm:col-span-2"><span className="label">یادداشت داخلی (فقط برای همکاران)</span><textarea name="adminNote" defaultValue={o.adminNote ?? ""} rows={3} className="input leading-7" /></label>
               <div className="sm:col-span-2"><SubmitButton className="btn-ghost px-5 py-2 text-sm">ذخیره اطلاعات</SubmitButton></div>
-            </form>
+            </form>}
           </Panel>
 
           <Panel title="تاریخچه">
@@ -118,7 +127,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
                 <li key={e.id} className="relative">
                   <span className={`absolute -right-[27px] top-1.5 size-3 rounded-full border-2 border-paper ${e.stage ? STAGE[e.stage].dot : e.type === "PAYMENT" ? "bg-gold" : "bg-muted"}`} />
                   <p className="text-sm">{e.text}</p>
-                  <p className="text-xs text-muted">{jalaliDateTime(e.createdAt)}</p>
+                  <p className="text-xs text-muted">{jalaliDateTime(e.createdAt)}{e.actor && <> · توسط <b className="font-semibold text-ink">{e.actor}</b></>}</p>
                 </li>
               ))}
             </ol>
@@ -147,7 +156,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
                     <div className="flex justify-between"><b>{PAY_ST[p.status] ?? p.status}</b><span>{formatToman(p.amountRials)}</span></div>
                     <div className="mt-1 text-muted">{jalaliDateTime(p.createdAt)}{p.trackId && <> · شناسه <span dir="ltr">{p.trackId.replace(/^legacy-/, "")}</span></>}{p.refNumber && <> · پیگیری {fa(p.refNumber)}</>}</div>
                     {p.message && <div className="mt-1 text-amber-800">{p.message}</div>}
-                    {p.status !== "PAID" && p.trackId && !p.legacyId && (
+                    {canEdit && p.status !== "PAID" && p.trackId && !p.legacyId && (
                       <form action={recheck} className="mt-2"><input type="hidden" name="pid" value={p.id} /><SubmitButton className="text-xs font-bold text-navy underline">استعلام دوباره از زیبال</SubmitButton></form>
                     )}
                   </li>
@@ -164,7 +173,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
                 ))}
               </ul>
             )}
-            {o.stage === "READY" && <form action={resendReady} className="mt-3"><SubmitButton className="btn-ghost px-4 py-1.5 text-xs">ارسال دوبارهٔ پیامک «آماده تحویل»</SubmitButton></form>}
+            {canEdit && o.stage === "READY" && <form action={resendReady} className="mt-3"><SubmitButton className="btn-ghost px-4 py-1.5 text-xs">ارسال دوبارهٔ پیامک «آماده تحویل»</SubmitButton></form>}
           </Panel>
         </div>
       </div>

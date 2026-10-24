@@ -1,18 +1,19 @@
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm, logAction } from "@/lib/auth";
 import { getSettings, saveSetting } from "@/lib/settings";
 import { s, rows, lines, imageField } from "@/lib/admin";
 import { toEn } from "@/lib/format";
 import { PageTitle, Panel, Field, Area, ImageInput, SaveBar, Flash } from "@/components/admin/ui";
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
+  await requirePerm("site.settings");
   const { ok } = await searchParams;
   const st = await getSettings();
   const { contact, stats, home, about } = st;
 
   async function save(fd: FormData) {
     "use server";
-    await requireAdmin();
+    const me = await requirePerm("site.settings");
     const cur = await getSettings();
     await saveSetting("contact", {
       phones: lines(s(fd, "phones")).map((p) => toEn(p).replace(/[^\d+]/g, "")),
@@ -44,6 +45,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         photo: (await imageField(fd, "f_photo", cur.about.founder.photo || null, "site", 1200)) ?? "",
       },
     });
+    await logAction(me, "site.settings", "تنظیمات سایت ذخیره شد");
     redirect("/admin/settings?ok=1");
   }
 

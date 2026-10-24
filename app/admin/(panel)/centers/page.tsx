@@ -1,8 +1,10 @@
+import { requirePerm } from "@/lib/auth";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageTitle } from "@/components/admin/ui";
 
 export default async function Centers() {
+  await requirePerm("content.centers");
   const centers = await prisma.center.findMany({ orderBy: { sortOrder: "asc" } });
   return (
     <>

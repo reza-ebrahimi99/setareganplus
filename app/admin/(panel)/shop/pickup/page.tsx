@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm, logAction, actorName, can } from "@/lib/auth";
 import { s, sn } from "@/lib/admin";
 import { PageTitle, Panel } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/SubmitButton";
@@ -13,13 +13,15 @@ import { fa, jalaliDateTime, prettyPhone } from "@/lib/format";
 export const metadata = { title: "تحویل حضوری" };
 
 export default async function Pickup({ searchParams }: { searchParams: Promise<{ q?: string; done?: string }> }) {
+  const viewer = await requirePerm("shop.pickup");
   const { q, done } = await searchParams;
   const found = q ? await findForPickup(q) : [];
 
   async function deliver(fd: FormData) {
     "use server";
-    await requireAdmin();
-    await setStage([s(fd, "id")], "DELIVERED", { deliveredTo: sn(fd, "deliveredTo"), payMethod: sn(fd, "payMethod") ?? undefined });
+    const me = await requirePerm("shop.pickup");
+    await setStage([s(fd, "id")], "DELIVERED", { deliveredTo: sn(fd, "deliveredTo"), payMethod: sn(fd, "payMethod") ?? undefined, actor: actorName(me) });
+    await logAction(me, "order.pickup", `تحویل حضوری به ${s(fd, "name")}${sn(fd, "deliveredTo") ? ` (تحویل‌گیرنده: ${s(fd, "deliveredTo")})` : ""}`, s(fd, "id"));
     redirect(`/admin/shop/pickup?done=${encodeURIComponent(s(fd, "name"))}`);
   }
 
@@ -71,7 +73,7 @@ export default async function Pickup({ searchParams }: { searchParams: Promise<{
                   <SubmitButton className="btn-gold px-8 py-3">تحویل داده شد ✓</SubmitButton>
                 </form>
               )}
-              <Link href={`/admin/shop/orders/${o.id}`} className="mt-3 inline-block text-xs font-semibold text-muted hover:text-navy">جزئیات سفارش ←</Link>
+              {can(viewer, "shop.orders.view") && <Link href={`/admin/shop/orders/${o.id}`} className="mt-3 inline-block text-xs font-semibold text-muted hover:text-navy">جزئیات سفارش ←</Link>}
             </Panel>
           );
         })}

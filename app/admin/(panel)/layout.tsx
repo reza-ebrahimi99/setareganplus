@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { requireAdmin, destroySession } from "@/lib/auth";
+import { requireAdmin, destroySession, can } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { ALL_PERMS } from "@/lib/perms";
 import { Sidebar } from "@/components/admin/Sidebar";
 
 export const metadata: Metadata = { title: { default: "پنل مدیریت", template: "%s | پنل مدیریت" }, robots: { index: false } };
@@ -14,11 +15,15 @@ async function logout() {
 }
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
-  await requireAdmin();
-  const [newCount, todoCount] = await Promise.all([prisma.submission.count({ where: { status: "NEW" } }), prisma.order.count({ where: { stage: "PAID" } })]);
+  const me = await requireAdmin();
+  const [newCount, todoCount] = await Promise.all([
+    can(me, "submissions") ? prisma.submission.count({ where: { status: "NEW" } }) : 0,
+    can(me, "shop.orders.view") ? prisma.order.count({ where: { stage: "PAID" } }) : 0,
+  ]);
+  const perms = me.owner ? ALL_PERMS : [...me.perms];
   return (
     <div className="min-h-dvh bg-ivory">
-      <Sidebar newCount={newCount} todoCount={todoCount} logout={logout} />
+      <Sidebar newCount={newCount} todoCount={todoCount} logout={logout} perms={perms} user={{ name: me.name, username: me.username, owner: me.owner }} />
       <div className="lg:mr-64">
         <main className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">{children}</main>
       </div>

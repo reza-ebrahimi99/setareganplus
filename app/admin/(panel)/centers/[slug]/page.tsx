@@ -1,10 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { s, sn, b, rows, imageField } from "@/lib/admin";
 import { PageTitle, Panel, Field, Area, Check, ImageInput, SaveBar, Flash } from "@/components/admin/ui";
 
 export default async function CenterEdit({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ ok?: string }> }) {
+  await requirePerm("content.centers");
   const { slug } = await params;
   const { ok } = await searchParams;
   const [c, forms] = await Promise.all([
@@ -17,7 +18,7 @@ export default async function CenterEdit({ params, searchParams }: { params: Pro
 
   async function save(fd: FormData) {
     "use server";
-    await requireAdmin();
+    await requirePerm("content.centers");
     await prisma.center.update({
       where: { slug },
       data: {

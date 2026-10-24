@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm, logAction, actorName, can } from "@/lib/auth";
 import { PageTitle, Empty } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { SelectAll, SelectedCount } from "@/components/admin/shop/SelectAll";
@@ -21,6 +21,9 @@ const qs = (sp: OrderQuery, extra: Record<string, string | undefined> = {}) => {
 };
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<OrderQuery & { ok?: string }> }) {
+  const viewer = await requirePerm("shop.orders.view");
+  const canEdit = can(viewer, "shop.orders.edit");
+  const canLabels = can(viewer, "shop.labels");
   const { ok, ...sp } = await searchParams;
   const [{ items, total, page, pages }, products, counts] = await Promise.all([
     queryOrders(sp),
@@ -32,7 +35,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
 
   async function bulk(fd: FormData) {
     "use server";
-    await requireAdmin();
+    const me = await requirePerm("shop.orders.edit");
     const one = String(fd.get("one") ?? "");
     let ids = fd.getAll("ids").map(String);
     let stage = String(fd.get("stage") ?? "") as OrderStage;
@@ -41,13 +44,14 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       ids = [id];
       stage = st as OrderStage;
     }
-    const n = ids.length && stage ? await setStage(ids, stage) : 0;
+    const n = ids.length && stage ? await setStage(ids, stage, { actor: actorName(me) }) : 0;
+    if (n) await logAction(me, "order.stage", `تغییر وضعیت ${n} سفارش به «${STAGE[stage]?.label ?? stage}»`, ids.length === 1 ? ids[0] : null);
     const ret = String(fd.get("back") || "/admin/shop/orders");
     redirect(`${ret}${ret.includes("?") ? "&" : "?"}ok=${n}`);
   }
   async function labels(fd: FormData) {
     "use server";
-    await requireAdmin();
+    await requirePerm("shop.labels");
     const ids = fd.getAll("ids").map(String);
     redirect(ids.length ? `/admin/labels?ids=${ids.join(",")}` : String(fd.get("back") || "/admin/shop/orders"));
   }
@@ -67,7 +71,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           <div className="flex flex-wrap gap-2">
             <a href={`/admin/shop/orders/export?${qs(sp, { format: "xlsx" })}`} className="btn-ghost px-4 py-2 text-sm">خروجی اکسل</a>
             <a href={`/admin/shop/orders/export?${qs(sp, { format: "csv" })}`} className="btn-ghost px-4 py-2 text-sm">CSV</a>
-            <Link href="/admin/shop/orders/new" className="btn-gold px-5 py-2 text-sm">+ سفارش دستی</Link>
+            {canEdit && <Link href="/admin/shop/orders/new" className="btn-gold px-5 py-2 text-sm">+ سفارش دستی</Link>}
           </div>
         }
       />
@@ -96,9 +100,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           <div className="sticky top-0 z-10 mb-2 flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-paper/95 p-2.5 backdrop-blur">
             <label className="flex items-center gap-2 px-1"><SelectAll /><SelectedCount /></label>
             <span className="mr-auto" />
-            <select name="stage" defaultValue="" className="input w-auto py-1.5 text-sm"><option value="">تغییر وضعیت به…</option>{[...STAGES, "CANCELLED" as const].map((s) => <option key={s} value={s}>{STAGE[s].label}</option>)}</select>
-            <SubmitButton className="btn-gold px-4 py-1.5 text-sm">اعمال</SubmitButton>
-            <button formAction={labels} className="btn-ghost px-4 py-1.5 text-sm">چاپ برچسب</button>
+            {canEdit && <><select name="stage" defaultValue="" className="input w-auto py-1.5 text-sm"><option value="">تغییر وضعیت به…</option>{[...STAGES, "CANCELLED" as const].map((s) => <option key={s} value={s}>{STAGE[s].label}</option>)}</select>
+            <SubmitButton className="btn-gold px-4 py-1.5 text-sm">اعمال</SubmitButton></>}
+            {canLabels && <button formAction={labels} className="btn-ghost px-4 py-1.5 text-sm">چاپ برچسب</button>}
           </div>
           <div className="overflow-x-auto rounded-2xl border border-line bg-paper">
             <table className="w-full min-w-[860px] text-sm">
@@ -121,7 +125,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                       <td className="p-3"><div className="font-semibold">{formatToman(o.totalRials)}</div><div className="text-[11px] text-muted">{o.payStatus === "PAID" ? PAY_METHOD[o.payMethod] ?? o.payMethod : "پرداخت نشده"}</div></td>
                       <td className="p-3"><span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold ${STAGE[o.stage].cls}`}><span className={`size-1.5 rounded-full ${STAGE[o.stage].dot}`} />{STAGE[o.stage].short}</span></td>
                       <td className="whitespace-nowrap p-3 text-xs text-muted">{jalaliDateTime(o.paidAt ?? o.createdAt)}</td>
-                      <td className="p-3 text-left">{nx && o.stage !== "REGISTERED" && <button name="one" value={`${o.id}:${nx}`} className="whitespace-nowrap rounded-full border border-line px-3 py-1 text-xs font-semibold hover:border-navy hover:bg-navy hover:text-white">← {STAGE[nx].short}</button>}</td>
+                      <td className="p-3 text-left">{canEdit && nx && o.stage !== "REGISTERED" && <button name="one" value={`${o.id}:${nx}`} className="whitespace-nowrap rounded-full border border-line px-3 py-1 text-xs font-semibold hover:border-navy hover:bg-navy hover:text-white">← {STAGE[nx].short}</button>}</td>
                     </tr>
                   );
                 })}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { querySubmissions, columnsFor, submissionRef, type SubFilters } from "@/lib/submissions";
 import { displayValue } from "@/lib/forms/validate";
@@ -15,21 +15,21 @@ const PER = 30;
 
 async function setStatus(id: string, status: string) {
   "use server";
-  await requireAdmin();
+  await requirePerm("submissions");
   if (!["NEW", "CONTACTED", "ENROLLED", "ARCHIVED"].includes(status)) return;
   await prisma.submission.update({ where: { id }, data: { status: status as "NEW" } });
   revalidatePath("/admin", "layout");
 }
 async function saveNote(fd: FormData) {
   "use server";
-  await requireAdmin();
+  await requirePerm("submissions");
   await prisma.submission.update({ where: { id: String(fd.get("id")) }, data: { note: String(fd.get("note") ?? "").trim() || null } });
   revalidatePath("/admin/submissions");
 }
 
 async function bulkStatus(fd: FormData) {
   "use server";
-  await requireAdmin();
+  await requirePerm("submissions");
   const status = String(fd.get("status") ?? "");
   const ids = fd.getAll("ids").map(String);
   if (ids.length && ["NEW", "CONTACTED", "ENROLLED", "ARCHIVED"].includes(status)) await prisma.submission.updateMany({ where: { id: { in: ids } }, data: { status: status as "NEW" } });
@@ -47,6 +47,7 @@ function cell(v: unknown) {
 }
 
 export default async function Submissions({ searchParams }: { searchParams: Promise<SubFilters> }) {
+  await requirePerm("submissions");
   const f = await searchParams;
   const page = Math.max(1, Number(f.page) || 1);
   const [forms, { items, total }, selected, byStatus] = await Promise.all([

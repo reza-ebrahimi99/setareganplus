@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm, logAction, actorName } from "@/lib/auth";
 import { s, sn } from "@/lib/admin";
 import { PageTitle, Panel, SaveBar } from "@/components/admin/ui";
 import { GRADES, MAJORS, BRANCHES, PAY_METHOD, formatToman, isValidNationalCode } from "@/lib/shop/config";
@@ -10,12 +10,13 @@ import { normalizeIranMobile, toEn } from "@/lib/format";
 export const metadata = { title: "سفارش دستی" };
 
 export default async function NewOrder({ searchParams }: { searchParams: Promise<{ e?: string }> }) {
+  await requirePerm("shop.orders.edit");
   const { e } = await searchParams;
   const products = await prisma.product.findMany({ where: { active: true }, orderBy: [{ sortOrder: "asc" }, { title: "asc" }] });
 
   async function create(fd: FormData) {
     "use server";
-    await requireAdmin();
+    const me = await requirePerm("shop.orders.edit");
     const mobile = normalizeIranMobile(s(fd, "mobile"));
     const nc = toEn(s(fd, "nationalCode")).replace(/\D/g, "");
     const name = s(fd, "buyerName");
@@ -31,12 +32,13 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
         { source: "admin", qty: Number(toEn(s(fd, "qty"))) || 1 },
       );
       id = o.id;
+      await logAction(me, "order.create", `ثبت دستی سفارش ${o.number} برای ${name}`, o.id);
     } catch (err) {
       if (err instanceof ShopError) fail(err.message);
       throw err;
     }
     const pm = s(fd, "payMethod");
-    if (pm && pm !== "UNPAID") await setStage([id], "PAID", { payMethod: pm });
+    if (pm && pm !== "UNPAID") await setStage([id], "PAID", { payMethod: pm, actor: actorName(me) });
     redirect(`/admin/shop/orders/${id}?ok=1`);
   }
 

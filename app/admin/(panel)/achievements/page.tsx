@@ -1,3 +1,4 @@
+import { requirePerm } from "@/lib/auth";
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
@@ -5,6 +6,7 @@ import { fa } from "@/lib/format";
 import { PageTitle, Flash } from "@/components/admin/ui";
 
 export default async function AchList({ searchParams }: { searchParams: Promise<{ ok?: string; q?: string; c?: string }> }) {
+  await requirePerm("content.achievements");
   const { ok, q = "", c = "" } = await searchParams;
   const items = await prisma.achievement.findMany({
     where: {

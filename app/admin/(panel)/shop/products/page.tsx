@@ -1,3 +1,4 @@
+import { requirePerm } from "@/lib/auth";
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -9,6 +10,7 @@ import { fa } from "@/lib/format";
 export const metadata: Metadata = { title: "جزوه‌ها" };
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
+  await requirePerm("shop.products");
   const { ok } = await searchParams;
   const [items, sold] = await Promise.all([
     prisma.product.findMany({ orderBy: [{ active: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }] }),

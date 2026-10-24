@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { s } from "@/lib/admin";
 import { fa, slugify } from "@/lib/format";
 import { PageTitle, Panel, Field, Flash } from "@/components/admin/ui";
@@ -10,7 +10,7 @@ import { SubmitButton } from "@/components/admin/SubmitButton";
 
 async function create(fd: FormData) {
   "use server";
-  await requireAdmin();
+  await requirePerm("content.gallery");
   const title = s(fd, "title");
   if (!title) return;
   let slug = slugify(s(fd, "slug") || title);
@@ -20,6 +20,7 @@ async function create(fd: FormData) {
 }
 
 export default async function GalleryAdmin({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
+  await requirePerm("content.gallery");
   const { ok } = await searchParams;
   const albums = await prisma.galleryAlbum.findMany({ orderBy: { sortOrder: "asc" }, include: { _count: { select: { photos: true } } } });
   return (

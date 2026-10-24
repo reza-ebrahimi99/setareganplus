@@ -1,10 +1,11 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { getAdmin } from "@/lib/auth";
+import { permOr403 } from "@/lib/auth";
 import { uploadRoot, safeJoin, MIME } from "@/lib/uploads";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ key: string[] }> }) {
-  if (!(await getAdmin())) return new Response("Unauthorized", { status: 401 });
+  const me = await permOr403("submissions");
+  if (me instanceof Response) return me;
   const { key } = await ctx.params;
   const file = safeJoin(path.join(uploadRoot(), "private"), key);
   if (!file) return new Response("Not found", { status: 404 });

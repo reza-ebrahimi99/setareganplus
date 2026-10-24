@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm, logAction } from "@/lib/auth";
 import { s, sn, b, n, imageField } from "@/lib/admin";
 import { PageTitle, Panel, Field, Area, Check, ImageInput, SaveBar } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/SubmitButton";
@@ -14,6 +14,7 @@ const rials = (fd: FormData, k: string) => {
 };
 
 export default async function ProductEdit({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ e?: string; ok?: string }> }) {
+  await requirePerm("shop.products");
   const { id } = await params;
   const { e, ok } = await searchParams;
   const isNew = id === "new";
@@ -23,7 +24,7 @@ export default async function ProductEdit({ params, searchParams }: { params: Pr
 
   async function save(fd: FormData) {
     "use server";
-    await requireAdmin();
+    const me = await requirePerm("shop.products");
     const title = s(fd, "title");
     const price = rials(fd, "price");
     if (!title || !price) redirect(`/admin/shop/products/${id}?e=1`);
@@ -53,18 +54,21 @@ export default async function ProductEdit({ params, searchParams }: { params: Pr
     };
     if (isNew) {
       const c = await prisma.product.create({ data });
+      await logAction(me, "product.create", `جزوهٔ جدید «${title}» — ${price.toLocaleString("en")} ریال`, c.id);
       redirect(`/admin/shop/products/${c.id}?ok=1`);
     }
     await prisma.product.update({ where: { id }, data });
+    await logAction(me, "product.edit", `ویرایش جزوهٔ «${title}»${p && p.priceRials !== price ? ` — قیمت ${p.priceRials.toLocaleString("en")} → ${price.toLocaleString("en")} ریال` : ""}`, id);
     redirect(`/admin/shop/products/${id}?ok=1`);
   }
   async function remove() {
     "use server";
-    await requireAdmin();
+    const me = await requirePerm("shop.products");
     // Products with orders are only deactivated, never deleted (order history keeps its title anyway).
     const used = await prisma.orderItem.count({ where: { productId: id } });
     if (used) await prisma.product.update({ where: { id }, data: { active: false } });
     else await prisma.product.delete({ where: { id } });
+    await logAction(me, "product.delete", `${used ? "غیرفعال‌سازی" : "حذف"} جزوهٔ «${p?.title ?? id}»`, id);
     redirect("/admin/shop/products?ok=1");
   }
 

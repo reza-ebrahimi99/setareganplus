@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getAdmin } from "@/lib/auth";
+import { getAdminUser, can } from "@/lib/auth";
 import { qrSvg, ticketUrl } from "@/lib/shop/qr";
 import { BRANCH_LABEL } from "@/lib/shop/config";
 import { fa, prettyPhone } from "@/lib/format";
@@ -10,7 +10,9 @@ export const metadata = { title: "برچسب سفارش‌ها", robots: { index
 export const dynamic = "force-dynamic";
 
 export default async function Labels({ searchParams }: { searchParams: Promise<{ ids?: string }> }) {
-  if (!(await getAdmin())) redirect("/admin/login");
+  const me = await getAdminUser();
+  if (!me) redirect("/admin/login");
+  if (!can(me, "shop.labels")) redirect("/admin/forbidden?p=shop.labels");
   const ids = ((await searchParams).ids ?? "").split(",").filter(Boolean).slice(0, 300);
   const orders = await prisma.order.findMany({ where: { id: { in: ids } }, include: { items: true }, orderBy: [{ branch: "asc" }, { buyerName: "asc" }] });
   const qrs = await Promise.all(orders.map((o) => qrSvg(ticketUrl(o.qrToken))));
