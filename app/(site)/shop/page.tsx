@@ -5,7 +5,7 @@ import { getShopSettings } from "@/lib/shop/settings";
 import { CENTERS, GRADES, MAJORS } from "@/lib/shop/config";
 import { fa } from "@/lib/format";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { Eyebrow, Star } from "@/components/site/Star";
+import { Eyebrow, Icon, Sparkle, Star } from "@/components/site/Star";
 
 export const metadata: Metadata = {
   title: "فروشگاه جزوه",
@@ -32,31 +32,35 @@ export default async function Shop({ searchParams }: { searchParams: Promise<SP>
   const Chips = ({ k, list, label }: { k: keyof SP; list: readonly string[]; label: (v: string) => string }) =>
     list.length === 0 ? null : (
       <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
-        <Link href={chipHref(sp, k)} className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold ${!sp[k] ? "border-navy bg-navy text-white" : "border-line bg-paper text-ink/80 hover:border-navy/30"}`}>همه</Link>
+        <Link href={chipHref(sp, k)} className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold ${!sp[k] ? "border-royal bg-royal text-white shadow-[var(--shadow-glow)]" : "border-line bg-paper text-ink/80 hover:border-royal/30"}`}>همه</Link>
         {list.map((v) => (
-          <Link key={v} href={chipHref(sp, k, v)} className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold ${sp[k] === v ? "border-navy bg-navy text-white" : "border-line bg-paper text-ink/80 hover:border-navy/30"}`}>{label(v)}</Link>
+          <Link key={v} href={chipHref(sp, k, v)} className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold ${sp[k] === v ? "border-royal bg-royal text-white shadow-[var(--shadow-glow)]" : "border-line bg-paper text-ink/80 hover:border-royal/30"}`}>{label(v)}</Link>
         ))}
       </div>
     );
 
   return (
     <>
-      <section data-sp-lean-shop="" className="relative overflow-hidden bg-navy text-white">
-        <Star filled={false} className="pointer-events-none absolute -top-20 -left-16 size-80 text-white/[0.06]" />
-        <div className="container-x relative py-10 sm:py-14">
-          <Eyebrow tone="light">فروشگاه جزوه</Eyebrow>
-          <h1 className="mt-3 text-3xl leading-snug font-extrabold sm:text-4xl">جزوه‌های مدرسان ستارگان</h1>
-          <p className="mt-3 max-w-2xl leading-8 text-white/75">آنلاین سفارش دهید، امن پرداخت کنید و جزوهٔ چاپ‌شده را در شعبهٔ دختران یا پسران قلم‌چی نسیم‌شهر تحویل بگیرید.</p>
-          <form action="/shop" className="mt-6 flex max-w-xl gap-2">
+      <section data-sp-lean-shop="" className="bg-hero relative overflow-hidden text-white">
+        <div className="bg-dots pointer-events-none absolute inset-0 [mask-image:radial-gradient(60%_80%_at_70%_20%,black,transparent)]" />
+        <div className="pointer-events-none absolute -top-24 left-[10%] size-96 rounded-full bg-royal/45 blur-3xl" />
+        <Star filled={false} className="pointer-events-none absolute -bottom-24 -left-16 size-80 text-white/[0.06]" />
+        <Sparkle className="animate-twinkle pointer-events-none absolute top-10 left-[30%] size-3 text-gold" />
+        <div className="container-x relative pt-10 pb-16 sm:pt-14 sm:pb-20">
+          <span className="rise inline-block"><Eyebrow tone="light">فروشگاه جزوه</Eyebrow></span>
+          <h1 className="rise rise-1 mt-4 text-[2rem] leading-[1.35] font-black tracking-tight sm:text-5xl sm:leading-[1.25]">جزوه‌های مدرسان <span className="text-gradient">ستارگان</span></h1>
+          <p className="rise rise-2 mt-4 max-w-2xl leading-8 text-white/75 sm:text-lg sm:leading-9">آنلاین سفارش دهید، امن پرداخت کنید و جزوهٔ چاپ‌شده را در شعبهٔ دختران یا پسران قلم‌چی نسیم‌شهر تحویل بگیرید.</p>
+          <form action="/shop" className="rise rise-3 mt-7 flex max-w-xl gap-2 rounded-full bg-white p-1.5 shadow-2xl shadow-black/30">
             {sp.grade && <input type="hidden" name="grade" value={sp.grade} />}
             {sp.major && <input type="hidden" name="major" value={sp.major} />}
             {sp.center && <input type="hidden" name="center" value={sp.center} />}
-            <input name="q" defaultValue={sp.q} placeholder="جست‌وجوی نام جزوه، درس یا مدرس…" className="input flex-1 border-white/20 bg-white text-ink" />
-            <button className="btn-gold shrink-0 px-5">جست‌وجو</button>
+            <span className="flex items-center ps-3 text-muted"><Icon name="search" className="size-5" /></span>
+            <input name="q" defaultValue={sp.q} placeholder="جست‌وجوی نام جزوه، درس یا مدرس…" className="min-w-0 flex-1 bg-transparent px-1 text-[0.95rem] text-ink placeholder:text-muted/70 focus:outline-none" />
+            <button className="btn-primary shrink-0 px-5 py-2.5">جست‌وجو</button>
           </form>
-          <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/70">
-            {["پرداخت امن زیبال", "پیامک آماده‌شدن سفارش", "تحویل حضوری با کد QR"].map((t) => (
-              <li key={t} className="flex items-center gap-1.5"><Star className="size-3 text-gold" />{t}</li>
+          <ul className="rise rise-4 mt-7 flex flex-wrap gap-2 text-sm">
+            {([["shield", "پرداخت امن زیبال"], ["sms", "پیامک آماده‌شدن سفارش"], ["qr", "تحویل حضوری با کد QR"]] as const).map(([ic, t]) => (
+              <li key={t} className="glass flex items-center gap-1.5 rounded-full px-3 py-1.5 text-white/85"><Icon name={ic} className="size-4 text-gold" />{t}</li>
             ))}
           </ul>
         </div>
@@ -74,20 +78,20 @@ export default async function Shop({ searchParams }: { searchParams: Promise<SP>
           {filtered && <Link href="/shop" className="font-semibold text-edu">حذف فیلترها</Link>}
         </div>
         {items.length === 0 ? (
-          <div className="card px-6 py-14 text-center text-muted">جزوه‌ای با این مشخصات پیدا نشد.</div>
+          <div className="card px-6 py-16 text-center text-muted">جزوه‌ای با این مشخصات پیدا نشد.</div>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
             {items.map((p) => <ProductCard key={p.id} p={p} />)}
           </div>
         )}
-        <div className="mt-10 grid gap-3 rounded-2xl border border-line bg-paper p-5 text-sm sm:grid-cols-3">
+        <div className="mt-12 grid gap-4 rounded-[1.75rem] border border-line bg-paper p-6 text-sm shadow-[var(--shadow-soft)] sm:grid-cols-3 sm:p-8">
           {[
             ["۱", "انتخاب و پرداخت", "جزوه را انتخاب کنید، فرم کوتاه را پر کنید و آنلاین بپردازید."],
             ["۲", "چاپ و آماده‌سازی", "جزوه چاپ می‌شود و پس از آماده شدن پیامک می‌گیرید."],
             ["۳", "تحویل حضوری", "با نشان دادن کد QR یا کد سفارش، جزوه را در شعبه تحویل بگیرید."],
           ].map(([n, t, d]) => (
             <div key={n} className="flex gap-3">
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gold/20 font-extrabold text-gold-ink">{n}</span>
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-royal to-royal-2 text-base font-black text-white shadow-lg">{n}</span>
               <span><b className="block text-navy">{t}</b><span className="text-muted">{d}</span></span>
             </div>
           ))}

@@ -28,7 +28,7 @@ const BADGE: Record<Badge, { label: string; cls: string }> = {
 export function Badges({ badges, className = "" }: { badges: Badge[]; className?: string }) {
   return (
     <div className={`flex flex-wrap gap-1.5 ${className}`}>
-      {badges.map((b) => <span key={b} className={`rounded-full px-2.5 py-0.5 text-[0.7rem] font-bold shadow-sm ${BADGE[b].cls}`}>{BADGE[b].label}</span>)}
+      {badges.map((b) => <span key={b} className={`rounded-full px-2.5 py-0.5 backdrop-blur text-[0.7rem] font-bold shadow-sm ${BADGE[b].cls}`}>{BADGE[b].label}</span>)}
     </div>
   );
 }
@@ -47,21 +47,21 @@ export type CardProduct = { id: string; slug: string; title: string; author: str
 export function ProductCard({ p }: { p: CardProduct }) {
   const out = p.stock === 0;
   return (
-    <Link href={`/shop/${p.slug}`} className={`group card flex flex-col overflow-hidden transition-shadow hover:shadow-lg hover:shadow-navy/5 ${out ? "opacity-75" : ""}`}>
-      <div className="relative aspect-[3/4] overflow-hidden bg-ivory">
-        <Cover title={p.title} subject={p.subject} cover={p.cover} seed={p.slug} className="transition-transform duration-500 group-hover:scale-[1.03]" />
+    <Link href={`/shop/${p.slug}`} className={`group card card-hover flex h-full flex-col overflow-hidden !rounded-[1.4rem] ${out ? "opacity-75" : ""}`}>
+      <div className="relative m-2 mb-0 aspect-[3/4] overflow-hidden rounded-[1rem] bg-ivory">
+        <Cover title={p.title} subject={p.subject} cover={p.cover} seed={p.slug} className="transition-transform duration-700 group-hover:scale-[1.05]" />
         <Badges badges={p.badges} className="absolute top-3 right-3" />
       </div>
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 flex-col p-3.5 sm:p-4">
         <div className="mb-1 flex flex-wrap gap-1.5 text-[0.72rem] text-muted">
-          {p.grade && <span className="rounded-full bg-ivory px-2 py-0.5">{p.grade}</span>}
+          {p.grade && <span className="rounded-full bg-sky px-2 py-0.5 font-semibold text-royal">{p.grade}</span>}
           {p.subject && <span className="rounded-full bg-ivory px-2 py-0.5">{p.subject}</span>}
         </div>
-        <h3 className="leading-7 font-bold text-navy">{p.title}</h3>
+        <h3 className="line-clamp-2 leading-7 font-extrabold text-navy">{p.title}</h3>
         {p.author && <p className="mt-0.5 text-sm text-muted">{p.author}</p>}
         <div className="mt-auto flex items-center justify-between gap-2 pt-4">
           <Price rials={p.priceRials} compareAt={p.compareAtRials} />
-          <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${out ? "bg-line text-muted" : "bg-gold text-navy group-hover:bg-[#f4b72a]"}`}>{out ? "ناموجود" : "خرید"}</span>
+          <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${out ? "bg-line text-muted" : "bg-gradient-to-b from-[#ffc83d] to-gold text-navy shadow-[0_6px_14px_-6px_rgb(244_178_27/0.9)] transition-transform group-hover:-translate-y-0.5"}`}>{out ? "ناموجود" : "خرید"}</span>
         </div>
       </div>
     </Link>

@@ -1,17 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --navy: #0b1f3a;
-  --navy-2: #13305a;
-  --gold: #e9a80b;
+  --navy: #0a1a3f;
+  --navy-2: #16306e;
+  --royal: #2f5bea;
+  --royal-2: #5b3df5;
+  --sky: #eaf0ff;
+  --gold: #f4b21b;
   --gold-ink: #7a5600;
-  --ivory: #faf8f3;
+  --ivory: #f6f7fb;
   --paper: #ffffff;
-  --ink: #1b2433;
-  --muted: #5b6577;
-  --line: #e6e1d6;
-  --edu: #2c6cb0;
-  --edu-soft: #eaf1f9;
+  --ink: #141b2d;
+  --muted: #5a6478;
+  --line: #e3e7f0;
+  --edu: #2f5bea;
+  --edu-soft: #eaf0ff;
   --gc: #c8363d;
   --gc-soft: #fbecec;
 }
@@ -19,6 +22,9 @@
 @theme inline {
   --color-navy: var(--navy);
   --color-navy-2: var(--navy-2);
+  --color-royal: var(--royal);
+  --color-royal-2: var(--royal-2);
+  --color-sky: var(--sky);
   --color-gold: var(--gold);
   --color-gold-ink: var(--gold-ink);
   --color-ivory: var(--ivory);
@@ -32,6 +38,12 @@
   --color-gc-soft: var(--gc-soft);
   --font-sans: var(--font-vazir), Tahoma, sans-serif;
   --radius-card: 1.25rem;
+  --shadow-soft: 0 1px 2px rgb(10 26 63 / 0.04), 0 8px 24px -8px rgb(10 26 63 / 0.10);
+  --shadow-lift: 0 2px 4px rgb(10 26 63 / 0.05), 0 22px 44px -16px rgb(10 26 63 / 0.22);
+  --shadow-glow: 0 18px 50px -14px rgb(47 91 234 / 0.55);
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-twinkle: twinkle 3.2s ease-in-out infinite;
+  --animate-marquee: marquee 40s linear infinite;
 }
 
 html {
@@ -61,28 +73,73 @@ body {
     @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-[0.95rem] font-semibold transition-colors duration-150 disabled:opacity-60;
   }
 @utility btn-gold {
-    @apply btn bg-gold text-navy hover:bg-[#f4b72a];
+    @apply btn bg-gradient-to-b from-[#ffc83d] to-gold text-navy shadow-[0_10px_24px_-10px_rgb(244_178_27/0.9)] transition-[transform,box-shadow,background-color] hover:-translate-y-0.5 hover:shadow-[0_16px_30px_-12px_rgb(244_178_27/0.95)] active:translate-y-0;
+  }
+@utility btn-primary {
+    @apply btn bg-gradient-to-l from-royal to-royal-2 text-white shadow-[var(--shadow-glow)] transition-[transform,box-shadow] hover:-translate-y-0.5 active:translate-y-0;
+  }
+@utility btn-navy {
+    @apply btn bg-navy text-white transition-[transform,background-color] hover:-translate-y-0.5 hover:bg-navy-2;
   }
 @utility btn-ghost {
-    @apply btn border border-line bg-paper text-ink hover:border-navy/30;
+    @apply btn border border-line bg-paper text-ink shadow-[var(--shadow-soft)] hover:border-royal/40 hover:text-royal;
   }
 @utility btn-ghost-dark {
     @apply btn border border-white/25 text-white hover:bg-white/10;
   }
 @utility card {
-    @apply rounded-[var(--radius-card)] border border-line bg-paper;
+    @apply rounded-[var(--radius-card)] border border-line/80 bg-paper shadow-[var(--shadow-soft)];
+  }
+@utility card-hover {
+    @apply transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-royal/25 hover:shadow-[var(--shadow-lift)];
+  }
+@utility glass {
+    @apply border border-white/15 bg-white/[0.07] backdrop-blur-md;
+  }
+@utility text-gradient {
+    @apply bg-gradient-to-l from-[#ffd36b] via-gold to-[#ff9f43] bg-clip-text text-transparent;
+  }
+@utility text-gradient-blue {
+    @apply bg-gradient-to-l from-royal to-royal-2 bg-clip-text text-transparent;
+  }
+@utility bg-hero {
+    background-color: var(--navy);
+    background-image:
+      radial-gradient(60% 70% at 85% 0%, rgb(47 91 234 / 0.55), transparent 60%),
+      radial-gradient(45% 55% at 5% 100%, rgb(91 61 245 / 0.45), transparent 60%),
+      radial-gradient(30% 35% at 50% 50%, rgb(244 178 27 / 0.10), transparent 70%),
+      linear-gradient(180deg, #0a1a3f 0%, #0c1d4a 100%);
+  }
+@utility bg-royal-panel {
+    background-color: var(--royal);
+    background-image:
+      radial-gradient(70% 90% at 100% 0%, rgb(255 255 255 / 0.16), transparent 55%),
+      radial-gradient(60% 80% at 0% 100%, rgb(91 61 245 / 0.7), transparent 60%),
+      linear-gradient(135deg, #2f5bea 0%, #3a49e6 50%, #4a3ef0 100%);
+  }
+@utility bg-dots {
+    background-image: radial-gradient(rgb(255 255 255 / 0.13) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+@utility bg-dots-dark {
+    background-image: radial-gradient(rgb(10 26 63 / 0.07) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+@utility no-scrollbar {
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
   }
 @utility eyebrow {
-    @apply inline-flex items-center gap-2 text-sm font-semibold tracking-wide text-muted;
+    @apply inline-flex items-center gap-2 rounded-full border border-line bg-paper px-3 py-1 text-[0.8rem] font-bold text-muted shadow-[var(--shadow-soft)];
   }
 @utility h-section {
-    @apply text-2xl leading-snug font-extrabold text-navy sm:text-[2rem];
+    @apply text-[1.65rem] leading-snug font-black tracking-tight text-navy sm:text-[2.35rem] sm:leading-[1.3];
   }
 .prose-fa p {
     @apply mb-4 leading-[2.05] text-ink/90;
   }
 @utility input {
-    @apply w-full rounded-xl border border-line bg-paper px-3.5 py-2.5 text-[0.95rem] text-ink placeholder:text-muted/60 focus:border-edu focus:outline-none focus:ring-2 focus:ring-edu/15;
+    @apply w-full rounded-xl border border-line bg-paper px-3.5 py-2.5 text-[0.95rem] text-ink transition-[border-color,box-shadow] placeholder:text-muted/60 hover:border-royal/30 focus:border-edu focus:outline-none focus:ring-4 focus:ring-edu/12;
   }
 @utility label {
     @apply mb-1.5 block text-sm font-semibold text-ink;
@@ -90,3 +147,24 @@ body {
 @utility chip {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
   }
+
+@keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
+@keyframes twinkle { 0%,100% { opacity: .25; transform: scale(.8) } 50% { opacity: 1; transform: scale(1.1) } }
+@keyframes marquee { from { transform: translateX(0) } to { transform: translateX(50%) } }
+@keyframes rise { from { opacity: 0; transform: translateY(18px) } to { opacity: 1; transform: none } }
+
+/* Entrance on load (hero) */
+.rise { animation: rise .8s cubic-bezier(.2,.7,.2,1) both; }
+.rise-1 { animation-delay: .08s } .rise-2 { animation-delay: .16s } .rise-3 { animation-delay: .24s } .rise-4 { animation-delay: .32s }
+
+/* Reveal-on-scroll with pure CSS (no JS; browsers without support just show content) */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 38%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

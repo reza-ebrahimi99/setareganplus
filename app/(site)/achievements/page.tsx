@@ -27,12 +27,12 @@ export default async function Achievements({ searchParams }: { searchParams: Pro
       <div className="container-x py-12">
         <nav className="mb-8 flex flex-wrap gap-2">
           {TABS.map((t) => (
-            <Link key={t.key} href={t.key ? `/achievements?c=${t.key}` : "/achievements"} className={`rounded-full border px-4 py-2 text-sm font-semibold ${c === t.key ? "border-navy bg-navy text-white" : "border-line bg-paper text-ink hover:border-navy/30"}`}>
+            <Link key={t.key} href={t.key ? `/achievements?c=${t.key}` : "/achievements"} className={`rounded-full border px-4 py-2 text-sm font-semibold ${c === t.key ? "border-royal bg-royal text-white shadow-[var(--shadow-glow)]" : "border-line bg-paper text-ink shadow-[var(--shadow-soft)] hover:border-royal/30"}`}>
               {t.label} <span className="opacity-60">({fa(count(t.key))})</span>
             </Link>
           ))}
         </nav>
-        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">{items.map((a) => <AchievementCard key={a.id} a={a} />)}</div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">{items.map((a) => <AchievementCard key={a.id} a={a} />)}</div>
       </div>
     </>
   );
