@@ -28,6 +28,7 @@ export const PERM_GROUPS = [
       { key: "content.achievements", label: "افتخارات", hint: "رتبه‌ها و قبولی‌ها" },
       { key: "content.gallery", label: "گالری", hint: "آلبوم‌ها و عکس‌ها" },
       { key: "content.faq", label: "سؤالات متداول", hint: "" },
+      { key: "content.news", label: "اخبار و اطلاعیه‌ها", hint: "نوشتن، انتشار و سنجاق کردن خبر و اطلاعیه" },
       { key: "site.settings", label: "تنظیمات سایت", hint: "تلفن، آدرس، آمار، متن‌های صفحهٔ اصلی" },
     ],
   },
@@ -47,7 +48,7 @@ export const PRESETS: { key: string; label: string; perms: Perm[] }[] = [
   { key: "shop", label: "فروشگاه کامل", perms: ["shop.dashboard", "shop.orders.view", "shop.orders.edit", "shop.pickup", "shop.labels", "shop.products", "shop.settings"] },
   { key: "forms", label: "فقط فرم‌ها", perms: ["forms.builder", "submissions"] },
   { key: "reception", label: "پذیرش (درخواست‌ها)", perms: ["submissions"] },
-  { key: "content", label: "محتوای سایت", perms: ["content.centers", "content.team", "content.achievements", "content.gallery", "content.faq"] },
+  { key: "content", label: "محتوای سایت", perms: ["content.centers", "content.team", "content.achievements", "content.gallery", "content.faq", "content.news"] },
 ];
 
 /** Admin route -> required permission (longest prefix wins). Used by the sidebar and the dashboard. */
@@ -65,6 +66,7 @@ export const ROUTE_PERM: [string, Perm | null][] = [
   ["/admin/achievements", "content.achievements"],
   ["/admin/gallery", "content.gallery"],
   ["/admin/faq", "content.faq"],
+  ["/admin/news", "content.news"],
   ["/admin/settings", "site.settings"],
   ["/admin/users", "users.manage"],
 ];

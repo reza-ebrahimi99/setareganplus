@@ -7,6 +7,7 @@ import { PageTitle, Panel, Field, Area, Check, ImageInput, SaveBar } from "@/com
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { GRADES, MAJORS, CENTERS, toman } from "@/lib/shop/config";
 import { slugify, toEn } from "@/lib/format";
+import { pingIndexNow } from "@/lib/indexnow";
 
 const rials = (fd: FormData, k: string) => {
   const t = Number.parseInt(toEn(s(fd, k)).replace(/[^\d]/g, ""), 10);
@@ -55,10 +56,12 @@ export default async function ProductEdit({ params, searchParams }: { params: Pr
     if (isNew) {
       const c = await prisma.product.create({ data });
       await logAction(me, "product.create", `جزوهٔ جدید «${title}» — ${price.toLocaleString("en")} ریال`, c.id);
+      if (data.active) pingIndexNow([`/shop/${slug}`, "/shop"]);
       redirect(`/admin/shop/products/${c.id}?ok=1`);
     }
     await prisma.product.update({ where: { id }, data });
     await logAction(me, "product.edit", `ویرایش جزوهٔ «${title}»${p && p.priceRials !== price ? ` — قیمت ${p.priceRials.toLocaleString("en")} → ${price.toLocaleString("en")} ریال` : ""}`, id);
+    if (data.active || p?.active) pingIndexNow([`/shop/${slug}`, "/shop"]);
     redirect(`/admin/shop/products/${id}?ok=1`);
   }
   async function remove() {

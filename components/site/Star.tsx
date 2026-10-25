@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { breadcrumbLd, type Crumb } from "@/lib/ld";
+import { JsonLd } from "./JsonLd";
 
 /** The logo star — used as a recurring motif. */
 export function Star({ className = "", filled = true }: { className?: string; filled?: boolean }) {
@@ -46,6 +48,8 @@ const ICONS = {
   home: <><path d="M4 10.5 12 4l8 6.5V20h-5v-6H9v6H4v-9.5Z" strokeLinejoin="round" /></>,
   image: <><rect x="3.5" y="5" width="17" height="14" rx="2.5" /><circle cx="9" cy="10" r="1.8" /><path d="m4 17 5-4.5 4 3.5 3-2.5 4 3.5" strokeLinejoin="round" /></>,
   info: <><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5M12 8h.01" strokeLinecap="round" /></>,
+  news: <><path d="M4 9.5v5h3l7 4.5V5L7 9.5H4Z" strokeLinejoin="round" /><path d="M17.5 9a4 4 0 0 1 0 6M7 14.5 8.5 20h2.5" strokeLinecap="round" strokeLinejoin="round" /></>,
+  share: <><circle cx="17" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17" cy="18.5" r="2.5" /><path d="m8.7 10.8 6.1-3.9M8.7 13.2l6.1 3.9" /></>,
   help: <><circle cx="12" cy="12" r="8.5" /><path d="M9.6 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.4M12 16.8h.01" strokeLinecap="round" /></>,
 } as const;
 export type IconName = keyof typeof ICONS;
@@ -102,15 +106,20 @@ export function PageHero({
   text,
   accent = "gold",
   crumbs,
+  trail = [],
   children,
 }: {
   eyebrow?: string;
   title: string;
   text?: string;
   accent?: "gold" | "edu" | "gc";
+  /** label of the current page in the breadcrumb (defaults to eyebrow/title) */
   crumbs?: string;
+  /** intermediate breadcrumb levels between Home and this page */
+  trail?: Crumb[];
   children?: React.ReactNode;
 }) {
+  const here = crumbs ?? eyebrow ?? title;
   const glow = { gold: "bg-gold/30", edu: "bg-royal/50", gc: "bg-gc/45" }[accent];
   return (
     <section className="bg-hero relative overflow-hidden text-white">
@@ -120,11 +129,18 @@ export function PageHero({
       <Sparkle className="animate-twinkle pointer-events-none absolute top-10 left-[30%] size-3 text-gold" />
       <Sparkle className="animate-twinkle pointer-events-none absolute bottom-12 left-[18%] size-2 text-white/70 [animation-delay:1.2s]" />
       <div className="container-x relative pt-10 pb-12 sm:pt-14 sm:pb-16">
-        <p className="rise mb-4 flex items-center gap-1.5 text-xs text-white/55">
+        <JsonLd data={breadcrumbLd([...trail, { name: here }])} />
+        <nav aria-label="مسیر صفحه" className="rise mb-4 flex flex-wrap items-center gap-1.5 text-xs text-white/55">
           <Link href="/" className="hover:text-white">خانه</Link>
+          {trail.map((c) => (
+            <span key={c.name} className="flex items-center gap-1.5">
+              <Icon name="arrow" className="size-3" />
+              {c.href ? <Link href={c.href} className="hover:text-white">{c.name}</Link> : <span>{c.name}</span>}
+            </span>
+          ))}
           <Icon name="arrow" className="size-3" />
-          <span className="text-white/80">{crumbs ?? eyebrow ?? title}</span>
-        </p>
+          <span className="text-white/80" aria-current="page">{here}</span>
+        </nav>
         {eyebrow && <span className="rise"><Eyebrow tone="light">{eyebrow}</Eyebrow></span>}
         <h1 className="rise rise-1 mt-4 max-w-3xl text-[1.9rem] leading-[1.4] font-black tracking-tight sm:text-5xl sm:leading-[1.3]">{title}</h1>
         {text && <p className="rise rise-2 mt-4 max-w-2xl text-[1.05rem] leading-8 text-white/70 sm:text-lg sm:leading-9">{text}</p>}

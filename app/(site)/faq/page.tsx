@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
+import { faqLd, pageMeta } from "@/lib/seo";
+import { JsonLd } from "@/components/site/JsonLd";
 import { prisma } from "@/lib/prisma";
 import { PageHero } from "@/components/site/Star";
 
-export const metadata: Metadata = { title: "سؤالات متداول" };
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMeta("faq");
+}
 
 export default async function Faq() {
   const items = await prisma.faq.findMany({ where: { published: true }, orderBy: { sortOrder: "asc" } });
   return (
     <>
+      <JsonLd data={faqLd(items.map((f) => ({ q: f.question, a: f.answer })))} />
       <PageHero eyebrow="سؤالات متداول" title="پاسخ پرسش‌های رایج" />
       <div className="container-x max-w-3xl space-y-3 py-12">
         {items.map((f, i) => (

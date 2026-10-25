@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHero } from "@/components/site/Star";
 import { AchievementCard } from "@/components/site/cards";
 import { fa } from "@/lib/format";
 
-export const metadata: Metadata = { title: "افتخارات", description: "قبولی‌های کنکور، تیزهوشان و نمونه دولتی دانش‌آموزان ستارگان." };
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMeta("achievements");
+}
 
 const TABS = [
   { key: "", label: "همه" },

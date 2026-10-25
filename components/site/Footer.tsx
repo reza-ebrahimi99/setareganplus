@@ -11,7 +11,16 @@ const LINKS = [
   { href: "/order", label: "پیگیری سفارش جزوه" },
   { href: "/register", label: "پیش‌ثبت‌نام" },
 ];
+// local guide pages (real content from site data; see lib/seo.ts LANDINGS)
+const GUIDES = [
+  { href: "/konkur-nasimshahr", label: "کنکور در نسیم‌شهر" },
+  { href: "/amoozeshgah-taghviati-nasimshahr", label: "آموزشگاه تقویتی نسیم‌شهر" },
+  { href: "/kelas-taghviati", label: "کلاس تقویتی به تفکیک پایه" },
+  { href: "/ghalamchi-nasimshahr", label: "آزمون‌های قلم‌چی نسیم‌شهر" },
+  { href: "/jozve-konkur", label: "جزوه کنکور" },
+];
 const MORE = [
+  { href: "/news", label: "اخبار و اطلاعیه‌ها" },
   { href: "/achievements", label: "افتخارات" },
   { href: "/team", label: "تیم ما" },
   { href: "/gallery", label: "گالری" },
@@ -113,6 +122,12 @@ export function Footer({ contact }: { contact: ContactSettings; shopOpen?: boole
             )}
           </div>
         </div>
+      </div>
+      <div className="relative border-t border-white/10">
+        <nav aria-label="راهنماها" className="container-x flex flex-wrap items-center gap-x-4 gap-y-2 py-4 text-xs text-white/55">
+          <span className="font-bold text-white/70">راهنما:</span>
+          {GUIDES.map((g) => <Link key={g.href} href={g.href} className="hover:text-gold">{g.label}</Link>)}
+        </nav>
       </div>
       <div className="relative border-t border-white/10">
         <div className="container-x flex flex-col gap-2 py-5 text-xs text-white/45 sm:flex-row sm:justify-between">

@@ -8,6 +8,15 @@ import { CenterCard, StatsBand, AchievementCard, TeamCard } from "@/components/s
 import { listProducts } from "@/lib/shop/catalog";
 import { getShopSettings } from "@/lib/shop/settings";
 import { ProductCard } from "@/components/shop/ProductCard";
+import type { Metadata } from "next";
+import { organizationLd, pageMeta, websiteLd } from "@/lib/seo";
+import { homeNews } from "@/lib/news";
+import { JsonLd } from "@/components/site/JsonLd";
+import { NewsCard } from "@/components/site/news";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMeta("home");
+}
 
 export default async function Home() {
   const [s, centers, achievements, team, albums, booklets, shop, forms, faqs] = await Promise.all([
@@ -25,6 +34,7 @@ export default async function Home() {
     prisma.form.findMany({ where: { status: "PUBLISHED" }, orderBy: [{ isSystem: "desc" }, { createdAt: "asc" }], select: { slug: true, title: true, description: true } }),
     prisma.faq.findMany({ where: { published: true }, orderBy: { sortOrder: "asc" }, take: 4 }),
   ]);
+  const [news, orgLd] = await Promise.all([homeNews().catch(() => []), organizationLd()]);
   const { home, about, contact, stats } = s;
   const founder = about.founder;
   const mosaic = albums.flatMap((a) => a.photos.map((p) => ({ ...p, album: a }))).slice(0, 5);
@@ -41,6 +51,7 @@ export default async function Home() {
 
   return (
     <>
+      <JsonLd data={[orgLd, websiteLd()]} />
       {/* ───────── Hero ───────── */}
       <section className="bg-hero relative overflow-hidden text-white">
         <div className="bg-dots pointer-events-none absolute inset-0 [mask-image:radial-gradient(60%_70%_at_75%_30%,black,transparent)]" />
@@ -122,6 +133,29 @@ export default async function Home() {
           ))}
         </div>
       </section>
+
+      {/* ───────── News & announcements (hidden when empty) ───────── */}
+      {news.length > 0 && (
+        <section aria-labelledby="home-news" className="container-x pt-16 sm:pt-20">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <Eyebrow>اخبار و اطلاعیه‌ها</Eyebrow>
+              <h2 id="home-news" className="h-section mt-3">تازه‌های <span className="text-gradient-blue">ستارگان</span></h2>
+            </div>
+            <Link href="/news" className="btn-ghost px-5 py-2.5 text-sm">همهٔ اخبار و اطلاعیه‌ها <Icon name="arrow" className="size-4" /></Link>
+          </div>
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {news.slice(0, 3).map((n) => <NewsCard key={n.id} n={n} />)}
+          </div>
+          {news.length > 3 && (
+            <ul className="mt-6 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-paper">
+              {news.slice(3).map((n) => (
+                <li key={n.id}><Link href={`/news/${n.slug}`} className="flex items-center justify-between gap-4 px-5 py-3.5 text-sm font-bold text-navy hover:bg-ivory"><span className="truncate">{n.pinned && "📌 "}{n.title}</span><Icon name="arrow" className="size-4 shrink-0 text-muted" /></Link></li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       {/* ───────── Centers ───────── */}
       {centers.length > 0 && (

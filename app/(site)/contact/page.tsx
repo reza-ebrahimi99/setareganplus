@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import { getSettings } from "@/lib/settings";
 import { prettyPhone, telHref } from "@/lib/format";
 import { Icon, PageHero, SectionHead, Star } from "@/components/site/Star";
 import { BranchList } from "@/components/site/BranchList";
 
-export const metadata: Metadata = { title: "تماس با ما", description: "شماره‌های تماس، نشانی شعبه‌ها و ساعات کاری مؤسسه علمی ستارگان نسیم‌شهر." };
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMeta("contact");
+}
 
 export default async function Contact() {
   const { contact } = await getSettings();

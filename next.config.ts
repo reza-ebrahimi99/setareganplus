@@ -42,7 +42,7 @@ const map: [string, string][] = [
   ["/classes/:path*", "/education"],
   ["/courses/:path*", "/education"],
   ["/amoozeshgah", "/education"],
-  ["/konkur", "/education"],
+  ["/konkur", "/konkur-nasimshahr"],
   ["/exams/:path*", "/ghalamchi"],
   ["/assessments/:path*", "/ghalamchi"],
   ["/ghalamchi/register", "/ghalamchi#register"],
@@ -52,6 +52,13 @@ const map: [string, string][] = [
   ["/forms/:path*", "/register"],
   ["/register/:slug", "/register"],
   ["/about/school", "/about"],
+  // news / guides (phase 5)
+  ["/blog/:path*", "/news"],
+  ["/akhbar/:path*", "/news"],
+  ["/announcements/:path*", "/news"],
+  ["/news/category/:cat", "/news?cat=:cat"],
+  ["/jozve", "/jozve-konkur"],
+  ["/booklets", "/shop"],
 ];
 
 const nextConfig: NextConfig = {

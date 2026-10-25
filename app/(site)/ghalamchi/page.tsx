@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { CenterPage } from "@/components/site/CenterPage";
 
-export const metadata: Metadata = {
-  title: "نمایندگی قلم‌چی نسیم‌شهر",
-  description: "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر؛ شعبه دختران و شعبه پسران.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMeta("ghalamchi");
+}
 
 export default function Page() {
   return <CenterPage slug="ghalamchi" />;

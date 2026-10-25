@@ -22,7 +22,7 @@ export function Cover({ title, subject, cover, seed = "", className = "" }: { ti
 const BADGE: Record<Badge, { label: string; cls: string }> = {
   out: { label: "ناموجود", cls: "bg-ink/80 text-white" },
   best: { label: "پرفروش", cls: "bg-gold text-navy" },
-  new: { label: "جدید", cls: "bg-emerald-600 text-white" },
+  new: { label: "جدید", cls: "bg-emerald-700 text-white" },
   sale: { label: "تخفیف", cls: "bg-gc text-white" },
 };
 export function Badges({ badges, className = "" }: { badges: Badge[]; className?: string }) {

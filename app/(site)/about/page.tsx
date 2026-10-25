@@ -1,11 +1,14 @@
 /* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import { getSettings } from "@/lib/settings";
 import { PageHero, SectionHead, Star, Eyebrow } from "@/components/site/Star";
 import { StatsBand } from "@/components/site/cards";
 
-export const metadata: Metadata = { title: "درباره ما", description: "داستان، مأموریت، چشم‌انداز و ارزش‌های مؤسسه علمی ستارگان نسیم‌شهر." };
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMeta("about");
+}
 
 export default async function About() {
   const { about, stats } = await getSettings();

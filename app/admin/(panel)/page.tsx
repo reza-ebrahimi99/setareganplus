@@ -5,10 +5,12 @@ import { displayValue } from "@/lib/forms/validate";
 import { PageTitle, Panel, STATUS, Empty } from "@/components/admin/ui";
 import { requireAdmin, can, type AdminUser } from "@/lib/auth";
 import { ROUTE_PERM, PERM_LABEL } from "@/lib/perms";
+import { getBackupStatus, type BackupStatus } from "@/lib/backupStatus";
 
 export default async function Dashboard() {
   const me = await requireAdmin();
   if (!can(me, "submissions")) return <StaffHome me={me} />;
+  const backup = me.owner ? await getBackupStatus() : null;
   const [newCount, total, week, forms, team, ach, photos, latest] = await Promise.all([
     prisma.submission.count({ where: { status: "NEW" } }),
     prisma.submission.count(),
@@ -76,9 +78,27 @@ export default async function Dashboard() {
             <Link href="/admin/centers/education" className="rounded-xl border border-edu/30 bg-edu-soft px-3 py-2.5 font-semibold text-edu">آموزشگاه ستارگان</Link>
             <Link href="/admin/centers/ghalamchi" className="rounded-xl border border-gc/30 bg-gc-soft px-3 py-2.5 font-semibold text-gc">قلم‌چی نسیم‌شهر</Link>
           </div>
+          {backup && <BackupLine b={backup} />}
         </Panel>
       </div>
     </>
+  );
+}
+
+function BackupLine({ b }: { b: BackupStatus }) {
+  const size = (n: number | null) => (n ? ` · ${fa((n / 1048576).toFixed(1))} مگابایت` : "");
+  if (b.state === "none")
+    return <p className="mt-4 rounded-xl bg-ivory px-4 py-3 text-xs text-muted">آخرین پشتیبان: هنوز پشتیبان شبانه‌ای روی این سرور ثبت نشده است.</p>;
+  const last = b.lastOk ? `${jalaliDateTime(b.lastOk)}${size(b.bytes)}` : "هیچ‌وقت";
+  if (b.state === "ok")
+    return <p className="mt-4 rounded-xl bg-ivory px-4 py-3 text-xs text-muted" data-backup="ok"><span className="font-bold text-navy">آخرین پشتیبان:</span> {last} ✓</p>;
+  return (
+    <div className="mt-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-xs text-red-800" data-backup={b.state}>
+      <p className="font-bold">{b.state === "failed" ? "⚠ آخرین پشتیبان‌گیری ناموفق بود" : "⚠ بیش از ۳۶ ساعت است که پشتیبان گرفته نشده"}</p>
+      <p className="mt-1">آخرین پشتیبان سالم: {last}</p>
+      {b.state === "failed" && b.message && <p className="mt-1 break-words font-mono" dir="ltr">{b.message}</p>}
+      <p className="mt-1">جزئیات روی سرور: <span dir="ltr" className="inline-block font-mono">backup.log</span> در <span dir="ltr" className="inline-block font-mono">/var/backups/setareganplus-lean</span></p>
+    </div>
   );
 }
 
@@ -89,12 +109,14 @@ const HOME_LINKS: { href: string; label: string; desc: string }[] = [
   { href: "/admin/shop/products", label: "جزوه‌ها", desc: "جزوه‌ها، قیمت و موجودی" },
   { href: "/admin/shop/settings", label: "تنظیمات فروشگاه", desc: "باز/بسته بودن فروش" },
   { href: "/admin/forms", label: "فرم‌ساز", desc: "ساخت و ویرایش فرم‌ها" },
+  { href: "/admin/news", label: "اخبار و اطلاعیه‌ها", desc: "نوشتن و انتشار خبر و اطلاعیه" },
   { href: "/admin/centers", label: "مراکز", desc: "صفحه‌های مراکز" },
   { href: "/admin/team", label: "تیم", desc: "معرفی همکاران در سایت" },
   { href: "/admin/achievements", label: "افتخارات", desc: "رتبه‌ها و قبولی‌ها" },
   { href: "/admin/gallery", label: "گالری", desc: "آلبوم‌ها و عکس‌ها" },
   { href: "/admin/faq", label: "سؤالات متداول", desc: "پرسش و پاسخ‌ها" },
   { href: "/admin/settings", label: "تنظیمات سایت", desc: "تلفن، آدرس، متن‌ها" },
+  { href: "/admin/settings/seo", label: "سئو و گوگل", desc: "عنوان صفحه‌ها، Search Console، نقشه" },
   { href: "/admin/users", label: "همکاران", desc: "حساب‌ها و دسترسی‌ها" },
 ];
 

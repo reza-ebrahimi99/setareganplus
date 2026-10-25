@@ -1,12 +1,15 @@
 /* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHero } from "@/components/site/Star";
 import { accentOf } from "@/components/site/cards";
 import { fa } from "@/lib/format";
 
-export const metadata: Metadata = { title: "گالری", description: "آلبوم‌های تصاویر مؤسسه علمی ستارگان." };
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMeta("gallery");
+}
 
 export default async function Gallery() {
   const albums = await prisma.galleryAlbum.findMany({ where: { published: true }, orderBy: { sortOrder: "asc" }, include: { _count: { select: { photos: true } } } });

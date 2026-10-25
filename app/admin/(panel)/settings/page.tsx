@@ -51,7 +51,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <PageTitle title="تنظیمات سایت" sub="اطلاعات تماس، آمار، صفحه اصلی و درباره ما" />
+      <PageTitle title="تنظیمات سایت" sub="اطلاعات تماس، آمار، صفحه اصلی و درباره ما" action={<a href="/admin/settings/seo" className="btn-ghost px-4 py-2 text-sm">سئو و گوگل ←</a>} />
       <Flash ok={ok} />
       <form action={save} className="space-y-6">
         <Panel title="تماس و شعبه‌ها">

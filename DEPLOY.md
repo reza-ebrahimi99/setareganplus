@@ -162,7 +162,7 @@ cd /var/www/setareganplus-lean && git fetch --depth 1 origin lean-redesign && gi
 `deploy/lean/update.sh` does the following:
 1. Resets the code to `origin/lean-redesign`.
 2. Copies `ZIBAL_*`, `SMSIR_*` and `STAROS_SMS_*` from the old `/var/www/setareganplus/.env` into the lean `.env` without printing them. Keys that are already set are kept unless you pass `--resync-secrets`.
-3. Runs `npm ci`, builds into `.next-build` and runs `prisma migrate deploy`. It **never** runs the seed.
+3. Runs `npm ci` and builds into `.next-build`. Then it takes a full backup with `backup.sh` (or reuses one from the last 6 h), installs the nightly backup timer (idempotent; see §9) and runs `prisma migrate deploy`. It **never** runs the seed.
 4. Imports booklets and orders from the old DB with `scripts/migrate-old-shop.ts`. This is read-only on the old DB and safe to repeat. It skips «آزمایشی» items and keeps order numbers, QR tokens and short codes, so old SMS and QR links keep working.
 5. Swaps the build, runs `pm2 reload` and health-checks. If anything fails it restores the previous build.
 6. Rewrites `/etc/nginx/snippets/sp-booklet.conf` so that `/shop`, `/booklet`, `/order` and `/o` are served by this app. Only `/payments/*` (legacy Zibal callbacks), `/ghalamchi/register/receipt/` and `/images/` stay on the old app. If `nginx -t` or the live checks fail, it rolls back automatically.
@@ -175,9 +175,58 @@ Useful commands:
 
 After the switch, manage booklet orders **only** in `/admin/shop`. The old admin no longer sees new orders.
 
-## 9. Backups
-- `pg_dump -Fc setareganplus > /backups/sp-$(date +%F).dump` (nightly cron)
-- `rsync -a /var/www/setareganplus/shared/uploads/ /backups/uploads/`
+## 9. Backups (پشتیبان‌گیری)
+
+**خلاصه:** هر شب ساعت ۳:۳۰ (به وقت تهران) از همه‌چیز پشتیبان گرفته می‌شود. لازم نیست کاری بکنید. `update.sh` تایمر را نصب می‌کند و قبل از هر به‌روزرسانی هم یک پشتیبان می‌گیرد (اگر در ۶ ساعت گذشته پشتیبانی گرفته شده باشد، از همان استفاده می‌کند). زمان آخرین پشتیبان را صاحب سایت در داشبورد `/admin` (کادر «محتوای سایت») می‌بیند. اگر پشتیبان‌گیری خراب شود، همان‌جا با رنگ قرمز هشدار داده می‌شود.
+
+| چه چیزی | کجا |
+|---|---|
+| پشتیبان‌های روزانه (۱۴ روز آخر؛ سه‌تای آخر همیشه می‌مانند) | `/var/backups/setareganplus-lean/daily/sp-backup-YYYYMMDD-HHMMSS.tar` |
+| پشتیبان‌های هفتگی (۸ هفتهٔ آخر) | `/var/backups/setareganplus-lean/weekly/` |
+| گزارش و وضعیت | `/var/backups/setareganplus-lean/backup.log` و `status.json` |
+
+محتوای هر فایل `.tar`: دیتابیس سایت جدید (`lean-db.dump`)، تعداد ردیف‌های هر جدول (`counts.tsv`)، عکس‌ها و فایل‌های آپلودی (`uploads.tar.gz`)، کپی `.env` سایت جدید (`lean.env`)، یک dump فقط‌خواندنی از دیتابیس سایت قدیم (`old-db.dump`)، و `MANIFEST.txt` و `SHA256SUMS`. همهٔ فایل‌ها فقط برای root قابل خواندن هستند (۶۰۰)، چون رمزها و کلیدها داخل `.env` هستند.
+
+اگر فضای دیسک کم باشد (کمتر از اندازهٔ تقریبی پشتیبان + ۱ گیگابایت)، پشتیبان‌گیری **انجام نمی‌شود**. در این حالت در لاگ، در `journalctl` و در داشبورد خطای `LOW DISK` می‌بینید. وقتی فضای خالی زیر ۲ گیگابایت باشد هم هشدار داده می‌شود.
+
+دستورهای مفید (با root):
+
+```bash
+systemctl list-timers setareganplus-backup.timer            # زمان پشتیبان بعدی
+bash /var/www/setareganplus-lean/deploy/lean/backup.sh       # همین الان پشتیبان بگیر
+tail -n 30 /var/backups/setareganplus-lean/backup.log        # گزارش
+ls -lh /var/backups/setareganplus-lean/daily/                # فهرست پشتیبان‌ها
+bash /var/www/setareganplus-lean/deploy/lean/restore.sh FILE.tar --list   # محتوای یک پشتیبان
+```
+
+**بازگردانی (restore):**
+
+```bash
+bash /var/www/setareganplus-lean/deploy/lean/restore.sh /var/backups/setareganplus-lean/daily/sp-backup-….tar
+```
+
+مراحل بازگردانی:
+1. سلامت فایل بررسی می‌شود.
+2. اول از وضعیت فعلی یک پشتیبان `pre-restore` گرفته می‌شود.
+3. باید کلمهٔ `RESTORE` را تایپ کنید.
+4. سایت چند ثانیه خاموش می‌شود و دیتابیس در یک تراکنش بازگردانی می‌شود. اگر خطایی پیش بیاید، هیچ چیزی عوض نمی‌شود. بعد `prisma migrate deploy` اجرا می‌شود و تعداد ردیف‌ها با پشتیبان مقایسه می‌شود.
+5. فایل‌های آپلودی بازگردانی می‌شوند. پوشهٔ فعلی پاک نمی‌شود و با نام `uploads.before-restore-…` کنار گذاشته می‌شود.
+6. سایت دوباره روشن می‌شود.
+
+گزینه‌ها: `--db-only`، `--uploads-only`، `--env` (فایل `.env` را هم برمی‌گرداند؛ نسخهٔ فعلی کنار گذاشته می‌شود). گزینهٔ `--target-db sp_test` فقط برای امتحان است: پشتیبان را داخل یک دیتابیس جداگانه باز می‌کند و به سایت دست نمی‌زند.
+
+دیتابیس سایت قدیم **خودکار بازگردانی نمی‌شود**. اگر لازم شد، دستی انجامش بدهید:
+
+```bash
+tar -xf FILE.tar ./old-db.dump
+pg_restore --clean --if-exists --no-owner -d "<DATABASE_URL سایت قدیم>" old-db.dump
+```
+
+**توصیه:** هر چند هفته یک بار، یکی از فایل‌های هفتگی را روی کامپیوتر خودتان یا یک فضای دیگر کپی کنید. اگر کل سرور از دست برود، پشتیبانی که روی همان سرور است هم از بین می‌رود. مثلاً:
+
+```bash
+scp root@SERVER:/var/backups/setareganplus-lean/weekly/sp-backup-….tar .
+```
 
 ## 10. Smoke test after deploy
 `/`, `/shop` (open a booklet; do one real small purchase), `/education`, `/ghalamchi`, `/contact`, `/register` (submit a test, then archive it in `/admin/submissions`), `/admin/login`, and an export from `/admin/submissions`.

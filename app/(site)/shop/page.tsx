@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { breadcrumbLd, pageMeta } from "@/lib/seo";
+import { JsonLd } from "@/components/site/JsonLd";
 import Link from "next/link";
 import { listProducts, catalogFacets } from "@/lib/shop/catalog";
 import { getShopSettings } from "@/lib/shop/settings";
@@ -7,11 +9,11 @@ import { fa } from "@/lib/format";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { Eyebrow, Icon, Sparkle, Star } from "@/components/site/Star";
 
-export const metadata: Metadata = {
-  title: "فروشگاه جزوه",
-  description: "خرید آنلاین جزوه‌های مدرسان ستارگان و قلم‌چی نسیم‌شهر؛ پرداخت امن و تحویل حضوری در شعبه.",
-  alternates: { canonical: "/shop" },
-};
+export async function generateMetadata({ searchParams }: { searchParams: Promise<SP> }): Promise<Metadata> {
+  const sp = await searchParams;
+  // filtered / search result views point to the main catalogue; free-text search pages are not indexed
+  return pageMeta("shop", { noindex: !!sp.q });
+}
 
 type SP = { q?: string; grade?: string; major?: string; center?: string };
 
@@ -41,6 +43,7 @@ export default async function Shop({ searchParams }: { searchParams: Promise<SP>
 
   return (
     <>
+      <JsonLd data={breadcrumbLd([{ name: "فروشگاه جزوه" }])} />
       <section data-sp-lean-shop="" className="bg-hero relative overflow-hidden text-white">
         <div className="bg-dots pointer-events-none absolute inset-0 [mask-image:radial-gradient(60%_80%_at_70%_20%,black,transparent)]" />
         <div className="pointer-events-none absolute -top-24 left-[10%] size-96 rounded-full bg-royal/45 blur-3xl" />
@@ -55,7 +58,7 @@ export default async function Shop({ searchParams }: { searchParams: Promise<SP>
             {sp.major && <input type="hidden" name="major" value={sp.major} />}
             {sp.center && <input type="hidden" name="center" value={sp.center} />}
             <span className="flex items-center ps-3 text-muted"><Icon name="search" className="size-5" /></span>
-            <input name="q" defaultValue={sp.q} placeholder="جست‌وجوی نام جزوه، درس یا مدرس…" className="min-w-0 flex-1 bg-transparent px-1 text-[0.95rem] text-ink placeholder:text-muted/70 focus:outline-none" />
+            <input name="q" aria-label="جست‌وجوی جزوه" defaultValue={sp.q} placeholder="جست‌وجوی نام جزوه، درس یا مدرس…" className="min-w-0 flex-1 bg-transparent px-1 text-[0.95rem] text-ink placeholder:text-muted/70 focus:outline-none" />
             <button className="btn-primary shrink-0 px-5 py-2.5">جست‌وجو</button>
           </form>
           <ul className="rise rise-4 mt-7 flex flex-wrap gap-2 text-sm">

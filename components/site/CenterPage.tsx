@@ -8,6 +8,8 @@ import { fa, prettyPhone, telHref } from "@/lib/format";
 import { FormRenderer } from "@/components/forms/FormRenderer";
 import { Star, Sparkle, Icon, Eyebrow, SectionHead } from "./Star";
 import { accentOf, AchievementCard, TeamCard } from "./cards";
+import { JsonLd } from "./JsonLd";
+import { breadcrumbLd } from "@/lib/ld";
 
 export async function CenterPage({ slug }: { slug: "education" | "ghalamchi" }) {
   const center = await prisma.center.findUnique({ where: { slug } });
@@ -50,11 +52,12 @@ export async function CenterPage({ slug }: { slug: "education" | "ghalamchi" }) 
         <Sparkle className="animate-twinkle pointer-events-none absolute top-12 right-[45%] size-3 text-gold" />
         <div className="container-x relative grid items-center gap-12 pt-8 pb-16 sm:pt-12 sm:pb-20 lg:grid-cols-[1.1fr_1fr] lg:pb-24">
           <div>
-            <p className="rise mb-5 flex items-center gap-1.5 text-xs text-white/55">
+            <JsonLd data={breadcrumbLd([{ name: center.shortName || center.name }])} />
+            <nav aria-label="مسیر صفحه" className="rise mb-5 flex items-center gap-1.5 text-xs text-white/55">
               <Link href="/" className="hover:text-white">خانه</Link>
               <Icon name="arrow" className="size-3" />
-              <span className="text-white/80">{center.shortName || center.name}</span>
-            </p>
+              <span className="text-white/80" aria-current="page">{center.shortName || center.name}</span>
+            </nav>
             <div className="rise flex items-center gap-3">
               {isGc ? (
                 <img src="/brand/ghalamchi.jpg" alt="لوگوی کانون فرهنگی آموزش قلم‌چی" className="size-12 rounded-2xl object-cover ring-2 ring-white/20" />

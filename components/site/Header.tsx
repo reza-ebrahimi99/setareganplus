@@ -5,13 +5,15 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Icon, Star, type IconName } from "./Star";
 
-export const NAV: { href: string; label: string; icon: IconName; wide?: boolean }[] = [
+/** wide: 1 = shown from xl (1280px), 2 = only on very wide screens; always in the mobile menu. */
+export const NAV: { href: string; label: string; icon: IconName; wide?: 1 | 2 }[] = [
   { href: "/education", label: "آموزشگاه ستارگان", icon: "cap" },
   { href: "/ghalamchi", label: "قلم‌چی نسیم‌شهر", icon: "book" },
   { href: "/achievements", label: "افتخارات", icon: "trophy" },
-  { href: "/team", label: "تیم ما", icon: "users", wide: true },
-  { href: "/gallery", label: "گالری", icon: "image", wide: true },
-  { href: "/about", label: "درباره ما", icon: "info" },
+  { href: "/news", label: "اخبار", icon: "news" },
+  { href: "/team", label: "تیم ما", icon: "users", wide: 2 },
+  { href: "/gallery", label: "گالری", icon: "image", wide: 2 },
+  { href: "/about", label: "درباره ما", icon: "info", wide: 1 },
   { href: "/contact", label: "تماس", icon: "phone" },
 ];
 
@@ -77,7 +79,7 @@ export function Header({ shopOpen = true, phone }: { shopOpen?: boolean; phone?:
                   key={n.href}
                   href={n.href}
                   aria-current={on ? "page" : undefined}
-                  className={`${n.wide ? "hidden xl:inline-flex" : "inline-flex"} relative rounded-full px-3 py-2 text-[0.9rem] font-semibold transition-colors ${on ? "bg-sky text-royal" : "text-ink/75 hover:bg-ivory hover:text-navy"}`}
+                  className={`${n.wide === 2 ? "hidden 2xl:inline-flex" : n.wide ? "hidden xl:inline-flex" : "inline-flex"} relative whitespace-nowrap rounded-full px-3 py-2 text-[0.9rem] font-semibold transition-colors ${on ? "bg-sky text-royal" : "text-ink/75 hover:bg-ivory hover:text-navy"}`}
                 >
                   {n.label}
                 </Link>
@@ -89,7 +91,7 @@ export function Header({ shopOpen = true, phone }: { shopOpen?: boolean; phone?:
             <Link href="/shop" className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-bold transition-all ${isActive(path, "/shop") ? "bg-royal text-white" : "bg-navy text-white hover:-translate-y-0.5 hover:bg-navy-2"}`}>
                 <Icon name="bag" className="size-4" strokeWidth={2} />
                 <span className="sm:hidden">جزوه</span>
-                <span className="hidden sm:inline">فروشگاه جزوه</span>
+                <span className="hidden whitespace-nowrap sm:inline">فروشگاه جزوه</span>
               </Link>
             <Link href="/register" className="btn-gold hidden px-5 py-2 text-sm md:inline-flex">پیش‌ثبت‌نام</Link>
             <button

@@ -1,9 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { prisma } from "@/lib/prisma";
 import { PageHero, Star } from "@/components/site/Star";
 
-export const metadata: Metadata = { title: "تیم ما", description: "مدیران، مشاوران و مدرسان مؤسسه علمی ستارگان." };
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMeta("team");
+}
 
 export default async function Team() {
   const team = await prisma.teamMember.findMany({ where: { published: true }, orderBy: { sortOrder: "asc" } });

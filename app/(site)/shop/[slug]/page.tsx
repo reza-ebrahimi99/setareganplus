@@ -11,6 +11,8 @@ import { Badges, Cover, Price, ProductCard } from "@/components/shop/ProductCard
 import { CheckoutForm } from "@/components/shop/CheckoutForm";
 import { checkout } from "../actions";
 import { Star } from "@/components/site/Star";
+import { JsonLd } from "@/components/site/JsonLd";
+import { abs, breadcrumbLd, buildMeta } from "@/lib/seo";
 
 type P = { params: Promise<{ slug: string }> };
 
@@ -20,8 +22,14 @@ async function load(slug: string) {
 
 export async function generateMetadata({ params }: P): Promise<Metadata> {
   const p = await load((await params).slug);
-  if (!p) return {};
-  return { title: p.title, description: p.summary ?? `${p.title}${p.author ? ` — ${p.author}` : ""}`, openGraph: p.cover ? { images: [p.cover] } : undefined };
+  if (!p || !p.active) return { title: "جزوه پیدا نشد", robots: { index: false } };
+  const bits = [p.grade && `پایه ${p.grade}`, p.subject, p.author].filter(Boolean).join(" · ");
+  return buildMeta({
+    title: `${p.title}${p.grade && !p.title.includes(p.grade) ? ` — ${p.grade}` : ""}`,
+    description: (p.summary || `خرید آنلاین جزوه «${p.title}»${bits ? ` (${bits})` : ""}؛ پرداخت امن و تحویل حضوری در شعبهٔ ستارگان نسیم‌شهر.`).slice(0, 200),
+    path: `/shop/${p.slug}`,
+    images: p.cover ? [{ url: p.cover, alt: p.title }] : undefined,
+  });
 }
 
 export default async function ProductPage({ params }: P) {
@@ -44,9 +52,34 @@ export default async function ProductPage({ params }: P) {
 
   return (
     <>
-      <div className="container-x pt-5 text-sm text-muted">
-        <Link href="/shop" className="hover:text-navy">فروشگاه جزوه</Link> <span className="mx-1">‹</span> <span className="text-ink">{p.title}</span>
-      </div>
+      <JsonLd
+        data={[
+          breadcrumbLd([{ name: "فروشگاه جزوه", href: "/shop" }, { name: p.title }]),
+          {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: p.title,
+            description: p.summary || p.description?.slice(0, 300) || p.title,
+            image: [abs(p.cover || "/opengraph-image")],
+            sku: p.slug,
+            category: "جزوه آموزشی",
+            ...(p.author ? { brand: { "@type": "Brand", name: p.author } } : { brand: { "@type": "Brand", name: "ستارگان پلاس" } }),
+            offers: {
+              "@type": "Offer",
+              url: abs(`/shop/${p.slug}`),
+              priceCurrency: "IRR",
+              price: p.priceRials,
+              availability: out ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+              itemCondition: "https://schema.org/NewCondition",
+              seller: { "@type": "Organization", "@id": abs("/#organization"), name: "مؤسسه علمی ستارگان" },
+            },
+          },
+        ]}
+      />
+      <nav aria-label="مسیر صفحه" className="container-x pt-5 text-sm text-muted">
+        <Link href="/" className="hover:text-navy">خانه</Link> <span className="mx-1">‹</span>{" "}
+        <Link href="/shop" className="hover:text-navy">فروشگاه جزوه</Link> <span className="mx-1">‹</span> <span className="text-ink" aria-current="page">{p.title}</span>
+      </nav>
       <section className="container-x grid gap-8 py-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-12 lg:py-10">
         <div className="lg:sticky lg:top-24 lg:self-start">
           <div className="relative mx-auto aspect-[3/4] max-w-sm overflow-hidden rounded-[1.5rem] border border-line bg-paper shadow-xl shadow-navy/5 lg:max-w-none">

@@ -9,7 +9,8 @@
 #  What it does (the old app in /var/www/setareganplus is NEVER modified):
 #    1. git fetch + reset --hard origin/lean-redesign (.env / uploads are untouched)
 #    2. copies Zibal + SMS.ir keys from the old .env into the lean .env (silently)
-#    3. npm ci, build into .next-build (live site keeps running), prisma migrate deploy (NO seed)
+#    3. npm ci, build into .next-build (live site keeps running), full backup (backup.sh, reuses
+#       one from the last 6 h) + nightly backup timer, prisma migrate deploy (NO seed)
 #    4. imports booklets + orders from the old DB (read-only, idempotent)
 #    5. pm2 reload + health checks (auto-restores the previous build on failure)
 #    6. nginx: /shop /booklet /order /o now go to the lean app; /payments,
@@ -153,6 +154,14 @@ DBURL="$(grep -E '^DATABASE_URL=' .env | head -1 | sed -E 's/^DATABASE_URL=//; s
 pg_dump "${DBURL%%\?*}" -Fc -f "$RUN_DIR/lean-db.dump" && chmod 600 "$RUN_DIR/lean-db.dump" && ok "پشتیبان دیتابیس جدید: $RUN_DIR/lean-db.dump" \
   || warn "پشتیبان دیتابیس جدید گرفته نشد" "pg_dump of the lean DB failed (continuing)"
 unset DBURL
+# full backup (DB + uploads + .env + old DB) into /var/backups/setareganplus-lean, reusing one
+# from the last 6 h; + make sure the nightly 03:30 backup timer is installed (idempotent)
+if BK="$(bash "$APP_DIR/deploy/lean/backup.sh" --reuse-hours 6 --label pre-update --print-path)"; then
+  ok "پشتیبان کامل: $BK"
+else
+  warn "پشتیبان کامل گرفته نشد! (ادامه می‌دهیم؛ پشتیبان دیتابیس بالا هست)" "backup.sh FAILED, see /var/backups/setareganplus-lean/backup.log (continuing: migrations are additive)"
+fi
+bash "$APP_DIR/deploy/lean/install-backup-timer.sh" || warn "تایمر پشتیبان شبانه نصب نشد" "backup timer install failed: bash $APP_DIR/deploy/lean/install-backup-timer.sh"
 npx prisma migrate deploy || { sleep 5; npx prisma migrate deploy; } || die "migrate ناموفق" "prisma migrate deploy failed; live site still on the previous build."
 ok "دیتابیس به‌روز شد"
 
@@ -257,5 +266,5 @@ echo
 echo "${B}${G}════════ پایان | DONE ════════${N}"
 echo "  فروشگاه:   https://${DOMAIN}/shop"
 echo "  مدیریت:    https://${DOMAIN}/admin/shop   (از این به بعد سفارش‌ها را فقط اینجا مدیریت کنید)"
-echo "  پشتیبان:   $RUN_DIR"
+echo "  پشتیبان:   $RUN_DIR  +  /var/backups/setareganplus-lean (هر شب ۳:۳۰)"
 echo "  بازگشت:    bash $APP_DIR/deploy/lean/update-rollback.sh"
