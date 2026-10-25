@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/shop", label: "فروشگاه جزوه" },
   { href: "/order", label: "پیگیری سفارش جزوه" },
   { href: "/register", label: "پیش‌ثبت‌نام" },
+  { href: "/forms", label: "ثبت‌نام‌های آنلاین" },
 ];
 // local guide pages (real content from site data; see lib/seo.ts LANDINGS)
 const GUIDES = [

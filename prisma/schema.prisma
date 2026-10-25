@@ -117,19 +117,90 @@ enum FormStatus {
 
 /// Form builder. `fields` is an ordered JSON array of FieldDef (see lib/forms/types.ts).
 model Form {
-  id             String       @id @default(cuid())
-  slug           String       @unique
-  title          String
-  description    String?      @db.Text
-  fields         Json         @default("[]")
-  status         FormStatus   @default(DRAFT)
-  submitLabel    String       @default("ثبت درخواست")
-  successMessage String       @default("درخواست شما ثبت شد. همکاران ما به‌زودی با شما تماس می‌گیرند.")
+  id              String         @id @default(cuid())
+  slug            String         @unique
+  title           String
+  description     String?        @db.Text
+  fields          Json           @default("[]")
+  status          FormStatus     @default(DRAFT)
+  submitLabel     String         @default("ثبت درخواست")
+  successMessage  String         @default("درخواست شما ثبت شد. همکاران ما به‌زودی با شما تماس می‌گیرند.")
   /// Built-in forms (e.g. pre-registration) cannot be deleted
-  isSystem       Boolean      @default(false)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  submissions    Submission[]
+  isSystem        Boolean        @default(false)
+  // ---- v2 (phase 6): look, schedule, capacity, payment ----
+  coverImage      String?
+  logo            String?
+  /// colour preset key (lib/forms/themes.ts)
+  theme           String         @default("navy")
+  /// shown on /forms and on the home page when published
+  listed          Boolean        @default(true)
+  opensAt         DateTime?
+  closesAt        DateTime?
+  /// max accepted registrations (free + paid + pending holds); null = unlimited
+  capacity        Int?
+  /// NONE | MOBILE | NATIONAL_CODE: one registration per value
+  uniqueBy        String         @default("NONE")
+  successTitle    String?
+  /// optional internal path or https URL to send the registrant to after success
+  successRedirect String?
+  /// SMS confirmation to the registrant / notification to the admins
+  smsConfirm      Boolean        @default(false)
+  adminNotify     Boolean        @default(false)
+  /// FREE | FIXED | OPTIONS (base price + option prices stored on the fields)
+  payMode         String         @default("FREE")
+  basePriceRials  Int            @default(0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  submissions     Submission[]
+  discounts       FormDiscount[]
+}
+
+enum FormPayState {
+  NONE
+  PENDING
+  PAID
+  FAILED
+}
+
+/// Discount codes for paid forms
+model FormDiscount {
+  id          String    @id @default(cuid())
+  formId      String
+  form        Form      @relation(fields: [formId], references: [id], onDelete: Cascade)
+  /// upper-case latin/digits
+  code        String
+  percent     Int?
+  amountRials Int?
+  maxUses     Int?
+  used        Int       @default(0)
+  active      Boolean   @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([formId, code])
+}
+
+/// Zibal payment attempts for form registrations (same flow as the shop's Payment)
+model FormPayment {
+  id           String     @id @default(cuid())
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  provider     String     @default("zibal")
+  amountRials  Int
+  status       PayStatus  @default(PENDING)
+  /// secret token in our callback URL
+  token        String     @unique
+  trackId      String?    @unique
+  refNumber    String?
+  cardNumber   String?
+  result       Int?
+  message      String?
+  paidAt       DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([submissionId])
+  @@index([status, createdAt])
 }
 
 enum SubmissionStatus {
@@ -140,20 +211,38 @@ enum SubmissionStatus {
 }
 
 model Submission {
-  id        String           @id @default(cuid())
-  formId    String
-  form      Form             @relation(fields: [formId], references: [id], onDelete: Cascade)
+  id            String           @id @default(cuid())
+  formId        String
+  form          Form             @relation(fields: [formId], references: [id], onDelete: Cascade)
   /// { [fieldId]: value }
-  data      Json
+  data          Json
   /// Snapshot of field labels at submit time { [fieldId]: label }
-  labels    Json             @default("{}")
-  status    SubmissionStatus @default(NEW)
-  note      String?          @db.Text
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  labels        Json             @default("{}")
+  status        SubmissionStatus @default(NEW)
+  note          String?          @db.Text
+  // ---- v2 (phase 6) ----
+  /// secret token of the public receipt page /f/r/<token>
+  token         String?          @unique
+  /// normalized copies for uniqueness checks and SMS
+  mobile        String?
+  nationalCode  String?
+  payState      FormPayState     @default(NONE)
+  /// final amount to pay (after discount), rials
+  amountRials   Int              @default(0)
+  /// price lines at submit time [{label, rials}]
+  priceLines    Json             @default("[]")
+  discountCode  String?
+  discountRials Int              @default(0)
+  paidAt        DateTime?
+  payments      FormPayment[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   @@index([formId, createdAt])
   @@index([status])
+  @@index([formId, payState])
+  @@index([formId, mobile])
+  @@index([formId, nationalCode])
 }
 
 // ───────────────────────── Booklet shop (فروشگاه جزوه) ─────────────────────────
@@ -316,15 +405,17 @@ model Payment {
 }
 
 model SmsLog {
-  id        String   @id @default(cuid())
-  orderId   String?
+  id           String   @id @default(cuid())
+  orderId      String?
+  /// form registrations (phase 6)
+  submissionId String?
   /// purchase | ready | admin
-  kind      String
-  mobile    String
+  kind         String
+  mobile       String
   /// SENT | FAILED | SKIPPED
-  status    String
-  detail    String?
-  createdAt DateTime @default(now())
+  status       String
+  detail       String?
+  createdAt    DateTime @default(now())
 
   @@index([orderId])
   @@index([createdAt])

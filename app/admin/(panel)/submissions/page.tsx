@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requirePerm } from "@/lib/auth";
+import { requirePerm, can, logAction } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { querySubmissions, columnsFor, submissionRef, type SubFilters } from "@/lib/submissions";
+import { querySubmissions, columnsFor, submissionRef, buildWhere, PAY_FILTERS, PAY_STATE, type SubFilters } from "@/lib/submissions";
+import { verifyFormPayment, receiptPath } from "@/lib/forms/registration";
+import { tomanText } from "@/lib/forms/pricing";
 import { displayValue } from "@/lib/forms/validate";
 import { fa, jalaliDateTime, prettyPhone, telHref } from "@/lib/format";
 import { STATUS } from "@/components/admin/ui";
@@ -37,6 +39,21 @@ async function bulkStatus(fd: FormData) {
   redirect(String(fd.get("back") || "/admin/submissions"));
 }
 
+async function reverify(fd: FormData) {
+  "use server";
+  const me = await requirePerm("forms.payments");
+  const pid = String(fd.get("pid") ?? "");
+  const out = await verifyFormPayment(pid);
+  await logAction(me, "form.reverify", `استعلام پرداخت فرم: ${out.kind}`, pid);
+  revalidatePath("/admin/submissions");
+  redirect(String(fd.get("back") || "/admin/submissions") + `${String(fd.get("back") || "").includes("?") ? "&" : "?"}verified=${out.kind}`);
+}
+
+function PayBadge({ state }: { state: string }) {
+  const p = PAY_STATE[state] ?? PAY_STATE.NONE;
+  return <span data-pay-state={state} className={`chip whitespace-nowrap ${p.cls}`}>{p.label}</span>;
+}
+
 function cell(v: unknown) {
   if (typeof v === "string" && /^09\d{9}$/.test(v)) return <a href={telHref(v)} dir="ltr" className="font-semibold text-navy hover:text-edu">{prettyPhone(v)}</a>;
   if (v && typeof v === "object" && !Array.isArray(v) && "key" in (v as object)) {
@@ -46,9 +63,10 @@ function cell(v: unknown) {
   return displayValue(v);
 }
 
-export default async function Submissions({ searchParams }: { searchParams: Promise<SubFilters> }) {
-  await requirePerm("submissions");
-  const f = await searchParams;
+export default async function Submissions({ searchParams }: { searchParams: Promise<SubFilters & { verified?: string }> }) {
+  const me = await requirePerm("submissions");
+  const money = can(me, "forms.payments");
+  const { verified, ...f } = await searchParams;
   const page = Math.max(1, Number(f.page) || 1);
   const [forms, { items, total }, selected, byStatus] = await Promise.all([
     prisma.form.findMany({ select: { id: true, title: true, _count: { select: { submissions: { where: { status: "NEW" } } } } }, orderBy: { createdAt: "asc" } }),
@@ -56,6 +74,14 @@ export default async function Submissions({ searchParams }: { searchParams: Prom
     f.form ? prisma.form.findUnique({ where: { id: f.form } }) : null,
     prisma.submission.groupBy({ by: ["status"], where: f.form ? { formId: f.form } : {}, _count: true }),
   ]);
+  const { payState: _ps, ...noPay } = buildWhere({ ...f, pay: "" });
+  const [byPay, revenue] = await Promise.all([
+    prisma.submission.groupBy({ by: ["payState"], where: noPay, _count: true }),
+    money ? prisma.submission.groupBy({ by: ["formId"], where: { payState: "PAID", ...(f.form ? { formId: f.form } : {}) }, _sum: { amountRials: true, discountRials: true }, _count: true }) : Promise.resolve([]),
+  ]);
+  const pc = Object.fromEntries(byPay.map((x) => [x.payState, x._count])) as Record<string, number>;
+  const hasPaid = (pc.PAID ?? 0) + (pc.PENDING ?? 0) + (pc.FAILED ?? 0) > 0;
+  const revTotal = revenue.reduce((a, r) => a + (r._sum.amountRials ?? 0), 0);
   const sc = Object.fromEntries(byStatus.map((x) => [x.status, x._count])) as Record<string, number>;
   const cols = columnsFor(items, selected?.fields).slice(0, selected ? 6 : 3);
   const qs = (extra: Record<string, string>) => new URLSearchParams(Object.fromEntries(Object.entries({ ...f, ...extra }).filter(([, v]) => v))).toString();
@@ -88,6 +114,31 @@ export default async function Submissions({ searchParams }: { searchParams: Prom
           ))}
         </div>
       )}
+      {hasPaid && (
+        <div className="mb-3 flex flex-wrap items-center gap-1.5 text-sm" data-pay-filters>
+          <span className="text-xs text-muted">پرداخت:</span>
+          {[{ k: "", l: "همه", n: Object.values(pc).reduce((a, b) => a + b, 0) }, { k: "paid", l: PAY_FILTERS.paid, n: pc.PAID ?? 0 }, { k: "unpaid", l: PAY_FILTERS.unpaid, n: (pc.PENDING ?? 0) + (pc.FAILED ?? 0) }, { k: "free", l: PAY_FILTERS.free, n: pc.NONE ?? 0 }].map((t) => (
+            <Link key={t.k} href={`?${qs({ pay: t.k, page: "" })}`} data-pay-filter={t.k || "all"} className={`rounded-full border px-3 py-1 text-xs font-semibold ${(f.pay ?? "") === t.k ? "border-gold bg-gold/20 text-navy" : "border-line bg-paper hover:border-navy/30"}`}>{t.l} <span className="opacity-70">{fa(t.n)}</span></Link>
+          ))}
+        </div>
+      )}
+      {money && revenue.length > 0 && (
+        <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-revenue-cards>
+          <div className="rounded-2xl bg-gradient-to-br from-navy to-[#26408f] p-4 text-white">
+            <p className="text-xs text-white/70">درآمد تأییدشده{selected ? " این فرم" : " فرم‌ها"}</p>
+            <p className="mt-1 text-xl font-black" data-revenue-total>{tomanText(revTotal)}</p>
+            <p className="text-xs text-white/70">{fa(revenue.reduce((a, r) => a + r._count, 0))} پرداخت موفق</p>
+          </div>
+          {!selected && revenue.sort((a, b) => (b._sum.amountRials ?? 0) - (a._sum.amountRials ?? 0)).slice(0, 3).map((r) => (
+            <Link key={r.formId} href={`?${qs({ form: r.formId, page: "" })}`} className="rounded-2xl border border-line bg-paper p-4 hover:border-navy/30">
+              <p className="truncate text-xs text-muted">{forms.find((x) => x.id === r.formId)?.title ?? "فرم"}</p>
+              <p className="mt-1 text-lg font-black text-navy">{tomanText(r._sum.amountRials ?? 0)}</p>
+              <p className="text-xs text-muted">{fa(r._count)} پرداخت</p>
+            </Link>
+          ))}
+        </div>
+      )}
+      {verified && <p className="mb-3 rounded-xl bg-ivory px-4 py-2 text-sm font-semibold text-navy">نتیجهٔ استعلام: {verified === "paid" ? "پرداخت تأیید شد ✓" : verified === "failed" ? "پرداخت ناموفق است" : "هنوز در انتظار"}</p>}
       <form className="mb-5 grid gap-2 rounded-2xl border border-line bg-paper p-3 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_1fr_auto]">
         <input name="q" defaultValue={f.q} placeholder="جستجوی نام، موبایل، کد ملی یا کد پیگیری" className="input py-2" />
         <select name="form" defaultValue={f.form ?? ""} className="input py-2"><option value="">همه فرم‌ها</option>{forms.map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}</select>
@@ -95,6 +146,7 @@ export default async function Submissions({ searchParams }: { searchParams: Prom
           <option value="">همه (به‌جز بایگانی)</option><option value="NEW">جدید</option><option value="CONTACTED">تماس گرفته شد</option><option value="ENROLLED">ثبت‌نام شد</option><option value="ARCHIVED">بایگانی</option>
         </select>
         <select name="period" defaultValue={f.period ?? ""} className="input py-2"><option value="">همه زمان‌ها</option><option value="today">۲۴ ساعت اخیر</option><option value="7">۷ روز اخیر</option><option value="30">۳۰ روز اخیر</option><option value="90">۹۰ روز اخیر</option></select>
+        {f.pay && <input type="hidden" name="pay" value={f.pay} />}
         <button className="btn-gold px-5 py-2 text-sm">اعمال</button>
       </form>
 
@@ -116,6 +168,7 @@ export default async function Submissions({ searchParams }: { searchParams: Prom
                 <th className="p-3 font-semibold">تاریخ</th>
                 {!selected && <th className="p-3 font-semibold">فرم</th>}
                 {cols.map((c) => <th key={c.id} className="max-w-48 p-3 font-semibold">{c.label}</th>)}
+                <th className="p-3 font-semibold">پرداخت</th>
                 <th className="p-3 font-semibold">وضعیت</th>
                 <th className="p-3" />
               </tr>
@@ -130,12 +183,37 @@ export default async function Submissions({ searchParams }: { searchParams: Prom
                     <td className="p-3 text-xs whitespace-nowrap text-muted">{jalaliDateTime(it.createdAt)}<div className="font-mono text-[0.7rem] tracking-wider" dir="ltr" style={{ textAlign: "right" }}>{submissionRef(it.id)}</div></td>
                     {!selected && <td className="p-3 text-xs">{it.form.title}</td>}
                     {cols.map((c) => <td key={c.id} className="max-w-56 p-3" dir={/^\d+$/.test(String(d[c.id] ?? "")) ? "ltr" : undefined}><span className="line-clamp-2">{cell(d[c.id])}</span></td>)}
+                    <td className="p-3" data-sub-pay={submissionRef(it.id)}>
+                      <PayBadge state={it.payState} />
+                      {money && it.amountRials > 0 && <div className="mt-1 text-xs font-bold text-navy" data-sub-amount>{tomanText(it.amountRials)}</div>}
+                      {money && it.payments[0]?.trackId && <div className="font-mono text-[0.7rem] text-muted" dir="ltr" style={{ textAlign: "right" }} data-sub-zibal title="شمارهٔ پیگیری زیبال">{it.payments[0].trackId}</div>}
+                    </td>
                     <td className="p-3"><StatusSelect id={it.id} value={it.status} action={setStatus} /></td>
                     <td className="relative p-3">
                       <details className="group">
                         <summary className="cursor-pointer list-none text-xs font-bold text-edu">جزئیات</summary>
                         <div className="fixed inset-x-3 bottom-3 z-30 max-h-[75vh] overflow-y-auto rounded-2xl border border-line bg-paper p-4 shadow-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-4 sm:mt-2 sm:w-[28rem]">
                           <p className="mb-3 flex items-center justify-between text-xs text-muted"><span>{it.form.title}</span><span className="font-mono" dir="ltr">#{submissionRef(it.id)}</span></p>
+                          <div className="mb-3 rounded-xl bg-ivory p-3 text-xs leading-6">
+                            <div className="flex items-center justify-between"><PayBadge state={it.payState} />{it.token && <a href={receiptPath(it.token)} target="_blank" className="font-bold text-edu">رسید ↗</a>}</div>
+                            {money && it.payState !== "NONE" && (
+                              <dl className="mt-2 grid grid-cols-2 gap-x-3">
+                                <dt className="text-muted">مبلغ</dt><dd className="font-bold">{tomanText(it.amountRials)}</dd>
+                                {it.discountCode && <><dt className="text-muted">تخفیف</dt><dd>{it.discountCode} ({tomanText(it.discountRials)})</dd></>}
+                                {it.payments[0]?.trackId && <><dt className="text-muted">پیگیری زیبال</dt><dd className="font-mono" dir="ltr">{it.payments[0].trackId}</dd></>}
+                                {it.payments[0]?.refNumber && <><dt className="text-muted">مرجع بانک</dt><dd className="font-mono" dir="ltr">{it.payments[0].refNumber}</dd></>}
+                                {it.payments[0]?.cardNumber && <><dt className="text-muted">کارت</dt><dd className="font-mono" dir="ltr">{it.payments[0].cardNumber}</dd></>}
+                                {it.paidAt && <><dt className="text-muted">زمان پرداخت</dt><dd>{jalaliDateTime(it.paidAt)}</dd></>}
+                              </dl>
+                            )}
+                            {money && it.payState === "PENDING" && it.payments[0]?.status === "PENDING" && it.payments[0].trackId && (
+                              <form action={reverify} className="mt-2">
+                                <input type="hidden" name="pid" value={it.payments[0].id} />
+                                <input type="hidden" name="back" value={`/admin/submissions?${qs({})}`} />
+                                <SubmitButton className="btn-ghost px-3 py-1 text-xs">استعلام از زیبال</SubmitButton>
+                              </form>
+                            )}
+                          </div>
                           <dl className="space-y-2 text-sm">
                             {all.map((c) => (
                               <div key={c.id}><dt className="text-xs text-muted">{c.label}</dt><dd className="font-semibold">{cell(d[c.id]) || "—"}</dd></div>

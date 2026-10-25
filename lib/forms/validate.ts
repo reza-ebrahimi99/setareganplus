@@ -11,7 +11,9 @@ export function isValidNationalCode(raw: string): boolean {
 
 /** Single-field check (used on blur and on submit). */
 export function checkOne(f: FieldDef, v: FormValue | undefined): { error?: string; value?: FormValue } {
-  if (empty(v)) return f.required && f.type !== "file" && f.type !== "section" ? { error: "این فیلد الزامی است." } : {};
+  if (f.type === "section" || f.type === "image" || f.type === "page") return {};
+  if (f.type === "consent") return v === "بله" ? {} : f.required ? { error: "برای ادامه، این مورد را تأیید کنید." } : {};
+  if (empty(v)) return f.required && f.type !== "file" ? { error: "این فیلد الزامی است." } : {};
   const str = Array.isArray(v) ? "" : String(v);
   switch (f.type) {
     case "phone": {
@@ -64,7 +66,7 @@ function empty(v: FormValue | undefined): boolean {
 export function validateValues(fields: FieldDef[], values: FormValues): Record<string, string> {
   const errors: Record<string, string> = {};
   for (const f of fields) {
-    if (f.type === "section" || !isVisible(f, values)) {
+    if (f.type === "section" || f.type === "image" || f.type === "page" || !isVisible(f, values)) {
       delete values[f.id];
       continue;
     }

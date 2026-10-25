@@ -13,6 +13,8 @@ import { organizationLd, pageMeta, websiteLd } from "@/lib/seo";
 import { homeNews } from "@/lib/news";
 import { JsonLd } from "@/components/site/JsonLd";
 import { NewsCard } from "@/components/site/news";
+import { FormCard } from "@/components/forms/FormCard";
+import { listedForms } from "@/lib/forms/public";
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMeta("home");
@@ -34,7 +36,7 @@ export default async function Home() {
     prisma.form.findMany({ where: { status: "PUBLISHED" }, orderBy: [{ isSystem: "desc" }, { createdAt: "asc" }], select: { slug: true, title: true, description: true } }),
     prisma.faq.findMany({ where: { published: true }, orderBy: { sortOrder: "asc" }, take: 4 }),
   ]);
-  const [news, orgLd] = await Promise.all([homeNews().catch(() => []), organizationLd()]);
+  const [news, orgLd, openForms] = await Promise.all([homeNews().catch(() => []), organizationLd(), listedForms(3).then((x) => x.filter((f) => f.state === "open" || f.state === "soon")).catch(() => [])]);
   const { home, about, contact, stats } = s;
   const founder = about.founder;
   const mosaic = albums.flatMap((a) => a.photos.map((p) => ({ ...p, album: a }))).slice(0, 5);
@@ -154,6 +156,22 @@ export default async function Home() {
               ))}
             </ul>
           )}
+        </section>
+      )}
+
+      {/* ───────── Open registrations (hidden when none) ───────── */}
+      {openForms.length > 0 && (
+        <section aria-labelledby="home-forms" className="container-x pt-16 sm:pt-20" data-home-forms>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <Eyebrow>ثبت‌نام آنلاین</Eyebrow>
+              <h2 id="home-forms" className="h-section mt-3">ثبت‌نام‌های <span className="text-gradient-blue">باز</span></h2>
+            </div>
+            <Link href="/forms" className="btn-ghost px-5 py-2.5 text-sm">همهٔ ثبت‌نام‌ها <Icon name="arrow" className="size-4" /></Link>
+          </div>
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {openForms.map((f) => <FormCard key={f.slug} f={f} />)}
+          </div>
         </section>
       )}
 

@@ -49,7 +49,7 @@ const map: [string, string][] = [
   ["/pre-registration", "/register"],
   ["/consultation", "/register"],
   ["/book/:path*", "/register"],
-  ["/forms/:path*", "/register"],
+  ["/forms/:path+", "/register"],
   ["/register/:slug", "/register"],
   ["/about/school", "/about"],
   // news / guides (phase 5)

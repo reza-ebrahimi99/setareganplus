@@ -5,17 +5,18 @@ import { prisma } from "@/lib/prisma";
  * SMS.ir Verify (template) API — same provider and env keys as the old site.
  * Missing/disabled config ⇒ the message is skipped and logged, never an error for the buyer.
  */
-export type SmsKind = "purchase" | "ready" | "admin";
-const TEMPLATE_ENV: Record<SmsKind, string> = {
+export type SmsKind = "purchase" | "ready" | "admin" | "form";
+const TEMPLATE_ENV: Record<Exclude<SmsKind, "form">, string> = {
   purchase: "SMSIR_PURCHASE_TEMPLATE_ID",
   ready: "SMSIR_READY_TEMPLATE_ID",
   admin: "SMSIR_ADMIN_TEMPLATE_ID",
 };
 
-function config(kind: SmsKind) {
+function config(kind: SmsKind, templateOverride?: number | null) {
   const enabled = (process.env.SHOP_SMS_ENABLED ?? process.env.STAROS_SMS_ENABLED) === "true";
   const apiKey = process.env.SMSIR_API_KEY?.trim();
-  const templateId = Number(process.env[TEMPLATE_ENV[kind]]?.trim());
+  // "form" templates live in the DB (forms SMS settings), not in .env
+  const templateId = templateOverride ?? (kind === "form" ? NaN : Number(process.env[TEMPLATE_ENV[kind]]?.trim()));
   let baseUrl = "https://api.sms.ir";
   try {
     const u = new URL(process.env.SMSIR_API_BASE_URL?.trim() || baseUrl);
@@ -29,7 +30,7 @@ function config(kind: SmsKind) {
 }
 
 export function smsStatus() {
-  return (Object.keys(TEMPLATE_ENV) as SmsKind[]).map((k) => {
+  return (Object.keys(TEMPLATE_ENV) as Exclude<SmsKind, "form">[]).map((k) => {
     const c = config(k);
     return { kind: k, ok: c.ok, why: c.ok ? null : c.why };
   });
@@ -37,10 +38,11 @@ export function smsStatus() {
 
 const clip = (v: string) => (v.length > 25 ? v.slice(0, 24) + "…" : v);
 
-export async function sendSms(kind: SmsKind, mobile: string, params: Record<string, string>, orderId?: string) {
-  const c = config(kind);
+export async function sendSms(kind: SmsKind, mobile: string, params: Record<string, string>, orderId?: string, opts: { templateId?: number | null; submissionId?: string } = {}) {
+  const c = config(kind, opts.templateId);
+  const submissionId = opts.submissionId;
   if (!c.ok) {
-    await prisma.smsLog.create({ data: { kind, mobile, orderId, status: "SKIPPED", detail: c.why } }).catch(() => {});
+    await prisma.smsLog.create({ data: { kind, mobile, orderId, submissionId, status: "SKIPPED", detail: c.why } }).catch(() => {});
     return false;
   }
   const ctrl = new AbortController();
@@ -54,10 +56,10 @@ export async function sendSms(kind: SmsKind, mobile: string, params: Record<stri
     });
     const json = (await res.json().catch(() => null)) as { status?: number; message?: string } | null;
     const ok = res.ok && json?.status === 1;
-    await prisma.smsLog.create({ data: { kind, mobile, orderId, status: ok ? "SENT" : "FAILED", detail: ok ? null : `HTTP ${res.status} ${json?.status ?? ""} ${json?.message ?? ""}`.slice(0, 300) } }).catch(() => {});
+    await prisma.smsLog.create({ data: { kind, mobile, orderId, submissionId, status: ok ? "SENT" : "FAILED", detail: ok ? null : `HTTP ${res.status} ${json?.status ?? ""} ${json?.message ?? ""}`.slice(0, 300) } }).catch(() => {});
     return ok;
   } catch (e) {
-    await prisma.smsLog.create({ data: { kind, mobile, orderId, status: "FAILED", detail: e instanceof Error ? e.message.slice(0, 200) : "error" } }).catch(() => {});
+    await prisma.smsLog.create({ data: { kind, mobile, orderId, submissionId, status: "FAILED", detail: e instanceof Error ? e.message.slice(0, 200) : "error" } }).catch(() => {});
     return false;
   } finally {
     clearTimeout(t);

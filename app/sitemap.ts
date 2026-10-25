@@ -17,7 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     prisma.center.findMany({ where: { published: true }, select: { slug: true, heroImage: true, updatedAt: true } }),
     prisma.product.findMany({ where: { active: true }, select: { slug: true, cover: true, updatedAt: true } }),
     prisma.news.findMany({ where: liveWhere(), select: { slug: true, cover: true, updatedAt: true }, orderBy: { publishedAt: "desc" } }),
-    prisma.form.findMany({ where: { status: "PUBLISHED" }, select: { slug: true, updatedAt: true } }),
+    prisma.form.findMany({ where: { status: "PUBLISHED", OR: [{ closesAt: null }, { closesAt: { gt: new Date() } }] }, select: { slug: true, updatedAt: true, coverImage: true } }),
     prisma.galleryAlbum.findMany({ where: { published: true }, select: { slug: true, cover: true, photos: { select: { path: true }, take: 50, orderBy: { sortOrder: "asc" } } } }),
   ]);
   const siteMod = settings[0]?.updatedAt ?? new Date();
@@ -36,7 +36,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...products.map((p) => ({ url: u(`/shop/${p.slug}`), lastModified: p.updatedAt, changeFrequency: "weekly" as const, priority: 0.7, images: img(p.cover) })),
     ...news.map((n) => ({ url: u(`/news/${n.slug}`), lastModified: n.updatedAt, changeFrequency: "monthly" as const, priority: 0.6, images: img(n.cover) })),
     // pre-registration is published at /register
-    ...forms.filter((f) => f.slug !== "pre-registration").map((f) => ({ url: u(`/f/${f.slug}`), lastModified: f.updatedAt, changeFrequency: "monthly" as const, priority: 0.5 })),
+    { url: u("/forms"), lastModified: newest(forms), changeFrequency: "weekly" as const, priority: 0.7 },
+    ...forms.filter((f) => f.slug !== "pre-registration").map((f) => ({ url: u(`/f/${f.slug}`), lastModified: f.updatedAt, changeFrequency: "weekly" as const, priority: 0.6, images: img(f.coverImage) })),
     ...albums.map((a) => ({ url: u(`/gallery/${a.slug}`), changeFrequency: "monthly" as const, priority: 0.4, images: [...new Set([a.cover, ...a.photos.map((p) => p.path)].filter(Boolean) as string[])].map((p) => u(p)) })),
   ];
 }

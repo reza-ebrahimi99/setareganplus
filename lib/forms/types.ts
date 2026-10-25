@@ -10,12 +10,15 @@ export const FIELD_TYPES = [
   { type: "select", label: "لیست کشویی", group: "choice" },
   { type: "radio", label: "تک‌انتخابی", group: "choice" },
   { type: "checkbox", label: "چندانتخابی / تأیید", group: "choice" },
+  { type: "consent", label: "تأیید قوانین", group: "choice" },
   { type: "date", label: "تاریخ شمسی", group: "other" },
-  { type: "file", label: "بارگذاری فایل", group: "other" },
-  { type: "section", label: "عنوان بخش", group: "other" },
+  { type: "file", label: "فایل / عکس", group: "other" },
+  { type: "section", label: "عنوان و توضیح", group: "layout" },
+  { type: "image", label: "تصویر", group: "layout" },
+  { type: "page", label: "مرحلهٔ جدید", group: "layout" },
 ] as const;
 
-export const FIELD_GROUPS: Record<string, string> = { basic: "متنی", person: "اطلاعات فردی", school: "تحصیلی", choice: "گزینه‌ای", other: "سایر" };
+export const FIELD_GROUPS: Record<string, string> = { basic: "متنی", person: "اطلاعات فردی", school: "تحصیلی", choice: "گزینه‌ای", other: "سایر", layout: "چیدمان" };
 
 /** Fixed option lists (kept in sync with the booklet shop). */
 export const PRESET_OPTIONS: Partial<Record<string, readonly string[]>> = {
@@ -45,12 +48,38 @@ export type FieldDef = {
   showIf?: { field: string; equals: string } | null;
   /** Layout hint on desktop */
   half?: boolean;
+  /** Price per option in rials (select / radio / checkbox / grade / major), used when the form is priced by option */
+  prices?: Record<string, number>;
+  /** image block: image URL */
+  src?: string;
+  /** consent: link to the full terms */
+  href?: string;
 };
 
 export type FormValue = string | string[];
 export type FormValues = Record<string, FormValue>;
 
 export const OPTION_TYPES: FieldType[] = ["select", "radio", "checkbox"];
+/** Types whose options can carry a price */
+export const PRICE_TYPES: FieldType[] = ["select", "radio", "checkbox", "grade", "major"];
+/** Display-only blocks (no value) */
+export const LAYOUT_TYPES: FieldType[] = ["section", "image", "page"];
+export const isInput = (f: Pick<FieldDef, "type">) => !LAYOUT_TYPES.includes(f.type);
+
+export type Step = { title: string; help?: string; fields: FieldDef[] };
+/** Split fields into steps at each "page" block. A form without page blocks is one step. */
+export function splitSteps(fields: FieldDef[], firstTitle = "اطلاعات"): Step[] {
+  const steps: Step[] = [];
+  let cur: Step = { title: firstTitle, fields: [] };
+  for (const f of fields) {
+    if (f.type === "page") {
+      if (cur.fields.length || steps.length) steps.push(cur);
+      cur = { title: f.label || `مرحله ${steps.length + 1}`, help: f.help, fields: [] };
+    } else cur.fields.push(f);
+  }
+  steps.push(cur);
+  return steps.filter((s, i) => s.fields.length || i === 0);
+}
 /** Types that can drive a "show only when" condition */
 export const CONDITION_TYPES: FieldType[] = ["select", "radio", "checkbox", "grade", "major"];
 

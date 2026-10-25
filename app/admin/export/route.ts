@@ -1,7 +1,7 @@
 import ExcelJS from "exceljs";
-import { permOr403 } from "@/lib/auth";
+import { permOr403, can } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { querySubmissions, columnsFor } from "@/lib/submissions";
+import { querySubmissions, columnsFor, submissionRef, PAY_STATE } from "@/lib/submissions";
 import { displayValue } from "@/lib/forms/validate";
 import { jalaliDateTime } from "@/lib/format";
 
@@ -14,12 +14,18 @@ export async function GET(req: Request) {
   const { items } = await querySubmissions(sp);
   const form = sp.form ? await prisma.form.findUnique({ where: { id: sp.form } }) : null;
   const cols = columnsFor(items, form?.fields);
-  const header = ["تاریخ ثبت", "فرم", "وضعیت", ...cols.map((c) => c.label), "یادداشت"];
+  const money = can(me, "forms.payments");
+  const payHead = money ? ["وضعیت پرداخت", "مبلغ (تومان)", "کد تخفیف", "تخفیف (تومان)", "شماره پیگیری زیبال", "شماره مرجع بانک", "تاریخ پرداخت"] : ["وضعیت پرداخت"];
+  const header = ["تاریخ ثبت", "کد پیگیری", "فرم", "وضعیت", ...payHead, ...cols.map((c) => c.label), "یادداشت"];
   const val = (v: unknown) =>
     v && typeof v === "object" && !Array.isArray(v) && "key" in (v as object) ? `${new URL(req.url).origin}/admin/files/${(v as { key: string }).key}` : displayValue(v);
   const data = items.map((it) => {
     const d = it.data as Record<string, unknown>;
-    return [jalaliDateTime(it.createdAt), it.form.title, ST[it.status], ...cols.map((c) => val(d[c.id])), it.note ?? ""];
+    const ps = PAY_STATE[it.payState]?.label ?? it.payState;
+    const pay = money
+      ? [ps, it.amountRials ? Math.round(it.amountRials / 10) : 0, it.discountCode ?? "", it.discountRials ? Math.round(it.discountRials / 10) : 0, it.payments[0]?.trackId ?? "", it.payments[0]?.refNumber ?? "", it.paidAt ? jalaliDateTime(it.paidAt) : ""]
+      : [ps];
+    return [jalaliDateTime(it.createdAt), submissionRef(it.id), it.form.title, ST[it.status], ...pay, ...cols.map((c) => val(d[c.id])), it.note ?? ""];
   });
   const stamp = new Date().toISOString().slice(0, 10);
   const name = `submissions-${form?.slug ?? "all"}-${stamp}`;
