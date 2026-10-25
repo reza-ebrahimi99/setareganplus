@@ -12,7 +12,8 @@
 #    3. npm ci, build into .next-build (live site keeps running), full backup (backup.sh, reuses
 #       one from the last 6 h) + nightly backup timer, prisma migrate deploy (NO seed)
 #    4. imports booklets + orders from the old DB (read-only, idempotent)
-#    5. pm2 reload + health checks (auto-restores the previous build on failure)
+#    5. pm2 reload + health checks (auto-restores the previous build on failure),
+#       create-only import of content/news + 3-hourly news-feed sync timer
 #    6. nginx: /shop /booklet /order /o now go to the lean app; /payments,
 #       /ghalamchi/register/receipt and /images stay on the old app.
 #       nginx -t + live checks, automatic rollback on failure
@@ -204,6 +205,12 @@ if ! pm2_healthy || ! health; then
   die "نسخهٔ جدید سالم نبود؛ build قبلی برگردانده شد و nginx تغییر نکرد" "Health check failed; previous build restored, nginx untouched. Check: pm2 logs $PM2_NAME --lines 80 ; ss -ltnp | grep :$NEW_PORT"
 fi
 ok "نسخهٔ جدید سالم است"
+
+# news: create-only import of content/news (never overwrites/deletes; failures never stop the deploy)
+# + the 3-hourly news-feed sync timer (deploy/lean/news-sync.sh, log /var/log/setareganplus-news.log)
+( timeout 300 npx --no-install tsx scripts/import-news.ts --dir "$APP_DIR/content/news" ) && ok "اخبار بررسی شد" \
+  || warn "ورود اخبار ناموفق (سایت سالم است)" "news import failed; retry: cd $APP_DIR && npx tsx scripts/import-news.ts"
+bash "$APP_DIR/deploy/lean/install-news-timer.sh" || warn "تایمر اخبار نصب نشد" "news timer install failed: bash $APP_DIR/deploy/lean/install-news-timer.sh"
 
 # ---------------------------------------------------------------------------
 if (( SKIP_NGINX )); then warn "nginx تغییر نکرد (--skip-nginx)"; else

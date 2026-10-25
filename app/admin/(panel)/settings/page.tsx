@@ -1,20 +1,32 @@
 import { redirect } from "next/navigation";
 import { requirePerm, logAction } from "@/lib/auth";
-import { getSettings, saveSetting } from "@/lib/settings";
-import { s, rows, lines, imageField } from "@/lib/admin";
+import { getSettings, saveSetting, DEFAULT_HIGHLIGHT, DEFAULT_HIGHLIGHT_IMAGE } from "@/lib/settings";
+import { s, b, rows, lines, imageField } from "@/lib/admin";
 import { toEn } from "@/lib/format";
-import { PageTitle, Panel, Field, Area, ImageInput, SaveBar, Flash } from "@/components/admin/ui";
+import { PageTitle, Panel, Field, Area, Check, ImageInput, SaveBar, Flash } from "@/components/admin/ui";
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
   await requirePerm("site.settings");
   const { ok } = await searchParams;
   const st = await getSettings();
-  const { contact, stats, home, about } = st;
+  const { contact, stats, home, about, highlight } = st;
 
   async function save(fd: FormData) {
     "use server";
     const me = await requirePerm("site.settings");
     const cur = await getSettings();
+    const hlImage = cur.highlight.image === DEFAULT_HIGHLIGHT_IMAGE ? null : cur.highlight.image;
+    await saveSetting("highlight", {
+      enabled: b(fd, "hl_enabled"),
+      title: s(fd, "hl_title") || DEFAULT_HIGHLIGHT.title,
+      subtitle: s(fd, "hl_subtitle"),
+      text: s(fd, "hl_text"),
+      // removing / never uploading an image keeps the default ceremony photo
+      image: (await imageField(fd, "hl_image", hlImage, "site", 1600)) || DEFAULT_HIGHLIGHT_IMAGE,
+      imageAlt: s(fd, "hl_alt") || DEFAULT_HIGHLIGHT.imageAlt,
+      ctaLabel: s(fd, "hl_cta"),
+      ctaHref: s(fd, "hl_href"),
+    });
     await saveSetting("contact", {
       phones: lines(s(fd, "phones")).map((p) => toEn(p).replace(/[^\d+]/g, "")),
       hours: lines(s(fd, "hours")),
@@ -54,6 +66,18 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <PageTitle title="تنظیمات سایت" sub="اطلاعات تماس، آمار، صفحه اصلی و درباره ما" action={<a href="/admin/settings/seo" className="btn-ghost px-4 py-2 text-sm">سئو و گوگل ←</a>} />
       <Flash ok={ok} />
       <form action={save} className="space-y-6">
+        <Panel title="بخش ویژهٔ بالای صفحهٔ اصلی (بالاتر از معرفی)">
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="md:col-span-2"><Check label="نمایش این بخش در بالای صفحهٔ اصلی" name="hl_enabled" defaultChecked={highlight.enabled} /></div>
+            <Field label="عنوان" name="hl_title" defaultValue={highlight.title} />
+            <Field label="زیرعنوان" name="hl_subtitle" defaultValue={highlight.subtitle} />
+            <div className="md:col-span-2"><Area label="متن کوتاه" name="hl_text" defaultValue={highlight.text} rows={2} /></div>
+            <Field label="متن دکمه" name="hl_cta" defaultValue={highlight.ctaLabel} />
+            <Field label="لینک دکمه" name="hl_href" defaultValue={highlight.ctaHref} dir="ltr" hint="مثلاً /ghalamchi-nasimshahr یا /konkur-nasimshahr" />
+            <ImageInput label="تصویر (پیش‌فرض: عکس آیین تجلیل ۱۴۰۵)" name="hl_image" current={highlight.image} />
+            <Area label="متن جایگزین تصویر (alt)" name="hl_alt" defaultValue={highlight.imageAlt} rows={2} />
+          </div>
+        </Panel>
         <Panel title="تماس و شعبه‌ها">
           <div className="grid gap-5 md:grid-cols-2">
             <Area label="شماره‌های تماس (هر خط یکی)" name="phones" defaultValue={contact.phones.join("\n")} dir="ltr" />

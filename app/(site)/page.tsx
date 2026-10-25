@@ -13,6 +13,7 @@ import { organizationLd, pageMeta, websiteLd } from "@/lib/seo";
 import { homeNews } from "@/lib/news";
 import { JsonLd } from "@/components/site/JsonLd";
 import { NewsCard } from "@/components/site/news";
+import { HomeHighlight } from "@/components/site/HomeHighlight";
 import { FormCard } from "@/components/forms/FormCard";
 import { listedForms } from "@/lib/forms/public";
 
@@ -37,7 +38,7 @@ export default async function Home() {
     prisma.faq.findMany({ where: { published: true }, orderBy: { sortOrder: "asc" }, take: 4 }),
   ]);
   const [news, orgLd, openForms] = await Promise.all([homeNews().catch(() => []), organizationLd(), listedForms(3).then((x) => x.filter((f) => f.state === "open" || f.state === "soon")).catch(() => [])]);
-  const { home, about, contact, stats } = s;
+  const { home, about, contact, stats, highlight } = s;
   const founder = about.founder;
   const mosaic = albums.flatMap((a) => a.photos.map((p) => ({ ...p, album: a }))).slice(0, 5);
   const words = home.title.trim().split(/\s+/);
@@ -54,6 +55,8 @@ export default async function Home() {
   return (
     <>
       <JsonLd data={[orgLd, websiteLd()]} />
+      {/* ───────── Highlight (first thing visitors see; toggle in admin settings) ───────── */}
+      <HomeHighlight h={highlight} />
       {/* ───────── Hero ───────── */}
       <section className="bg-hero relative overflow-hidden text-white">
         <div className="bg-dots pointer-events-none absolute inset-0 [mask-image:radial-gradient(60%_70%_at_75%_30%,black,transparent)]" />
