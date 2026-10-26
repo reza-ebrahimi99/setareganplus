@@ -7,6 +7,8 @@ import { PageTitle, Panel } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { STAGE, STAGES, BRANCHES, BRANCH_LABEL, PAY_METHOD, formatToman, GRADES, MAJORS } from "@/lib/shop/config";
 import { setStage, verifyPayment, notifyReady, ticketPath } from "@/lib/shop/orders";
+import { isStage, stageNotice, stageQuery } from "@/lib/shop/stage-notice";
+import { Notices } from "@/components/admin/shop/Notices";
 import { qrSvg, ticketUrl } from "@/lib/shop/qr";
 import type { OrderStage } from "@/generated/prisma/client";
 import { fa, jalaliDateTime, prettyPhone, telHref } from "@/lib/format";
@@ -14,11 +16,12 @@ import { fa, jalaliDateTime, prettyPhone, telHref } from "@/lib/format";
 const PAY_ST: Record<string, string> = { PENDING: "در انتظار", PAID: "موفق", FAILED: "ناموفق", UNPAID: "—", REFUNDED: "مسترد" };
 const SMS_KIND: Record<string, string> = { purchase: "خرید", ready: "آماده‌بودن", admin: "مدیر" };
 
-export default async function OrderDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; v?: string }> }) {
+export default async function OrderDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; v?: string; st?: string; same?: string; fail?: string; err?: string; t?: string }> }) {
   const viewer = await requirePerm("shop.orders.view");
   const canEdit = can(viewer, "shop.orders.edit");
   const { id } = await params;
-  const { ok, v } = await searchParams;
+  const { ok, v, st, same, fail, err, t: stamp } = await searchParams;
+  const notices = st || err ? stageNotice({ ok, st, same, fail, err }) : [];
   const o = await prisma.order.findUnique({ where: { id }, include: { items: { include: { product: { select: { slug: true } } } }, events: { orderBy: { createdAt: "desc" } }, payments: { orderBy: { createdAt: "desc" } } } });
   if (!o) notFound();
   const sms = await prisma.smsLog.findMany({ where: { orderId: id }, orderBy: { createdAt: "desc" }, take: 20 });
@@ -28,10 +31,18 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
   async function changeStage(fd: FormData) {
     "use server";
     const me = await requirePerm("shop.orders.edit");
-    const stage = s(fd, "stage") as OrderStage;
-    await setStage([id], stage, { deliveredTo: sn(fd, "deliveredTo"), payMethod: sn(fd, "payMethod") ?? undefined, actor: actorName(me) });
-    await logAction(me, "order.stage", `سفارش ${o!.number}: «${STAGE[stage]?.label ?? stage}»`, id);
-    redirect(`${here}?ok=1`);
+    const stage = s(fd, "stage");
+    if (!isStage(stage)) redirect(`${here}?err=stage`);
+    let q: string;
+    try {
+      const r = await setStage([id], stage as OrderStage, { deliveredTo: sn(fd, "deliveredTo"), payMethod: sn(fd, "payMethod") ?? undefined, actor: actorName(me) });
+      if (r.changed) await logAction(me, "order.stage", `سفارش ${o!.number}: «${STAGE[stage as OrderStage]?.label ?? stage}»`, id);
+      q = stageQuery(r, stage);
+    } catch (e) {
+      console.error("[admin] order stage failed", id, e);
+      q = "err=server";
+    }
+    redirect(`${here}?${q}`);
   }
   async function saveInfo(fd: FormData) {
     "use server";
@@ -67,7 +78,8 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
         sub={`سفارش ${fa(o.number)} · ثبت ${jalaliDateTime(o.createdAt)}${o.source === "legacy" ? " · منتقل‌شده از سایت قبلی" : o.source === "admin" ? " · ثبت دستی" : ""}`}
         action={<div className="flex gap-2"><Link href={ticketPath(o.qrToken)} target="_blank" className="btn-ghost px-4 py-2 text-sm">رسید خریدار ↗</Link>{can(viewer, "shop.labels") && <Link href={`/admin/labels?ids=${o.id}`} target="_blank" className="btn-ghost px-4 py-2 text-sm">چاپ برچسب</Link>}</div>}
       />
-      {ok && <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">✓ ذخیره شد.</div>}
+      <Notices items={notices} stamp={stamp} />
+      {ok && !st && <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">✓ ذخیره شد.</div>}
       {v && <div className={`mb-4 rounded-xl border px-4 py-3 text-sm font-semibold ${v === "paid" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900"}`}>نتیجهٔ استعلام از زیبال: {v === "paid" ? "پرداخت تأیید شد ✓" : v === "failed" ? "پرداخت انجام نشده است." : "پاسخ قطعی دریافت نشد؛ بعداً دوباره امتحان کنید."}</div>}
 
       <Panel className="mb-6">

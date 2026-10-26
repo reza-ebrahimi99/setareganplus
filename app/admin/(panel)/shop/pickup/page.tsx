@@ -6,22 +6,30 @@ import { PageTitle, Panel } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { ScanInput } from "@/components/admin/shop/ScanInput";
 import { findForPickup } from "@/lib/shop/admin";
-import { setStage } from "@/lib/shop/orders";
+import { setStage, type StageResult } from "@/lib/shop/orders";
 import { STAGE, BRANCH_LABEL, PAY_METHOD, formatToman } from "@/lib/shop/config";
 import { fa, jalaliDateTime, prettyPhone } from "@/lib/format";
 
 export const metadata = { title: "تحویل حضوری" };
 
-export default async function Pickup({ searchParams }: { searchParams: Promise<{ q?: string; done?: string }> }) {
+export default async function Pickup({ searchParams }: { searchParams: Promise<{ q?: string; done?: string; err?: string }> }) {
   const viewer = await requirePerm("shop.pickup");
-  const { q, done } = await searchParams;
+  const { q, done, err } = await searchParams;
   const found = q ? await findForPickup(q) : [];
 
   async function deliver(fd: FormData) {
     "use server";
     const me = await requirePerm("shop.pickup");
-    await setStage([s(fd, "id")], "DELIVERED", { deliveredTo: sn(fd, "deliveredTo"), payMethod: sn(fd, "payMethod") ?? undefined, actor: actorName(me) });
-    await logAction(me, "order.pickup", `تحویل حضوری به ${s(fd, "name")}${sn(fd, "deliveredTo") ? ` (تحویل‌گیرنده: ${s(fd, "deliveredTo")})` : ""}`, s(fd, "id"));
+    const id = s(fd, "id");
+    const back = `/admin/shop/pickup?q=${encodeURIComponent(s(fd, "q") || "")}`;
+    let r: StageResult | null = null;
+    try {
+      r = await setStage([id], "DELIVERED", { deliveredTo: sn(fd, "deliveredTo"), payMethod: sn(fd, "payMethod") ?? undefined, actor: actorName(me) });
+      if (r.changed) await logAction(me, "order.pickup", `تحویل حضوری به ${s(fd, "name")}${sn(fd, "deliveredTo") ? ` (تحویل‌گیرنده: ${s(fd, "deliveredTo")})` : ""}`, id);
+    } catch (e) {
+      console.error("[admin] pickup failed", id, e);
+    }
+    if (!r || r.failed) redirect(`${back}&err=server`);
     redirect(`/admin/shop/pickup?done=${encodeURIComponent(s(fd, "name"))}`);
   }
 
@@ -29,6 +37,7 @@ export default async function Pickup({ searchParams }: { searchParams: Promise<{
     <>
       <PageTitle title="تحویل حضوری جزوه" sub="کد روی رسید خریدار را اسکن یا وارد کنید، سپس «تحویل داده شد» را بزنید." />
       {done && <div className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-800"><p className="text-lg font-extrabold">✓ تحویل ثبت شد</p><p className="text-sm">جزوهٔ {done} تحویل داده شد. سفارش بعدی را اسکن کنید.</p></div>}
+      {err && <div role="alert" className="mb-5 rounded-2xl border border-gc/30 bg-gc-soft px-5 py-4 font-semibold text-gc">خطا: تحویل ثبت نشد. چند لحظه بعد دوباره «تحویل داده شد» را بزنید؛ اگر باز هم نشد به مدیر خبر دهید.</div>}
       <Panel>
         <form><ScanInput defaultValue={done ? "" : q} /></form>
       </Panel>
@@ -62,6 +71,7 @@ export default async function Pickup({ searchParams }: { searchParams: Promise<{
                 <form action={deliver} className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
                   <input type="hidden" name="id" value={o.id} />
                   <input type="hidden" name="name" value={o.buyerName} />
+                  <input type="hidden" name="q" value={q ?? ""} />
                   {unpaid && (
                     <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 sm:col-span-2">
                       این سفارش <b>پرداخت نشده</b> است. مبلغ {formatToman(o.totalRials)} را دریافت کنید:

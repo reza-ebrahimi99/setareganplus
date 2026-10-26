@@ -9,10 +9,15 @@ import { SelectAll, SelectedCount } from "@/components/admin/shop/SelectAll";
 import { STAGE, STAGES, BRANCH_LABEL, BRANCHES, formatToman, formatNum, PAY_METHOD } from "@/lib/shop/config";
 import { queryOrders, nextStage, RANGES, type OrderQuery } from "@/lib/shop/admin";
 import { setStage } from "@/lib/shop/orders";
+import { isStage, stageNotice, stageQuery } from "@/lib/shop/stage-notice";
+import { Notices } from "@/components/admin/shop/Notices";
+import { StageButton } from "@/components/admin/shop/StageButton";
 import type { OrderStage } from "@/generated/prisma/client";
 import { fa, jalaliDateTime, prettyPhone } from "@/lib/format";
 
 export const metadata: Metadata = { title: "سفارش‌های جزوه" };
+
+type NoticeParams = { ok?: string; st?: string; same?: string; fail?: string; who?: string; err?: string; t?: string };
 
 const qs = (sp: OrderQuery, extra: Record<string, string | undefined> = {}) => {
   const u = new URLSearchParams();
@@ -20,11 +25,12 @@ const qs = (sp: OrderQuery, extra: Record<string, string | undefined> = {}) => {
   return u.toString();
 };
 
-export default async function OrdersPage({ searchParams }: { searchParams: Promise<OrderQuery & { ok?: string }> }) {
+export default async function OrdersPage({ searchParams }: { searchParams: Promise<OrderQuery & NoticeParams> }) {
   const viewer = await requirePerm("shop.orders.view");
   const canEdit = can(viewer, "shop.orders.edit");
   const canLabels = can(viewer, "shop.labels");
-  const { ok, ...sp } = await searchParams;
+  const { ok, st, same, fail, who, err, t: stamp, ...sp } = await searchParams;
+  const notices = stageNotice({ ok, st, same, fail, who, err });
   const [{ items, total, page, pages }, products, counts] = await Promise.all([
     queryOrders(sp),
     prisma.product.findMany({ select: { id: true, title: true }, orderBy: { title: "asc" } }),
@@ -37,17 +43,28 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     "use server";
     const me = await requirePerm("shop.orders.edit");
     const one = String(fd.get("one") ?? "");
-    let ids = fd.getAll("ids").map(String);
-    let stage = String(fd.get("stage") ?? "") as OrderStage;
+    let ids = fd.getAll("ids").map(String).filter(Boolean);
+    let stage = String(fd.get("stage") ?? "");
     if (one) {
       const [id, st] = one.split(":");
       ids = [id];
-      stage = st as OrderStage;
+      stage = st ?? "";
     }
-    const n = ids.length && stage ? await setStage(ids, stage, { actor: actorName(me) }) : 0;
-    if (n) await logAction(me, "order.stage", `تغییر وضعیت ${n} سفارش به «${STAGE[stage]?.label ?? stage}»`, ids.length === 1 ? ids[0] : null);
     const ret = String(fd.get("back") || "/admin/shop/orders");
-    redirect(`${ret}${ret.includes("?") ? "&" : "?"}ok=${n}`);
+    const sep = ret.endsWith("?") ? "" : ret.includes("?") ? "&" : "?";
+    const err = !ids.length ? "nosel" : !stage ? "nostage" : !isStage(stage) ? "stage" : null;
+    if (err) redirect(`${ret}${sep}err=${err}`);
+    let q: string;
+    try {
+      const r = await setStage(ids, stage as OrderStage, { actor: actorName(me) });
+      if (r.changed) await logAction(me, "order.stage", `تغییر وضعیت ${r.changed} سفارش به «${STAGE[stage as OrderStage]?.label ?? stage}»`, ids.length === 1 ? ids[0] : null);
+      const who = ids.length === 1 ? (await prisma.order.findUnique({ where: { id: ids[0] }, select: { buyerName: true } }).catch(() => null))?.buyerName : null;
+      q = stageQuery(r, stage, who);
+    } catch (e) {
+      console.error("[admin] bulk stage failed", e);
+      q = "err=server";
+    }
+    redirect(`${ret}${sep}${q}`);
   }
   async function labels(fd: FormData) {
     "use server";
@@ -75,7 +92,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           </div>
         }
       />
-      {ok !== undefined && <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">✓ وضعیت {fa(ok)} سفارش به‌روزرسانی شد.</div>}
+      <Notices items={notices} stamp={stamp} />
 
       <div className="mb-4 flex gap-1.5 overflow-x-auto pb-1">
         {tabs.map((t) => (
@@ -107,7 +124,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           <div className="overflow-x-auto rounded-2xl border border-line bg-paper">
             <table className="w-full min-w-[860px] text-sm">
               <thead className="bg-ivory text-xs text-muted">
-                <tr><th className="w-10 p-3" /><th className="p-3 text-right">خریدار</th><th className="p-3 text-right">جزوه</th><th className="p-3 text-right">شعبه</th><th className="p-3 text-right">مبلغ</th><th className="p-3 text-right">وضعیت</th><th className="p-3 text-right">تاریخ</th><th className="p-3" /></tr>
+                <tr><th className="w-10 p-3" /><th className="p-3 text-right">خریدار</th><th className="p-3 text-right">جزوه</th><th className="p-3 text-right">شعبه</th><th className="p-3 text-right">مبلغ</th><th className="p-3 text-right">وضعیت</th><th className="p-3 text-right">تاریخ</th><th className="hidden p-3 lg:table-cell" /></tr>
               </thead>
               <tbody>
                 {items.map((o) => {
@@ -119,13 +136,14 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                         <Link href={`/admin/shop/orders/${o.id}`} className="font-bold text-navy hover:underline">{o.buyerName}</Link>
                         <div className="text-xs text-muted" dir="ltr" style={{ textAlign: "right" }}>{prettyPhone(o.mobile)}</div>
                         <div className="text-[11px] text-muted">{fa(o.number)} · <span dir="ltr">{o.shortCode}</span></div>
+                        {canEdit && nx && o.stage !== "REGISTERED" && <div className="mt-2 lg:hidden"><StageButton value={`${o.id}:${nx}`}>← {STAGE[nx].short}</StageButton></div>}
                       </td>
                       <td className="p-3"><div className="max-w-[220px]">{o.items.map((i) => i.title + (i.qty > 1 ? ` ×${fa(i.qty)}` : "")).join("، ")}</div><div className="text-xs text-muted">{[o.grade, o.major].filter(Boolean).join(" · ")}</div></td>
                       <td className="p-3 text-xs">{BRANCH_LABEL[o.branch] ?? o.branch}</td>
                       <td className="p-3"><div className="font-semibold">{formatToman(o.totalRials)}</div><div className="text-[11px] text-muted">{o.payStatus === "PAID" ? PAY_METHOD[o.payMethod] ?? o.payMethod : "پرداخت نشده"}</div></td>
                       <td className="p-3"><span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold ${STAGE[o.stage].cls}`}><span className={`size-1.5 rounded-full ${STAGE[o.stage].dot}`} />{STAGE[o.stage].short}</span></td>
                       <td className="whitespace-nowrap p-3 text-xs text-muted">{jalaliDateTime(o.paidAt ?? o.createdAt)}</td>
-                      <td className="p-3 text-left">{canEdit && nx && o.stage !== "REGISTERED" && <button name="one" value={`${o.id}:${nx}`} className="whitespace-nowrap rounded-full border border-line px-3 py-1 text-xs font-semibold hover:border-navy hover:bg-navy hover:text-white">← {STAGE[nx].short}</button>}</td>
+                      <td className="hidden p-3 text-left lg:table-cell">{canEdit && nx && o.stage !== "REGISTERED" && <StageButton value={`${o.id}:${nx}`}>← {STAGE[nx].short}</StageButton>}</td>
                     </tr>
                   );
                 })}

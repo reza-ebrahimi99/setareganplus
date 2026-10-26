@@ -1,4 +1,5 @@
 import "server-only";
+import { after } from "next/server";
 import { randomBytes, randomInt } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import type { OrderStage, Prisma } from "@/generated/prisma/client";
@@ -194,38 +195,65 @@ const STAMP: Partial<Record<OrderStage, "paidAt" | "inProductionAt" | "readyAt" 
   DELIVERED: "deliveredAt",
 };
 
-/** Staff stage change (single or bulk). Sends the "ready" SMS when an order becomes READY. */
-export async function setStage(ids: string[], stage: OrderStage, extra: { deliveredTo?: string | null; payMethod?: string; actor?: string | null } = {}) {
-  let changed = 0;
-  for (const id of ids) {
-    const o = await prisma.order.findUnique({ where: { id } });
-    if (!o || o.stage === stage) continue;
-    const data: Prisma.OrderUpdateInput = { stage };
-    const f = STAMP[stage];
-    if (f && !o[f]) data[f] = new Date();
-    if (stage === "DELIVERED" && extra.deliveredTo) data.deliveredTo = extra.deliveredTo;
-    // Moving past "registered" by hand means it was paid offline (cash/card) unless already paid online.
-    const offlinePaid = stage !== "REGISTERED" && stage !== "CANCELLED" && o.payStatus !== "PAID";
-    if (offlinePaid) {
-      data.payStatus = "PAID";
-      data.payMethod = extra.payMethod ?? (o.payMethod === "ONLINE" ? "CASH" : o.payMethod);
-      if (!o.paidAt) data.paidAt = new Date();
-    }
-    await prisma.order.update({ where: { id }, data });
-    if (offlinePaid) await adjustStock(id, -1);
-    if (stage === "CANCELLED" && o.payStatus === "PAID" && o.stage !== "DELIVERED") await adjustStock(id, +1);
-    await prisma.orderEvent.create({ data: { orderId: id, type: "STAGE", stage, text: `وضعیت: ${STAGE[stage].label}${stage === "DELIVERED" && extra.deliveredTo ? ` — تحویل‌گیرنده: ${extra.deliveredTo}` : ""}`, actor: extra.actor ?? null } });
-    if (stage === "READY") await notifyReady(id);
-    changed++;
+export type StageResult = { changed: number; same: number; failed: number };
+
+/** Ready SMS runs after the response is sent, so a slow/failing SMS.ir never blocks or undoes the stage change. */
+function queueReadySms(orderId: string) {
+  const run = () => notifyReady(orderId).catch((e) => console.error("[shop] ready SMS failed", orderId, e));
+  try {
+    after(run);
+  } catch {
+    void run(); // outside a request (scripts)
   }
-  return changed;
 }
 
-async function adjustStock(orderId: string, sign: 1 | -1) {
-  const items = await prisma.orderItem.findMany({ where: { orderId } });
+/**
+ * Staff stage change (single or bulk). Sends the "ready" SMS when an order becomes READY.
+ * Each order is applied on its own (one bad order never blocks the rest) and atomically,
+ * guarded by the current stage so a double click cannot apply it (and the stock change) twice.
+ */
+export async function setStage(ids: string[], stage: OrderStage, extra: { deliveredTo?: string | null; payMethod?: string; actor?: string | null } = {}): Promise<StageResult> {
+  const r: StageResult = { changed: 0, same: 0, failed: 0 };
+  for (const id of [...new Set(ids.filter(Boolean))]) {
+    try {
+      const o = await prisma.order.findUnique({ where: { id } });
+      if (!o) { r.failed++; continue; }
+      if (o.stage === stage) { r.same++; continue; }
+      const data: Prisma.OrderUpdateManyMutationInput = { stage };
+      const f = STAMP[stage];
+      if (f && !o[f]) data[f] = new Date();
+      if (stage === "DELIVERED" && extra.deliveredTo) data.deliveredTo = extra.deliveredTo;
+      // Moving past "registered" by hand means it was paid offline (cash/card) unless already paid online.
+      const offlinePaid = stage !== "REGISTERED" && stage !== "CANCELLED" && o.payStatus !== "PAID";
+      if (offlinePaid) {
+        data.payStatus = "PAID";
+        data.payMethod = extra.payMethod ?? (o.payMethod === "ONLINE" ? "CASH" : o.payMethod);
+        if (!o.paidAt) data.paidAt = new Date();
+      }
+      const done = await prisma.$transaction(async (tx) => {
+        const u = await tx.order.updateMany({ where: { id, stage: o.stage }, data });
+        if (!u.count) return false; // changed by someone else meanwhile (e.g. double click)
+        if (offlinePaid) await adjustStock(tx, id, -1);
+        if (stage === "CANCELLED" && o.payStatus === "PAID" && o.stage !== "DELIVERED") await adjustStock(tx, id, +1);
+        await tx.orderEvent.create({ data: { orderId: id, type: "STAGE", stage, text: `وضعیت: ${STAGE[stage].label}${stage === "DELIVERED" && extra.deliveredTo ? ` — تحویل‌گیرنده: ${extra.deliveredTo}` : ""}`, actor: extra.actor ?? null } });
+        return true;
+      });
+      if (!done) { r.same++; continue; }
+      if (stage === "READY") queueReadySms(id);
+      r.changed++;
+    } catch (e) {
+      console.error("[shop] setStage failed", id, stage, e);
+      r.failed++;
+    }
+  }
+  return r;
+}
+
+async function adjustStock(tx: Prisma.TransactionClient, orderId: string, sign: 1 | -1) {
+  const items = await tx.orderItem.findMany({ where: { orderId } });
   for (const it of items) {
     if (!it.productId) continue;
-    await prisma.product.updateMany({ where: { id: it.productId, stock: { not: null } }, data: { stock: { increment: sign * it.qty } } });
+    await tx.product.updateMany({ where: { id: it.productId, stock: { not: null } }, data: { stock: { increment: sign * it.qty } } });
   }
-  await prisma.product.updateMany({ where: { stock: { lt: 0 } }, data: { stock: 0 } });
+  await tx.product.updateMany({ where: { stock: { lt: 0 } }, data: { stock: 0 } });
 }
