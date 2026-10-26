@@ -12,7 +12,7 @@ Everything seeded comes from the live site or the audit snapshot. Nothing is inv
 ## Missing content (the live site had none)
 - [ ] **Tutoring/konkur center (/education):** there are no per-class texts, schedules or fees. The highlights "تیزهوشان" and "پانسیون" are titles only. The center has no own address/branch, so the branches list is empty. Fill these in via Admin → Centers → آموزشگاه.
 - [ ] **News/blog:** there was no real news content, so `/news` is omitted. Add it later if needed.
-- [ ] **Opening hours:** seeded as shown on the live site (daily 12:00–20:30, Thursday 10:00–20:30). Confirm.
+- [x] **Opening hours:** confirmed by the owner: Sat–Wed 12:00–20:30, Thu 10:00–20:30, Fri closed (lib/hours.ts; old default replaced on deploy by scripts/update-defaults.ts).
 - [ ] **Ghalamchi exam calendar:** the only listed exams (summer 1405) are past, so none are shown. Add the new term's dates to the Ghalamchi body text when available.
 
 ## Follow-ups (out of scope for this lean pass)

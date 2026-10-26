@@ -16,7 +16,7 @@ export type SeoSettings = {
   bingVerification?: string;
   /** per-branch coordinates, same order as contact.branches */
   geo?: { lat?: string; lng?: string }[];
-  /** one rule per line: "Sa-We 12:00-20:30" */
+  /** one rule per line: "Sa-We 12:00-20:30" (optional; empty = derived from contact.hours) */
   openingHours?: string;
   /** Ghalamchi exam calendar, one per line: "تاریخ | عنوان | توضیح" */
   examCalendar?: string;
@@ -283,38 +283,67 @@ function branchGeo(seoGeo: { lat?: string; lng?: string } | undefined, mapUrl?: 
   return geoOf(seoGeo) ?? (mapUrl ? geoOf(KNOWN_GEO[mapUrl.split("?")[0]]) : undefined);
 }
 
-const FA_DAYS: [RegExp, string][] = [
-  [/شنبه/, "Saturday"], // checked last (see below) because «یکشنبه» etc. also contain «شنبه»
-];
 const FA_DAY_NAMES: [string, string][] = [
   ["پنج‌شنبه", "Thursday"], ["پنجشنبه", "Thursday"], ["پنج شنبه", "Thursday"],
-  ["چهارشنبه", "Wednesday"], ["سه‌شنبه", "Tuesday"], ["سه شنبه", "Tuesday"], ["سهشنبه", "Tuesday"],
-  ["دوشنبه", "Monday"], ["یکشنبه", "Sunday"], ["یک‌شنبه", "Sunday"], ["جمعه", "Friday"],
+  ["چهارشنبه", "Wednesday"], ["چهار‌شنبه", "Wednesday"], ["سه‌شنبه", "Tuesday"], ["سه شنبه", "Tuesday"], ["سهشنبه", "Tuesday"],
+  ["دوشنبه", "Monday"], ["دو‌شنبه", "Monday"], ["یکشنبه", "Sunday"], ["یک‌شنبه", "Sunday"], ["جمعه", "Friday"],
+  ["شنبه", "Saturday"], // last: «یکشنبه», «چهارشنبه» … also contain «شنبه»
 ];
 const WEEK = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
+const WEEK7 = [...WEEK, "Friday"];
+
+/** Day names in a Persian label, in reading order; «شنبه تا چهارشنبه» expands to the range. */
+function faDays(label: string): string[] {
+  const hits: { at: number; day: string; end: number }[] = [];
+  let rest = label;
+  for (const [fa, en] of FA_DAY_NAMES) {
+    let i = rest.indexOf(fa);
+    while (i >= 0) {
+      hits.push({ at: i, day: en, end: i + fa.length });
+      rest = rest.slice(0, i) + " ".repeat(fa.length) + rest.slice(i + fa.length);
+      i = rest.indexOf(fa);
+    }
+  }
+  hits.sort((a, b) => a.at - b.at);
+  const out: string[] = [];
+  for (let k = 0; k < hits.length; k++) {
+    const h = hits[k], next = hits[k + 1];
+    if (next && /^\s*(?:تا|الی|-|–)\s*$/.test(label.slice(h.end, next.at))) {
+      let i = WEEK7.indexOf(h.day);
+      const j = WEEK7.indexOf(next.day);
+      for (let n = 0; n < 7; n++, i = (i + 1) % 7) {
+        out.push(WEEK7[i]);
+        if (i === j) break;
+      }
+      k++;
+    } else out.push(h.day);
+  }
+  return [...new Set(out)];
+}
+
+const hhmm = (t: string) => (t.includes(":") ? t : `${t}:00`).padStart(5, "0");
 
 /**
  * Fallback for openingHours when the admin field is empty: read the Persian hours shown on the
- * site (e.g. «هر روز: ۱۲:۰۰ تا ۲۰:۳۰» / «پنج‌شنبه: ۱۰:۰۰ تا ۲۰:۳۰»). «هر روز» means Saturday to
- * Thursday minus days listed on their own line; Friday is only included when written explicitly.
+ * site, e.g. «شنبه تا چهارشنبه ۱۲ تا ۲۰:۳۰» / «پنج‌شنبه ۱۰ تا ۲۰:۳۰» / «جمعه تعطیل». Day ranges
+ * («X تا Y») are expanded; a line without hours (e.g. «تعطیل») is skipped, i.e. closed.
+ * «هر روز» means Saturday to Thursday minus days listed on their own line; Friday is only
+ * included when written explicitly.
  */
 export function parsePersianHours(lines: string[]) {
   const rows: { days: string[] | "rest"; opens: string; closes: string }[] = [];
   for (const raw of lines) {
     const t = toEn(raw);
-    const m = t.match(/(\d{1,2}:\d{2})\s*(?:تا|-|–)\s*(\d{1,2}:\d{2})/);
+    const m = t.match(/(?<![\d:])(\d{1,2}(?::\d{2})?)\s*(?:تا|الی|-|–)\s*(\d{1,2}(?::\d{2})?)(?![\d:])/);
     if (!m) continue;
     const label = t.slice(0, m.index);
     let days: string[] | "rest" | null = null;
     if (/هر\s*روز|همه\s*روزه|روزهای\s*کاری/.test(label)) days = "rest";
     else {
-      let rest = label;
-      const found: string[] = [];
-      for (const [fa, en] of FA_DAY_NAMES) if (rest.includes(fa)) { found.push(en); rest = rest.split(fa).join(" "); }
-      for (const [re, en] of FA_DAYS) if (re.test(rest)) found.push(en);
-      if (found.length) days = [...new Set(found)];
+      const found = faDays(label);
+      if (found.length) days = found;
     }
-    if (days) rows.push({ days, opens: m[1].padStart(5, "0"), closes: m[2].padStart(5, "0") });
+    if (days) rows.push({ days, opens: hhmm(m[1]), closes: hhmm(m[2]) });
   }
   const named = new Set(rows.flatMap((r) => (r.days === "rest" ? [] : r.days)));
   return rows

@@ -19,7 +19,7 @@ export const BRANCHES: Record<BranchKey, { name: string; short: string; address:
 export const BRANCH_LABEL: Record<string, string> = { BOYS: BRANCHES.BOYS.short, GIRLS: BRANCHES.GIRLS.short, ELEMENTARY: "دبستان (قدیمی)", UNKNOWN: "نامشخص" };
 export const branchInfo = (k: string) => (BRANCHES as Record<string, { name: string; short: string; address: string }>)[k] ?? { name: BRANCH_LABEL[k] ?? k, short: BRANCH_LABEL[k] ?? k, address: "" };
 
-export const PICKUP_HOURS = ["هر روز ۱۲:۰۰ تا ۲۰:۳۰", "پنج‌شنبه‌ها ۱۰:۰۰ تا ۲۰:۳۰"];
+export { PICKUP_HOURS } from "@/lib/hours";
 
 export const STAGES = ["REGISTERED", "PAID", "IN_PRODUCTION", "READY", "DELIVERED"] as const;
 export type Stage = (typeof STAGES)[number] | "CANCELLED";

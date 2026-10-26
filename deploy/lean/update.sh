@@ -211,6 +211,10 @@ ok "نسخهٔ جدید سالم است"
 ( timeout 300 npx --no-install tsx scripts/import-news.ts --dir "$APP_DIR/content/news" ) && ok "اخبار بررسی شد" \
   || warn "ورود اخبار ناموفق (سایت سالم است)" "news import failed; retry: cd $APP_DIR && npx tsx scripts/import-news.ts"
 bash "$APP_DIR/deploy/lean/install-news-timer.sh" || warn "تایمر اخبار نصب نشد" "news timer install failed: bash $APP_DIR/deploy/lean/install-news-timer.sh"
+# corrected defaults (e.g. opening hours): replaces a Setting only if it still equals the old
+# seeded default; admin-customized values are never touched. Failures never stop the deploy.
+( timeout 120 npx --no-install tsx scripts/update-defaults.ts ) && ok "تنظیمات پیش‌فرض بررسی شد" \
+  || warn "به‌روزرسانی ساعت کاری ناموفق (سایت سالم است)" "defaults update failed; retry: cd $APP_DIR && npx tsx scripts/update-defaults.ts"
 
 # ---------------------------------------------------------------------------
 if (( SKIP_NGINX )); then warn "nginx تغییر نکرد (--skip-nginx)"; else

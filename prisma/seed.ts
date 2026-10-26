@@ -9,6 +9,7 @@ import path from "node:path";
 import sharp from "sharp";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
+import { DEFAULT_HOURS } from "../lib/hours";
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
 const ASSETS = path.join(__dirname, "seed-assets");
@@ -43,7 +44,7 @@ async function main() {
   const settings: Record<string, unknown> = {
     contact: {
       phones: ["02156766772", "02156766874", "09380190586", "09384567054"],
-      hours: ["هر روز: ۱۲:۰۰ تا ۲۰:۳۰", "پنج‌شنبه: ۱۰:۰۰ تا ۲۰:۳۰"],
+      hours: DEFAULT_HOURS,
       branches: [
         {
           name: "شعبه پسران",
