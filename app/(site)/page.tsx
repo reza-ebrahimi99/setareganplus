@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
+import { responsive } from "@/lib/img";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { prettyPhone, telHref } from "@/lib/format";
@@ -78,6 +79,7 @@ export default async function Home() {
                   </svg>
                 </span>
               )}
+              <span className="mt-4 block text-lg leading-8 font-extrabold tracking-normal text-gold sm:text-2xl sm:leading-10">آموزشگاه کنکور و نمایندگی قلم‌چی نسیم شهر</span>
             </h1>
             {home.subtitle && <p className="rise rise-2 mt-6 max-w-xl text-[1.05rem] leading-9 text-white/75 sm:text-lg">{home.subtitle}</p>}
             {home.slogan && (
@@ -99,14 +101,14 @@ export default async function Home() {
             <div className="relative rotate-[-2deg] rounded-[2rem] bg-gradient-to-br from-gold via-[#ffcf5a] to-[#ff9f43] p-1.5 shadow-2xl shadow-black/40">
               <div className="overflow-hidden rounded-[1.7rem] bg-navy">
                 {home.heroImage ? (
-                  <img src={home.heroImage} alt="دانش‌آموزان مؤسسه علمی ستارگان" className="aspect-[4/3] w-full rotate-[2deg] scale-[1.06] object-cover object-bottom" />
+                  <img {...responsive(home.heroImage, "(min-width: 1024px) 560px, 92vw")} alt="دانش‌آموزان مؤسسه علمی ستارگان" width={1000} height={750} loading="lazy" decoding="async" className="aspect-[4/3] w-full rotate-[2deg] scale-[1.06] object-cover object-bottom" />
                 ) : (
                   <div className="flex aspect-[4/3] items-center justify-center"><Star className="size-24 text-white/10" /></div>
                 )}
               </div>
             </div>
             <div className="animate-float absolute -bottom-6 right-3 flex items-center gap-3 rounded-2xl bg-white/95 px-4 py-3 text-ink shadow-2xl shadow-black/30 backdrop-blur sm:right-6">
-              <img src="/brand/ghalamchi.jpg" alt="" className="size-10 rounded-xl object-cover" />
+              <img src="/brand/ghalamchi-96.webp" alt="" width={40} height={40} loading="lazy" className="size-10 rounded-xl object-cover" />
               <span className="text-sm leading-6"><b className="block text-navy">نمایندگی رسمی قلم‌چی</b><span className="text-muted">نسیم‌شهر · دختران و پسران</span></span>
             </div>
             <Link href="/shop" className="animate-float absolute -top-5 left-2 hidden items-center gap-2.5 rounded-2xl bg-white/95 px-3.5 py-2.5 text-ink shadow-2xl shadow-black/30 backdrop-blur [animation-delay:1.5s] sm:flex">
@@ -271,7 +273,7 @@ export default async function Home() {
               <div className="absolute -inset-3 rotate-3 rounded-[2rem] bg-gradient-to-br from-royal to-royal-2 opacity-90" />
               <Star className="absolute -top-6 -right-6 z-10 size-14 text-gold drop-shadow-lg" />
               {founder.photo ? (
-                <img src={founder.photo} alt={`پرتره ${founder.name}`} className="relative aspect-[4/5] w-full rounded-[1.75rem] object-cover" loading="lazy" />
+                <img {...responsive(founder.photo, "384px", 960)} alt={`پرتره ${founder.name}`} className="relative aspect-[4/5] w-full rounded-[1.75rem] object-cover" loading="lazy" decoding="async" />
               ) : (
                 <div className="relative flex aspect-[4/5] items-center justify-center rounded-[1.75rem] bg-sky"><Star className="size-20 text-royal/20" /></div>
               )}
@@ -372,14 +374,37 @@ export default async function Home() {
             <div className="grid auto-rows-[8.5rem] grid-cols-2 gap-3 sm:auto-rows-[12rem] md:grid-cols-4 md:gap-4">
               {mosaic.map((p, i) => (
                 <Link key={p.id} href={`/gallery/${p.album.slug}`} className={`reveal group relative overflow-hidden rounded-[1.25rem] bg-line ${i === 0 ? "col-span-2 row-span-2" : ""}`}>
-                  <img src={p.path} alt={p.album.title} loading="lazy" className="size-full object-cover transition-transform duration-700 group-hover:scale-[1.06]" />
-                  <span className="absolute inset-0 flex items-end bg-gradient-to-t from-navy/70 via-transparent to-transparent p-3 text-sm font-bold text-white opacity-0 transition-opacity group-hover:opacity-100">{p.album.title}</span>
+                  <img {...responsive(p.path, i === 0 ? "(min-width: 768px) 50vw, 92vw" : "(min-width: 768px) 25vw, 46vw", 960)} alt={p.caption || p.album.title} loading="lazy" decoding="async" className="size-full object-cover transition-transform duration-700 group-hover:scale-[1.06]" />
+                  <span aria-hidden="true" className="absolute inset-0 flex items-end bg-gradient-to-t from-navy/70 via-transparent to-transparent p-3 text-sm font-bold text-white opacity-0 transition-opacity group-hover:opacity-100">{p.album.title}</span>
                 </Link>
               ))}
             </div>
           </div>
         </section>
       )}
+
+      {/* ───────── In short (plain words people search for; every line links to the full page) ───────── */}
+      <section aria-labelledby="glance-title" className="container-x py-16 sm:py-20">
+        <SectionHead
+          eyebrow="ستارگان در یک نگاه"
+          title={<span id="glance-title">آموزشگاه ستارگان؛ <span className="text-gradient-blue">کنکور، قلم‌چی و جزوه</span> در نسیم شهر</span>}
+          text="مؤسسه علمی ستارگان (ستارگان پلاس) در نسیم‌شهر، شهرستان بهارستان، با دو شعبهٔ جداگانه برای دختران و پسران فعالیت می‌کند."
+        />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { href: "/konkur-nasimshahr", title: "کلاس کنکور و مشاوره کنکور", text: "کلاس‌های کنکور، برنامه‌ریزی درسی و مشاورهٔ کنکور برای داوطلبان نسیم‌شهر." },
+            { href: "/ghalamchi-nasimshahr", title: "نمایندگی قلم چی نسیم شهر", text: "نمایندگی رسمی کانون فرهنگی آموزش؛ ثبت‌نام و برگزاری آزمون‌های قلم‌چی." },
+            { href: "/amoozeshgah-taghviati-nasimshahr", title: "آموزشگاه تقویتی و کلاس تقویتی", text: "کلاس‌های تقویتی دروس مدرسه به تفکیک پایه، از تقویت پایه تا کنکور." },
+            { href: "/jozve-konkur", title: "جزوه کنکور", text: "خرید آنلاین جزوه کنکور و جزوه‌های درسی، تحویل حضوری در شعبه." },
+          ].map((x) => (
+            <Link key={x.href} href={x.href} className="card card-hover block p-6">
+              <h3 className="text-lg font-extrabold text-navy">{x.title}</h3>
+              <p className="mt-2 text-sm leading-7 text-ink/75">{x.text}</p>
+              <span className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-royal">بیشتر بخوانید <Icon name="arrow" className="size-4" /></span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* ───────── FAQ teaser ───────── */}
       {faqs.length > 0 && (

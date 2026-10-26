@@ -14,6 +14,7 @@
  *   when the database is unreachable.
  * - New live articles are announced to IndexNow once (https sites only).
  */
+import { randomBytes } from "node:crypto";
 import "dotenv/config";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
@@ -90,8 +91,12 @@ function placeCover(src: string): string {
 async function pingIndexNow(prisma: PrismaClient, paths: string[]): Promise<boolean> {
   if (!/^https:\/\//.test(SITE) || /localhost|127\.0\.0\.1/.test(SITE) || paths.length === 0) return false;
   const row = await prisma.setting.findUnique({ where: { key: "indexnow" } });
-  const key = (row?.value as { key?: string } | undefined)?.key;
-  if (!key || !/^[a-f0-9]{32}$/.test(key)) return false; // the site creates it on first admin save
+  let key = (row?.value as { key?: string } | undefined)?.key;
+  if (!key || !/^[a-f0-9]{32}$/.test(key)) {
+    // same rule as lib/indexnow.ts: create the key once; the site serves it at /indexnow-key.txt
+    key = randomBytes(16).toString("hex");
+    await prisma.setting.upsert({ where: { key: "indexnow" }, create: { key: "indexnow", value: { key } }, update: { value: { key } } });
+  }
   try {
     const res = await fetch("https://api.indexnow.org/indexnow", {
       method: "POST",

@@ -32,7 +32,7 @@ export function PhotoLightbox({ full, alt, children, label }: { full: string; al
         onClick={(e) => { if (e.target === e.currentTarget) dlg.current?.close(); }}
         className="m-auto max-h-[94vh] max-w-[96vw] overflow-visible bg-transparent p-0 backdrop:bg-navy/85 backdrop:backdrop-blur-sm"
       >
-        <img src={full} alt={alt} className="max-h-[88vh] w-auto max-w-[96vw] rounded-2xl border-4 border-gold object-contain shadow-2xl" />
+        <img src={full} alt={alt} loading="lazy" decoding="async" className="max-h-[88vh] w-auto max-w-[96vw] rounded-2xl border-4 border-gold object-contain shadow-2xl" />
         <button
           type="button"
           onClick={() => dlg.current?.close()}

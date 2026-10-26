@@ -61,7 +61,7 @@ export function Header({ shopOpen = true, phone }: { shopOpen?: boolean; phone?:
       )}
       <header ref={hdr} className={`print:hidden sticky top-0 z-40 transition-[background-color,box-shadow,border-color] duration-300 ${scrolled || open ? "border-b border-line/70 bg-white/90 shadow-[0_8px_30px_-18px_rgb(10_26_63/0.35)] backdrop-blur-xl" : "border-b border-transparent bg-white/70 backdrop-blur"}`}>
         <div className="container-x flex h-16 items-center justify-between gap-3 sm:h-[4.5rem]">
-          <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="ستارگان پلاس، صفحه اصلی">
+          <Link href="/" className="flex shrink-0 items-center gap-2.5" title="صفحه اصلی">
             <span className="flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-sky to-white ring-1 ring-line">
               <Image src="/brand/logo.png" alt="" width={44} height={37} priority className="h-7 w-auto" />
             </span>

@@ -70,6 +70,7 @@ export default async function Shop({ searchParams }: { searchParams: Promise<SP>
       </section>
 
       <section className="container-x py-8 sm:py-10">
+        <h2 className="sr-only">فهرست جزوه‌ها؛ جزوه کنکور و جزوه‌های درسی</h2>
         {settings.notice && <p className="mb-6 rounded-2xl border border-gold/40 bg-gold/10 px-4 py-3 text-sm leading-7 text-gold-ink">{settings.notice}</p>}
         <div className="mb-6 space-y-2.5">
           <Chips k="grade" list={grades} label={(v) => v} />

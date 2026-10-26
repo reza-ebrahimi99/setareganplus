@@ -3,21 +3,21 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { getSeo } from "@/lib/seo";
 
+// One variable font file (Vazirmatn v33, OFL; capped at 800 like the old static set) instead of five weights:
+// ~111 KB once, instead of five ~51 KB preloads.
 const vazir = localFont({
-  src: [
-    { path: "./fonts/Vazirmatn-Regular.woff2", weight: "400" },
-    { path: "./fonts/Vazirmatn-Medium.woff2", weight: "500" },
-    { path: "./fonts/Vazirmatn-SemiBold.woff2", weight: "600" },
-    { path: "./fonts/Vazirmatn-Bold.woff2", weight: "700" },
-    { path: "./fonts/Vazirmatn-ExtraBold.woff2", weight: "800" },
-  ],
+  src: [{ path: "./fonts/Vazirmatn-Variable.woff2", weight: "100 800", style: "normal" }],
   variable: "--font-vazir",
   display: "swap",
 });
 
+const DEFAULT_GOOGLE_VERIFICATION = "IRhotNVDLDxqouc3oPqcWSOvRIJducjW3H4Hf8LeXhM";
+
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getSeo();
-  const google = seo.googleVerification?.trim();
+  // Search Console token for setareganplus.ir — always emitted so verification never depends on the
+  // admin panel; a token saved in admin SEO settings is added alongside it (both stay valid).
+  const google = [...new Set([DEFAULT_GOOGLE_VERIFICATION, seo.googleVerification?.trim()].filter(Boolean) as string[])];
   const bing = seo.bingVerification?.trim();
   return {
     metadataBase: new URL(process.env.SITE_URL || "https://setareganplus.ir"),
@@ -28,9 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: { locale: "fa_IR", type: "website", siteName: "ستارگان پلاس" },
     twitter: { card: "summary_large_image" },
     formatDetection: { telephone: false },
-    ...(google || bing
-      ? { verification: { ...(google ? { google } : {}), ...(bing ? { other: { "msvalidate.01": bing } } : {}) } }
-      : {}),
+    verification: { google: google.length === 1 ? google[0] : google, ...(bing ? { other: { "msvalidate.01": bing } } : {}) },
   };
 }
 

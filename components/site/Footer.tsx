@@ -110,13 +110,16 @@ export function Footer({ contact }: { contact: ContactSettings; shopOpen?: boole
                 <li className="flex gap-2"><Icon name="clock" className="mt-1 size-4 shrink-0 text-gold" /><span>{contact.hours.join(" · ")}</span></li>
               )}
             </ul>
+            {/* Enamad checks the Referer, so the link must not use "noreferrer" */}
             {contact.enamadUrl && (
-              <a href={contact.enamadUrl} target="_blank" rel="noopener noreferrer" referrerPolicy="origin" className="mt-5 inline-block">
+              <a href={contact.enamadUrl} target="_blank" rel="noopener" referrerPolicy="origin" className="mt-5 inline-block">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={contact.enamadUrl.replace("trustseal.enamad.ir/?", "trustseal.enamad.ir/logo.aspx?")}
                   alt="نماد اعتماد الکترونیکی"
                   referrerPolicy="origin"
+                  loading="lazy"
+                  decoding="async"
                   className="h-20 w-auto rounded-xl bg-white p-1"
                 />
               </a>

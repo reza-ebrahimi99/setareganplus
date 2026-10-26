@@ -5,9 +5,9 @@ export function ShareButtons({ url, title }: { url: string; title: string }) {
   const [copied, setCopied] = useState(false);
   const u = encodeURIComponent(url), t = encodeURIComponent(title);
   const links = [
-    { label: "تلگرام", href: `https://t.me/share/url?url=${u}&text=${t}`, cls: "bg-[#229ED9] text-white" },
-    { label: "واتس‌اپ", href: `https://wa.me/?text=${t}%20${u}`, cls: "bg-[#25D366] text-white" },
-    { label: "ایتا", href: `https://eitaa.com/share/url?url=${u}&text=${t}`, cls: "bg-[#EE7F22] text-white" },
+    { label: "تلگرام", href: `https://t.me/share/url?url=${u}&text=${t}`, cls: "bg-[#229ED9] text-navy" },
+    { label: "واتس‌اپ", href: `https://wa.me/?text=${t}%20${u}`, cls: "bg-[#25D366] text-navy" },
+    { label: "ایتا", href: `https://eitaa.com/share/url?url=${u}&text=${t}`, cls: "bg-[#EE7F22] text-navy" },
   ];
   return (
     <div className="flex flex-wrap items-center gap-2">

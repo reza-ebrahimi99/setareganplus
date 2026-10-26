@@ -49,7 +49,7 @@ export default async function KelasTaghviati() {
 
   return (
     <>
-      <LandingHero k="classes" title="کلاس تقویتی در نسیم‌شهر به تفکیک پایه" intro={t.intro} phone={phone} accent="edu" />
+      <LandingHero k="classes" title="کلاس تقویتی و کنکور در نسیم شهر به تفکیک پایه" intro={t.intro} phone={phone} accent="edu" />
       {levels.length > 1 && (
         <nav aria-label="پایه‌ها" className="container-x mt-8 flex flex-wrap gap-2">
           {levels.map((l) => <a key={l.id} href={`#${l.id}`} className="chip bg-paper px-4 py-2 text-sm text-navy ring-1 ring-line hover:ring-navy/30">{l.h!.title}</a>)}

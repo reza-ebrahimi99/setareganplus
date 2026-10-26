@@ -105,7 +105,7 @@ pg_restore -l "$WORK/lean-db.dump" >/dev/null 2>>"$LOG" || fail "lean DB dump is
 psql "$LEAN_URL" -Atq -F $'\t' -c "select table_name, (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from public.%I', table_name), false, true, '')))[1]::text from information_schema.tables where table_schema='public' and table_type='BASE TABLE' order by 1" > "$WORK/counts.tsv" 2>>"$LOG" || fail "row count query failed"
 # 2) uploads
 if [[ -d "$UPLOADS" ]]; then
-  tar -C "$(dirname "$UPLOADS")" -czf "$WORK/uploads.tar.gz" "$(basename "$UPLOADS")" 2>>"$LOG" || fail "tar of $UPLOADS failed"
+  tar -C "$(dirname "$UPLOADS")" --exclude=".resized" -czf "$WORK/uploads.tar.gz" "$(basename "$UPLOADS")" 2>>"$LOG" || fail "tar of $UPLOADS failed"
 else
   log "warning: upload dir $UPLOADS not found; skipped"
 fi

@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
+import { responsive } from "@/lib/img";
 import Link from "next/link";
 import { fa, jalaliDate } from "@/lib/format";
 import { catSlug, NEWS_CAT_LABEL } from "@/lib/news";
@@ -39,7 +40,7 @@ export function NewsCard({ n, priority = false }: { n: NewsItem; priority?: bool
     <article className="group relative flex flex-col overflow-hidden rounded-3xl border border-line bg-paper transition hover:-translate-y-1 hover:shadow-[0_24px_50px_-28px_rgb(10_26_63/0.45)]">
       <div className="relative aspect-[16/9] overflow-hidden bg-hero">
         {n.cover ? (
-          <img src={n.cover} alt={n.title} width={640} height={360} loading={priority ? "eager" : "lazy"} decoding="async" className="size-full object-cover transition duration-500 group-hover:scale-[1.03]" />
+          <img {...responsive(n.cover, "(min-width: 1024px) 380px, (min-width: 640px) 46vw, 92vw", 960)} alt={n.title} width={640} height={360} loading={priority ? "eager" : "lazy"} decoding="async" className="size-full object-cover transition duration-500 group-hover:scale-[1.03]" />
         ) : (
           <div className="flex size-full items-center justify-center">
             <Star className="size-16 text-gold/80" />

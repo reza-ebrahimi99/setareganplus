@@ -270,6 +270,63 @@ export function parseOpeningHours(text = "") {
   return out;
 }
 
+/**
+ * Fallback coordinates when the admin "seo.geo" field is empty, keyed by the branch's own
+ * Google Maps link. Branch 1 (boys): the owner's link opens the Google Maps place
+ * «آموزشگاه علمی ستارگان نسیم شهر», plus code H54C+56C. (The girls' branch link points at a
+ * neighbouring business, so no coordinates are guessed for it.)
+ */
+const KNOWN_GEO: Record<string, { lat: string; lng: string }> = {
+  "https://maps.app.goo.gl/jKQLs65S6Jv8MfKv8": { lat: "35.55544", lng: "51.17052" },
+};
+function branchGeo(seoGeo: { lat?: string; lng?: string } | undefined, mapUrl?: string) {
+  return geoOf(seoGeo) ?? (mapUrl ? geoOf(KNOWN_GEO[mapUrl.split("?")[0]]) : undefined);
+}
+
+const FA_DAYS: [RegExp, string][] = [
+  [/شنبه/, "Saturday"], // checked last (see below) because «یکشنبه» etc. also contain «شنبه»
+];
+const FA_DAY_NAMES: [string, string][] = [
+  ["پنج‌شنبه", "Thursday"], ["پنجشنبه", "Thursday"], ["پنج شنبه", "Thursday"],
+  ["چهارشنبه", "Wednesday"], ["سه‌شنبه", "Tuesday"], ["سه شنبه", "Tuesday"], ["سهشنبه", "Tuesday"],
+  ["دوشنبه", "Monday"], ["یکشنبه", "Sunday"], ["یک‌شنبه", "Sunday"], ["جمعه", "Friday"],
+];
+const WEEK = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
+
+/**
+ * Fallback for openingHours when the admin field is empty: read the Persian hours shown on the
+ * site (e.g. «هر روز: ۱۲:۰۰ تا ۲۰:۳۰» / «پنج‌شنبه: ۱۰:۰۰ تا ۲۰:۳۰»). «هر روز» means Saturday to
+ * Thursday minus days listed on their own line; Friday is only included when written explicitly.
+ */
+export function parsePersianHours(lines: string[]) {
+  const rows: { days: string[] | "rest"; opens: string; closes: string }[] = [];
+  for (const raw of lines) {
+    const t = toEn(raw);
+    const m = t.match(/(\d{1,2}:\d{2})\s*(?:تا|-|–)\s*(\d{1,2}:\d{2})/);
+    if (!m) continue;
+    const label = t.slice(0, m.index);
+    let days: string[] | "rest" | null = null;
+    if (/هر\s*روز|همه\s*روزه|روزهای\s*کاری/.test(label)) days = "rest";
+    else {
+      let rest = label;
+      const found: string[] = [];
+      for (const [fa, en] of FA_DAY_NAMES) if (rest.includes(fa)) { found.push(en); rest = rest.split(fa).join(" "); }
+      for (const [re, en] of FA_DAYS) if (re.test(rest)) found.push(en);
+      if (found.length) days = [...new Set(found)];
+    }
+    if (days) rows.push({ days, opens: m[1].padStart(5, "0"), closes: m[2].padStart(5, "0") });
+  }
+  const named = new Set(rows.flatMap((r) => (r.days === "rest" ? [] : r.days)));
+  return rows
+    .map((r) => ({
+      "@type": "OpeningHoursSpecification" as const,
+      dayOfWeek: (r.days === "rest" ? WEEK.filter((d) => !named.has(d)) : r.days),
+      opens: r.opens,
+      closes: r.closes,
+    }))
+    .filter((r) => r.dayOfWeek.length);
+}
+
 function geoOf(g?: { lat?: string; lng?: string }) {
   const lat = Number.parseFloat(toEn(g?.lat ?? "")), lng = Number.parseFloat(toEn(g?.lng ?? ""));
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return undefined;
@@ -296,21 +353,24 @@ export const AREA_SERVED = [
 export async function organizationLd() {
   const [contact, seo] = await Promise.all([getContact(), getSeo()]);
   const site = siteUrl();
-  const hours = parseOpeningHours(seo.openingHours);
+  const parsed = parseOpeningHours(seo.openingHours);
+  const hours = parsed.length ? parsed : parsePersianHours(contact.hours);
   const b0 = contact.branches[0];
+  const geo0 = branchGeo(seo.geo?.[0], b0?.mapUrl);
   const sameAs = contact.social.map((s) => s.url).filter((u) => /^https?:\/\//.test(u));
   return {
     "@context": "https://schema.org",
     "@type": ["EducationalOrganization", "LocalBusiness"],
     "@id": `${site}/#organization`,
     name: ORG_NAME,
-    alternateName: [BRAND, "Setaregan Plus"],
+    // names people (and the Google Maps place) actually use
+    alternateName: [BRAND, "Setaregan Plus", "آموزشگاه علمی ستارگان نسیم شهر", "آموزشگاه ستارگان نسیم‌شهر", "مؤسسه ستارگان نسیم شهر"],
     url: `${site}/`,
     logo: `${site}/brand/logo.png`,
     image: `${site}/opengraph-image`,
     ...(contact.phones.length ? { telephone: intlPhone(contact.phones[0]) } : {}),
     ...(b0 ? { address: postal(b0.address) } : {}),
-    ...(geoOf(seo.geo?.[0]) ? { geo: geoOf(seo.geo?.[0]) } : {}),
+    ...(geo0 ? { geo: geo0 } : {}),
     ...(hours.length ? { openingHoursSpecification: hours } : {}),
     ...(b0?.mapUrl ? { hasMap: b0.mapUrl } : {}),
     ...(sameAs.length ? { sameAs } : {}),
@@ -329,7 +389,7 @@ export async function organizationLd() {
             "@id": `${site}/#branch-${i + 1}`,
             name: `${ORG_NAME} — ${b.name}`,
             address: postal(b.address),
-            ...(geoOf(seo.geo?.[i]) ? { geo: geoOf(seo.geo?.[i]) } : {}),
+            ...(branchGeo(seo.geo?.[i], b.mapUrl) ? { geo: branchGeo(seo.geo?.[i], b.mapUrl) } : {}),
             ...(b.mapUrl ? { hasMap: b.mapUrl } : {}),
             ...(contact.phones.length ? { telephone: intlPhone(contact.phones[0]) } : {}),
             ...(hours.length ? { openingHoursSpecification: hours } : {}),

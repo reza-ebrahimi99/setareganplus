@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
+import { responsive } from "@/lib/img";
 import Link from "next/link";
 import { Star } from "@/components/site/Star";
 import { formatToman } from "@/lib/shop/config";
@@ -6,8 +7,8 @@ import type { Badge } from "@/lib/shop/catalog";
 
 const PALETTE = ["from-navy to-navy-2", "from-[#183b6b] to-[#2c6cb0]", "from-[#5a1f2a] to-[#c8363d]", "from-[#14463b] to-[#1f7a5c]", "from-[#3b2a63] to-[#6b4fb0]"];
 
-export function Cover({ title, subject, cover, seed = "", className = "" }: { title: string; subject?: string | null; cover?: string | null; seed?: string; className?: string }) {
-  if (cover) return <img src={cover} alt={title} loading="lazy" className={`size-full object-cover ${className}`} />;
+export function Cover({ title, subject, cover, seed = "", className = "", sizes = "(min-width: 1280px) 290px, (min-width: 1024px) 23vw, (min-width: 768px) 31vw, 48vw", priority = false }: { title: string; subject?: string | null; cover?: string | null; seed?: string; className?: string; sizes?: string; priority?: boolean }) {
+  if (cover) return <img {...responsive(cover, sizes, 960)} alt={title} loading={priority ? "eager" : "lazy"} decoding="async" fetchPriority={priority ? "high" : undefined} className={`size-full object-cover ${className}`} />;
   const i = [...seed].reduce((a, c) => a + c.charCodeAt(0), 0) % PALETTE.length;
   return (
     <div className={`relative flex size-full flex-col justify-between overflow-hidden bg-gradient-to-br p-5 text-white ${PALETTE[i]} ${className}`}>
@@ -47,9 +48,9 @@ export type CardProduct = { id: string; slug: string; title: string; author: str
 export function ProductCard({ p }: { p: CardProduct }) {
   const out = p.stock === 0;
   return (
-    <Link href={`/shop/${p.slug}`} className={`group card card-hover flex h-full flex-col overflow-hidden !rounded-[1.4rem] ${out ? "opacity-75" : ""}`}>
+    <Link href={`/shop/${p.slug}`} className={`group card card-hover flex h-full flex-col overflow-hidden !rounded-[1.4rem]`}>
       <div className="relative m-2 mb-0 aspect-[3/4] overflow-hidden rounded-[1rem] bg-ivory">
-        <Cover title={p.title} subject={p.subject} cover={p.cover} seed={p.slug} className="transition-transform duration-700 group-hover:scale-[1.05]" />
+        <Cover title={p.title} subject={p.subject} cover={p.cover} seed={p.slug} className={`transition-transform duration-700 group-hover:scale-[1.05] ${out ? "opacity-60 grayscale-[35%]" : ""}`} />
         <Badges badges={p.badges} className="absolute top-3 right-3" />
       </div>
       <div className="flex flex-1 flex-col p-3.5 sm:p-4">
@@ -61,7 +62,7 @@ export function ProductCard({ p }: { p: CardProduct }) {
         {p.author && <p className="mt-0.5 text-sm text-muted">{p.author}</p>}
         <div className="mt-auto flex items-center justify-between gap-2 pt-4">
           <Price rials={p.priceRials} compareAt={p.compareAtRials} />
-          <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${out ? "bg-line text-muted" : "bg-gradient-to-b from-[#ffc83d] to-gold text-navy shadow-[0_6px_14px_-6px_rgb(244_178_27/0.9)] transition-transform group-hover:-translate-y-0.5"}`}>{out ? "ناموجود" : "خرید"}</span>
+          <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${out ? "bg-line text-ink/70" : "bg-gradient-to-b from-[#ffc83d] to-gold text-navy shadow-[0_6px_14px_-6px_rgb(244_178_27/0.9)] transition-transform group-hover:-translate-y-0.5"}`}>{out ? "ناموجود" : "خرید"}</span>
         </div>
       </div>
     </Link>

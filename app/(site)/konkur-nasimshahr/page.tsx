@@ -45,9 +45,9 @@ export default async function KonkurNasimshahr() {
 
   return (
     <>
-      <LandingHero k="konkur" title="کنکور در نسیم‌شهر؛ کلاس، آزمون، مشاوره و جزوه" intro={t.intro} phone={phone} />
+      <LandingHero k="konkur" title="آموزشگاه کنکور در نسیم شهر؛ کلاس کنکور، آزمون، مشاوره و جزوه" intro={t.intro} phone={phone} />
       {services.length > 0 && (
-        <Block eyebrow="آمادگی کنکور" title="همهٔ مسیر کنکور، نزدیک خانه" text="خدماتی که مؤسسه علمی ستارگان برای داوطلبان کنکور در نسیم‌شهر ارائه می‌دهد:">
+        <Block eyebrow="آمادگی کنکور" title="کلاس کنکور و مشاوره کنکور، نزدیک خانه" text="خدماتی که مؤسسه علمی ستارگان برای داوطلبان کنکور در نسیم‌شهر ارائه می‌دهد:">
           <FeatureGrid items={services} />
         </Block>
       )}

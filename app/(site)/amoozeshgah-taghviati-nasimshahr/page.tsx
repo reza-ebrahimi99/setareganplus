@@ -36,7 +36,7 @@ export default async function Amoozeshgah() {
 
   return (
     <>
-      <LandingHero k="amoozeshgah" title="آموزشگاه تقویتی ستارگان در نسیم‌شهر" intro={t.intro} phone={phone} accent="edu" />
+      <LandingHero k="amoozeshgah" title="آموزشگاه تقویتی و کنکور ستارگان در نسیم شهر" intro={t.intro} phone={phone} accent="edu" />
       {(edu?.intro || body.length > 0) && (
         <section className="container-x py-14 sm:py-20">
           <div className="prose-fa max-w-3xl">

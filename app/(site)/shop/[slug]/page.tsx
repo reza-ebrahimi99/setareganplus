@@ -83,7 +83,7 @@ export default async function ProductPage({ params }: P) {
       <section className="container-x grid gap-8 py-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-12 lg:py-10">
         <div className="lg:sticky lg:top-24 lg:self-start">
           <div className="relative mx-auto aspect-[3/4] max-w-sm overflow-hidden rounded-[1.5rem] border border-line bg-paper shadow-xl shadow-navy/5 lg:max-w-none">
-            <Cover title={p.title} subject={p.subject} cover={p.cover} seed={p.slug} />
+            <Cover title={p.title} subject={p.subject} cover={p.cover} seed={p.slug} sizes="(min-width: 1024px) 420px, 384px" priority />
             <Badges badges={badges} className="absolute top-4 right-4" />
           </div>
         </div>

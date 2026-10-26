@@ -38,7 +38,7 @@ export default async function JozveKonkur() {
 
   return (
     <>
-      <LandingHero k="jozve" title="جزوه کنکور و جزوه‌های درسی ستارگان" intro={t.intro} phone={phone} accent="edu" cta={{ href: "/shop", label: "ورود به فروشگاه جزوه" }} />
+      <LandingHero k="jozve" title="جزوه کنکور و جزوه‌های درسی ستارگان در نسیم شهر" intro={t.intro} phone={phone} accent="edu" cta={{ href: "/shop", label: "ورود به فروشگاه جزوه" }} />
       {shop.notice && <div className="container-x mt-8"><p className="rounded-2xl bg-sky/70 p-4 text-sm leading-7 font-semibold text-navy">{shop.notice}</p></div>}
       <Block eyebrow="روند خرید" title="سفارش آنلاین، تحویل حضوری">
         <Steps

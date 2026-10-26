@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
+import { responsive } from "@/lib/img";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -16,6 +17,14 @@ import { ShareButtons } from "@/components/site/ShareButtons";
 
 type P = { params: Promise<{ slug: string }> };
 
+/** Cut at a word boundary. */
+function clip(t: string, max: number) {
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max);
+  const i = cut.lastIndexOf(" ");
+  return (i > max * 0.6 ? cut.slice(0, i) : cut).trim() + "…";
+}
+
 const load = cache(async (raw: string) => {
   const slug = decodeURIComponent(raw);
   return prisma.news.findFirst({ where: liveWhere({ slug }) });
@@ -24,9 +33,11 @@ const load = cache(async (raw: string) => {
 export async function generateMetadata({ params }: P): Promise<Metadata> {
   const n = await load((await params).slug);
   if (!n) return { title: "خبر پیدا نشد", robots: { index: false } };
-  const description = n.summary || mdToText(n.body).slice(0, 160);
+  const description = n.summary || clip(mdToText(n.body), 160);
   return buildMeta({
+    // short titles get " | ستارگان پلاس"; long ones stand alone so the headline is not cut off
     title: n.title,
+    absoluteTitle: n.title.length > 48,
     description,
     path: `/news/${n.slug}`,
     type: "article",
@@ -49,13 +60,15 @@ export default async function NewsPage({ params }: P) {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
     headline: n.title.slice(0, 110),
-    description: n.summary || mdToText(n.body).slice(0, 200),
-    image: [n.cover ? abs(n.cover) : abs(`/og/news/${encodeURI(n.slug)}`)],
+    description: n.summary || clip(mdToText(n.body), 200),
+    image: [...(n.cover ? [abs(n.cover)] : []), abs(`/og/news/${encodeURI(n.slug)}`)],
     datePublished: n.publishedAt?.toISOString(),
     dateModified: n.updatedAt.toISOString(),
     inLanguage: "fa-IR",
     articleSection: NEWS_CAT_LABEL[n.category] ?? "خبر",
+    url,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    isPartOf: { "@type": "WebSite", "@id": `${siteUrl()}/#website`, name: BRAND, url: `${siteUrl()}/` },
     author: { "@type": "Organization", name: ORG_NAME, url: `${siteUrl()}/` },
     publisher: { "@type": "Organization", "@id": `${siteUrl()}/#organization`, name: ORG_NAME, alternateName: BRAND, logo: { "@type": "ImageObject", url: abs("/brand/logo.png") } },
   };
@@ -72,7 +85,7 @@ export default async function NewsPage({ params }: P) {
       <div className="container-x grid gap-10 py-10 sm:py-14 lg:grid-cols-[minmax(0,1fr)_320px]">
         <article className="min-w-0">
           {n.cover && (
-            <img src={n.cover} alt={n.title} width={1200} height={675} fetchPriority="high" className="mb-8 aspect-[16/9] w-full rounded-3xl object-cover shadow-[0_24px_60px_-30px_rgb(10_26_63/0.5)]" />
+            <img {...responsive(n.cover, "(min-width: 1024px) 760px, 92vw")} alt={n.title} width={1200} height={675} fetchPriority="high" decoding="async" className="mb-8 aspect-[16/9] w-full rounded-3xl object-cover shadow-[0_24px_60px_-30px_rgb(10_26_63/0.5)]" />
           )}
           {n.summary && <p className="mb-6 rounded-2xl bg-sky/60 p-5 text-[1.05rem] leading-8 font-semibold text-navy">{n.summary}</p>}
           <Markdown text={n.body} className="md" />

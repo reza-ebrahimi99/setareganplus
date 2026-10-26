@@ -27,3 +27,4 @@ screenshots/*.tmp
 
 # screenshots stay on the dev box (keeps the server clone small)
 screenshots/
+.next-v8/

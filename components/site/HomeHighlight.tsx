@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
+import { responsive } from "@/lib/img";
 import type { HighlightSettings } from "@/lib/settings";
 import { DEFAULT_HIGHLIGHT_IMAGE } from "@/lib/settings";
 import { Sparkle, Star, Icon } from "@/components/site/Star";
@@ -13,14 +14,13 @@ export function HomeHighlight({ h }: { h: HighlightSettings }) {
   const isDefault = h.image === DEFAULT_HIGHLIGHT_IMAGE;
   const full = isDefault ? "/highlight/tajlil-1405.jpg" : h.image;
   const href = safeHref(h.ctaHref);
-  const photo = isDefault ? (
-    <picture>
-      <source type="image/webp" srcSet="/highlight/tajlil-1405-640.webp 640w, /highlight/tajlil-1405.webp 1000w" sizes="(min-width: 1024px) 520px, 92vw" />
-      <img src="/highlight/tajlil-1405.jpg" alt={h.imageAlt} width={1000} height={750} fetchPriority="high" decoding="async" className="aspect-[4/3] w-full rounded-[1.1rem] object-cover" />
-    </picture>
-  ) : (
-    <img src={h.image} alt={h.imageAlt} width={1000} height={750} fetchPriority="high" decoding="async" className="aspect-[4/3] w-full rounded-[1.1rem] object-cover" />
-  );
+  // One <img> with a webp srcset (no <picture>): React preloads exactly the candidate the
+  // phone needs, instead of also fetching the 136 KB jpg fallback.
+  const sizes = "(min-width: 1024px) 500px, 92vw";
+  const img = isDefault
+    ? { src: "/highlight/tajlil-1405-800.webp", srcSet: "/highlight/tajlil-1405-480.webp 480w, /highlight/tajlil-1405-640.webp 640w, /highlight/tajlil-1405-704.webp 704w, /highlight/tajlil-1405-800.webp 800w, /highlight/tajlil-1405.webp 1000w", sizes }
+    : responsive(h.image, sizes, 960);
+  const photo = <img {...img} alt={h.imageAlt} width={1000} height={750} fetchPriority="high" decoding="async" className="aspect-[4/3] w-full rounded-[1.1rem] object-cover" />;
 
   return (
     <section aria-labelledby="hl-title" className="relative overflow-hidden border-b border-gold/30 bg-[radial-gradient(70%_120%_at_100%_0%,rgb(244_178_27/0.16),transparent_60%),radial-gradient(60%_100%_at_0%_100%,rgb(47_91_234/0.10),transparent_60%)] bg-ivory">
@@ -31,7 +31,7 @@ export function HomeHighlight({ h }: { h: HighlightSettings }) {
         <div className="lg:order-2">
           <div className="rounded-[1.4rem] bg-gradient-to-br from-[#ffe08a] via-gold to-[#c98a00] p-[5px] shadow-[0_24px_60px_-28px_rgb(122_86_0/0.65)]">
             <div className="rounded-[1.15rem] bg-white p-[3px]">
-              <PhotoLightbox full={full} alt={h.imageAlt} label={`${h.title}: مشاهدهٔ عکس در اندازهٔ بزرگ`}>
+              <PhotoLightbox full={full} alt={h.imageAlt} label={`مشاهدهٔ بزرگ‌تر: ${h.title}`}>
                 {photo}
               </PhotoLightbox>
             </div>

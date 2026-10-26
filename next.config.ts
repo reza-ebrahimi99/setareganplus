@@ -45,7 +45,6 @@ const map: [string, string][] = [
   ["/konkur", "/konkur-nasimshahr"],
   ["/exams/:path*", "/ghalamchi"],
   ["/assessments/:path*", "/ghalamchi"],
-  ["/ghalamchi/register", "/ghalamchi#register"],
   ["/pre-registration", "/register"],
   ["/consultation", "/register"],
   ["/book/:path*", "/register"],
@@ -71,9 +70,16 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // www → apex (one canonical host; nginx passes the Host header through)
+      { source: "/:path*", has: [{ type: "host", value: "www.setareganplus.ir" }], destination: "https://setareganplus.ir/:path*", permanent: true },
       ...toHome.map((source) => ({ source, destination: "/", permanent: false })),
       ...map.map(([source, destination]) => ({ source, destination, permanent: true })),
     ];
+  },
+  async headers() {
+    // files in public/ are served with max-age=0 by default; let browsers keep them a week
+    const week = [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }];
+    return ["/highlight/:file*", "/brand/:file*", "/icons/:file*"].map((source) => ({ source, headers: week }));
   },
 };
 
