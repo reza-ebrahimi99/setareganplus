@@ -34,7 +34,7 @@ export default async function Achievements({ searchParams }: { searchParams: Pro
           <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ffc83d] to-gold text-navy shadow-lg"><Icon name="trophy" className="size-6" /></span>
           <span className="min-w-0 flex-1">
             <b className="block text-navy sm:text-lg">رتبه‌های برتر کنکور {fa(latestHonors().year)} قلم‌چی نسیم‌شهر</b>
-            <span className="block text-sm text-muted">ریاضی، تجربی و انسانی؛ با عکس و رتبهٔ هر دانش‌آموز</span>
+            <span className="block text-sm text-muted">رتبه‌های برتر ریاضی، تجربی و انسانی، به‌همراه قبولی‌های دانشگاه و تیزهوشان، در یک صفحه</span>
           </span>
           <Icon name="arrow" className="size-5 shrink-0 text-royal transition-transform group-hover:-translate-x-1" />
         </Link>

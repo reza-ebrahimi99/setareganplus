@@ -4,6 +4,8 @@
  * public/honors/<year>/ and add one line below. Order inside a field doesn't matter
  * (sorted by rank); the best rank of each field is highlighted automatically.
  */
+import { fa } from "@/lib/format";
+
 export type HonorField = "riazi" | "tajrobi" | "ensani";
 
 export type HonorStudent = {
@@ -75,4 +77,41 @@ export function byField(y: HonorYear, f: HonorField): HonorStudent[] {
 /** Best student of each field (in FIELD_ORDER), skipping empty fields. */
 export function toppers(y: HonorYear): HonorStudent[] {
   return FIELD_ORDER.map((f) => byField(y, f)[0]).filter(Boolean);
+}
+
+/* ------------------------------------------------------------------ */
+/* Tabs of /rotbe-bartar-konkur                                        */
+/* The first tab is the static banner data above; the other two read  */
+/* live from prisma.achievement (managed in the admin panel).         */
+/* ------------------------------------------------------------------ */
+export type HonorTabKey = "konkur" | "ghabooli" | "tizhooshan";
+
+export const HONOR_TABS: { key: HonorTabKey; label: string; short: string; category?: "KONKUR" | "GIFTED" }[] = [
+  { key: "konkur", label: `کنکور ${fa(HONORS[0].year)}`, short: "رتبه‌های برتر" },
+  { key: "ghabooli", label: "قبولی‌های کنکور سال‌های قبل", short: "قبولی دانشگاه", category: "KONKUR" },
+  { key: "tizhooshan", label: "تیزهوشان و نمونه دولتی", short: "قبولی مدارس", category: "GIFTED" },
+];
+
+/** ?tab=… → tab key (unknown/missing → the default "konkur" tab). */
+export function honorTab(raw: string | string[] | undefined): HonorTabKey {
+  const v = Array.isArray(raw) ? raw[0] : raw;
+  return HONOR_TABS.some((t) => t.key === v) ? (v as HonorTabKey) : "konkur";
+}
+
+/** URL of a tab; the default tab is the bare page URL (no query). */
+export function honorTabHref(key: HonorTabKey): string {
+  return key === "konkur" ? HONORS_PATH : `${HONORS_PATH}?tab=${key}`;
+}
+
+/** Admin text often contains Arabic ي/ك; show Persian letters. */
+export function faText(s: string | null | undefined): string {
+  return (s ?? "").replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/\s+/g, " ").trim();
+}
+
+/** "پزشکی دانشگاه تهران" → { major: "پزشکی", uni: "دانشگاه تهران" } (best effort). */
+export function splitMajor(detail: string | null | undefined): { major: string; uni: string } {
+  const d = faText(detail);
+  const m = d.match(/\s(دانشگاه|پردیس|دانشکده|مؤسسه|موسسه|آموزشکده)\s/);
+  if (!m || m.index === undefined || m.index === 0) return { major: d, uni: "" };
+  return { major: d.slice(0, m.index).trim(), uni: d.slice(m.index).trim() };
 }

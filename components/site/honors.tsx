@@ -1,7 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { fa } from "@/lib/format";
-import { FIELDS, HONORS_PATH, type HonorField, type HonorStudent } from "@/lib/honors";
+import { FIELDS, HONORS_PATH, HONOR_TABS, faText, honorTabHref, splitMajor, type HonorField, type HonorStudent, type HonorTabKey } from "@/lib/honors";
+import { responsive, sized } from "@/lib/img";
 import { Icon, Star, Sparkle } from "./Star";
 
 /** Field colours follow the official banner: ریاضی blue, تجربی red, انسانی green. (Static strings so Tailwind sees them.) */
@@ -150,5 +151,78 @@ export function HomeHonors({ year, top, total, others }: { year: number; top: Ho
         )}
       </div>
     </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Tabs + DB achievement cards (/rotbe-bartar-konkur?tab=…)            */
+/* ------------------------------------------------------------------ */
+const TAB_ICON: Record<HonorTabKey, "trophy" | "cap" | "star"> = { konkur: "trophy", ghabooli: "cap", tizhooshan: "star" };
+
+export function HonorTabs({ active, counts }: { active: HonorTabKey; counts: Record<HonorTabKey, number> }) {
+  return (
+    <nav id="tabs" aria-label="بخش‌های افتخارات" className="container-x relative z-10 -mt-7 scroll-mt-24">
+      <div className="mx-auto grid max-w-full grid-cols-3 gap-1 rounded-2xl border border-line bg-paper p-1.5 shadow-[var(--shadow-lift)] sm:flex sm:w-fit sm:gap-1.5 sm:rounded-full">
+        {HONOR_TABS.map((t) => {
+          const on = t.key === active;
+          return (
+            <Link
+              key={t.key}
+              href={honorTabHref(t.key)}
+              scroll={false}
+              aria-current={on ? "page" : undefined}
+              className={`flex flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-center text-[0.74rem] leading-5 font-bold transition sm:shrink-0 sm:flex-row sm:gap-2 sm:whitespace-nowrap sm:rounded-full sm:px-5 sm:py-2.5 sm:text-sm ${on ? "bg-royal text-white shadow-[var(--shadow-glow)]" : "text-ink hover:bg-sky"}`}
+            >
+              {(() => { const ic = TAB_ICON[t.key]; const cls = `size-4 ${on ? "text-gold" : "text-royal/60"}`; return ic === "star" ? <Star className={cls} /> : <Icon name={ic} className={cls} />; })()}
+              {t.label}
+              <span className={`rounded-full px-2 py-0.5 text-[0.7rem] ${on ? "bg-white/20" : "bg-sky text-muted"}`}>{fa(counts[t.key])}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+export type HonorAchievement = { id: string; name: string; category: string; grade: string | null; detail: string | null; year: string | null; photo: string | null; featured: boolean };
+
+/** Card for a DB achievement (university or gifted-school acceptance). */
+export function AchievementTile({ a }: { a: HonorAchievement }) {
+  const konkur = a.category === "KONKUR";
+  const { major, uni } = konkur ? splitMajor(a.detail) : { major: "", uni: "" };
+  const grade = faText(a.grade);
+  return (
+    <article className="reveal group relative flex flex-col overflow-hidden rounded-[1.5rem] border border-line bg-paper shadow-[var(--shadow-soft)] transition duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]">
+      {/* Admin uploads are posters of mixed shapes (16:9, 1:1); show them whole over a blurred copy. */}
+      <div className="relative aspect-video overflow-hidden bg-sky">
+        {a.photo ? (
+          <>
+            <img src={sized(a.photo, 320)} alt="" aria-hidden="true" loading="lazy" decoding="async" className="absolute inset-0 size-full scale-110 object-cover opacity-60 blur-xl" />
+            <img {...responsive(a.photo, "(min-width: 1024px) 270px, (min-width: 640px) 31vw, 46vw", 768)} alt={a.detail ? `${a.name}، قبولی ${faText(a.detail)}` : a.name} loading="lazy" decoding="async" className="relative size-full object-contain transition-transform duration-700 group-hover:scale-[1.04]" />
+          </>
+        ) : (
+          <div className="flex size-full items-center justify-center"><Star className="size-12 text-royal/20" /></div>
+        )}
+        {a.featured && (
+          <span title="برگزیده" className="absolute top-2 left-2 flex size-7 items-center justify-center rounded-full bg-gradient-to-br from-[#ffd65c] to-gold text-navy shadow-lg ring-2 ring-white/70">
+            <Star className="size-3.5" />
+          </span>
+        )}
+      </div>
+      <div className="flex flex-1 flex-col p-3.5 sm:p-4">
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+          <h3 className="leading-7 font-black text-navy sm:text-[1.05rem]">{a.name}</h3>
+          {grade && <span className="rounded-full bg-sky px-2 py-0.5 text-[0.68rem] font-bold text-royal">{konkur ? grade : `پایهٔ ${grade}`}</span>}
+        </div>
+        {konkur ? (
+          <>
+            <p className="mt-1 line-clamp-2 text-sm leading-6 font-bold text-royal">{major}</p>
+            {uni && <p className="mt-1 flex items-start gap-1.5 text-[0.78rem] leading-5 text-muted"><Icon name="cap" className="mt-0.5 size-3.5 shrink-0 text-gold" /><span className="line-clamp-2">{uni}</span></p>}
+          </>
+        ) : (
+          a.detail && <p className="mt-1 flex items-start gap-1.5 text-[0.82rem] leading-6 text-ink/80"><Icon name="cap" className="mt-1 size-3.5 shrink-0 text-gold" /><span className="line-clamp-3">{faText(a.detail)}</span></p>
+        )}
+      </div>
+    </article>
   );
 }
