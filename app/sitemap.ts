@@ -29,6 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: u("/shop"), lastModified: newest(products), changeFrequency: "daily", priority: 0.9 },
     { url: u("/news"), lastModified: newest(news), changeFrequency: "daily", priority: 0.8 },
     ...LANDINGS.map((k) => ({ url: u(PAGES[k].path), lastModified: siteMod, changeFrequency: "weekly" as const, priority: 0.8 })),
+    { url: u("/rotbe-bartar-konkur"), lastModified: siteMod, changeFrequency: "monthly" as const, priority: 0.8, images: [u("/honors/1405/banner-1200.webp")] },
     ...["/register", "/contact", "/about", "/team", "/achievements", "/gallery", "/faq"].map((p) => ({ url: u(p), lastModified: siteMod, changeFrequency: "monthly" as const, priority: 0.6 })),
   ];
   return [

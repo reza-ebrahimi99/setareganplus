@@ -17,6 +17,8 @@ import { NewsCard } from "@/components/site/news";
 import { HomeHighlight } from "@/components/site/HomeHighlight";
 import { FormCard } from "@/components/forms/FormCard";
 import { listedForms } from "@/lib/forms/public";
+import { HomeHonors } from "@/components/site/honors";
+import { latestHonors, toppers } from "@/lib/honors";
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMeta("home");
@@ -45,6 +47,8 @@ export default async function Home() {
   const words = home.title.trim().split(/\s+/);
   const cut = words.length > 3 ? words.length - 2 : words.length;
   const phone = contact.phones[0];
+  const honors = latestHonors();
+  const honorTop = toppers(honors);
 
   const quick: { href: string; title: string; text: string; icon: IconName; tone: string }[] = [
     { href: "/register", title: "پیش‌ثبت‌نام", text: "فرم کوتاه آنلاین، تماس همکاران ما", icon: "form", tone: "from-[#ffc83d] to-gold text-navy" },
@@ -239,6 +243,11 @@ export default async function Home() {
             </div>
           </div>
         </section>
+      )}
+
+      {/* ───────── Top Konkur ranks (static data: lib/honors.ts) ───────── */}
+      {honorTop.length > 0 && (
+        <HomeHonors year={honors.year} top={honorTop} total={honors.students.length} others={honors.students.filter((s) => !honorTop.includes(s))} />
       )}
 
       {/* ───────── Achievements ───────── */}

@@ -9,7 +9,8 @@ import { Icon, Star, type IconName } from "./Star";
 export const NAV: { href: string; label: string; icon: IconName; wide?: 1 | 2 }[] = [
   { href: "/education", label: "آموزشگاه ستارگان", icon: "cap" },
   { href: "/ghalamchi", label: "قلم‌چی نسیم‌شهر", icon: "book" },
-  { href: "/achievements", label: "افتخارات", icon: "trophy" },
+  { href: "/rotbe-bartar-konkur", label: "رتبه‌های برتر", icon: "trophy" },
+  { href: "/achievements", label: "افتخارات", icon: "cap", wide: 1 },
   { href: "/news", label: "اخبار", icon: "news" },
   { href: "/team", label: "تیم ما", icon: "users", wide: 2 },
   { href: "/gallery", label: "گالری", icon: "image", wide: 2 },

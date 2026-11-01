@@ -22,6 +22,7 @@ const GUIDES = [
 ];
 const MORE = [
   { href: "/news", label: "اخبار و اطلاعیه‌ها" },
+  { href: "/rotbe-bartar-konkur", label: "رتبه‌های برتر کنکور ۱۴۰۵" },
   { href: "/achievements", label: "افتخارات" },
   { href: "/team", label: "تیم ما" },
   { href: "/gallery", label: "گالری" },
