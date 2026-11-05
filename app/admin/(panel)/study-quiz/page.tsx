@@ -9,6 +9,7 @@ import { PageTitle, Panel, Field, Area, Check, Flash } from "@/components/admin/
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { ARCHETYPES, ARCHETYPE_LIST, QUIZ_PATH } from "@/lib/quiz/content";
 import { getQuizSettings, saveQuizSettings, type StudyQuizSettings } from "@/lib/quiz/settings";
+import { DEFAULT_REWARD_SMS_TEXT } from "@/lib/quiz/reward";
 import { GRADES } from "@/lib/shop/config";
 
 const PER = 40;
@@ -150,7 +151,7 @@ export default async function StudyQuizAdmin({ searchParams }: { searchParams: P
             <Area label="متن هدیه / تخفیف" name="rewardText" defaultValue={settings.rewardText} rows={3} hint="این متن کنار کد هدیه در صفحهٔ نتیجه نشان داده می‌شود." />
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="شناسه قالب SMS تأیید (CODE)" name="otpTemplateId" defaultValue={settings.otpTemplateId ?? ""} dir="ltr" hint="قالب Verify در SMS.ir با متغیر CODE" />
-              <Field label="شناسه قالب SMS هدیه (CODE, FULLNAME)" name="rewardTemplateId" defaultValue={settings.rewardTemplateId ?? ""} dir="ltr" />
+              <Field label="شناسه قالب SMS هدیه (CODE, FULLNAME, REWARD, GIFT1, GIFT2, GIFT3)" name="rewardTemplateId" defaultValue={settings.rewardTemplateId ?? ""} dir="ltr" />
             </div>
             <label className="block">
               <span className="label">تاریخ پایان (اختیاری)</span>
@@ -160,6 +161,8 @@ export default async function StudyQuizAdmin({ searchParams }: { searchParams: P
           </form>
           <div className="mt-5 rounded-xl bg-ivory p-3 text-xs leading-6 text-muted">
             در SMS.ir یک قالب Verify بسازید که پارامتر <b dir="ltr">CODE</b> داشته باشد و شناسه‌اش را بالا بگذارید.
+            برای پیامک هدیه از پارامترهای <b dir="ltr">CODE</b>، <b dir="ltr">FULLNAME</b> و <b dir="ltr">REWARD</b> یا <b dir="ltr">GIFT1/GIFT2/GIFT3</b> استفاده کنید؛ هر مقدار کوتاه‌تر از محدودیت ۲۵ کاراکتر قالب است.
+            متن کوتاه پیش‌فرض REWARD: «{DEFAULT_REWARD_SMS_TEXT}»
             اگر قالب تنظیم نشود و SMS فعال باشد، ارسال کد ممکن است ناموفق شود؛ در حالت توسعه با SMS خاموش، کد روی صفحه نشان داده می‌شود.
           </div>
         </Panel>

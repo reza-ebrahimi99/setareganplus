@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { QUESTIONS, ARCHETYPES, type Archetype, type ArchetypeKey } from "@/lib/quiz/content";
+import { QUIZ_REWARD_ITEMS } from "@/lib/quiz/reward";
 import { fa, prettyPhone } from "@/lib/format";
 import { actionStartOtp, actionVerifyOtp, actionSubmitQuiz, actionGetArchetype } from "@/app/(site)/test-motalee/actions";
 import { ShareButtons } from "@/components/site/ShareButtons";
@@ -172,8 +173,8 @@ export function QuizApp({ boot }: { boot: Boot }) {
           <div className="mb-6 flex items-start gap-3">
             <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-gold to-[#ff9f43] text-2xl shadow-md">🎁</span>
             <div>
-              <p className="text-sm font-bold text-gold-ink">هدیه در پایان تست</p>
-              <p className="mt-1 text-sm leading-7 text-muted">{boot.rewardText}</p>
+              <p className="text-sm font-bold text-gold-ink">یه هدیه ویژه داریم واست</p>
+              <p className="mt-1 text-sm leading-7 text-muted">آخر تست هدیه‌ات مشخص می‌شه؛ الان سورپرایزه! 🎁</p>
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -363,7 +364,16 @@ function ResultView({
       </div>
 
       <div className="rounded-3xl border border-gold/40 bg-gradient-to-br from-[#fff8e8] to-white p-5 sm:p-6">
-        <p className="text-sm font-bold text-gold-ink">کد هدیهٔ اختصاصی تو</p>
+        <p className="text-sm font-bold text-gold-ink">🎁 هدیه‌های تو</p>
+        <ul className="mt-4 space-y-2.5">
+          {QUIZ_REWARD_ITEMS.map((item, i) => (
+            <li key={item} className="flex items-start gap-2.5 rounded-xl bg-white/80 px-3.5 py-3 text-sm font-semibold leading-7 text-navy shadow-sm">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-gold/20 text-xs font-black text-gold-ink">{["۱", "۲", "۳"][i]}</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-5 text-sm font-bold text-gold-ink">کد اختصاصی تو برای هر ۳ هدیه</p>
         <p dir="ltr" className="mt-2 text-center text-3xl font-black tracking-widest text-navy">{result.rewardCode}</p>
         <p className="mt-3 text-sm leading-7 text-muted">{result.rewardText}</p>
       </div>

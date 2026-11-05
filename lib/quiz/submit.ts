@@ -6,6 +6,7 @@ import { QUESTIONS, scoreAnswers, ARCHETYPES, type ArchetypeKey } from "./conten
 import { parseSessionToken } from "./otp";
 import { uniqueRewardCode } from "./codes";
 import { getQuizSettings, quizIsOpen } from "./settings";
+import { DEFAULT_REWARD_SMS_TEXT, QUIZ_REWARD_SMS_ITEMS } from "./reward";
 
 export type SubmitResult =
   | {
@@ -78,9 +79,9 @@ export async function submitQuiz(opts: {
     },
   });
 
-  if (settings.rewardSms && settings.rewardTemplateId) {
+  if (settings.rewardSms) {
     const fullName = `${lead.firstName} ${lead.lastName}`.trim();
-    void sendSms("form", lead.mobile, { CODE: lead.rewardCode, FULLNAME: fullName }, undefined, { templateId: settings.rewardTemplateId });
+    void sendSms("form", lead.mobile, { CODE: lead.rewardCode, FULLNAME: fullName, REWARD: DEFAULT_REWARD_SMS_TEXT, GIFT1: QUIZ_REWARD_SMS_ITEMS[0], GIFT2: QUIZ_REWARD_SMS_ITEMS[1], GIFT3: QUIZ_REWARD_SMS_ITEMS[2] }, undefined, { templateId: settings.rewardTemplateId });
   }
 
   return {

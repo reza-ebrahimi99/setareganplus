@@ -7,11 +7,11 @@ export type StudyQuizSettings = {
   title: string;
   intro: string;
   rewardText: string;
-  /** SMS the reward code after completion (needs rewardTemplateId) */
+  /** SMS the reward code after completion (uses the built-in short gift text with rewardTemplateId=0) */
   rewardSms: boolean;
   /** SMS.ir verify template id; must include a CODE parameter */
   otpTemplateId: number | null;
-  /** SMS.ir verify template for the reward; params: CODE, FULLNAME */
+  /** SMS.ir verify template for the reward; params: CODE, FULLNAME, REWARD (first gift), GIFT1/GIFT2/GIFT3 (all three gifts) */
   rewardTemplateId: number | null;
   /** ISO date string or null = no end */
   endsAt: string | null;
@@ -22,9 +22,9 @@ export const DEFAULT_QUIZ_SETTINGS: StudyQuizSettings = {
   enabled: true,
   title: "درس خوندنت چه مدلیه؟",
   intro:
-    "با یک تست کوتاه و سرگرم‌کننده، الگوی مطالعه‌ات را بشناس. در پایان هدیهٔ ویژه‌ای از ستارگان می‌گیری و مشاوران ما می‌توانند دقیق‌تر کمکت کنند.",
+    "با یه تست کوتاه و سرگرم‌کننده الگوی مطالعه‌ات رو بشناس؛ آخرش یه هدیه ویژه داریم واست! 🎁",
   rewardText:
-    "کد هدیهٔ تو برای مشاورهٔ تحصیلی یا خرید جزوه از فروشگاه ستارگان است. این کد را هنگام تماس یا ثبت‌نام بگو تا اعمال شود.",
+    "با این کد هر ۳ هدیه مال توئه؛ هنگام تماس یا ثبت‌نام اعلامش کن تا اعمال شود.",
   rewardSms: false,
   otpTemplateId: null,
   rewardTemplateId: null,
