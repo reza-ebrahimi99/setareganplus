@@ -8,6 +8,7 @@ import { QUIZ_PATH } from "@/lib/quiz/content";
 import { getSettings } from "@/lib/settings";
 import { siteUrl } from "@/lib/shop/config";
 import { QuizApp } from "@/components/quiz/QuizApp";
+import { quizFontClass } from "@/lib/quiz/font";
 import { quizBootstrap } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,7 @@ export default async function StudyQuizPage({ searchParams }: { searchParams: Pr
   return (
     <>
       <JsonLd data={breadcrumbLd([{ name: settings.title, href: QUIZ_PATH }])} />
+      <div className={quizFontClass}>
       <section className="bg-hero relative overflow-hidden text-white">
         <div className="bg-dots pointer-events-none absolute inset-0 [mask-image:radial-gradient(70%_80%_at_50%_0%,black,transparent)]" />
         <Star filled={false} className="pointer-events-none absolute -top-24 -left-24 size-[28rem] text-white/[0.06]" />
@@ -67,6 +69,7 @@ export default async function StudyQuizPage({ searchParams }: { searchParams: Pr
           {" · "}نسیم‌شهر
         </p>
       </section>
+      </div>
     </>
   );
 }
