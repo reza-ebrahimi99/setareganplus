@@ -18,6 +18,9 @@ export type StudyQuizSettings = {
   homeBanner: boolean;
 };
 
+/** Approved SMS.ir OTP template (text: «کد تایید تست ستارگان: #CODE#»), used when the panel field is empty */
+export const DEFAULT_OTP_TEMPLATE_ID = 607284;
+
 export const DEFAULT_QUIZ_SETTINGS: StudyQuizSettings = {
   enabled: true,
   title: "درس خوندنت چه مدلیه؟",
@@ -26,7 +29,7 @@ export const DEFAULT_QUIZ_SETTINGS: StudyQuizSettings = {
   rewardText:
     "با این کد هر ۳ هدیه مال توئه؛ هنگام تماس یا ثبت‌نام اعلامش کن تا اعمال شود.",
   rewardSms: false,
-  otpTemplateId: null,
+  otpTemplateId: DEFAULT_OTP_TEMPLATE_ID,
   rewardTemplateId: null,
   endsAt: null,
   homeBanner: true,
@@ -41,7 +44,7 @@ export async function getQuizSettings(): Promise<StudyQuizSettings> {
     return {
       ...DEFAULT_QUIZ_SETTINGS,
       ...v,
-      otpTemplateId: Number(v.otpTemplateId) > 0 ? Number(v.otpTemplateId) : null,
+      otpTemplateId: Number(v.otpTemplateId) > 0 ? Number(v.otpTemplateId) : DEFAULT_OTP_TEMPLATE_ID,
       rewardTemplateId: Number(v.rewardTemplateId) > 0 ? Number(v.rewardTemplateId) : null,
       endsAt: typeof v.endsAt === "string" && v.endsAt ? v.endsAt : null,
       enabled: v.enabled !== false,
