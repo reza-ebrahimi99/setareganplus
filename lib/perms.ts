@@ -19,6 +19,7 @@ export const PERM_GROUPS = [
       { key: "forms.builder", label: "فرم‌ساز", hint: "ساخت و ویرایش فرم‌ها" },
       { key: "submissions", label: "درخواست‌های ثبت‌شده", hint: "دیدن، تغییر وضعیت، خروجی اکسل و فایل‌های پیوست" },
       { key: "forms.payments", label: "پرداخت‌های فرم‌ها", hint: "مبلغ، کد پیگیری زیبال، جمع درآمد هر فرم و ستون‌های پرداخت در خروجی" },
+      { key: "campaign.studyQuiz", label: "کمپین تست مطالعه", hint: "لیدها، خروجی اکسل و تنظیمات تست الگوی مطالعه" },
     ],
   },
   {
@@ -48,6 +49,8 @@ export const PRESETS: { key: string; label: string; perms: Perm[] }[] = [
   { key: "pickup", label: "مسئول تحویل جزوه", perms: ["shop.pickup", "shop.orders.view", "shop.labels"] },
   { key: "shop", label: "فروشگاه کامل", perms: ["shop.dashboard", "shop.orders.view", "shop.orders.edit", "shop.pickup", "shop.labels", "shop.products", "shop.settings"] },
   { key: "forms", label: "فقط فرم‌ها", perms: ["forms.builder", "submissions", "forms.payments"] },
+  { key: "quiz", label: "کمپین تست مطالعه", perms: ["campaign.studyQuiz"] },
+  { key: "reception_quiz", label: "پذیرش + تست مطالعه", perms: ["submissions", "campaign.studyQuiz"] },
   { key: "reception", label: "پذیرش (درخواست‌ها)", perms: ["submissions"] },
   { key: "content", label: "محتوای سایت", perms: ["content.centers", "content.team", "content.achievements", "content.gallery", "content.faq", "content.news"] },
 ];
@@ -56,6 +59,7 @@ export const PRESETS: { key: string; label: string; perms: Perm[] }[] = [
 export const ROUTE_PERM: [string, Perm | null][] = [
   ["/admin/submissions", "submissions"],
   ["/admin/forms", "forms.builder"],
+  ["/admin/study-quiz", "campaign.studyQuiz"],
   ["/admin/shop/orders", "shop.orders.view"],
   ["/admin/shop/pickup", "shop.pickup"],
   ["/admin/shop/products", "shop.products"],

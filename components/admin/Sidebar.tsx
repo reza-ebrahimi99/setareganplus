@@ -8,6 +8,7 @@ const NAV = [
   { href: "/admin", label: "داشبورد", icon: "M3 12l9-8 9 8M5 10v10h14V10" },
   { href: "/admin/submissions", label: "درخواست‌ها", icon: "M4 4h16v12H5.5L4 17.5zM8 9h8M8 12h5" },
   { href: "/admin/forms", label: "فرم‌ساز", icon: "M5 3h14v18H5zM8 8h8M8 12h8M8 16h5" },
+  { href: "/admin/study-quiz", label: "کمپین تست مطالعه", icon: "M9 9a3 3 0 115 2c-1 1-2 1.5-2 3M12 18h.01M4 5h16v14H4z" },
   { sep: "فروشگاه جزوه" },
   { href: "/admin/shop", label: "داشبورد فروش", icon: "M4 20V10M10 20V4M16 20v-7M22 20H2" },
   { href: "/admin/shop/orders", label: "سفارش‌ها", icon: "M6 2l-2 4v14a2 2 0 002 2h12a2 2 0 002-2V6l-2-4zM4 6h16M16 10a4 4 0 01-8 0" },

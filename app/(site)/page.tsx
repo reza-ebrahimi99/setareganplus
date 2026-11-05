@@ -19,13 +19,15 @@ import { FormCard } from "@/components/forms/FormCard";
 import { listedForms } from "@/lib/forms/public";
 import { HomeHonors } from "@/components/site/honors";
 import { latestHonors, toppers } from "@/lib/honors";
+import { HomeQuizBanner } from "@/components/quiz/HomeQuizBanner";
+import { getQuizSettings, quizIsOpen } from "@/lib/quiz/settings";
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMeta("home");
 }
 
 export default async function Home() {
-  const [s, centers, achievements, team, albums, booklets, shop, forms, faqs] = await Promise.all([
+  const [s, centers, achievements, team, albums, booklets, shop, forms, faqs, quiz] = await Promise.all([
     getSettings(),
     prisma.center.findMany({ where: { published: true }, orderBy: { sortOrder: "asc" } }),
     prisma.achievement.findMany({ where: { published: true }, orderBy: [{ featured: "desc" }, { sortOrder: "asc" }], take: 10 }),
@@ -39,6 +41,7 @@ export default async function Home() {
     getShopSettings(),
     prisma.form.findMany({ where: { status: "PUBLISHED" }, orderBy: [{ isSystem: "desc" }, { createdAt: "asc" }], select: { slug: true, title: true, description: true } }),
     prisma.faq.findMany({ where: { published: true }, orderBy: { sortOrder: "asc" }, take: 4 }),
+    getQuizSettings(),
   ]);
   const [news, orgLd, openForms] = await Promise.all([homeNews().catch(() => []), organizationLd(), listedForms(3).then((x) => x.filter((f) => f.state === "open" || f.state === "soon")).catch(() => [])]);
   const { home, about, contact, stats, highlight } = s;
@@ -51,6 +54,7 @@ export default async function Home() {
   const honorTop = toppers(honors);
 
   const quick: { href: string; title: string; text: string; icon: IconName; tone: string }[] = [
+    { href: "/test-motalee", title: "تست مطالعه", text: "الگوی درس خوندنت چیست؟ هدیه بگیر", icon: "help", tone: "from-royal to-royal-2 text-white" },
     { href: "/register", title: "پیش‌ثبت‌نام", text: "فرم کوتاه آنلاین، تماس همکاران ما", icon: "form", tone: "from-[#ffc83d] to-gold text-navy" },
     { href: "/shop", title: "فروشگاه جزوه", text: "خرید آنلاین، تحویل حضوری در شعبه", icon: "bag", tone: "from-royal to-royal-2 text-white" },
     { href: "/ghalamchi", title: "آزمون‌های قلم‌چی", text: "نمایندگی رسمی در نسیم‌شهر", icon: "book", tone: "from-[#e0464f] to-[#b8233a] text-white" },
@@ -62,6 +66,7 @@ export default async function Home() {
       <JsonLd data={[orgLd, websiteLd()]} />
       {/* ───────── Highlight (first thing visitors see; toggle in admin settings) ───────── */}
       <HomeHighlight h={highlight} />
+      {quizIsOpen(quiz).open && quiz.homeBanner && <HomeQuizBanner title={quiz.title} intro={quiz.intro} />}
       {/* ───────── Hero ───────── */}
       <section className="bg-hero relative overflow-hidden text-white">
         <div className="bg-dots pointer-events-none absolute inset-0 [mask-image:radial-gradient(60%_70%_at_75%_30%,black,transparent)]" />

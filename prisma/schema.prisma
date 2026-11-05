@@ -477,3 +477,59 @@ model News {
 
   @@index([published, publishedAt])
 }
+
+// ───────────────────────── Study-style quiz campaign (کمپین تست مطالعه) ─────────────────────────
+
+/// Pending OTP for the public study quiz. Cleared after verify or expiry.
+model StudyQuizOtp {
+  id         String    @id @default(cuid())
+  mobile     String
+  /// sha256 of the OTP (never store the raw code)
+  codeHash   String
+  firstName  String
+  lastName   String
+  grade      String
+  field      String?
+  referral   String?
+  ip         String?
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([mobile, createdAt])
+  @@index([expiresAt])
+}
+
+/// One completed (or resumed) lead from the study quiz. Mobile is unique: one quiz per phone.
+model StudyQuizLead {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  grade       String
+  /// رشته (optional for grades below دهم)
+  field       String?
+  mobile      String   @unique
+  /// archetype key, e.g. planner / wave / crammer / perfectionist / scatter
+  archetype   String
+  /// { [questionId]: optionIndex }
+  answers     Json     @default("{}")
+  /// unique public reward / discount code shown on the result screen
+  rewardCode  String   @unique
+  /// ?ref= value that brought this student (usually another lead's rewardCode)
+  referral    String?
+  contacted   Boolean  @default(false)
+  note        String?  @db.Text
+  ip          String?
+  userAgent   String?
+  verifiedAt  DateTime
+  completedAt DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([archetype])
+  @@index([grade])
+  @@index([createdAt])
+  @@index([contacted])
+  @@index([referral])
+}
