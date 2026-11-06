@@ -533,3 +533,47 @@ model StudyQuizLead {
   @@index([contacted])
   @@index([referral])
 }
+
+// ───────────────────────── First-party traffic analytics ─────────────────────────
+// Raw rows keep no IP, name, phone, or cookie. `visitor` is an HMAC that rotates
+// every Tehran midnight, so people are not stitched across days. After
+// RAW_RETENTION_DAYS the rows are folded into AnalyticsDaily and deleted.
+
+/// One public page view or quiz signal.
+model AnalyticsHit {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  /// Asia/Tehran calendar day, YYYY-MM-DD
+  day       String
+  /// pageview | quiz_start | quiz_complete
+  kind      String
+  /// Public path only; query string is never stored
+  path      String
+  source    String
+  medium    String   @default("")
+  campaign  String   @default("")
+  /// Daily HMAC of the visitor cookie. Not reversible and not stable across days.
+  visitor   String
+
+  @@index([day])
+  @@index([day, kind])
+  @@index([createdAt])
+}
+
+/// Compact totals after raw hits age out. No visitor identifiers.
+/// level is site, source, campaign, or path.
+model AnalyticsDaily {
+  id       String @id @default(cuid())
+  day      String
+  level    String
+  kind     String
+  path     String @default("")
+  source   String @default("")
+  medium   String @default("")
+  campaign String @default("")
+  hits     Int
+  uniques  Int
+
+  @@unique([day, level, kind, path, source, medium, campaign], map: "AnalyticsDaily_bucket_key")
+  @@index([day, kind, level])
+}

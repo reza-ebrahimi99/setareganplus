@@ -5,6 +5,7 @@ import { GRADES, gradeHasMajor, MAJORS } from "@/lib/shop/config";
 import { toEn } from "@/lib/format";
 import { startQuizOtp, verifyQuizOtp } from "@/lib/quiz/otp";
 import { submitQuiz } from "@/lib/quiz/submit";
+import { recordQuizEvent } from "@/lib/analytics/store";
 import { getQuizSettings, quizIsOpen } from "@/lib/quiz/settings";
 import { ARCHETYPES, type ArchetypeKey } from "@/lib/quiz/content";
 
@@ -48,7 +49,9 @@ export async function actionStartOtp(input: {
   if (!(GRADES as readonly string[]).includes(input.grade)) {
     return { ok: false as const, error: "پایه نامعتبر است." };
   }
-  return startQuizOtp({ ...input, mobile: toEn(input.mobile), ip: await clientIp() });
+  const result = await startQuizOtp({ ...input, mobile: toEn(input.mobile), ip: await clientIp() });
+  if (result.ok && !result.alreadyDone) await recordQuizEvent("quiz_start");
+  return result;
 }
 
 export async function actionVerifyOtp(otpId: string, code: string) {
@@ -63,6 +66,7 @@ export async function actionSubmitQuiz(sessionToken: string, answers: Record<str
     ip: await clientIp(),
     userAgent: h.get("user-agent"),
   });
+  if (r.ok && !r.returning) await recordQuizEvent("quiz_complete");
   if (!r.ok) return r;
   const a = ARCHETYPES[r.archetype as ArchetypeKey];
   const s = await getQuizSettings();

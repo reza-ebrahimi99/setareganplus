@@ -29,7 +29,16 @@ export default async function Dashboard() {
   ];
   return (
     <>
-      <PageTitle title="داشبورد" sub="خلاصه وضعیت سایت و درخواست‌ها" action={<Link href="/admin/forms" className="btn-ghost px-4 py-2 text-sm">فرم‌ساز</Link>} />
+      <PageTitle
+        title="داشبورد"
+        sub="خلاصه وضعیت سایت و درخواست‌ها"
+        action={
+          <div className="flex flex-wrap gap-2">
+            {can(me, "analytics.view") && <Link href="/admin/analytics" className="btn-navy px-4 py-2 text-sm">آمار بازدید</Link>}
+            <Link href="/admin/forms" className="btn-ghost px-4 py-2 text-sm">فرم‌ساز</Link>
+          </div>
+        }
+      />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {cards.map((c) => (
           <Link key={c.label} href={c.href} className={`rounded-2xl border p-5 transition-colors ${c.accent ? "border-gold/40 bg-gold/10 hover:bg-gold/15" : "border-line bg-paper hover:border-navy/20"}`}>
@@ -103,6 +112,7 @@ function BackupLine({ b }: { b: BackupStatus }) {
 }
 
 const HOME_LINKS: { href: string; label: string; desc: string }[] = [
+  { href: "/admin/analytics", label: "آمار بازدید", desc: "بازدید، منبع ورود و نتیجه تست مطالعه" },
   { href: "/admin/shop/pickup", label: "تحویل حضوری", desc: "اسکن کد رسید و ثبت تحویل جزوه" },
   { href: "/admin/shop/orders", label: "سفارش‌ها", desc: "فهرست و جزئیات سفارش‌های جزوه" },
   { href: "/admin/shop", label: "داشبورد فروش", desc: "آمار و گزارش فروش" },

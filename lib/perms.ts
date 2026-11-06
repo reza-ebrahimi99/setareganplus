@@ -35,6 +35,12 @@ export const PERM_GROUPS = [
     ],
   },
   {
+    title: "آمار",
+    perms: [
+      { key: "analytics.view", label: "آمار بازدید و منابع", hint: "بازدید، بازدیدکننده یکتا، گوگل و پیامک و بله، و نتیجه تست مطالعه" },
+    ],
+  },
+  {
     title: "مدیریت",
     perms: [{ key: "users.manage", label: "مدیریت همکاران", hint: "فقط مدیر اصلی می‌تواند این دسترسی را بدهد", ownerOnly: true }],
   },
@@ -57,6 +63,7 @@ export const PRESETS: { key: string; label: string; perms: Perm[] }[] = [
 
 /** Admin route -> required permission (longest prefix wins). Used by the sidebar and the dashboard. */
 export const ROUTE_PERM: [string, Perm | null][] = [
+  ["/admin/analytics", "analytics.view"],
   ["/admin/submissions", "submissions"],
   ["/admin/forms", "forms.builder"],
   ["/admin/study-quiz", "campaign.studyQuiz"],

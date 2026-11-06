@@ -6,6 +6,7 @@ import { permForPath } from "@/lib/perms";
 
 const NAV = [
   { href: "/admin", label: "داشبورد", icon: "M3 12l9-8 9 8M5 10v10h14V10" },
+  { href: "/admin/analytics", label: "آمار بازدید", icon: "M4 19V9M9 19V5M14 19v-7M19 19V8M3 19h18" },
   { href: "/admin/submissions", label: "درخواست‌ها", icon: "M4 4h16v12H5.5L4 17.5zM8 9h8M8 12h5" },
   { href: "/admin/forms", label: "فرم‌ساز", icon: "M5 3h14v18H5zM8 8h8M8 12h8M8 16h5" },
   { href: "/admin/study-quiz", label: "کمپین تست مطالعه", icon: "M9 9a3 3 0 115 2c-1 1-2 1.5-2 3M12 18h.01M4 5h16v14H4z" },
