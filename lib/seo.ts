@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { siteUrl } from "@/lib/shop/config";
 import { toEn } from "@/lib/format";
+import { publicBaleSocialUrl } from "@/lib/bale";
 import type { ContactSettings } from "@/lib/settings";
 
 /* ------------------------------------------------------------------ */
@@ -36,7 +37,8 @@ export const getContact = cache(async (): Promise<ContactSettings> => {
   try {
     const row = await prisma.setting.findUnique({ where: { key: "contact" } });
     const v = (row?.value ?? {}) as Partial<ContactSettings>;
-    return { phones: v.phones ?? [], hours: v.hours ?? [], branches: v.branches ?? [], social: v.social ?? [], enamadUrl: v.enamadUrl };
+    const social = (v.social ?? []).map((s) => (s && typeof s.url === "string" ? { ...s, url: publicBaleSocialUrl(s.url) } : s));
+    return { phones: v.phones ?? [], hours: v.hours ?? [], branches: v.branches ?? [], social, enamadUrl: v.enamadUrl };
   } catch {
     return { phones: [], hours: [], branches: [], social: [] };
   }

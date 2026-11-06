@@ -11,7 +11,8 @@
  */
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../generated/prisma/client";
+import { Prisma, PrismaClient } from "../generated/prisma/client";
+import { BALE_CHANNEL_URL, isLegacyBaleJoin } from "../lib/bale";
 import { DEFAULT_HOURS, LEGACY_DEFAULT_HOURS } from "../lib/hours";
 
 const DRY = process.argv.includes("--dry-run");
@@ -28,15 +29,32 @@ async function main() {
       log("contact settings not found; nothing to do");
       return;
     }
+    const next: Record<string, unknown> = { ...value };
+    let changed = false;
+
     const hours = norm(value.hours);
     if (same(hours, DEFAULT_HOURS)) log("opening hours already up to date");
     else if (same(hours, LEGACY_DEFAULT_HOURS)) {
-      if (DRY) log("would update opening hours →", DEFAULT_HOURS.join(" · "));
-      else {
-        await prisma.setting.update({ where: { key: "contact" }, data: { value: { ...value, hours: DEFAULT_HOURS } } });
-        log("opening hours updated →", DEFAULT_HOURS.join(" · "));
-      }
+      next.hours = DEFAULT_HOURS;
+      changed = true;
+      log(DRY ? "would update opening hours →" : "opening hours updated →", DEFAULT_HOURS.join(" · "));
     } else log("opening hours were customized in the admin; left unchanged");
+
+    // Only the seeded channel invite. A بله URL the admin changed is left alone.
+    const social = Array.isArray(value.social) ? value.social : null;
+    if (social?.some((item) => item && typeof item === "object" && typeof (item as { url?: unknown }).url === "string" && isLegacyBaleJoin((item as { url: string }).url))) {
+      next.social = social.map((item) => {
+        if (!item || typeof item !== "object" || typeof (item as { url?: unknown }).url !== "string") return item;
+        const url = (item as { url: string }).url;
+        return isLegacyBaleJoin(url) ? { ...item, url: BALE_CHANNEL_URL } : item;
+      });
+      changed = true;
+      log(DRY ? "would point the بله social link at the public channel" : "بله social link now points at the public channel", BALE_CHANNEL_URL);
+    } else log("bale social link already up to date or customized");
+
+    if (changed && !DRY) {
+      await prisma.setting.update({ where: { key: "contact" }, data: { value: next as Prisma.InputJsonValue } });
+    }
   } finally {
     await prisma.$disconnect();
   }

@@ -225,7 +225,7 @@ fi
 # corrected defaults (e.g. opening hours): replaces a Setting only if it still equals the old
 # seeded default; admin-customized values are never touched. Failures never stop the deploy.
 ( timeout 120 npx --no-install tsx scripts/update-defaults.ts ) && ok "تنظیمات پیش‌فرض بررسی شد" \
-  || warn "به‌روزرسانی ساعت کاری ناموفق (سایت سالم است)" "defaults update failed; retry: cd $APP_DIR && npx tsx scripts/update-defaults.ts"
+  || warn "به‌روزرسانی تنظیمات پیش‌فرض ناموفق (سایت سالم است)" "defaults update failed; retry: cd $APP_DIR && npx tsx scripts/update-defaults.ts"
 
 # ---------------------------------------------------------------------------
 if (( SKIP_NGINX )); then warn "nginx تغییر نکرد (--skip-nginx)"; else

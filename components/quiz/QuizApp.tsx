@@ -8,6 +8,7 @@ import { fa, prettyPhone } from "@/lib/format";
 import { actionStartOtp, actionVerifyOtp, actionSubmitQuiz, actionGetArchetype } from "@/app/(site)/test-motalee/actions";
 import { ShareButtons } from "@/components/site/ShareButtons";
 import { Icon, Star } from "@/components/site/Star";
+import { BALE_ADMIN_CHAT_URL, BALE_BRAND } from "@/lib/bale";
 
 type Boot = {
   open: boolean;
@@ -19,7 +20,6 @@ type Boot = {
   majors: string[];
   gradeHasMajorGrades: string[];
   phone?: string;
-  whatsapp?: string;
   shareUrl: string;
   referral?: string;
 };
@@ -262,7 +262,7 @@ export function QuizApp({ boot }: { boot: Boot }) {
       )}
 
       {step === "result" && result && (
-        <ResultView result={result} shareUrl={boot.shareUrl} phone={boot.phone} whatsapp={boot.whatsapp} />
+        <ResultView result={result} shareUrl={boot.shareUrl} phone={boot.phone} />
       )}
     </div>
   );
@@ -305,12 +305,11 @@ function QuestionCard({
 }
 
 function ResultView({
-  result, shareUrl, phone, whatsapp,
+  result, shareUrl, phone,
 }: {
   result: { archetype: Archetype; rewardCode: string; firstName: string; lastName: string; rewardText: string; returning: boolean };
   shareUrl: string;
   phone?: string;
-  whatsapp?: string;
 }) {
   const a = result.archetype;
   const refUrl = useMemo(() => {
@@ -384,11 +383,9 @@ function ResultView({
             <Icon name="phone" className="size-4" /> تماس با آموزشگاه
           </a>
         )}
-        {whatsapp && (
-          <a href={whatsapp} target="_blank" rel="noopener" className="btn justify-center bg-[#25D366] py-3 text-sm text-navy hover:opacity-90">
-            <Icon name="chat" className="size-4" /> مشاوره واتساپ
-          </a>
-        )}
+        <a href={BALE_ADMIN_CHAT_URL} target="_blank" rel="noopener noreferrer" className="btn justify-center py-3 text-sm text-white hover:opacity-90" style={{ backgroundColor: BALE_BRAND }}>
+          <Icon name="chat" className="size-4" /> مشاوره در بله
+        </a>
         <Link href="/shop" className="btn-gold justify-center py-3 text-sm">
           <Icon name="bag" className="size-4" /> فروشگاه جزوه
         </Link>

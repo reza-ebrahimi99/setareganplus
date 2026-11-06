@@ -59,7 +59,7 @@ async function main() {
       ],
       social: [
         { label: "اینستاگرام", url: "https://www.instagram.com/Ghalamchinasimshahr" },
-        { label: "بله", url: "https://ble.ir/join/ANGRKipzkv" },
+        { label: "بله", url: "https://ble.ir/ghalamchi1404" },
         { label: "تلگرام", url: "https://t.me/setareganinstitute1" },
       ],
       enamadUrl: "https://trustseal.enamad.ir/?id=762691&Code=Jm7HRlnpSah7mgppTajp15hMnQLMeXSI",

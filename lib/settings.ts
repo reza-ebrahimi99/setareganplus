@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { publicBaleSocialUrl } from "@/lib/bale";
 
 export type Branch = { name: string; address: string; mapUrl?: string };
 export type ContactSettings = {
@@ -82,6 +83,10 @@ export async function getSettings(): Promise<Settings> {
   const h = { ...DEFAULT_HIGHLIGHT, ...((out.highlight as Partial<HighlightSettings>) ?? {}) };
   if (!h.image) h.image = DEFAULT_HIGHLIGHT_IMAGE;
   out.highlight = h;
+  const contact = out.contact as ContactSettings;
+  if (Array.isArray(contact?.social)) {
+    contact.social = contact.social.map((s) => (s && typeof s.url === "string" ? { ...s, url: publicBaleSocialUrl(s.url) } : s));
+  }
   return out as Settings;
 }
 

@@ -29,7 +29,6 @@ export default async function StudyQuizPage({ searchParams }: { searchParams: Pr
   const open = quizIsOpen(settings);
   const phones = site.contact.phones;
   const mobile = phones.find((p) => p.startsWith("09")) || phones[0];
-  const wa = mobile?.startsWith("09") ? `https://wa.me/98${mobile.slice(1)}?text=${encodeURIComponent("سلام، تست مطالعه ستارگان را دادم و می‌خواهم مشاوره بگیرم.")}` : undefined;
   const shareUrl = `${siteUrl()}${QUIZ_PATH}`;
 
   return (
@@ -59,7 +58,6 @@ export default async function StudyQuizPage({ searchParams }: { searchParams: Pr
           boot={{
             ...boot,
             phone: mobile,
-            whatsapp: wa,
             shareUrl,
             referral: typeof ref === "string" ? ref.slice(0, 32) : undefined,
           }}
