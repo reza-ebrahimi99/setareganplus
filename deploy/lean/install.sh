@@ -376,6 +376,22 @@ else
   ok "نسخهٔ قدیم همچنان در حال اجراست (برای زیردامنه‌ها و بازگشت سریع)" "Old PM2 process '$OLD_PM2' left running"
 fi
 
+# News lives on the orphan `news-feed` branch, not in this checkout. Import articles
+# shipped on lean-redesign, then fast-forward any newer content-only news-feed commits
+# into the same database. Failures do not roll back the site.
+step "۱۲. اخبار" "12. Importing content/news and enabling the news-feed timer"
+( cd "$APP_DIR" && timeout 300 npx --no-install tsx scripts/import-news.ts --dir "$APP_DIR/content/news" ) \
+  && ok "اخبار این نسخه بررسی شد" "content/news imported" \
+  || warn "ورود اخبار نسخه ناموفق" "news import failed; the site is up. Retry: cd $APP_DIR && npx tsx scripts/import-news.ts"
+bash "$APP_DIR/deploy/lean/install-news-timer.sh" --no-sync-now \
+  || warn "تایمر اخبار نصب نشد" "news timer install failed: bash $APP_DIR/deploy/lean/install-news-timer.sh"
+NEWS_BIN="${NEWS_DIR:-/var/lib/setareganplus-news}/bin/news-sync.sh"
+if [[ -f "$NEWS_BIN" ]]; then
+  NEWS_SYNC_RETRIES=3 NEWS_SYNC_RETRY_DELAY=5 bash "$NEWS_BIN" \
+    && ok "شاخهٔ news-feed بررسی شد" "news-feed sync ok" \
+    || warn "همگام‌سازی news-feed ناموفق (تایمر دوباره تلاش می‌کند)" "news-feed sync failed; see /var/log/setareganplus-news.log"
+fi
+
 # =============================================================================
 echo
 echo "${B}${G}════════ پایان | DONE ════════${N}"

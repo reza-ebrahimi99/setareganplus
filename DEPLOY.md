@@ -160,13 +160,14 @@ The schemas differ, so there is no automatic import. Recommended:
 cd /var/www/setareganplus-lean && git fetch --depth 1 origin lean-redesign && git reset --hard FETCH_HEAD && bash deploy/lean/update.sh
 ```
 `deploy/lean/update.sh` does the following:
-1. Resets the code to `origin/lean-redesign`.
+1. Resets the code to `origin/lean-redesign`. That reset does **not** publish the `news-feed` branch: `news-feed` is an orphan branch of article files and is not an ancestor of `lean-redesign`.
 2. Copies `ZIBAL_*`, `SMSIR_*` and `STAROS_SMS_*` from the old `/var/www/setareganplus/.env` into the lean `.env` without printing them. Keys that are already set are kept unless you pass `--resync-secrets`.
 3. Runs `npm ci` and builds into `.next-build`. Then it takes a full backup with `backup.sh` (or reuses one from the last 6 h), installs the nightly backup timer (idempotent; see §9) and runs `prisma migrate deploy`. It **never** runs the seed.
 4. Imports booklets and orders from the old DB with `scripts/migrate-old-shop.ts`. This is read-only on the old DB and safe to repeat. It skips «آزمایشی» items and keeps order numbers, QR tokens and short codes, so old SMS and QR links keep working.
 5. Swaps the build, runs `pm2 reload` and health-checks. If anything fails it restores the previous build.
 6. Rewrites `/etc/nginx/snippets/sp-booklet.conf` so that `/shop`, `/booklet`, `/order` and `/o` are served by this app. Only `/payments/*` (legacy Zibal callbacks), `/ghalamchi/register/receipt/` and `/images/` stay on the old app. If `nginx -t` or the live checks fail, it rolls back automatically.
 7. Imports again, then schedules two silent re-syncs (+20 min and +2 h; log in `/var/backups/setareganplus-lean/resync.log`).
+8. Imports `content/news` from this commit (create-only), installs `setareganplus-news.timer`, and runs `news-sync.sh`. The sync fast-forwards **content-only** commits from `origin/news-feed` into the News table. It does not reset the app, migrate, rebuild, or touch booklet orders. The timer repeats that sync every 3 hours. Test it without writing articles: `bash /var/lib/setareganplus-news/bin/news-sync.sh --check`. To enable only the timer: `bash deploy/lean/install-news-timer.sh`.
 
 Useful commands:
 - Rollback: `bash deploy/lean/update-rollback.sh`. This only touches nginx and sends the shop back to the old app. Add `--app` to also restore the previous code and build.

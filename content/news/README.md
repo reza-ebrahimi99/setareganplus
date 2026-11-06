@@ -52,9 +52,11 @@
 
 ## انتشار یک خبر تازه
 
-1. فایل `content/news/<slug>.json` و کاور آن را در `content/news/covers/` روی شاخهٔ **`news-feed`** بگذارید و push کنید.
-2. سرور (تایمر `setareganplus-news.timer`) شاخه را در `/var/lib/setareganplus-news` دریافت و خبر را وارد می‌کند. گزارش: `/var/log/setareganplus-news.log`.
-3. برای انتشار فوری روی سرور: `systemctl start setareganplus-news.service`
+1. فایل `content/news/<slug>.json` و کاور آن را در `content/news/covers/` روی شاخهٔ **`news-feed`** بگذارید و push کنید. این شاخه فقط محتوا است؛ کد سایت روی `lean-redesign` می‌ماند.
+2. تایمر `setareganplus-news.timer` (هر ۳ ساعت) فقط fast-forwardِ محتواییِ همان شاخه را وارد دیتابیس می‌کند. فروش جزوه، migrate و build اجرا نمی‌شود. گزارش: `/var/log/setareganplus-news.log`.
+3. استقرار معمولی (`update.sh`) هم اول `content/news` همین نسخه و بعد همان همگام‌سازی `news-feed` را انجام می‌دهد.
+4. آزمایش بدون نوشتن خبر: `bash /var/lib/setareganplus-news/bin/news-sync.sh --check`
+5. برای یک‌بار وارد کردنِ فوری: `systemctl start setareganplus-news.service`
 
 اجرای دستی:
 

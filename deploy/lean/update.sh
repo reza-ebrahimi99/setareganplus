@@ -13,7 +13,8 @@
 #       one from the last 6 h) + nightly backup timer, prisma migrate deploy (NO seed)
 #    4. imports booklets + orders from the old DB (read-only, idempotent)
 #    5. pm2 reload + health checks (auto-restores the previous build on failure),
-#       create-only import of content/news + 3-hourly news-feed sync timer
+#       create-only import of content/news, then the same import from origin/news-feed
+#       (content-only fast-forward; does not reset the app) + 3-hourly timer
 #    6. nginx: /shop /booklet /order /o now go to the lean app; /payments,
 #       /ghalamchi/register/receipt and /images stay on the old app.
 #       nginx -t + live checks, automatic rollback on failure
@@ -206,11 +207,21 @@ if ! pm2_healthy || ! health; then
 fi
 ok "نسخهٔ جدید سالم است"
 
-# news: create-only import of content/news (never overwrites/deletes; failures never stop the deploy)
-# + the 3-hourly news-feed sync timer (deploy/lean/news-sync.sh, log /var/log/setareganplus-news.log)
-( timeout 300 npx --no-install tsx scripts/import-news.ts --dir "$APP_DIR/content/news" ) && ok "اخبار بررسی شد" \
-  || warn "ورود اخبار ناموفق (سایت سالم است)" "news import failed; retry: cd $APP_DIR && npx tsx scripts/import-news.ts"
-bash "$APP_DIR/deploy/lean/install-news-timer.sh" || warn "تایمر اخبار نصب نشد" "news timer install failed: bash $APP_DIR/deploy/lean/install-news-timer.sh"
+# News on THIS commit is imported first, so today's articles go live even if the
+# news-feed branch cannot be fetched. news-sync then fast-forwards any newer
+# content-only commits from origin/news-feed into the same database. It does not
+# reset this checkout, migrate, rebuild, or touch booklet orders.
+# Timer: deploy/lean/news-sync.sh (log /var/log/setareganplus-news.log)
+( timeout 300 npx --no-install tsx scripts/import-news.ts --dir "$APP_DIR/content/news" ) && ok "اخبار این نسخه بررسی شد" \
+  || warn "ورود اخبار نسخه ناموفق (سایت سالم است)" "news import failed; retry: cd $APP_DIR && npx tsx scripts/import-news.ts"
+bash "$APP_DIR/deploy/lean/install-news-timer.sh" --no-sync-now || warn "تایمر اخبار نصب نشد" "news timer install failed: bash $APP_DIR/deploy/lean/install-news-timer.sh"
+NEWS_BIN="${NEWS_DIR:-/var/lib/setareganplus-news}/bin/news-sync.sh"
+if [[ -f "$NEWS_BIN" ]]; then
+  NEWS_SYNC_RETRIES=3 NEWS_SYNC_RETRY_DELAY=5 bash "$NEWS_BIN" && ok "شاخهٔ news-feed بررسی شد" \
+    || warn "همگام‌سازی news-feed ناموفق (تایمر دوباره تلاش می‌کند)" "news-feed sync failed; see /var/log/setareganplus-news.log. Articles already in content/news were imported above."
+else
+  warn "اسکریپت news-sync نصب نشد" "missing $NEWS_BIN"
+fi
 # corrected defaults (e.g. opening hours): replaces a Setting only if it still equals the old
 # seeded default; admin-customized values are never touched. Failures never stop the deploy.
 ( timeout 120 npx --no-install tsx scripts/update-defaults.ts ) && ok "تنظیمات پیش‌فرض بررسی شد" \
