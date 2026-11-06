@@ -34,6 +34,7 @@ export default async function Dashboard() {
         sub="خلاصه وضعیت سایت و درخواست‌ها"
         action={
           <div className="flex flex-wrap gap-2">
+            {can(me, "consult.view") && <Link href="/admin/consult" className="btn-navy px-4 py-2 text-sm">نوبت‌های مشاوره</Link>}
             {can(me, "analytics.view") && <Link href="/admin/analytics" className="btn-navy px-4 py-2 text-sm">آمار بازدید</Link>}
             <Link href="/admin/forms" className="btn-ghost px-4 py-2 text-sm">فرم‌ساز</Link>
           </div>
@@ -128,6 +129,10 @@ const HOME_LINKS: { href: string; label: string; desc: string }[] = [
   { href: "/admin/settings", label: "تنظیمات سایت", desc: "تلفن، آدرس، متن‌ها" },
   { href: "/admin/settings/seo", label: "سئو و گوگل", desc: "عنوان صفحه‌ها، Search Console، نقشه" },
   { href: "/admin/users", label: "همکاران", desc: "حساب‌ها و دسترسی‌ها" },
+  { href: "/admin/consult", label: "نوبت‌های مشاوره", desc: "تأیید، لغو و پیامک نوبت‌ها" },
+  { href: "/admin/consult/consultants", label: "مشاوران", desc: "برنامهٔ هفتگی و تعطیلی" },
+  { href: "/admin/consult/students", label: "دانش‌آموزان ویژه", desc: "کد ورود جلسهٔ اختصاصی" },
+  { href: "/admin/consult/settings", label: "پیامک مشاوره", desc: "متن‌ها و یادآوری" },
 ];
 
 function StaffHome({ me }: { me: AdminUser }) {

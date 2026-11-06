@@ -23,6 +23,16 @@ export const PERM_GROUPS = [
     ],
   },
   {
+    title: "مشاوره",
+    perms: [
+      { key: "consult.view", label: "دیدن نوبت‌های مشاوره", hint: "فهرست، فیلتر، منبع ورود و نوع تأیید" },
+      { key: "consult.manage", label: "تأیید، لغو و جابه‌جایی", hint: "تغییر نوبت و ارسال پیامک از صندوق" },
+      { key: "consult.consultants", label: "مشاوران و برنامه", hint: "عکس، تخصص، بازهٔ هفتگی، تعطیلی و ظرفیت" },
+      { key: "consult.students", label: "دانش‌آموزان جلسهٔ ویژه", hint: "ساخت و تعویض کد دسترسی" },
+      { key: "consult.settings", label: "تنظیمات پیامک مشاوره", hint: "متن‌ها، قالب SMS.ir و یادآوری" },
+    ],
+  },
+  {
     title: "محتوای سایت",
     perms: [
       { key: "content.centers", label: "مراکز", hint: "صفحهٔ آموزشگاه و نمایندگی قلم‌چی" },
@@ -56,6 +66,8 @@ export const PRESETS: { key: string; label: string; perms: Perm[] }[] = [
   { key: "shop", label: "فروشگاه کامل", perms: ["shop.dashboard", "shop.orders.view", "shop.orders.edit", "shop.pickup", "shop.labels", "shop.products", "shop.settings"] },
   { key: "forms", label: "فقط فرم‌ها", perms: ["forms.builder", "submissions", "forms.payments"] },
   { key: "quiz", label: "کمپین تست مطالعه", perms: ["campaign.studyQuiz"] },
+  { key: "consult", label: "مشاوره کامل", perms: ["consult.view", "consult.manage", "consult.consultants", "consult.students", "consult.settings"] },
+  { key: "consult_desk", label: "میز مشاوره (فقط نوبت‌ها)", perms: ["consult.view", "consult.manage"] },
   { key: "reception_quiz", label: "پذیرش + تست مطالعه", perms: ["submissions", "campaign.studyQuiz"] },
   { key: "reception", label: "پذیرش (درخواست‌ها)", perms: ["submissions"] },
   { key: "content", label: "محتوای سایت", perms: ["content.centers", "content.team", "content.achievements", "content.gallery", "content.faq", "content.news"] },
@@ -67,6 +79,10 @@ export const ROUTE_PERM: [string, Perm | null][] = [
   ["/admin/submissions", "submissions"],
   ["/admin/forms", "forms.builder"],
   ["/admin/study-quiz", "campaign.studyQuiz"],
+  ["/admin/consult/settings", "consult.settings"],
+  ["/admin/consult/students", "consult.students"],
+  ["/admin/consult/consultants", "consult.consultants"],
+  ["/admin/consult", "consult.view"],
   ["/admin/shop/orders", "shop.orders.view"],
   ["/admin/shop/pickup", "shop.pickup"],
   ["/admin/shop/products", "shop.products"],

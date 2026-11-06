@@ -231,3 +231,33 @@ scp root@SERVER:/var/backups/setareganplus-lean/weekly/sp-backup-….tar .
 
 ## 10. Smoke test after deploy
 `/`, `/shop` (open a booklet; do one real small purchase), `/education`, `/ghalamchi`, `/contact`, `/register` (submit a test, then archive it in `/admin/submissions`), `/admin/login`, and an export from `/admin/submissions`.
+
+Also open `/moshavere`. Until the steps in the next section are done it must show an empty calendar, not invented days.
+
+## 11. Free consultation (after migrate)
+
+`npx prisma migrate deploy` creates empty tables. It does **not** insert a consultant, a weekday, or a time. Nothing is bookable until you type it in the admin.
+
+Do these in order, as the site owner:
+
+1. **Permissions.** Admin → همکاران. Give the reception desk `میز مشاوره (فقط نوبت‌ها)` or the full `مشاوره کامل` preset. The owner already has every permission.
+2. **Consultant.** Admin → مشاوران → مشاور جدید. Type the real name, specialty, and photo. Tick فعال, the page they appear on (رایگان / ویژه), and آنلاین and/or حضوری. Save.
+3. **Weekly hours.** On that consultant, add each real weekday window (شنبه = ۰). Leave capacity empty for one person per slot, or set 1–20. Leave the length empty to use the default (30 minutes) from تنظیمات. A consultant with no window and no extra day never appears on the site.
+4. **Days off.** Add a تعطیلی for a holiday (whole day: leave the hours empty) or a ساعت اضافه for a one-off day. Dates are Jalali.
+5. **Enrolled students (special page only).** Admin → دانش‌آموزان ویژه. Add each student. Copy the code when it is shown; it is not stored in a readable form and will not be shown again. Put the school mobile on the row if you want them to book without a second SMS. Without that mobile they must confirm a phone by SMS.ir. Hand the code to the family in person. The page is `/moshavere-vizhe` (not in the sitemap, `noindex`).
+6. **SMS.** Keep using the existing `SMSIR_API_KEY` and `STAROS_SMS_ENABLED=true`. In Admin → پیامک مشاوره set the Verify template ids:
+   - OTP template with parameter `CODE` (required in production for the public page and for a special student who has no school mobile)
+   - optional templates for ثبت / لغو / جابه‌جایی / یادآوری with parameters `NAME`, `DATE`, `TIME`, `MODE`, `CONSULTANT`, `CODE` (each value is shortened to 25 characters, same as the shop)
+   Edit the Persian texts in that screen. They are what the family receives only when `SMSIR_LINE_NUMBER` is set in the server env and the template id is empty. Do not put the API key or the line number in git.
+7. **Reminder (optional).** Turn on یادآوری in the same screen, then on the server:
+
+```bash
+cd /var/www/setareganplus-lean
+pm2 start npm --name consult-reminders --cron "*/15 * * * *" --no-autorestart -- run consult:remind
+pm2 save
+```
+
+The process must exit (autorestart off). It is safe to run by hand: `npm run consult:remind -- --dry-run`. Reminders stay off until step 7’s checkbox is on. Cancel/reschedule messages still queue from the booking screen either way.
+8. **Do not** set `CONSULT_ALLOW_DEV_OTP=1` on the public server. That flag prints the SMS code on the page and is only for a local machine.
+
+Public booking: `/moshavere` (also linked from the home page, the menu, and the footer). Flow: online or in person, then a Jalali day and time in Asia/Tehran, then a named consultant or «سریع‌ترین مشاور آزاد». The phone is checked with SMS.ir before the seat is taken. Two upcoming public bookings per mobile. One upcoming special booking per student. Cancelling frees the seat. The database unique key `(consultant, start, seat)` is what stops a double booking.

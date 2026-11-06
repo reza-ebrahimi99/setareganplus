@@ -54,6 +54,7 @@ export default async function Home() {
   const honorTop = toppers(honors);
 
   const quick: { href: string; title: string; text: string; icon: IconName; tone: string }[] = [
+    { href: "/moshavere", title: "مشاوره رایگان", text: "۳۰ دقیقه، آنلاین یا حضوری، از دوم تا کنکور", icon: "chat", tone: "from-[#ffc83d] to-gold text-navy" },
     { href: "/test-motalee", title: "تست مطالعه", text: "الگوی درس خوندنت چیست؟ هدیه بگیر", icon: "help", tone: "from-royal to-royal-2 text-white" },
     { href: "/register", title: "پیش‌ثبت‌نام", text: "فرم کوتاه آنلاین، تماس همکاران ما", icon: "form", tone: "from-[#ffc83d] to-gold text-navy" },
     { href: "/shop", title: "فروشگاه جزوه", text: "خرید آنلاین، تحویل حضوری در شعبه", icon: "bag", tone: "from-royal to-royal-2 text-white" },

@@ -577,3 +577,195 @@ model AnalyticsDaily {
   @@unique([day, level, kind, path, source, medium, campaign], map: "AnalyticsDaily_bucket_key")
   @@index([day, kind, level])
 }
+
+// ───────────────────────── Free consultation booking ─────────────────────────
+// Schedules start empty. Nothing here is seeded: a consultant has no bookable
+// time until staff save a weekly window or an extra day.
+
+model Consultant {
+  id             String   @id @default(cuid())
+  name           String
+  specialty      String   @default("")
+  bio            String?  @db.Text
+  photo          String?
+  offersPublic   Boolean  @default(false)
+  offersSpecial  Boolean  @default(false)
+  offersOnline   Boolean  @default(false)
+  offersInPerson Boolean  @default(false)
+  /// Hidden until staff turn this on AND add a real window
+  active         Boolean  @default(false)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  windows       ConsultantWindow[]
+  exceptions    ConsultantException[]
+  consultations Consultation[]
+  seats         ConsultationSeat[]
+}
+
+/// Weekly hours in Asia/Tehran. weekday: 0 = Saturday … 6 = Friday.
+model ConsultantWindow {
+  id           String     @id @default(cuid())
+  consultantId String
+  consultant   Consultant @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+  weekday      Int
+  /// "HH:MM"
+  startTime    String
+  endTime      String
+  /// null = site default (settings, normally 30)
+  slotMinutes  Int?
+  /// null = 1
+  capacity     Int?
+  online       Boolean    @default(false)
+  inPerson     Boolean    @default(false)
+  /// PUBLIC | SPECIAL | BOTH
+  audience     String     @default("BOTH")
+
+  @@index([consultantId])
+}
+
+/// A day off or an extra working day. `date` is the Tehran civil date, YYYY-MM-DD.
+model ConsultantException {
+  id           String     @id @default(cuid())
+  consultantId String
+  consultant   Consultant @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+  date         String
+  /// OFF | EXTRA
+  kind         String
+  startTime    String?
+  endTime      String?
+  slotMinutes  Int?
+  capacity     Int?
+  online       Boolean    @default(false)
+  inPerson     Boolean    @default(false)
+  /// PUBLIC | SPECIAL | BOTH
+  audience     String     @default("BOTH")
+  note         String?
+
+  @@index([consultantId, date])
+}
+
+/// One reserved conversation. The seat row is what makes double-booking impossible.
+model Consultation {
+  id              String     @id @default(cuid())
+  /// Public reference shown to the family. Not a login secret.
+  code            String     @unique
+  /// PUBLIC | SPECIAL
+  audience        String
+  /// ONLINE | IN_PERSON
+  mode            String
+  /// PENDING | CONFIRMED | CANCELLED
+  status          String     @default("PENDING")
+  consultantId    String
+  consultant      Consultant @relation(fields: [consultantId], references: [id])
+  startsAt        DateTime
+  endsAt          DateTime
+  bookerName      String
+  /// PARENT | STUDENT
+  bookerRole      String
+  studentName     String
+  grade           String
+  mobile          String
+  /// SMS | ACCESS_CODE
+  phoneProof      String
+  note            String?    @db.Text
+  studentId       String?
+  student         EnrolledStudent? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  source          String     @default("")
+  medium          String     @default("")
+  campaign        String     @default("")
+  cancelReason    String?
+  cancelledAt     DateTime?
+  rescheduledFrom DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  seat            ConsultationSeat?
+  notices         ConsultNotice[]
+
+  @@index([status, startsAt])
+  @@index([mobile])
+  @@index([consultantId, startsAt])
+  @@index([audience, createdAt])
+  @@index([studentId])
+}
+
+/// Holds one place in a slot. Deleted when the booking is cancelled or moved.
+model ConsultationSeat {
+  id             String       @id @default(cuid())
+  consultantId   String
+  consultant     Consultant   @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+  startsAt       DateTime
+  seat           Int
+  consultationId String       @unique
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@unique([consultantId, startsAt, seat])
+}
+
+/// Enrolled student. The access code is stored only as an HMAC; staff see it once.
+model EnrolledStudent {
+  id          String         @id @default(cuid())
+  fullName    String
+  /// Trusted school phone. When set, the special session does not ask for another SMS.
+  mobile      String?
+  grade       String?
+  note        String?        @db.Text
+  active      Boolean        @default(true)
+  codeHash    String         @unique
+  /// Last 4 characters, so staff can recognise a slip. Not enough to sign in.
+  codeSuffix  String
+  /// Bumped when the code is replaced; old cookies stop working.
+  codeVersion Int            @default(1)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  consultations Consultation[]
+
+  @@index([active])
+  @@index([mobile])
+}
+
+model ConsultOtp {
+  id         String    @id @default(cuid())
+  mobile     String
+  codeHash   String
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  usedAt     DateTime?
+  ipHash     String?
+  createdAt  DateTime  @default(now())
+
+  @@index([mobile, createdAt])
+  @@index([expiresAt])
+}
+
+/// Failed and successful code attempts. Stores a hash of the IP, never the code.
+model ConsultCodeAttempt {
+  id        String   @id @default(cuid())
+  ipHash    String
+  ok        Boolean
+  createdAt DateTime @default(now())
+
+  @@index([ipHash, createdAt])
+}
+
+model ConsultNotice {
+  id             String       @id @default(cuid())
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  /// CREATED | CANCELLED | MOVED | REMINDER
+  kind           String
+  mobile         String
+  body           String       @db.Text
+  /// QUEUED | SENDING | SENT | FAILED | SKIPPED
+  status         String
+  detail         String?
+  /// Reminder idempotency: one reminder per booked instant.
+  slotStartsAt   DateTime?
+  createdAt      DateTime     @default(now())
+  sentAt         DateTime?
+
+  @@index([consultationId, kind])
+  @@index([status, createdAt])
+}

@@ -23,5 +23,14 @@ Everything seeded comes from the live site or the audit snapshot. Nothing is inv
 - [ ] **Multiple admin users / roles:** currently there is one env-configured admin.
 - [ ] Rate limiting is in-memory (single PM2 instance). Move it to nginx `limit_req` if you scale out.
 
+## Consultation booking — Reza sets these after deploy
+The scheduler ships with **no** consultant and **no** open time. See DEPLOY.md §11.
+- [ ] Add each real consultant (name, photo, specialty, online/in person, public and/or special).
+- [ ] Add that consultant’s real weekly hours and days off. Until then `/moshavere` stays empty on purpose.
+- [ ] Add enrolled students and hand each one-time code to the family. Optional: save the school mobile so the special page does not send a second SMS.
+- [ ] In SMS.ir, create a Verify template with `CODE` and paste its id into Admin → پیامک مشاوره. Optional template ids for created / cancelled / moved / reminder.
+- [ ] If you want the exact admin text (not a Verify template), set `SMSIR_LINE_NUMBER` on the server. Do not commit it.
+- [ ] Optional: enable the reminder and the PM2 cron in DEPLOY.md §11.
+
 ## Housekeeping
 - [ ] Old-DB data import (optional): see DEPLOY.md §7.

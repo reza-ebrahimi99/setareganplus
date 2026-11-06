@@ -10,6 +10,11 @@ const NAV = [
   { href: "/admin/submissions", label: "درخواست‌ها", icon: "M4 4h16v12H5.5L4 17.5zM8 9h8M8 12h5" },
   { href: "/admin/forms", label: "فرم‌ساز", icon: "M5 3h14v18H5zM8 8h8M8 12h8M8 16h5" },
   { href: "/admin/study-quiz", label: "کمپین تست مطالعه", icon: "M9 9a3 3 0 115 2c-1 1-2 1.5-2 3M12 18h.01M4 5h16v14H4z" },
+  { sep: "مشاوره" },
+  { href: "/admin/consult", label: "نوبت‌های مشاوره", icon: "M4 5h16v15H4zM4 9h16M8 3v4M16 3v4" },
+  { href: "/admin/consult/consultants", label: "مشاوران", icon: "M16 11a4 4 0 10-8 0M4 21a8 8 0 0116 0" },
+  { href: "/admin/consult/students", label: "دانش‌آموزان ویژه", icon: "M12 3l2.2 4.6L19 8.2l-3.5 3.4.8 4.9L12 14.8 7.7 16.5l.8-4.9L5 8.2l4.8-.6z" },
+  { href: "/admin/consult/settings", label: "پیامک مشاوره", icon: "M4 5h16v10H7l-3 3z" },
   { sep: "فروشگاه جزوه" },
   { href: "/admin/shop", label: "داشبورد فروش", icon: "M4 20V10M10 20V4M16 20v-7M22 20H2" },
   { href: "/admin/shop/orders", label: "سفارش‌ها", icon: "M6 2l-2 4v14a2 2 0 002 2h12a2 2 0 002-2V6l-2-4zM4 6h16M16 10a4 4 0 01-8 0" },
@@ -47,7 +52,7 @@ function visibleNav(perms: string[]): Entry[] {
   return out.filter((n, i) => !("sep" in n) || (out[i + 1] && !("sep" in out[i + 1])));
 }
 
-export function Sidebar({ newCount, todoCount = 0, logout, perms, user }: { newCount: number; todoCount?: number; logout: () => Promise<void>; perms: string[]; user: { name: string; username: string; owner: boolean } }) {
+export function Sidebar({ newCount, todoCount = 0, consultCount = 0, logout, perms, user }: { newCount: number; todoCount?: number; consultCount?: number; logout: () => Promise<void>; perms: string[]; user: { name: string; username: string; owner: boolean } }) {
   const path = usePathname();
   const nav = visibleNav(perms);
   // Longest matching href wins, so /admin/shop/orders does not also light up /admin/shop.
@@ -78,6 +83,7 @@ export function Sidebar({ newCount, todoCount = 0, logout, perms, user }: { newC
               {n.label}
               {n.href === "/admin/shop/orders" && todoCount > 0 && <span className="mr-auto rounded-full bg-gold px-2 text-xs font-bold text-navy">{todoCount.toLocaleString("fa-IR")}</span>}
               {n.href === "/admin/submissions" && newCount > 0 && <span className="mr-auto rounded-full bg-gold px-2 text-xs font-bold text-navy">{newCount.toLocaleString("fa-IR")}</span>}
+              {n.href === "/admin/consult" && consultCount > 0 && <span className="mr-auto rounded-full bg-gold px-2 text-xs font-bold text-navy">{consultCount.toLocaleString("fa-IR")}</span>}
             </Link>
           ),
         )}
