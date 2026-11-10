@@ -8,6 +8,9 @@ export const TEACHER = "مهندس رضا ابراهیمی";
  * 2_500_000 rials = ۲۵۰ هزار تومان. Staff should confirm this in the admin before advertising.
  */
 export const SEED_LIST_PRICE_RIALS = 2_500_000;
+/** Struck-through price shown on premium courses: ۴۹۰ هزار تومان. */
+export const PREMIUM_LIST_PRICE_RIALS = 4_900_000;
+export const NEW_LESSON_DAYS = 14;
 
 export const WATCH_POINTS = 20;
 export const QUIZ_POINT_EACH = 10;
@@ -102,6 +105,26 @@ export type PriceView =
   | { kind: "free"; list: number | null }
   | { kind: "sale"; list: number; sale: number; off: number }
   | { kind: "full"; price: number };
+
+export function courseShowsPremium(course: { isPremium?: boolean }, lessons: { isPremium?: boolean; published?: boolean }[]) {
+  if (course.isPremium) return true;
+  return lessons.some((l) => l.isPremium && l.published !== false);
+}
+
+/** Premium courses that still carry the archive list price display ۴۹۰ هزار تومان. A custom admin price is kept. */
+export function presentPrice<T extends { isFree: boolean; priceRials: number }>(course: T, premium: boolean): T {
+  if (!premium || !course.isFree) return course;
+  if (course.priceRials === 0 || course.priceRials === SEED_LIST_PRICE_RIALS) return { ...course, priceRials: PREMIUM_LIST_PRICE_RIALS };
+  return course;
+}
+
+export function isNewLesson(createdAt: Date, now = Date.now()) {
+  return now - createdAt.getTime() < NEW_LESSON_DAYS * 24 * 60 * 60 * 1000;
+}
+
+export function orderLessons<T extends { isPremium?: boolean; sortOrder: number }>(lessons: T[]) {
+  return [...lessons].sort((a, b) => Number(!!b.isPremium) - Number(!!a.isPremium) || a.sortOrder - b.sortOrder);
+}
 
 export function coursePrice(c: PriceInput): PriceView {
   if (c.isFree) return { kind: "free", list: c.priceRials > 0 ? c.priceRials : null };

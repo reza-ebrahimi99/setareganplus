@@ -6,11 +6,16 @@ import { PageTitle, Flash } from "@/components/admin/ui";
 import { formatToman } from "@/lib/shop/config";
 import { syncBankNow } from "./actions";
 
-export default async function AdminClasses({ searchParams }: { searchParams: Promise<{ ok?: string; e?: string; synced?: string }> }) {
+export default async function AdminClasses({ searchParams }: { searchParams: Promise<{ ok?: string; e?: string; synced?: string; premium?: string }> }) {
   await requirePerm("classes.manage");
   const sp = await searchParams;
+  const onlyPremium = sp.premium === "1";
   const [courses, sync] = await Promise.all([
-    prisma.classCourse.findMany({ orderBy: { sortOrder: "asc" }, include: { _count: { select: { lessons: true, enrollments: true } } } }),
+    prisma.classCourse.findMany({
+      where: onlyPremium ? { OR: [{ isPremium: true }, { lessons: { some: { isPremium: true } } }] } : {},
+      orderBy: { sortOrder: "asc" },
+      include: { _count: { select: { lessons: true, enrollments: true } }, lessons: { where: { isPremium: true }, select: { id: true } } },
+    }),
     prisma.bankSync.findUnique({ where: { id: "main" } }).catch(() => null),
   ]);
   const bankCount = await prisma.bankQuestion.count({ where: { active: true } }).catch(() => 0);
@@ -27,6 +32,8 @@ export default async function AdminClasses({ searchParams }: { searchParams: Pro
         <Link href="/admin/classes/import" className="btn-ghost px-3 py-1.5">ورود دستی سؤال</Link>
         <form action={syncBankNow}><button className="btn-navy px-3 py-1.5">همگام‌سازی بانک سؤال</button></form>
         <span className="text-xs text-muted">{bankCount.toLocaleString("fa-IR")} سؤال فعال{sync ? ` · تا شناسه ${sync.sinceId}` : ""}</span>
+        <Link href="/admin/classes" className={`rounded-full px-3 py-1 text-xs font-bold ${!onlyPremium ? "bg-navy text-white" : "text-navy"}`}>همه</Link>
+        <Link href="/admin/classes?premium=1" className={`rounded-full px-3 py-1 text-xs font-bold ${onlyPremium ? "bg-navy text-white" : "text-navy"}`}>فقط پریمیوم</Link>
       </div>
       <div className="overflow-x-auto rounded-2xl border border-line bg-paper">
         <table className="w-full text-sm">
@@ -34,7 +41,7 @@ export default async function AdminClasses({ searchParams }: { searchParams: Pro
           <tbody>
             {courses.map((c) => (
               <tr key={c.id} className="border-t border-line">
-                <td className="p-3"><Link href={`/admin/classes/${c.id}`} className="font-bold text-navy">{c.title}</Link><span className="mr-2 text-xs text-muted">{c.published ? "" : "پنهان"}</span></td>
+                <td className="p-3"><Link href={`/admin/classes/${c.id}`} className="font-bold text-navy">{c.title}</Link>{(c.isPremium || c.lessons.length > 0) && <span className="mr-2 rounded-full bg-gold/30 px-2 text-xs font-bold text-gold-ink">پریمیوم</span>}<span className="mr-2 text-xs text-muted">{c.published ? "" : "پنهان"}</span></td>
                 <td className="p-3 text-center">{fa(c._count.lessons)}</td>
                 <td className="p-3 text-center">{fa(c._count.enrollments)}</td>
                 <td className="p-3">{c.isFree ? "رایگان" : formatToman(c.salePriceRials && c.salePriceRials < c.priceRials ? c.salePriceRials : c.priceRials)}</td>

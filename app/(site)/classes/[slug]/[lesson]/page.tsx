@@ -7,13 +7,14 @@ import { buildMeta } from "@/lib/seo";
 import { JsonLd } from "@/components/site/JsonLd";
 import { breadcrumbLd } from "@/lib/ld";
 import { siteUrl } from "@/lib/shop/config";
-import { canWatchLesson, formatClock, lessonPath } from "@/lib/classes/catalog";
+import { canWatchLesson, formatClock, isNewLesson, lessonPath } from "@/lib/classes/catalog";
 import { getClassStudent } from "@/lib/classes/session";
 import { touchOpen } from "@/lib/classes/watch";
 import { renderMath } from "@/lib/classes/math";
 import { drawBankQuiz } from "@/lib/classes/quiz-pool";
 import { signDraw } from "@/lib/classes/draw";
 import { Player } from "@/components/classes/Player";
+import { NewChip, PremiumBadge } from "@/components/classes/ui";
 import { QuizBox } from "@/components/classes/QuizBox";
 import { Upsell } from "@/components/classes/Upsell";
 import { askQuestion } from "../../actions";
@@ -35,7 +36,7 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
   const lesson = await prisma.classLesson.findFirst({
     where: { aparatHash: hash, published: true, course: { slug, published: true } },
     include: {
-      course: { include: { lessons: { where: { published: true }, orderBy: { sortOrder: "asc" }, select: { id: true, title: true, aparatHash: true, durationSec: true, freePreview: true } } } },
+      course: { include: { lessons: { where: { published: true }, orderBy: { sortOrder: "asc" }, select: { id: true, title: true, aparatHash: true, durationSec: true, freePreview: true, isPremium: true, sortOrder: true } } } },
       questions: { where: { published: true }, orderBy: { sortOrder: "asc" }, include: { choices: { orderBy: { sortOrder: "asc" } } } },
       files: { where: { published: true }, orderBy: { sortOrder: "asc" } },
       threads: { where: { status: "PUBLISHED" }, orderBy: { createdAt: "asc" }, include: { replies: { orderBy: { createdAt: "asc" } }, student: { select: { firstName: true, lastName: true } } } },
@@ -74,7 +75,7 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
               <li key={l.id}>
                 <Link href={lessonPath(slug, l.aparatHash)} aria-current={l.id === lesson.id ? "page" : undefined} className="flex items-center gap-2 px-2 py-2 text-sm">
                   <span className="grid size-6 shrink-0 place-items-center rounded-full bg-black/5 text-xs font-bold">{fa(i + 1)}</span>
-                  <span className="min-w-0 flex-1 font-bold">{l.title}</span>
+                  <span className="min-w-0 flex-1 font-bold">{l.title}{l.isPremium ? " · HD" : ""}</span>
                   <span className="cl-muted text-xs">{l.durationSec ? fa(formatClock(l.durationSec)) : ""}</span>
                 </Link>
               </li>
@@ -84,7 +85,11 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
         <div className="space-y-5">
           <div>
             <p className="cl-muted text-sm">{lesson.course.teacher}</p>
-            <h1 className="cl-display text-3xl">{lesson.title}</h1>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <h1 className="cl-display text-3xl">{lesson.title}</h1>
+              {lesson.isPremium && <PremiumBadge />}
+              {isNewLesson(lesson.createdAt) && <NewChip />}
+            </div>
           </div>
           {sp.e && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-800">{sp.e}</p>}
           {sp.ok === "ask" && <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">سؤالت ثبت شد و بعد از تأیید نمایش داده می‌شود.</p>}

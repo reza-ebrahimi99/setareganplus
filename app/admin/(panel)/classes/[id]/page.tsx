@@ -5,7 +5,7 @@ import { requirePerm } from "@/lib/auth";
 import { PageTitle, Panel, Field, Area, Check, Flash } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { FIELDS, GRADES } from "@/lib/classes/catalog";
-import { saveCourse, addLesson, saveFile, manualEnroll, saveChapters } from "../actions";
+import { saveCourse, addLesson, saveFile, manualEnroll, saveChapters, setLessonPremium } from "../actions";
 import { readChapterCatalog } from "@/lib/classes/bank-sync";
 
 export default async function EditCourse({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; e?: string }> }) {
@@ -50,6 +50,7 @@ export default async function EditCourse({ params, searchParams }: { params: Pro
           </div>
           <div className="flex flex-wrap gap-4">
             <Check label="رایگان" name="isFree" defaultChecked={course.isFree} />
+            <Check label="پریمیوم (کل دوره)" name="isPremium" defaultChecked={course.isPremium} />
             <Check label="پیشنهاد مشاوره" name="suggestConsult" defaultChecked={course.suggestConsult} />
             <Check label="منتشر" name="published" defaultChecked={course.published} />
           </div>
@@ -71,9 +72,13 @@ export default async function EditCourse({ params, searchParams }: { params: Pro
       <Panel title="جلسه‌ها" className="mt-6">
         <ul className="divide-y divide-line">
           {course.lessons.map((l) => (
-            <li key={l.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+            <li key={l.id} className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
               <Link href={`/admin/classes/lessons/${l.id}`} className="font-bold text-navy">{l.title}</Link>
-              <span className="text-muted" dir="ltr">{l.freePreview ? "preview" : ""} {l.published ? "" : "hidden"}</span>
+              <form action={setLessonPremium} className="flex items-center gap-2">
+                <input type="hidden" name="id" value={l.id} />
+                <label className="inline-flex items-center gap-1 font-bold"><input type="checkbox" name="isPremium" defaultChecked={l.isPremium} className="accent-navy" /> پریمیوم</label>
+                <button className="rounded-full bg-navy px-3 py-1 text-xs font-bold text-white">ثبت</button>
+              </form>
             </li>
           ))}
         </ul>
@@ -84,6 +89,7 @@ export default async function EditCourse({ params, searchParams }: { params: Pro
           <Field label="ترتیب" name="sortOrder" type="number" defaultValue={course.lessons.length} />
           <Field label="مدت (دقیقه)" name="durationMin" type="number" />
           <Check label="پیش‌نمایش رایگان" name="freePreview" />
+          <Check label="پریمیوم" name="isPremium" defaultChecked />
           <SubmitButton>افزودن جلسه</SubmitButton>
         </form>
       </Panel>

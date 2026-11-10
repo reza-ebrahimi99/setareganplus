@@ -32,6 +32,21 @@ export function Cover({ slug, title, teacher, cover }: { slug: string; title: st
   );
 }
 
+export function PremiumBadge() {
+  return (
+    <span className="cl-premium">
+      <svg viewBox="0 0 24 24" aria-hidden="true" className="size-3.5" fill="currentColor">
+        <path d="M12 2.2l1.7 3.9 4.2.4-3.2 2.8.9 4.1L12 11.4 8.4 13.4l.9-4.1L6.1 6.5l4.2-.4L12 2.2z" />
+      </svg>
+      پریمیوم | HD
+    </span>
+  );
+}
+
+export function NewChip() {
+  return <span className="cl-new">جدید</span>;
+}
+
 export function PriceTag({ course, light = false }: { course: PriceInput; light?: boolean }) {
   const p = coursePrice(course);
   if (p.kind === "free") {

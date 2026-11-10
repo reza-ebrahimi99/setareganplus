@@ -43,7 +43,7 @@ export default async function EditLesson({ params, searchParams }: { params: Pro
             {GRADES.map((g) => <label key={g.id}><input type="checkbox" name="grades" value={g.id} defaultChecked={lesson.grades.includes(g.id)} /> {g.label}</label>)}
             {FIELDS.map((f) => <label key={f.id}><input type="checkbox" name="fields" value={f.id} defaultChecked={lesson.fields.includes(f.id)} /> {f.label}</label>)}
           </div>
-          <div className="flex gap-4"><Check label="پیش‌نمایش رایگان" name="freePreview" defaultChecked={lesson.freePreview} /><Check label="منتشر" name="published" defaultChecked={lesson.published} /></div>
+          <div className="flex gap-4"><Check label="پیش‌نمایش رایگان" name="freePreview" defaultChecked={lesson.freePreview} /><Check label="پریمیوم" name="isPremium" defaultChecked={lesson.isPremium} /><Check label="منتشر" name="published" defaultChecked={lesson.published} /></div>
           <SubmitButton>ذخیره</SubmitButton>
         </form>
         <form action={saveChapters} className="mt-4 space-y-2">

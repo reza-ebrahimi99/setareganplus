@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { acceptWatchDelta, chargeRials, coursePrice, devOtpAllowed, lessonFraction, parseAparatHash, publicName, quizPoints, safeNext, tehranWeekStart } from "./catalog";
+import { acceptWatchDelta, chargeRials, coursePrice, courseShowsPremium, devOtpAllowed, lessonFraction, parseAparatHash, presentPrice, publicName, quizPoints, safeNext, tehranWeekStart, PREMIUM_LIST_PRICE_RIALS, SEED_LIST_PRICE_RIALS } from "./catalog";
 import { parseCsv } from "./csv";
 import { buildCatalog, toRaw } from "./map";
 import { renderMath } from "./math";
@@ -65,6 +65,12 @@ test("price, access math, heartbeat and privacy helpers", () => {
   assert.equal(quizPoints(4, 4), 55);
   assert.equal(publicName("رضا", "ابراهیمی"), "رضا ا.");
   assert.equal(tehranWeekStart(new Date("2026-11-10T12:00:00+03:30")), "2026-11-07");
+  assert.equal(courseShowsPremium({ isPremium: false }, [{ isPremium: true }]), true);
+  assert.equal(courseShowsPremium({ isPremium: true }, []), true);
+  assert.equal(courseShowsPremium({}, [{ isPremium: false }]), false);
+  assert.equal(presentPrice({ isFree: true, priceRials: SEED_LIST_PRICE_RIALS }, true).priceRials, PREMIUM_LIST_PRICE_RIALS);
+  assert.equal(presentPrice({ isFree: true, priceRials: 1230 }, true).priceRials, 1230);
+  assert.equal(chargeRials(presentPrice({ isFree: true, priceRials: SEED_LIST_PRICE_RIALS, salePriceRials: null }, true)), 0);
 });
 
 test("qbank json and math escaping", () => {

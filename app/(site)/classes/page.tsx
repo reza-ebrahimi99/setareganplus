@@ -5,9 +5,9 @@ import { fa } from "@/lib/format";
 import { buildMeta } from "@/lib/seo";
 import { JsonLd } from "@/components/site/JsonLd";
 import { breadcrumbLd } from "@/lib/ld";
-import { FIELDS, GRADES, fieldsLabel } from "@/lib/classes/catalog";
+import { FIELDS, GRADES, courseShowsPremium, fieldsLabel, presentPrice } from "@/lib/classes/catalog";
 import { getClassStudent } from "@/lib/classes/session";
-import { Cover, EmptyState, MetaLine, PriceTag } from "@/components/classes/ui";
+import { Cover, EmptyState, MetaLine, PremiumBadge, PriceTag } from "@/components/classes/ui";
 
 type SP = { q?: string; grade?: string; field?: string; topic?: string };
 
@@ -50,13 +50,14 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
     prisma.classCourse.findMany({
       where,
       orderBy: { sortOrder: "asc" },
-      include: { lessons: { where: { published: true }, select: { durationSec: true } }, _count: { select: { enrollments: true } } },
+      include: { lessons: { where: { published: true }, select: { durationSec: true, isPremium: true } }, _count: { select: { enrollments: true } } },
     }),
     prisma.classCourse.findMany({ where: { published: true, kind: "TOPIC" }, orderBy: { sortOrder: "asc" }, select: { slug: true, title: true } }),
     student ? prisma.classPath.findFirst({ where: { published: true, grade: student.grade, field: student.field || "" }, include: { steps: { orderBy: { sortOrder: "asc" }, include: { course: { select: { slug: true, title: true, published: true } } } } } }) : null,
     student ? prisma.classEnrollment.findMany({ where: { studentId: student.id }, select: { courseId: true } }) : [],
   ]);
   const enrolled = new Set(mine.map((m) => m.courseId));
+  const premiumCourses = courses.filter((c) => courseShowsPremium(c, c.lessons));
   const topicsOnly = courses.filter((c) => c.kind === "TOPIC");
   const gradesOnly = courses.filter((c) => c.kind === "GRADE");
   const steps = (pathRow?.steps ?? []).filter((s) => s.course.published);
@@ -107,7 +108,30 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
         <div className="mt-8"><EmptyState title="دوره‌ای با این فیلتر نیست" text="پایه یا رشته را عوض کن، یا جست‌وجو را پاک کن." href="/classes" action="همهٔ دوره‌ها" /></div>
       ) : (
         <>
-          <CourseGrid title="دوره‌های مبحثی" items={topicsOnly} enrolled={enrolled} />
+          {premiumCourses.length > 0 && (
+            <section className="mt-8">
+              <p className="text-sm font-extrabold text-[#b8860b]">سری تازه</p>
+              <h2 className="cl-display mt-1 text-3xl">ستارگان پلاس پریمیوم</h2>
+              <p className="cl-muted mt-2 max-w-2xl text-sm leading-7">ضبط‌های جدید روی تختهٔ هوشمند، با جلد اختصاصی و زیرنویس. همان مباحث، کیفیت بالاتر.</p>
+              <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                {premiumCourses.map((c) => {
+                  const seconds = c.lessons.reduce((s, l) => s + (l.durationSec || 0), 0);
+                  return (
+                    <Link key={c.id} href={`/classes/${c.slug}`} className="cl-premium-card cl-lift">
+                      <Cover slug={c.slug} title={c.title} teacher={c.teacher} cover={c.cover} />
+                      <div className="space-y-3 p-5">
+                        <div className="flex flex-wrap items-center gap-2"><PremiumBadge /><PriceTag course={presentPrice(c, true)} light /></div>
+                        <h3 className="cl-display text-2xl">{c.title}</h3>
+                        <p className="text-sm text-white/70">{c.teacher} · {fa(c.lessons.filter((l) => l.isPremium).length)} جلسهٔ پریمیوم</p>
+                        <MetaLine lessons={c.lessons.length} seconds={seconds} grades={c.grades} fields={c.fields} />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+          <CourseGrid title="آرشیو کلاس‌ها" items={topicsOnly} enrolled={enrolled} />
           {gradesOnly.length > 0 && <CourseGrid title="کلاس‌ها بر اساس پایه" items={gradesOnly} enrolled={enrolled} />}
         </>
       )}
@@ -116,7 +140,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
   );
 }
 
-function CourseGrid({ title, items, enrolled }: { title: string; items: { id: string; slug: string; title: string; teacher: string; cover: string | null; grades: string[]; fields: string[]; isFree: boolean; priceRials: number; salePriceRials: number | null; lessons: { durationSec: number | null }[] }[]; enrolled: Set<string> }) {
+function CourseGrid({ title, items, enrolled }: { title: string; items: { id: string; slug: string; title: string; teacher: string; cover: string | null; grades: string[]; fields: string[]; isFree: boolean; isPremium: boolean; priceRials: number; salePriceRials: number | null; lessons: { durationSec: number | null; isPremium: boolean }[] }[]; enrolled: Set<string> }) {
   if (items.length === 0) return null;
   return (
     <section className="mt-8">
@@ -124,12 +148,14 @@ function CourseGrid({ title, items, enrolled }: { title: string; items: { id: st
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((c) => {
           const seconds = c.lessons.reduce((s, l) => s + (l.durationSec || 0), 0);
+          const premium = courseShowsPremium(c, c.lessons);
           return (
             <Link key={c.id} href={`/classes/${c.slug}`} className="cl-card cl-lift overflow-hidden">
               <Cover slug={c.slug} title={c.title} teacher={c.teacher} cover={c.cover} />
               <div className="space-y-2 p-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <PriceTag course={c} />
+                  {premium && <PremiumBadge />}
+                  <PriceTag course={presentPrice(c, premium)} />
                   {enrolled.has(c.id) && <span className="cl-badge cl-badge-gold">ثبت‌نام شده</span>}
                 </div>
                 <h3 className="cl-display text-xl">{c.title}</h3>

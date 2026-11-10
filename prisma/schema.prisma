@@ -797,6 +797,8 @@ model ClassCourse {
   /// Shop product slug for the lesson upsell. Empty = no booklet card.
   bookletSlug    String   @default("")
   suggestConsult Boolean  @default(true)
+  /// Course-level premium flag. The course is also premium when any lesson is.
+  isPremium      Boolean  @default(false)
   published      Boolean  @default(true)
   sortOrder      Int      @default(0)
   createdAt      DateTime @default(now())
@@ -827,6 +829,8 @@ model ClassLesson {
   poster      String?
   /// Watchable after login without buying the course.
   freePreview Boolean     @default(false)
+  /// Smart-board recording in the premium series. Archive lessons stay false.
+  isPremium   Boolean     @default(false)
   grades      String[]    @default([])
   fields      String[]    @default([])
   sortOrder   Int         @default(0)

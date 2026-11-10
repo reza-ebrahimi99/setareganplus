@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePerm, logAction } from "@/lib/auth";
 import { b, n, s, sn, imageField } from "@/lib/admin";
-import { FIELDS, GRADES, MAX_QUIZ_QUESTIONS, isFieldId, isGrade, parseAparatHash } from "@/lib/classes/catalog";
+import { FIELDS, GRADES, MAX_QUIZ_QUESTIONS, PREMIUM_LIST_PRICE_RIALS, SEED_LIST_PRICE_RIALS, isFieldId, isGrade, parseAparatHash } from "@/lib/classes/catalog";
 import { parseQbank } from "@/lib/classes/qbank";
 import { saveClassPdf } from "@/lib/classes/files";
 import { normalizeIranMobile } from "@/lib/format";
@@ -31,6 +31,7 @@ export async function saveCourse(fd: FormData) {
     priceRials: priceToman * 10,
     salePriceRials: saleRaw ? Math.max(0, n(fd, "saleToman")) * 10 : null,
     isFree: b(fd, "isFree"),
+    isPremium: b(fd, "isPremium"),
     bookletSlug: s(fd, "bookletSlug"),
     suggestConsult: b(fd, "suggestConsult"),
     published: b(fd, "published"),
@@ -42,6 +43,7 @@ export async function saveCourse(fd: FormData) {
   const row = id
     ? await prisma.classCourse.update({ where: { id }, data: { ...data, cover } })
     : await prisma.classCourse.create({ data: { ...data, cover, kind: "TOPIC" } });
+  if (data.isPremium) await applyPremiumPrice(row.id);
   await logAction(me, "class.course", data.title, row.id);
   revalidatePath("/classes");
   revalidatePath(`/classes/${row.slug}`);
@@ -55,11 +57,13 @@ export async function addLesson(fd: FormData) {
   const course = await prisma.classCourse.findUnique({ where: { id: courseId } });
   if (!course || !hash) redirect(`/admin/classes/${courseId}?e=link`);
   const title = s(fd, "title") || `جلسه ${hash}`;
+  const premium = b(fd, "isPremium");
   const row = await prisma.classLesson.upsert({
     where: { aparatHash: hash },
-    create: { courseId, aparatHash: hash, title, description: sn(fd, "description"), durationSec: n(fd, "durationMin") ? n(fd, "durationMin") * 60 : null, freePreview: b(fd, "freePreview"), sortOrder: n(fd, "sortOrder"), grades: course.grades, fields: course.fields, published: true },
-    update: { courseId, title, freePreview: b(fd, "freePreview"), sortOrder: n(fd, "sortOrder"), published: true },
+    create: { courseId, aparatHash: hash, title, description: sn(fd, "description"), durationSec: n(fd, "durationMin") ? n(fd, "durationMin") * 60 : null, freePreview: b(fd, "freePreview"), isPremium: premium, sortOrder: n(fd, "sortOrder"), grades: course.grades, fields: course.fields, published: true },
+    update: { courseId, title, freePreview: b(fd, "freePreview"), isPremium: premium, sortOrder: n(fd, "sortOrder"), published: true },
   });
+  if (premium) await applyPremiumPrice(course.id);
   await logAction(me, "class.lesson", title, row.id);
   revalidatePath(`/classes/${course.slug}`);
   redirect(`/admin/classes/lessons/${row.id}?ok=1`);
@@ -77,13 +81,34 @@ export async function saveLesson(fd: FormData) {
       freePreview: b(fd, "freePreview"),
       sortOrder: n(fd, "sortOrder"),
       published: b(fd, "published"),
+      isPremium: b(fd, "isPremium"),
       courseId: s(fd, "courseId") || undefined,
       grades: checked(fd, "grades").filter(isGrade),
       fields: checked(fd, "fields").filter(isFieldId),
     },
   });
   await logAction(me, "class.lesson", row.title, row.id);
+  if (row.isPremium) await applyPremiumPrice(row.courseId);
   redirect(`/admin/classes/lessons/${row.id}?ok=1`);
+}
+
+async function applyPremiumPrice(courseId: string) {
+  const course = await prisma.classCourse.findUnique({ where: { id: courseId }, select: { isFree: true, priceRials: true } });
+  if (!course?.isFree) return;
+  if (course.priceRials === 0 || course.priceRials === SEED_LIST_PRICE_RIALS) {
+    await prisma.classCourse.update({ where: { id: courseId }, data: { priceRials: PREMIUM_LIST_PRICE_RIALS } });
+  }
+}
+
+export async function setLessonPremium(fd: FormData) {
+  await requirePerm("classes.manage");
+  const id = s(fd, "id");
+  const isPremium = b(fd, "isPremium");
+  const row = await prisma.classLesson.update({ where: { id }, data: { isPremium }, select: { courseId: true, course: { select: { slug: true } } } });
+  if (isPremium) await applyPremiumPrice(row.courseId);
+  revalidatePath(`/classes/${row.course.slug}`);
+  revalidatePath("/classes");
+  redirect(`/admin/classes/${row.courseId}?ok=1`);
 }
 
 export async function deleteLesson(fd: FormData) {
