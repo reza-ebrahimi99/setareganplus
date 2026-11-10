@@ -7,10 +7,11 @@ import { buildMeta } from "@/lib/seo";
 import { JsonLd } from "@/components/site/JsonLd";
 import { breadcrumbLd } from "@/lib/ld";
 import { siteUrl } from "@/lib/shop/config";
-import { chargeRials, courseShowsPremium, formatClock, formatLength, isNewLesson, lessonPath, orderLessons, presentPrice } from "@/lib/classes/catalog";
+import { chargeRials, classJoinPath, courseShowsPremium, formatClock, formatLength, isNewLesson, lessonPath, orderLessons, presentPrice } from "@/lib/classes/catalog";
 import { getClassStudent } from "@/lib/classes/session";
 import { Cover, MetaLine, NewChip, PremiumBadge, PriceTag, Ring } from "@/components/classes/ui";
-import { enrollAction, checkoutAction } from "../actions";
+import { checkoutAction } from "../actions";
+import { CourseFileList } from "@/components/classes/Files";
 import { lessonFraction } from "@/lib/classes/catalog";
 import { Upsell } from "@/components/classes/Upsell";
 
@@ -106,14 +107,7 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
               </>
             )}
           </section>
-          {course.files.length > 0 && (
-            <section className="cl-card mt-6 p-5">
-              <h2 className="font-extrabold">فایل‌های دوره</h2>
-              <ul className="mt-2 space-y-2">
-                {course.files.map((f) => <li key={f.id}><Link className="font-bold text-[#2f5bea]" href={student && enrolled ? `/classes/files/${f.id}` : `/classes/login?next=/classes/files/${f.id}`}>{f.title}</Link></li>)}
-              </ul>
-            </section>
-          )}
+          <CourseFileList files={course.files} slug={course.slug} loggedIn={!!student} enrolled={!!enrolled} />
         </div>
         <aside className="cl-sticky space-y-4">
           <div className="cl-card p-5">
@@ -121,14 +115,15 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
             <p className="cl-muted mt-2 text-sm">{seconds > 0 ? fa(formatLength(seconds)) : "چند جلسه"} · {fa(course.lessons.length)} جلسه</p>
             {student && enrolled && <div className="mt-4"><Ring value={overall} /></div>}
             <div className="mt-4 grid gap-2">
-              {!student && <Link href={`/classes/login?next=/classes/${course.slug}`} className="btn-gold text-center">ورود و ثبت‌نام</Link>}
+              {!student && <Link href={classJoinPath(course.slug)} className="btn-gold text-center">ورود و ثبت‌نام</Link>}
               {student && !enrolled && price <= 0 && (
-                <form action={enrollAction.bind(null, course.id)}><button className="btn-gold w-full">ثبت‌نام رایگان</button></form>
+                <Link href={classJoinPath(course.slug)} className="btn-gold text-center">ثبت‌نام در دوره</Link>
               )}
               {student && !enrolled && price > 0 && (
                 <form action={checkoutAction.bind(null, course.id)}><button className="btn-gold w-full">پرداخت و ثبت‌نام</button></form>
               )}
               {student && enrolled && nextLesson && <Link href={lessonPath(course.slug, nextLesson.aparatHash)} className="btn-primary text-center">ادامهٔ تماشا</Link>}
+              {student && enrolled && <Link href="/classes/me" className="btn-ghost text-center">دوره‌های من</Link>}
             <Link href={`/classes/${course.slug}/practice`} className="btn-ghost text-center">نمونه سؤال و تمرین بیشتر</Link>
             </div>
           </div>

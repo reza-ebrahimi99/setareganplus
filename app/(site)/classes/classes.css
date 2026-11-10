@@ -209,6 +209,18 @@
   border: 1px solid rgb(244 178 27 / 0.35);
   box-shadow: 0 24px 50px -28px rgb(10 26 63 / 0.85);
 }
+.cl-file {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-radius: 1.15rem;
+  border: 1px solid rgb(244 178 27 / 0.45);
+  background: linear-gradient(270deg, rgb(244 178 27 / 0.16), var(--cl-soft));
+  padding: 0.75rem;
+}
+@media (min-width: 640px) {
+  .cl-file { flex-direction: row; align-items: center; }
+}
 .cl-premium-card .cl-cover { min-height: 11rem; }
 .cl-premium-card .cl-muted { color: rgb(255 255 255 / 0.72); }
 @media (prefers-reduced-motion: reduce) {

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fa, jalaliDateTime } from "@/lib/format";
 import { buildMeta } from "@/lib/seo";
-import { BADGES, lessonFraction, lessonPath } from "@/lib/classes/catalog";
+import { BADGES, lessonFraction, lessonPath, orderLessons } from "@/lib/classes/catalog";
 import { getClassStudent } from "@/lib/classes/session";
 import { EmptyState, Ring } from "@/components/classes/ui";
 import { logoutClass } from "../actions";
@@ -63,19 +63,21 @@ export default async function MePage() {
       )}
       <section>
         <h2 className="cl-display text-2xl">دوره‌های ثبت‌نام‌شده</h2>
-        {enrolls.length === 0 ? <div className="mt-3"><EmptyState title="هنوز دوره‌ای نداری" text="یک دورهٔ رایگان را باز کن و ثبت‌نام کن." href="/classes" action="دیدن دوره‌ها" /></div> : (
+        {enrolls.filter((e) => e.course.published).length === 0 ? <div className="mt-3"><EmptyState title="هنوز دوره‌ای نداری" text="یک دورهٔ رایگان را باز کن و ثبت‌نام کن." href="/classes" action="دیدن دوره‌ها" /></div> : (
           <div className="mt-3 grid gap-3">
-            {enrolls.map((e) => {
-              const lessons = e.course.lessons;
+            {enrolls.filter((e) => e.course.published).map((e) => {
+              const lessons = orderLessons(e.course.lessons);
               const frac = lessons.length ? lessons.reduce((s, l) => s + lessonFraction({ watchedSec: prog.get(l.id)?.secondsWatched ?? 0, durationSec: l.durationSec, completed: !!prog.get(l.id)?.completed, quizScore: best.get(l.id)?.score ?? null, quizTotal: best.get(l.id)?.total ?? null, hasQuiz: l.questions.length > 0 }), 0) / lessons.length : 0;
+              const first = lessons[0];
               return (
-                <Link key={e.id} href={`/classes/${e.course.slug}`} className="cl-card flex items-center justify-between gap-3 p-4">
-                  <span>
+                <div key={e.id} className="cl-card flex flex-wrap items-center justify-between gap-3 p-4">
+                  <Link href={`/classes/${e.course.slug}`} className="min-w-0 flex-1">
                     <b className="block">{e.course.title}</b>
                     <span className="cl-muted text-sm">{fa(lessons.length)} جلسه</span>
-                  </span>
+                  </Link>
                   <Ring value={frac} />
-                </Link>
+                  {first && <Link href={lessonPath(e.course.slug, first.aparatHash)} className="btn-gold px-4 py-2 text-sm">تماشای جلسه‌ها</Link>}
+                </div>
               );
             })}
           </div>

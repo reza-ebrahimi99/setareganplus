@@ -33,18 +33,29 @@ export async function logoutClass() {
   redirect("/classes");
 }
 
-export async function enrollAction(courseId: string) {
+/** Create the free enrollment row. Paid courses are refused so the caller can send the student to payment. */
+export async function grantFreeEnrollment(courseId: string) {
   const student = await getClassStudent();
   const course = await prisma.classCourse.findUnique({ where: { id: courseId } });
-  if (!course || !course.published) redirect("/classes");
-  if (!student) redirect(`/classes/login?next=${encodeURIComponent(`/classes/${course.slug}`)}`);
-  if (chargeRials(course) > 0) redirect(`/classes/${course.slug}?e=pay`);
+  if (!course || !course.published) return { ok: false as const, reason: "missing" as const };
+  if (!student) return { ok: false as const, reason: "login" as const, slug: course.slug };
+  if (chargeRials(course) > 0) return { ok: false as const, reason: "pay" as const, slug: course.slug };
   await prisma.classEnrollment.upsert({
     where: { studentId_courseId: { studentId: student.id, courseId } },
     create: { studentId: student.id, courseId, source: "FREE" },
     update: {},
   });
-  redirect(`/classes/${course.slug}?ok=1`);
+  return { ok: true as const, slug: course.slug };
+}
+
+export async function enrollAction(courseId: string) {
+  const result = await grantFreeEnrollment(courseId);
+  if (!result.ok) {
+    if (result.reason === "login") redirect(`/classes/login?next=${encodeURIComponent(`/classes/${result.slug}/join`)}`);
+    if (result.reason === "pay") redirect(`/classes/${result.slug}?e=pay`);
+    redirect("/classes");
+  }
+  redirect(`/classes/${result.slug}?ok=1`);
 }
 
 export async function checkoutAction(courseId: string) {

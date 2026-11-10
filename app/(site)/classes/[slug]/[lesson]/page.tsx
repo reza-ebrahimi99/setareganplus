@@ -7,7 +7,7 @@ import { buildMeta } from "@/lib/seo";
 import { JsonLd } from "@/components/site/JsonLd";
 import { breadcrumbLd } from "@/lib/ld";
 import { siteUrl } from "@/lib/shop/config";
-import { canWatchLesson, formatClock, isNewLesson, lessonPath } from "@/lib/classes/catalog";
+import { canWatchLesson, classJoinPath, formatClock, isNewLesson, lessonPath } from "@/lib/classes/catalog";
 import { getClassStudent } from "@/lib/classes/session";
 import { touchOpen } from "@/lib/classes/watch";
 import { renderMath } from "@/lib/classes/math";
@@ -18,6 +18,7 @@ import { NewChip, PremiumBadge } from "@/components/classes/ui";
 import { QuizBox } from "@/components/classes/QuizBox";
 import { Upsell } from "@/components/classes/Upsell";
 import { askQuestion } from "../../actions";
+import { CourseFileList } from "@/components/classes/Files";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string; lesson: string }> }): Promise<Metadata> {
   const { slug, lesson: hash } = await params;
@@ -36,7 +37,7 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
   const lesson = await prisma.classLesson.findFirst({
     where: { aparatHash: hash, published: true, course: { slug, published: true } },
     include: {
-      course: { include: { lessons: { where: { published: true }, orderBy: { sortOrder: "asc" }, select: { id: true, title: true, aparatHash: true, durationSec: true, freePreview: true, isPremium: true, sortOrder: true } } } },
+      course: { include: { lessons: { where: { published: true }, orderBy: { sortOrder: "asc" }, select: { id: true, title: true, aparatHash: true, durationSec: true, freePreview: true, isPremium: true, sortOrder: true } }, files: { where: { published: true, lessonId: null }, orderBy: { sortOrder: "asc" } } } },
       questions: { where: { published: true }, orderBy: { sortOrder: "asc" }, include: { choices: { orderBy: { sortOrder: "asc" } } } },
       files: { where: { published: true }, orderBy: { sortOrder: "asc" } },
       threads: { where: { status: "PUBLISHED" }, orderBy: { createdAt: "asc" }, include: { replies: { orderBy: { createdAt: "asc" } }, student: { select: { firstName: true, lastName: true } } } },
@@ -101,7 +102,7 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
                   <div>
                     <p className="cl-display text-2xl">این جلسه قفل است</p>
                     <p className="mt-2 text-sm text-white/75">{lesson.freePreview ? "برای پیش‌نمایش وارد شو." : "بعد از ثبت‌نام در دوره باز می‌شود."}</p>
-                    <Link href={student ? `/classes/${slug}` : `/classes/login?next=${encodeURIComponent(back)}`} className="btn-gold mt-4 inline-flex">{student ? "ثبت‌نام در دوره" : "ورود"}</Link>
+                    <Link href={classJoinPath(slug, back)} className="btn-gold mt-4 inline-flex">ثبت‌نام در دوره</Link>
                   </div>
                 </div>
               </div>
@@ -109,14 +110,7 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
           )}
           {lesson.description && <article className="cl-card p-5 leading-8"><div dangerouslySetInnerHTML={{ __html: renderMath(lesson.description) }} /></article>}
           {can && student && <LessonQuiz lessonId={lesson.id} courseId={lesson.courseId} field={student.field} manual={lesson.questions} />}
-          {lesson.files.length > 0 && (
-            <section className="cl-card p-5">
-              <h2 className="font-extrabold">فایل این جلسه</h2>
-              <ul className="mt-2 space-y-2">
-                {lesson.files.map((f) => <li key={f.id}>{enrolled ? <a className="font-bold text-[#2f5bea]" href={`/classes/files/${f.id}`}>{f.title}</a> : <Link href={`/classes/${slug}`}>{f.title} — بعد از ثبت‌نام</Link>}</li>)}
-              </ul>
-            </section>
-          )}
+          <CourseFileList files={[...lesson.course.files, ...lesson.files]} slug={slug} loggedIn={!!student} enrolled={!!enrolled} />
           <section className="cl-card space-y-4 p-5">
             <h2 className="cl-display text-xl">پرسش و پاسخ</h2>
             {lesson.threads.length === 0 && mine.length === 0 && <p className="cl-muted text-sm">هنوز سؤال تأییدشده‌ای این‌جا نیست.</p>}

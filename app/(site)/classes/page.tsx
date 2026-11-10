@@ -50,7 +50,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
     prisma.classCourse.findMany({
       where,
       orderBy: { sortOrder: "asc" },
-      include: { lessons: { where: { published: true }, select: { durationSec: true, isPremium: true, poster: true, sortOrder: true } }, _count: { select: { enrollments: true } } },
+      include: { lessons: { where: { published: true }, select: { durationSec: true, isPremium: true, poster: true, sortOrder: true } }, files: { where: { published: true, lessonId: null }, select: { id: true } }, _count: { select: { enrollments: true } } },
     }),
     prisma.classCourse.findMany({ where: { published: true, kind: "TOPIC" }, orderBy: { sortOrder: "asc" }, select: { slug: true, title: true } }),
     student ? prisma.classPath.findFirst({ where: { published: true, grade: student.grade, field: student.field || "" }, include: { steps: { orderBy: { sortOrder: "asc" }, include: { course: { select: { slug: true, title: true, published: true } } } } } }) : null,
@@ -141,7 +141,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
   );
 }
 
-function CourseGrid({ title, items, enrolled }: { title: string; items: { id: string; slug: string; title: string; teacher: string; cover: string | null; grades: string[]; fields: string[]; isFree: boolean; isPremium: boolean; priceRials: number; salePriceRials: number | null; lessons: { durationSec: number | null; isPremium: boolean; poster?: string | null; sortOrder?: number }[] }[]; enrolled: Set<string> }) {
+function CourseGrid({ title, items, enrolled }: { title: string; items: { id: string; slug: string; title: string; teacher: string; cover: string | null; grades: string[]; fields: string[]; isFree: boolean; isPremium: boolean; priceRials: number; salePriceRials: number | null; files?: { id: string }[]; lessons: { durationSec: number | null; isPremium: boolean; poster?: string | null; sortOrder?: number }[] }[]; enrolled: Set<string> }) {
   if (items.length === 0) return null;
   return (
     <section className="mt-8">
@@ -158,6 +158,7 @@ function CourseGrid({ title, items, enrolled }: { title: string; items: { id: st
                   {premium && <PremiumBadge />}
                   <PriceTag course={presentPrice(c, premium)} />
                   {enrolled.has(c.id) && <span className="cl-badge cl-badge-gold">ثبت‌نام شده</span>}
+                  {(c.files?.length ?? 0) > 0 && <span className="cl-badge cl-badge-gold">+ {fa(c.files!.length)} جزوه PDF</span>}
                 </div>
                 <h3 className="cl-display text-xl">{c.title}</h3>
                 <MetaLine lessons={c.lessons.length} seconds={seconds} grades={c.grades} fields={c.fields} />

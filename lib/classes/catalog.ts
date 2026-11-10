@@ -192,6 +192,36 @@ export function lessonPath(courseSlug: string, hash: string) {
   return `/classes/${courseSlug}/${hash}`;
 }
 
+/** Where a free enrollment should land. Only this site's course, lesson, or file paths. */
+export function classJoinReturn(slug: string, then?: string | null) {
+  const safe = safeNext(then);
+  const course = `/classes/${slug}`;
+  const onCourse = safe === course || safe.startsWith(`${course}/`);
+  const onFile = safe.startsWith("/classes/files/");
+  if ((!onCourse && !onFile) || safe.includes("/join")) return null;
+  return safe;
+}
+
+/** One address for «ثبت‌نام در دوره». Logged-out visitors are sent through login and brought back here. */
+export function classJoinPath(slug: string, then?: string | null) {
+  const back = classJoinReturn(slug, then);
+  return back ? `/classes/${slug}/join?then=${encodeURIComponent(back)}` : `/classes/${slug}/join`;
+}
+
+export function canDownloadClassFile(opts: { staff: boolean; hasStudent: boolean; enrolled: boolean; courseId: string | null }) {
+  if (opts.staff) return true;
+  return !!opts.courseId && opts.hasStudent && opts.enrolled;
+}
+
+export function formatFileSize(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return null;
+  if (bytes < 1024) return `${bytes} بایت`;
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} کیلوبایت`;
+  const mb = bytes / (1024 * 1024);
+  const text = mb >= 10 ? String(Math.round(mb)) : mb.toFixed(1);
+  return `${text} مگابایت`;
+}
+
 export function safeNext(raw: string | null | undefined) {
   if (!raw || !raw.startsWith("/classes") || raw.startsWith("//") || raw.includes("://") || raw.includes("\\")) return "/classes";
   return raw.slice(0, 300);
