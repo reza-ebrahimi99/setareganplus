@@ -36,7 +36,7 @@ export default async function MePage() {
   ]);
   const prog = new Map(progressRows.map((p) => [p.lessonId, p]));
   const best = new Map<string, { score: number; total: number }>();
-  for (const a of attempts) if (!best.has(a.lessonId)) best.set(a.lessonId, a);
+  for (const a of attempts) if (a.lessonId && !best.has(a.lessonId)) best.set(a.lessonId, a);
 
   return (
     <div className="container-x space-y-6 pb-16">

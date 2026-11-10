@@ -59,16 +59,22 @@ export async function maybeCompleteCourse(studentId: string, courseId: string) {
     },
   });
   if (lessons.length === 0) return null;
+  const links = await prisma.classChapter.findMany({ where: { courseId }, select: { lessonId: true, code: true } });
+  const courseCodes = links.filter((l) => l.lessonId === "").map((l) => l.code);
+  const bankFor = async (codes: string[]) => (codes.length ? prisma.bankQuestion.count({ where: { active: true, chapters: { hasSome: codes } } }) : 0);
+  const courseBank = await bankFor(courseCodes);
   const attempts = await prisma.quizAttempt.findMany({
     where: { studentId, lessonId: { in: lessons.map((l) => l.id) } },
     select: { lessonId: true },
   });
-  const tried = new Set(attempts.map((a) => a.lessonId));
+  const tried = new Set(attempts.map((a) => a.lessonId).filter((id): id is string => !!id));
   for (const lesson of lessons) {
     const p = lesson.progress[0];
     const watched = !!p && (p.completed || (!!lesson.durationSec && p.secondsWatched >= Math.floor(lesson.durationSec * 0.9)));
     if (!watched) return null;
-    if (lesson.questions.length > 0 && !tried.has(lesson.id)) return null;
+    const own = links.filter((l) => l.lessonId === lesson.id).map((l) => l.code);
+    const ownBank = await bankFor(own);
+    if ((lesson.questions.length > 0 || courseBank > 0 || ownBank > 0) && !tried.has(lesson.id)) return null;
   }
   await awardPoints(studentId, `course:${courseId}`, COURSE_POINTS);
   await prisma.classBadge.upsert({

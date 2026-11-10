@@ -9,6 +9,7 @@ import { FIELDS, GRADES, MAX_QUIZ_QUESTIONS, isFieldId, isGrade, parseAparatHash
 import { parseQbank } from "@/lib/classes/qbank";
 import { saveClassPdf } from "@/lib/classes/files";
 import { normalizeIranMobile } from "@/lib/format";
+import { ensureDefaultChapters, readChapterCatalog, syncQbank } from "@/lib/classes/bank-sync";
 
 function checked(fd: FormData, name: string) {
   return fd.getAll(name).map(String).filter(Boolean);
@@ -210,4 +211,22 @@ export async function savePath(fd: FormData) {
     await prisma.classPathStep.create({ data: { pathId: path.id, courseId: course.id, sortOrder: i++ } });
   }
   redirect("/admin/classes/paths?ok=1");
+}
+
+export async function saveChapters(fd: FormData) {
+  await requirePerm("classes.manage");
+  const courseId = s(fd, "courseId");
+  const lessonId = s(fd, "lessonId");
+  const codes = [...new Set(s(fd, "codes").split(/[\s,]+/).map((c) => c.trim()).filter((c) => /^[A-Za-z0-9-]{2,24}$/.test(c)))];
+  await prisma.classChapter.deleteMany({ where: { courseId, lessonId } });
+  if (codes.length) await prisma.classChapter.createMany({ data: codes.map((code) => ({ courseId, lessonId, code })) });
+  redirect(lessonId ? `/admin/classes/lessons/${lessonId}?ok=1` : `/admin/classes/${courseId}?ok=1`);
+}
+
+export async function syncBankNow() {
+  await requirePerm("classes.manage");
+  await ensureDefaultChapters(await readChapterCatalog());
+  const result = await syncQbank({ maxQuestions: 2000 });
+  if (!result.ok) redirect(`/admin/classes?e=${encodeURIComponent(result.error)}`);
+  redirect(`/admin/classes?synced=${result.imported}`);
 }

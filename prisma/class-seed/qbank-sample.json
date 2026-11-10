@@ -1,0 +1,4909 @@
+[
+ {
+  "id": 37,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 1,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 1",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-1-1",
+    "title": "درس 1: تبدیل نمودار توابع",
+    "grade": 12
+   },
+   {
+    "code": "R1-2-1",
+    "title": "درس 1: نسبت‌های مثلثاتی",
+    "grade": 10
+   }
+  ],
+  "text": "مقدار عبارت $[2\\sin 60^\\circ]-2[\\sin 60^\\circ]$ کدام است؟ ($[\\;]$ نماد جزء صحیح است.)",
+  "options": [
+   "$1$",
+   "$-1$",
+   "$2$",
+   "$-2$"
+  ],
+  "correct": 1,
+  "solution": "$[2\\sin 60^\\circ]-2[\\sin 60^\\circ]=[\\sqrt3]-2\\left[\\dfrac{\\sqrt3}{2}\\right]=1-0=1$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 38,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 2,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 2",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "R1-4-2",
+    "title": "درس 2: سهمی",
+    "grade": 10
+   }
+  ],
+  "text": "خط $y=1$ و نمودار تابع $f(x)=x^2-ax+5$ یک نقطهٔ مشترک دارند. مقدار $f(2)$ کدام می‌تواند باشد؟",
+  "options": [
+   "$16$",
+   "$4$",
+   "$1$",
+   "$5$"
+  ],
+  "correct": 3,
+  "solution": "یعنی عرض رأس سهمی $f(x)=x^2-ax+5$ برابر $1$ است: $y_S=-\\dfrac{a^2-20}{4}=1\\Rightarrow a^2=16\\Rightarrow a=\\pm4$. پس $f(x)=x^2-4x+5$ یا $x^2+4x+5$ و $f(2)$ برابر $1$ یا $17$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 39,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 3,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 3",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "R1-3-1",
+    "title": "درس 1: ریشه و توان",
+    "grade": 10
+   },
+   {
+    "code": "R1-3-4",
+    "title": "درس 4: عبارت‌های جبری",
+    "grade": 10
+   }
+  ],
+  "text": "اگر $A=\\dfrac{\\sqrt2+3}{\\sqrt{5+2\\sqrt6}-\\sqrt{4-2\\sqrt3}}$ باشد، حاصل $(A+1)^2$ کدام است؟",
+  "options": [
+   "$8$",
+   "$16$",
+   "$32$",
+   "$64$"
+  ],
+  "correct": 1,
+  "solution": "$A=\\dfrac{\\sqrt2+3}{\\sqrt{(\\sqrt3+\\sqrt2)^2}-\\sqrt{(\\sqrt3-1)^2}}=\\dfrac{\\sqrt2+3}{\\sqrt2+1}\\times\\dfrac{\\sqrt2-1}{\\sqrt2-1}\\Rightarrow A=2\\sqrt2-1\\Rightarrow (A+1)^2=(2\\sqrt2)^2=8$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 40,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 4,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 4",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-1-1",
+    "title": "درس 1: مجموع جملات دنباله‌های حسابی و هندسی",
+    "grade": 11
+   },
+   {
+    "code": "R1-1-4",
+    "title": "درس 4: دنباله‌های حسابی و هندسی",
+    "grade": 10
+   }
+  ],
+  "text": "اگر دنبالهٔ اعداد $2^{2a},\\ 2\\sqrt2,\\ (4\\sqrt2)^{b+2},\\ \\dots$ هندسی باشد، مجموع پنج جملهٔ اول دنبالهٔ حسابی $x,\\ 2a+1,\\ y,\\ \\dfrac52 b+3,\\ \\dots$ کدام است؟",
+  "options": [
+   "$8$",
+   "$5$",
+   "$7/5$",
+   "$4/5$"
+  ],
+  "correct": 2,
+  "solution": "اگر سه جملهٔ متوالی یک دنبالهٔ هندسی باشند، $y^2=xz$. پس $(2^{2a})(4\\sqrt2)^{b+2}=(2\\sqrt2)^2\\Rightarrow 2^{2a+\\frac52 b+5}=8=2^3\\Rightarrow 2a+\\dfrac52 b=-2$. در دنبالهٔ حسابی $S_5=5t_3=5\\cdot\\dfrac{t_2+t_4}{2}$ و $t_2+t_4=2a+1+\\dfrac52 b+3=-2+4=2$، پس $S_5=\\dfrac52(2)=5$.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 41,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 5,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 5",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-2-3",
+    "title": "درس 3: وارون تابع",
+    "grade": 11
+   },
+   {
+    "code": "H1-2-4",
+    "title": "درس 4: اعمال روی توابع",
+    "grade": 11
+   }
+  ],
+  "text": "توابع $f(x)=a-\\sqrt{x+b}$ و $g=\\{(-2,6),(22,1)\\}$ مفروض‌اند. اگر $f+g^{-1}=\\{(1,22),(6,-3)\\}$ باشد، حاصل $ab$ کدام است؟",
+  "options": [
+   "$-6$",
+   "$6$",
+   "$-60$",
+   "$60$"
+  ],
+  "correct": 2,
+  "solution": "$g^{-1}=\\{(1,22),(6,-2)\\}$. با توجه به اعضای $f+g^{-1}$ نتیجه می‌شود $f(1)=0$ و $f(6)=-1$: $\\begin{cases}a-\\sqrt{1+b}=0\\\\ a-\\sqrt{6+b}=-1\\end{cases}\\Rightarrow \\sqrt{6+b}=1+\\sqrt{1+b}\\Rightarrow 6+b=2+b+2\\sqrt{1+b}\\Rightarrow\\sqrt{1+b}=2\\Rightarrow b=3$ و $a=2$، پس $ab=6$.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 42,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 6,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 6",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-1-4",
+    "title": "درس 4: قدرمطلق و ویژگی‌های آن",
+    "grade": 11
+   }
+  ],
+  "text": "مساحت ناحیهٔ محدود به نمودار تابع $y=\\big||x-1|-|x-2|\\big|$ و محورهای مختصات کدام است؟",
+  "options": [
+   "$\\dfrac74$",
+   "$\\dfrac14$",
+   "$\\dfrac54$",
+   "$\\dfrac32$"
+  ],
+  "correct": 3,
+  "solution": "با قرینه کردن قسمت‌های منفی نمودار $y=|x-1|-|x-2|$، نمودار تابع صورت سؤال به دست می‌آید: روی $[0,1]$ برابر $1$، سپس به‌صورت خطی تا $x=\\tfrac32$ به صفر می‌رسد. ناحیه ذوزنقه‌ای با قاعده‌های $1$ و $\\tfrac32$ و ارتفاع $1$ است: $S=\\dfrac{(1+\\frac32)(1)}{2}=\\dfrac54$.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 43,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 7,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 7",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-1-2",
+    "title": "درس 2: معادلات درجه دوم",
+    "grade": 11
+   }
+  ],
+  "text": "اگر $\\alpha$ و $\\beta$ جواب‌های معادلهٔ $x^2-6x+7=0$ باشند، حاصل عبارت $(\\alpha^2-6\\alpha+9)^{2\\beta}(\\beta-3)^{4\\alpha}$ کدام است؟",
+  "options": [
+   "$81$",
+   "$729$",
+   "$1024$",
+   "$4096$"
+  ],
+  "correct": 4,
+  "solution": "جواب‌ها در معادله صدق می‌کنند: $\\alpha^2-6\\alpha+7=\\beta^2-6\\beta+7=0\\Rightarrow\\alpha^2-6\\alpha+9=\\beta^2-6\\beta+9=2$. پس $(\\alpha^2-6\\alpha+9)^{2\\beta}(\\beta-3)^{4\\alpha}=(\\alpha^2-6\\alpha+9)^{2\\beta}(\\beta^2-6\\beta+9)^{2\\alpha}=2^{2\\beta}\\times2^{2\\alpha}=2^{2(\\alpha+\\beta)}$ و چون $\\alpha+\\beta=6$، حاصل $2^{12}=4096$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 44,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 8,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 8",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-1-2",
+    "title": "درس 2: معادلات درجه دوم",
+    "grade": 11
+   }
+  ],
+  "text": "اگر جواب‌های معادلهٔ $x^2-ax+b=0$ جذر جواب‌های معادلهٔ $x^2-(a+8)x+b+2=0$ باشند، حاصل $ab$ کدام است؟",
+  "options": [
+   "$6$",
+   "$8$",
+   "$12$",
+   "$18$"
+  ],
+  "correct": 2,
+  "solution": "جواب‌های معادلهٔ دوم را $\\alpha,\\beta$ بگیرید؛ جواب‌های معادلهٔ اول $\\sqrt\\alpha,\\sqrt\\beta$ هستند: $\\begin{cases}\\alpha\\beta=b+2\\\\ \\sqrt\\alpha\\sqrt\\beta=\\sqrt{\\alpha\\beta}=b\\end{cases}\\Rightarrow b^2=b+2\\Rightarrow(b+1)(b-2)=0\\xrightarrow{b>0}b=2$. همچنین $\\sqrt\\alpha+\\sqrt\\beta=a\\Rightarrow\\alpha+\\beta+2\\sqrt{\\alpha\\beta}=a^2\\Rightarrow a+8+4=a^2\\Rightarrow(a-4)(a+3)=0\\xrightarrow{a>0}a=4$، پس $ab=8$.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 45,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 9,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 9",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-1-5",
+    "title": "درس 5: آشنایی با هندسهٔ تحلیلی",
+    "grade": 11
+   }
+  ],
+  "text": "نقاط $A(1,1)$ و $B(3,7)$ که دو رأس از رئوس مربع $ABCD$ هستند، به همراه نقطهٔ $P(7,9)$ مفروض‌اند. مساحت مثلث $PCD$ کدام می‌تواند باشد؟",
+  "options": [
+   "$25$",
+   "$30$",
+   "$20$",
+   "$15$"
+  ],
+  "correct": 2,
+  "solution": "طول ضلع مربع $AB=\\sqrt{2^2+6^2}=2\\sqrt{10}$. خط $AB:\\ 3x-y-2=0$ و فاصلهٔ $P$ از آن $PH=\\dfrac{|21-9-2|}{\\sqrt{3^2+(-1)^2}}=\\dfrac{10}{\\sqrt{10}}=\\sqrt{10}$. پس فاصلهٔ $P$ از خط شامل ضلع $CD$ برابر $|\\sqrt{10}\\pm2\\sqrt{10}|$ یعنی $\\sqrt{10}$ یا $3\\sqrt{10}$ است و $S_{PCD}=\\dfrac12\\,CD\\cdot PH=\\dfrac12(2\\sqrt{10})(\\sqrt{10})=10$ یا $\\dfrac12(2\\sqrt{10})(3\\sqrt{10})=30$.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 46,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 10,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 10",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "R1-5",
+    "title": "فصل 5: تابع",
+    "grade": 10
+   }
+  ],
+  "text": "برای دو تابع خطی $f$ و $g$ روابط زیر را داریم: $\\begin{cases}f(2x-1)+g(x+1)=8x-2\\\\ f(x+1)-g(2x-1)=-x-2\\end{cases}$ مقدار $g(1)$ کدام است؟",
+  "options": [
+   "$5$",
+   "$-5$",
+   "$-1$",
+   "$1$"
+  ],
+  "correct": 1,
+  "solution": "با جای‌گذاری $2x-2$ به جای $x$ در رابطهٔ دوم، روابط به صورت تغییر می‌کند: $\\begin{cases}f(2x-1)+g(x+1)=8x-2\\\\ f(2x-1)-g(4x-5)=-2x\\end{cases}$ رابطهٔ دوم را از رابطهٔ اول کم می‌کنیم: $g(x+1)+g(4x-5)=10x-2$. ضابطهٔ تابع $g$ را $g(x)=ax+b$ می‌گیریم و داریم: $a(x+1)+b+a(4x-5)+b=5ax+2b-4a=10x-2\\Rightarrow a=2,\\ b=3$. پس $g(x)=2x+3$ و در نتیجه $g(1)=5$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 47,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 11,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 11",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-3",
+    "title": "فصل 3: توابع نمایی و لگاریتمی",
+    "grade": 11
+   }
+  ],
+  "text": "نمودار تابع $f(x)=\\dfrac{2^{x+1}-2^{-x}+1}{2^x+1}$ از کدام ناحیهٔ دستگاه مختصات نمی‌گذرد؟",
+  "options": [
+   "اول",
+   "دوم",
+   "سوم",
+   "چهارم"
+  ],
+  "correct": 4,
+  "solution": "ابتدا ضابطهٔ تابع را ساده می‌کنیم: $f(x)=\\dfrac{2(2^x)-\\frac{1}{2^x}+1}{2^x+1}=\\dfrac{2(2^x)^2+2^x-1}{2^x(2^x+1)}=\\dfrac{(2^x+1)(2(2^x)-1)}{2^x(2^x+1)}=2-\\dfrac{1}{2^x}\\Rightarrow f(x)=2-\\left(\\dfrac12\\right)^x$ که نمودار آن مطابق شکل زیر است.",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/47/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 48,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 12,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 12",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-3",
+    "title": "فصل 3: توابع نمایی و لگاریتمی",
+    "grade": 11
+   }
+  ],
+  "text": "جواب معادلهٔ $\\log_5 x+\\log_6 x=1$ به صورت $x=5^n$ است. حاصل $6^{\\frac1n}$ کدام است؟",
+  "options": [
+   "$11$",
+   "$24$",
+   "$30$",
+   "$36$"
+  ],
+  "correct": 3,
+  "solution": "معادله را به صورت زیر بازنویسی می‌کنیم: $\\log_5 x+\\dfrac{\\log_5 x}{\\log_5 6}=1\\Rightarrow(1+\\log_6 5)\\log_5 x=1\\Rightarrow(\\log_6 30)\\log_5 x=1\\Rightarrow\\log_5 x=\\dfrac{1}{\\log_6 30}=\\log_{30}6$. پس جواب معادله $x=5^{\\log_{30}6}$ است و این یعنی $n=\\log_{30}6$. پس داریم: $6^{\\frac1n}=6^{\\frac{1}{\\log_{30}6}}=6^{\\log_6 30}=30$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 49,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 13,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 13",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-2",
+    "title": "فصل 2: تابع",
+    "grade": 11
+   }
+  ],
+  "text": "اگر $f(x)=(x+3)(\\sqrt x+3)$ و $(f\\circ g)(x)=x+8$ باشد، مقدار تابع $g\\circ g$ به ازای $x=\\left(\\dfrac98\\right)^3$ کدام است؟",
+  "options": [
+   "$\\dfrac{9}{16}$",
+   "$\\dfrac94$",
+   "$\\dfrac{49}{64}$",
+   "$\\dfrac{9}{64}$"
+  ],
+  "correct": 1,
+  "solution": "ضابطهٔ تابع $f$ را می‌توان به صورت زیر بازنویسی کرد: $f(x)=x\\sqrt x+3x+3\\sqrt x+9=(\\sqrt x+1)^3+8$ و سپس با توجه به ضابطهٔ تابع $f\\circ g$ می‌توانیم ضابطهٔ تابع $g$ را پیدا کنیم: $(f\\circ g)(x)=(\\sqrt{g(x)}+1)^3+8=x+8\\Rightarrow g(x)=(\\sqrt[3]{x}-1)^2$ و در نهایت داریم: $(g\\circ g)\\left(\\left(\\dfrac98\\right)^3\\right)=g\\left(\\dfrac{1}{64}\\right)=\\dfrac{9}{16}$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 50,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 14,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 14",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-4",
+    "title": "فصل 4: مثلثات",
+    "grade": 11
+   }
+  ],
+  "text": "در دایرهٔ شکل زیر، به شعاع $2$، مساحت‌های قسمت‌های رنگی با $S_1$ و $S_2$ مشخص شده است. حاصل $2S_2-S_1$ کدام است؟",
+  "options": [
+   "$2-\\sqrt3$",
+   "$\\dfrac{\\sqrt3}{3}-\\dfrac12$",
+   "$\\sqrt3-2$",
+   "$\\dfrac12-\\dfrac{\\sqrt3}{3}$"
+  ],
+  "correct": 3,
+  "solution": "با توجه به این‌که شعاع دایره برابر $2$ است، زوایای موجود در شکل را می‌توان به صورت زیر مشخص کرد. مساحت هر کدام از سطح‌های مشخص شده، از تفاضل مساحت یک مثلث متساوی‌الساقین از یک قطاع دایره به دست می‌آید و داریم: $S_1=\\dfrac12\\left(\\dfrac\\pi3\\right)(2)^2-\\dfrac12(2)^2\\sin\\dfrac\\pi3=\\dfrac{2\\pi}{3}-\\sqrt3$، $S_2=\\dfrac12\\left(\\dfrac\\pi6\\right)(2)^2-\\dfrac12(2)^2\\sin\\dfrac\\pi6=\\dfrac\\pi3-1\\Rightarrow 2S_2-S_1=\\sqrt3-2$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/50/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/50/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 51,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 15,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 15",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-2",
+    "title": "فصل 2: تابع",
+    "grade": 11
+   },
+   {
+    "code": "H1-4",
+    "title": "فصل 4: مثلثات",
+    "grade": 11
+   }
+  ],
+  "text": "اگر $g(x)=\\sin\\left(x+\\dfrac{5\\pi}{12}\\right)$ و $f(x)=\\dfrac\\pi4\\cos x$ باشد، برد تابع $g\\circ f$ بازهٔ $[a,b]$ است. حاصل $b-a$ کدام است؟",
+  "options": [
+   "$\\dfrac{\\sqrt3-1}{2}$",
+   "$\\dfrac{2-\\sqrt3}{2}$",
+   "$\\dfrac{\\sqrt3-\\sqrt2}{2}$",
+   "$\\dfrac12$"
+  ],
+  "correct": 4,
+  "solution": "دامنهٔ هر دو تابع $f$ و $g$ و در نتیجه دامنهٔ تابع $g\\circ f$ برابر $\\mathbb R$ است. برد تابع $f$ بازهٔ $\\left[-\\dfrac\\pi4,\\dfrac\\pi4\\right]$ است و اگر دامنهٔ تابع $g$ را همین بازه درنظر بگیریم، برد آن، برابر برد تابع $g\\circ f$ خواهد بود. پس داریم: $-\\dfrac\\pi4\\le x\\le\\dfrac\\pi4\\Rightarrow\\dfrac\\pi6\\le x+\\dfrac{5\\pi}{12}\\le\\dfrac{2\\pi}{3}\\Rightarrow\\dfrac12\\le g(x)=\\sin\\left(x+\\dfrac{5\\pi}{12}\\right)\\le1$. پس $R_{g\\circ f}=\\left[\\dfrac12,1\\right]$ و در نتیجه $b-a=\\dfrac12$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 52,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 16,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 16",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-4",
+    "title": "فصل 4: مثلثات",
+    "grade": 11
+   }
+  ],
+  "text": "اگر $\\sin\\left(\\alpha+\\dfrac\\pi8\\right)=\\dfrac23$ باشد، مقدار $\\sin4\\alpha$ کدام است؟",
+  "options": [
+   "$-\\dfrac{79}{81}$",
+   "$-\\dfrac79$",
+   "$\\dfrac79$",
+   "$\\dfrac{79}{81}$"
+  ],
+  "correct": 4,
+  "solution": "ابتدا از اتحاد $\\cos2x=1-2\\sin^2x$ مقدار $\\cos\\left(2\\alpha+\\dfrac\\pi4\\right)$ را حساب می‌کنیم: $\\cos\\left(2\\alpha+\\dfrac\\pi4\\right)=1-2\\sin^2\\left(\\alpha+\\dfrac\\pi8\\right)=\\dfrac19$ و سپس با استفاده از اتحاد $\\cos2x=2\\cos^2x-1$ داریم: $\\cos\\left(4\\alpha+\\dfrac\\pi2\\right)=2\\cos^2\\left(2\\alpha+\\dfrac\\pi4\\right)-1=-\\dfrac{79}{81}\\Rightarrow-\\sin4\\alpha=-\\dfrac{79}{81}\\Rightarrow\\sin4\\alpha=\\dfrac{79}{81}$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 53,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 17,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 17",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-4",
+    "title": "فصل 4: مثلثات",
+    "grade": 11
+   }
+  ],
+  "text": "اگر $\\sin\\left(\\alpha-\\dfrac\\pi6\\right)=3\\sin\\left(\\dfrac{11\\pi}{3}-\\alpha\\right)$ باشد، مقدار $\\sin^2\\left(\\dfrac{7\\pi}{3}+\\alpha\\right)$ کدام است؟",
+  "options": [
+   "$\\dfrac13$",
+   "$\\dfrac1{10}$",
+   "$\\dfrac19$",
+   "$\\dfrac14$"
+  ],
+  "correct": 2,
+  "solution": "$\\sin\\left(\\alpha-\\dfrac\\pi6\\right)=3\\sin\\left(4\\pi-\\dfrac\\pi3-\\alpha\\right)=-3\\sin\\left(\\dfrac\\pi3+\\alpha\\right)\\Rightarrow\\sin\\left(\\dfrac\\pi6-\\alpha\\right)=3\\sin\\left(\\dfrac\\pi3+\\alpha\\right)$. $\\sin\\left(\\dfrac\\pi6-\\alpha\\right)$ را برحسب $\\cos$ می‌نویسیم: $\\sin\\left(\\dfrac\\pi2-\\left(\\dfrac\\pi3+\\alpha\\right)\\right)=3\\sin\\left(\\dfrac\\pi3+\\alpha\\right)\\Rightarrow\\cos\\left(\\dfrac\\pi3+\\alpha\\right)=3\\sin\\left(\\dfrac\\pi3+\\alpha\\right)\\Rightarrow\\cot\\left(\\dfrac\\pi3+\\alpha\\right)=3$. حال از اتحاد $1+\\cot^2\\theta=\\dfrac{1}{\\sin^2\\theta}$ استفاده می‌کنیم و داریم: $\\sin^2\\left(\\dfrac{7\\pi}{3}+\\alpha\\right)=\\sin^2\\left(\\dfrac\\pi3+\\alpha\\right)=\\dfrac{1}{1+\\cot^2\\left(\\dfrac\\pi3+\\alpha\\right)}=\\dfrac1{10}$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 54,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 18,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 18",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-5",
+    "title": "فصل 5: حد و پیوستگی",
+    "grade": 11
+   }
+  ],
+  "text": "توابع $f(x)=x+\\dfrac{m|x^2-3x+2|}{x^2-3x+2}$ و $g(x)=[-x]x^2+3x$ مفروض‌اند. به ازای کدام مقدار $m$ تابع $f\\circ g$ در $x=1$ حد دارد؟ ($[\\;]$، نماد جزء صحیح است.)",
+  "options": [
+   "$\\dfrac12$",
+   "$1$",
+   "$-\\dfrac32$",
+   "امکان‌پذیر نیست."
+  ],
+  "correct": 1,
+  "solution": "باید حدهای چپ و راست تابع $f\\circ g$ را در $x=1$ پیدا کنیم و آن‌ها را برابر قرار دهیم: حد چپ: $\\lim_{x\\to1^-}g(x)=\\lim_{x\\to1^-}(-x^2+3x)=2$ اما تابع $g$ با مقادیر کمتر از $2$ به آن نزدیک می‌شود: $\\Rightarrow\\lim_{x\\to1^-}(f\\circ g)(x)=\\lim_{x\\to2^-}f(x)=\\lim_{x\\to2^-}\\left(x+\\dfrac{m|(x-1)(x-2)|}{(x-1)(x-2)}\\right)=2-m$. حد راست: $\\lim_{x\\to1^+}g(x)=\\lim_{x\\to1^+}(-2x^2+3x)=1$ و تابع $g$ از مقادیر کمتر از $1$ به آن نزدیک می‌شود: $\\Rightarrow\\lim_{x\\to1^+}(f\\circ g)(x)=\\lim_{x\\to1^-}f(x)=1+m\\xrightarrow{\\text{تعریف حد}}2-m=1+m\\Rightarrow m=\\dfrac12$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 55,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 19,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 19",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-5",
+    "title": "فصل 5: حد و پیوستگی",
+    "grade": 11
+   }
+  ],
+  "text": "حاصل $\\displaystyle\\lim_{x\\to2\\pi}\\dfrac{\\sqrt{\\cos x}\\sqrt{\\cos2x}-1}{\\sin x\\sin2x}$ کدام است؟",
+  "options": [
+   "$-\\dfrac52$",
+   "$-\\dfrac32$",
+   "$-\\dfrac58$",
+   "$-\\dfrac38$"
+  ],
+  "correct": 3,
+  "solution": "$\\displaystyle\\lim_{x\\to2\\pi}\\dfrac{\\sqrt{\\cos x}\\sqrt{\\cos2x}-1}{\\sin x\\sin2x}=\\lim_{x\\to2\\pi}\\dfrac{\\cos x\\cos2x-1}{(\\sqrt{\\cos x}\\sqrt{\\cos2x}+1)\\sin x\\sin2x}=\\dfrac12\\lim_{x\\to2\\pi}\\dfrac{\\cos x(2\\cos^2x-1)-1}{2\\sin^2x\\cos x}=\\dfrac14\\lim_{x\\to2\\pi}\\dfrac{2\\cos^3x-\\cos x-1}{\\sin^2x}=\\dfrac14\\lim_{x\\to2\\pi}\\dfrac{(\\cos x-1)(2\\cos^2x+2\\cos x+1)}{(1-\\cos x)(1+\\cos x)}=\\dfrac14\\lim_{x\\to2\\pi}\\dfrac{-(2\\cos^2x+2\\cos x+1)}{1+\\cos x}=-\\dfrac58$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 56,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 20,
+  "source_ref": "Ghalamchi 1403-01-07 — ریاضی پایه — سوال 20",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-5",
+    "title": "فصل 5: حد و پیوستگی",
+    "grade": 11
+   }
+  ],
+  "text": "تابع $f(x)=\\begin{cases}\\dfrac{\\sqrt{2x^2+ax+18}}{|4x+b|} & ;\\ x\\ne3\\\\ c & ;\\ x=3\\end{cases}$ روی $\\mathbb R$ پیوسته است. حاصل $abc$ کدام است؟",
+  "options": [
+   "$-18\\sqrt2$",
+   "$-36$",
+   "$36\\sqrt2$",
+   "$18$"
+  ],
+  "correct": 3,
+  "solution": "برای این‌که تابع روی $\\mathbb R$ پیوسته باشد، لازم است که در ابتدا $x=3$، ریشهٔ مخرج ضابطهٔ کسری باشد: $\\Rightarrow4(3)+b=0\\Rightarrow b=-12$. همچنین تابع در $x=3$ باید حد داشته باشد، بنابراین $x=3$ باید صفر عبارت صورت کسر نیز باشد، یعنی باید ریشهٔ مضاعف عبارت $2x^2+ax+18$ باشد. $\\Rightarrow2x^2+ax+18=2(x-3)^2=2x^2-12x+18\\Rightarrow a=-12$. پس داریم: $\\Rightarrow f(x)=\\begin{cases}\\dfrac{|x-3|\\sqrt2}{4|x-3|} & ;\\ x\\ne3\\\\ c & ;\\ x=3\\end{cases}$ برای پیوستگی، باید $c$ برابر حد تابع در $x=3$ باشد: $c=\\lim_{x\\to3}f(x)=\\lim_{x\\to3}\\dfrac{|x-3|\\sqrt2}{4|x-3|}=\\dfrac{\\sqrt2}{4}\\Rightarrow abc=36\\sqrt2$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 57,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 21,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۱ — سوال 21",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G1-4",
+    "title": "فصل 4: تجسم فضایی",
+    "grade": 10
+   }
+  ],
+  "text": "مثلث قائم‌الزاویهٔ $ABC$ شکل زیر را حول ضلع $BC$ دوران می‌دهیم. حجم جسم فضایی حاصل چند برابر $\\dfrac\\pi5$ است؟ (در شکل: $AB=3$، $AC=4$ و زاویهٔ $A$ قائمه است.)",
+  "options": [
+   "$24$",
+   "$36$",
+   "$48$",
+   "$56$"
+  ],
+  "correct": 3,
+  "solution": "ارتفاع وارد بر وتر در مثلث قائم‌الزاویه برابر است با: $AH=\\dfrac{AB\\times AC}{BC}=\\dfrac{3\\times4}{5}=\\dfrac{12}{5}$. شعاع دایره قاعده، برابر ارتفاع مثلث قائم‌الزاویه است، پس: $r=AH=\\dfrac{12}{5}\\Rightarrow V=\\dfrac13\\pi r^2h=\\dfrac13\\pi\\left(\\dfrac{12}{5}\\right)^2(5)=\\dfrac{48}{5}\\pi$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/57/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/57/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 58,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 22,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۱ — سوال 22",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G1-3",
+    "title": "فصل 3: چندضلعی‌ها",
+    "grade": 10
+   }
+  ],
+  "text": "در ذوزنقه‌ای با قاعده‌های $2$ و $7$ و ساق‌های $3$ و $4$، اندازهٔ پاره‌خطی که وسط‌های دو قاعدهٔ ذوزنقه را به هم وصل می‌کند، چقدر است؟",
+  "options": [
+   "$2$",
+   "$1/5$",
+   "$2/5$",
+   "$3$"
+  ],
+  "correct": 3,
+  "solution": "از $M$ (وسط قاعدهٔ کوچک‌تر) خطوط $ME$ و $MF$ را به موازات ساق‌های $AD$ و $BC$ رسم می‌کنیم. مطابق شکل، $AD=ME=3$ و $MF=BC=4$ در نتیجه $EF=5$ پس $E\\hat MF=90^\\circ$ و $MN$ میانه وارد بر مثلث $MEF$ است و $MN=\\dfrac{EF}{2}=2/5$.",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/58/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 59,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 23,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۱ — سوال 23",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G1-3",
+    "title": "فصل 3: چندضلعی‌ها",
+    "grade": 10
+   }
+  ],
+  "text": "در شکل زیر، $P$ و $Q$ به ترتیب وسط اضلاع $AB$ و $CD$ از متوازی‌الاضلاع $ABCD$ هستند. اگر مساحت متوازی‌الاضلاع $30$ واحد مربع باشد، مساحت چهارضلعی سایه‌زده چند واحد مربع است؟",
+  "options": [
+   "$5$",
+   "$6$",
+   "$3/25$",
+   "$3/75$"
+  ],
+  "correct": 4,
+  "solution": "پاره‌خط $PQ$ را رسم می‌کنیم. این پاره‌خط، قطر $BD$ را در نقطهٔ $M$ نصف می‌کند. با توجه به شکل و تقارن موجود در آن، $M$ وسط پاره‌خط $KL$ نیز هست. از آنجا که $AQ\\parallel PC$ است، به راحتی می‌توان نتیجه گرفت که $\\overset{\\triangle}{KMQ}\\cong\\overset{\\triangle}{PLM}$ و در نتیجه مساحت مثلث $PNQ$ معادل مساحت چهارضلعی سایه‌زده شده است. می‌دانیم در متوازی‌الاضلاع $APQD$، قطرها، سطح این متوازی‌الاضلاع را به چهار قسمت هم‌مساحت تقسیم می‌کند، پس: $S_{PNQ}=\\dfrac14S_{APQD}=\\dfrac18S_{ABCD}=\\dfrac18\\times30=3/75$ در نتیجه مساحت چهارضلعی سایه‌زده، $3/75$ واحد مربع است.",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/59/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/59/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 60,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 24,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۱ — سوال 24",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G1-2",
+    "title": "فصل 2: قضیهٔ تالس، تشابه و کاربردهای آن",
+    "grade": 10
+   }
+  ],
+  "text": "در شکل زیر مثلث $ABC$ قائم‌الزاویه و چهارضلعی $MNPQ$ مربع است. اگر $BN=2$ و $CM=8$ باشند، طول ارتفاع وارد بر $PQ$ در مثلث $APQ$ کدام است؟",
+  "options": [
+   "$0/8$",
+   "$1/2$",
+   "$1/6$",
+   "$3/2$"
+  ],
+  "correct": 3,
+  "solution": "مثلث‌های $BPN$ و $MQC$ به حالت برابری دو زاویه متشابهند، پس: $\\overset{\\triangle}{BPN}\\sim\\overset{\\triangle}{MQC}\\Rightarrow\\dfrac{BN}{QM}=\\dfrac{PN}{MC}\\Rightarrow\\dfrac2x=\\dfrac x8\\Rightarrow x^2=16\\ (1)\\Rightarrow x=4$. مثلث‌های $AQP$ و $BPN$ به حالت برابری دو زاویه متشابهند، پس: $\\dfrac{S_{\\overset{\\triangle}{BPN}}}{S_{\\overset{\\triangle}{AQP}}}=\\left(\\dfrac{PB}{PQ}\\right)^2=\\dfrac{x^2+4}{x^2}\\xrightarrow[(1)]{x^2=16}\\dfrac{\\frac{2\\times4}{2}}{S_{\\overset{\\triangle}{AQP}}}=\\dfrac{16+4}{16}\\Rightarrow S_{\\overset{\\triangle}{AQP}}=\\dfrac{16}{5}$. با فرض این‌که ارتفاع وارد بر وتر $PQ$ در مثلث $AQP$ برابر با $h$ باشد، داریم: $S_{\\overset{\\triangle}{AQP}}=\\dfrac{h\\times PQ}{2}\\Rightarrow\\dfrac{16}{5}=\\dfrac{h\\times4}{2}\\Rightarrow h=\\dfrac85=1/6$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/60/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/60/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 61,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 25,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۱ — سوال 25",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G1-1",
+    "title": "فصل 1: ترسیم‌های هندسی و استدلال",
+    "grade": 10
+   }
+  ],
+  "text": "در شکل زیر اندازهٔ زاویهٔ $A\\hat BH$ چقدر است؟",
+  "options": [
+   "$24^\\circ$",
+   "$18^\\circ$",
+   "$30^\\circ$",
+   "$12^\\circ$"
+  ],
+  "correct": 1,
+  "solution": "$AH$ و $BH$ را امتداد می‌دهیم تا اضلاع مثلث را در $A'$ و $B'$ قطع کند. $A\\hat A'C=180^\\circ-36^\\circ-(30^\\circ+24^\\circ)=90^\\circ$، $B\\hat B'C=180^\\circ-36^\\circ-(30^\\circ+24^\\circ)=90^\\circ$. پس $AA'$ و $BB'$ ارتفاع‌های مثلث $ABC$ و $H$ محل همرسی ارتفاع‌هاست، بنابراین امتداد $CH$ نیز بر $AB$ عمود است: $\\overset{\\triangle}{BCC'}:\\ A\\hat BH=180^\\circ-90^\\circ-30^\\circ-36^\\circ=24^\\circ$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/61/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/61/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 62,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 26,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۱ — سوال 26",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G1-3",
+    "title": "فصل 3: چندضلعی‌ها",
+    "grade": 10
+   }
+  ],
+  "text": "در یک چندضلعی شبکه‌ای مجموع تعداد نقاط درونی و مرزی $12$ است. تفاضل حداکثر و حداقل مساحت این چندضلعی کدام است؟",
+  "options": [
+   "$4$",
+   "$4/5$",
+   "$5$",
+   "$5/5$"
+  ],
+  "correct": 2,
+  "solution": "می‌دانیم مساحت یک چندضلعی شبکه‌ای از فرمول $S=\\dfrac b2+i-1$ به دست می‌آید که در آن $b$ نقاط مرزی و $i$ نقاط درونی است. در رابطهٔ $b+i=12$ با توجه به آن‌که $b\\ge3$ و $i\\ge0$، حداکثر مقدار $i$ و حداقل مقدار $b$ به ترتیب برابر $9$ و $3$ است در حالت $b=3$، حداکثر مقدار مساحت را داریم: $S_{\\max}=\\dfrac b2+i-1=\\dfrac32+9-1=9/5$. همچنین حداقل مقدار مساحت به ازای حداقل مقدار $i$ و حداکثر مقدار $b$ یعنی به ترتیب $i=0$ و $b=12$ حاصل می‌شود. $S_{\\min}=\\dfrac b2+i-1=\\dfrac{12}{2}+0-1=5\\Rightarrow S_{\\max}-S_{\\min}=9/5-5=4/5$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 63,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 27,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۱ — سوال 27",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G1-3",
+    "title": "فصل 3: چندضلعی‌ها",
+    "grade": 10
+   }
+  ],
+  "text": "مجموع تعداد قطرهای سه رأس دوبه‌دو غیرمجاور در یک $n$ ضلعی محدب برابر $18$ است. با رسم قطرهای گذرنده از یک رأس این $n$ ضلعی، سطح آن به چند مثلث متمایز تقسیم می‌شود؟",
+  "options": [
+   "$8$",
+   "$7$",
+   "$6$",
+   "$9$"
+  ],
+  "correct": 1,
+  "solution": "از هر رأس $n-3$ قطر می‌گذرد. با توجه به قطرهای مشترک، در مجموع $3(n-3)-3$ قطر بین آن‌ها وجود دارد. پس: $3(n-3)-3=18\\Rightarrow3(n-3)=21\\Rightarrow n=10$. با رسم قطرهای گذرنده از یک رأس $n$ ضلعی، سطح آن به $n-2$ مثلث تقسیم می‌شود. پس جواب $10-2=8$ می‌باشد.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 64,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 28,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۱ — سوال 28",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G1-2",
+    "title": "فصل 2: قضیهٔ تالس، تشابه و کاربردهای آن",
+    "grade": 10
+   }
+  ],
+  "text": "اندازهٔ اضلاع یک مستطیل برابر $2\\sqrt2$ و $1$ می‌باشد. فاصلهٔ وسط ضلع کوچک‌تر تا قطر مستطیل کدام است؟",
+  "options": [
+   "$\\sqrt3$",
+   "$\\dfrac{\\sqrt2}{3}$",
+   "$\\sqrt2$",
+   "$\\dfrac{\\sqrt2}{2}$"
+  ],
+  "correct": 2,
+  "solution": "مثلث‌های $ABD$ و $MDH$ با هم متشابه هستند: $\\left.\\begin{aligned}\\hat H&=\\hat A\\\\ \\hat D&=\\hat D\\end{aligned}\\right\\}\\Rightarrow\\overset{\\triangle}{MDH}\\sim\\overset{\\triangle}{ABD}\\Rightarrow\\dfrac{MH}{AB}=\\dfrac{DM}{BD}\\Rightarrow\\dfrac{MH}{2\\sqrt2}=\\dfrac{\\frac12}{3}\\Rightarrow MH=\\dfrac{\\sqrt2}{3}$. توجه: طول قطر مستطیل برابر $\\sqrt{1+(2\\sqrt2)^2}=3$ می‌باشد.",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/64/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 65,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 29,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۱ — سوال 29",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G1-2",
+    "title": "فصل 2: قضیهٔ تالس، تشابه و کاربردهای آن",
+    "grade": 10
+   }
+  ],
+  "text": "در شکل زیر $AM$ میانه وارد بر ضلع $BC$ بوده و $NC=2AN$ است. مساحت مثلث $AMN$ چه کسری از مساحت مثلث $ABC$ است؟",
+  "options": [
+   "$\\dfrac{3}{20}$",
+   "$\\dfrac{2}{15}$",
+   "$\\dfrac18$",
+   "$\\dfrac16$"
+  ],
+  "correct": 4,
+  "solution": "چون $AM$ میانهٔ مثلث $ABC$ است، لذا: $S_{\\overset{\\triangle}{AMC}}=\\dfrac12S_{\\overset{\\triangle}{ABC}}\\quad(1)$. از طرف دیگر: $\\left.\\begin{aligned}S_{\\overset{\\triangle}{AMN}}&=\\dfrac12AN.MH\\\\ S_{\\overset{\\triangle}{AMC}}&=\\dfrac12AC.MH\\end{aligned}\\right\\}\\Rightarrow S_{\\overset{\\triangle}{AMN}}=\\dfrac13S_{\\overset{\\triangle}{AMC}}\\quad(2)\\xrightarrow{(1),(2)}S_{\\overset{\\triangle}{AMN}}=\\dfrac13\\left(\\dfrac12S_{\\overset{\\triangle}{ABC}}\\right)=\\dfrac16S_{\\overset{\\triangle}{ABC}}$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/65/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/65/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 66,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 30,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۱ — سوال 30 — نیاز به بازبینی",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G1-2",
+    "title": "فصل 2: قضیهٔ تالس، تشابه و کاربردهای آن",
+    "grade": 10
+   }
+  ],
+  "text": "در شکل زیر $AP=4PB$، $BQ=QC$ و $\\hat Q_1=\\hat C$ است. حاصل $\\dfrac{BQ}{AC}$ کدام است؟",
+  "options": [
+   "$0/2$",
+   "$0/25$",
+   "$0/3$",
+   "$0/4$"
+  ],
+  "correct": 1,
+  "solution": "با توجه به اطلاعات سؤال خواهیم داشت: $QC=BQ\\Rightarrow\\hat B_1=\\hat C\\xrightarrow{\\hat Q_1=\\hat C}\\hat B_1=\\hat Q_1\\Rightarrow PQ\\parallel BC\\Rightarrow\\dfrac{AP}{AB}=\\dfrac{AQ}{AC}=4$ $\\Rightarrow\\dfrac{QC}{AC}=\\dfrac15\\Rightarrow\\dfrac{BQ}{AC}=\\dfrac15=0/2$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/66/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/66/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 67,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 31,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۲ — سوال 31",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G2-3",
+    "title": "فصل 3: روابط طولی در مثلث",
+    "grade": 11
+   }
+  ],
+  "text": "مساحت چهارضلعی مقعر $ABCD$، چند برابر $25\\sqrt3$ است؟ (در شکل: $AB=5$، $AD=8$، $BC=3$، $CD=5$ و $B\\hat CD=120^\\circ$)",
+  "options": [
+   "$\\dfrac13$",
+   "$\\dfrac12$",
+   "$\\dfrac14$",
+   "$1$"
+  ],
+  "correct": 3,
+  "solution": "ابتدا $B$ را به $D$ وصل می‌کنیم و در $\\overset{\\triangle}{BCD}$ قضیهٔ کسینوس‌ها را می‌نویسیم. $BD^2=9+25-2\\times3\\times5\\times\\underbrace{\\cos120^\\circ}_{-\\frac12}=49\\Rightarrow BD=7$، $P_{ABD}=\\dfrac{7+5+8}{2}=10$، $\\underset{\\text{مقعر}}{S_{ABCD}}=\\underset{\\text{دستور هرون}}{S_{\\overset{\\triangle}{ABD}}}-S_{\\overset{\\triangle}{BCD}}=\\sqrt{10\\times5\\times2\\times3}-\\dfrac12\\times3\\times5\\times\\underbrace{\\sin120^\\circ}_{\\frac{\\sqrt3}{2}}=10\\sqrt3-\\dfrac{15\\sqrt3}{4}=\\dfrac{25\\sqrt3}{4}$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/67/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 68,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 32,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۲ — سوال 32",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G2-2",
+    "title": "فصل 2: تبدیل‌های هندسی و کاربردها",
+    "grade": 11
+   }
+  ],
+  "text": "در شکل زیر، نقطهٔ $N$ روی میانهٔ $AM$ طوری قرار دارد که $AN=\\dfrac14AM$؛ مثلث $ABC$ را با بردار $\\overrightarrow{AN}$ انتقال داده‌ایم تا مثلث $NPQ$ حاصل شود، مساحت ناحیهٔ هاشورزده چه کسری از مساحت مثلث $NPQ$ می‌باشد؟",
+  "options": [
+   "$\\dfrac{11}{16}$",
+   "$\\dfrac{5}{16}$",
+   "$\\dfrac{7}{16}$",
+   "$\\dfrac{9}{16}$"
+  ],
+  "correct": 3,
+  "solution": "در مثلث $NEF$، $NM$ میانهٔ وارد بر ضلع $EF$ و اندازهٔ آن $\\dfrac34$ طول $AM$ می‌باشد. از طرفی مثلث‌های $NEF$ و $ABC$ با هم متشابه هستند و نسبت تشابه همان نسبت میانه‌ها یعنی $\\dfrac34$ می‌باشد، پس: $\\dfrac{S_{\\overset{\\triangle}{NEF}}}{S_{\\overset{\\triangle}{ABC}}}=\\left(\\dfrac34\\right)^2=\\dfrac{9}{16}\\xrightarrow{\\text{تفضیل در صورت}}\\dfrac{S_{\\overset{\\triangle}{ABC}}-S_{\\overset{\\triangle}{NEF}}}{S_{\\overset{\\triangle}{ABC}}}=\\dfrac{16-9}{16}=\\dfrac{7}{16}\\quad(1)$. از طرفی انتقال تبدیلی طولپا است و مساحت اشکال تحت آن، تغییر نمی‌کند. یعنی: $S_{\\overset{\\triangle}{ABC}}=S_{\\overset{\\triangle}{NPQ}}\\xrightarrow{(1)}\\dfrac{S_{\\text{سایه‌زده}}}{S_{\\overset{\\triangle}{ABC}}}=\\dfrac{7}{16}\\Rightarrow\\dfrac{S_{\\text{سایه‌زده}}}{S_{\\overset{\\triangle}{NPQ}}}=\\dfrac{7}{16}$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/68/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 69,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 33,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۲ — سوال 33",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G2-1",
+    "title": "فصل 1: دایره",
+    "grade": 11
+   }
+  ],
+  "text": "مطابق شکل، دو دایره که از مرکزهای همدیگر (نقاط $O$ و $O'$) می‌گذرند در نقطهٔ $A$ مشترک‌اند. امتداد $AO$ دایرهٔ سمت راست را در نقطهٔ $B$ و پاره‌خط $BO'$ (و امتداد آن)، دایرهٔ سمت چپ را در $C$ و $D$ قطع می‌کند. نسبت اندازهٔ کمان‌های $AD$ و $OC$ کدام است؟",
+  "options": [
+   "$4$",
+   "$3$",
+   "$2/5$",
+   "$2$"
+  ],
+  "correct": 2,
+  "solution": "چون دو دایره از مرکزهای یکدیگر گذشته‌اند پس شعاع آن‌ها با هم برابر است. اولاً مثلث $OAO'$ متساوی‌الاضلاع بوده و مثلث $OBO'$ نیز در رأس $O$ متساوی‌الساقین است و داریم: $\\hat B_1=\\hat O'_1=\\dfrac{A\\hat OO'}{2}=30^\\circ\\Rightarrow$ زاویه مرکزی: $\\hat O'_1=\\overset{\\frown}{OC}=30^\\circ$. $\\overset{\\triangle}{AO'B}$: (زاویهٔ خارجی) $\\hat O'_2=\\hat A+\\hat B_1=60^\\circ+30^\\circ=90^\\circ\\Rightarrow$ زاویهٔ مرکزی: $\\hat O'_2=\\overset{\\frown}{AD}=90^\\circ$. پس $\\dfrac{\\overset{\\frown}{AD}}{\\overset{\\frown}{OC}}=\\dfrac{90^\\circ}{30^\\circ}=3$.",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/69/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/69/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 70,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 34,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۲ — سوال 34",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G2-1",
+    "title": "فصل 1: دایره",
+    "grade": 11
+   },
+   {
+    "code": "G2-3",
+    "title": "فصل 3: روابط طولی در مثلث",
+    "grade": 11
+   }
+  ],
+  "text": "در شکل زیر $AM=1$، $BK=3$ و $CN=12$ هستند. نقطه‌ای که از اضلاع $AC$ و $BC$ به فاصلهٔ $1$ واحد است، از ضلع $AB$ چه فاصله‌ای دارد؟",
+  "options": [
+   "$4$",
+   "$4/8$",
+   "$5$",
+   "$25$"
+  ],
+  "correct": 3,
+  "solution": "به شکل دقت کنید. با توجه به اطلاعات سؤال داریم: $\\begin{cases}P-a=1\\\\ P-b=3\\\\ P-c=12\\end{cases}$ محیط مثلث به راحتی قابل محاسبه است. $2P=2(P-a)+2(P-b)+2(P-c)\\Rightarrow2P=2(1)+2(3)+2(12)\\Rightarrow2P=32\\Rightarrow P=16$. به کمک رابطهٔ هرون مساحت مثلث $ABC$ به دست می‌آید. $S_{\\overset{\\triangle}{ABC}}=\\sqrt{P(P-a)(P-b)(P-c)}$، $S_{\\overset{\\triangle}{ABC}}=\\sqrt{16(1)(3)(12)}=\\sqrt{16\\times36}=4\\times6=24$. فرض کنید فاصلهٔ نقطهٔ $O$ از اضلاع $AC$ و $BC$ برابر $1$ باشد، داریم: $S_{\\overset{\\triangle}{AOC}}=\\dfrac{OH'\\times AC}{2}=\\dfrac{1\\times13}{2}=6/5$، $S_{\\overset{\\triangle}{BOC}}=\\dfrac{OH''\\times BC}{2}=\\dfrac{1\\times15}{2}=7/5$. بنابراین مساحت مثلث $AOB$ برابر است با: $S_{\\overset{\\triangle}{AOB}}=S_{\\overset{\\triangle}{ABC}}-(S_{\\overset{\\triangle}{AOC}}+S_{\\overset{\\triangle}{BOC}})$، $S_{\\overset{\\triangle}{AOB}}=24-(6/5+7/5)=10$، $S_{\\overset{\\triangle}{AOB}}=\\dfrac{OH\\times AB}{2}\\Rightarrow10=\\dfrac{OH\\times4}{2}\\Rightarrow OH=5$. فاصلهٔ نقطهٔ $O$ از ضلع $AB$ برابر با $5$ است.",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/70/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/70/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 71,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 35,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۲ — سوال 35 — نیاز به بازبینی",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G2-1",
+    "title": "فصل 1: دایره",
+    "grade": 11
+   }
+  ],
+  "text": "در شکل زیر، نیم‌دایره به قطر $AN$ بر میانهٔ $BM$ در نقطهٔ همرسی میانه‌های مثلث قائم‌الزاویه $ABC$ ($\\hat A=90^\\circ$) مماس شده است. اگر $AB=2\\sqrt5$ باشد، آن‌گاه شعاع نیم‌دایره چقدر است؟",
+  "options": [
+   "$\\dfrac53$",
+   "$2$",
+   "$\\dfrac75$",
+   "$1/5$"
+  ],
+  "correct": 2,
+  "solution": "مطابق شکل دو مماس $BA$ و $BG$ بر نیم‌دایره رسم شده است، پس $BG=BA=2\\sqrt5$ و $GM=\\dfrac12BG=\\sqrt5$ است. در این صورت داریم: $\\overset{\\triangle}{ABM}:\\ AM^2=BM^2-AB^2=(3\\sqrt5)^2-(2\\sqrt5)^2=25\\Rightarrow AM=5$. طبق روابط طولی در دایره داریم: $MG^2=MN\\times MA\\Rightarrow(\\sqrt5)^2=(5-2R)\\times5\\Rightarrow R=2$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/71/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/71/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 72,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 36,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۲ — سوال 36",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G2-2",
+    "title": "فصل 2: تبدیل‌های هندسی و کاربردها",
+    "grade": 11
+   }
+  ],
+  "text": "در مثلث قائم‌الزاویهٔ متساوی‌الساقین شکل زیر، اگر $AN=BM$ باشد، آن‌گاه چند مورد از گزاره‌های زیر درست است؟ الف) محیط مثلث $AMN$ ثابت است. ب) عمودمنصف $MN$ همواره از نقطهٔ ثابتی می‌گذرد. ج) زاویهٔ بین $BN$ و $CM$ همواره ثابت است.",
+  "options": [
+   "$1$",
+   "$2$",
+   "$3$",
+   "هیچ کدام"
+  ],
+  "correct": 1,
+  "solution": "اگر نقطهٔ $O$ وسط $BC$ را مرکز دوران با زاویهٔ $90^\\circ$ در نظر بگیریم آن‌گاه نقطهٔ $N$ را می‌توان روی $M$ تصویر کرد یعنی $ON=OM$ و عمودمنصف $MN$ همواره از $O$ می‌گذرد پس فقط گزارهٔ (ب) صحیح است.",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/72/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/72/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 73,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 37,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۲ — سوال 37",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G2-3",
+    "title": "فصل 3: روابط طولی در مثلث",
+    "grade": 11
+   }
+  ],
+  "text": "اگر در مثلث $ABC$ رابطهٔ $a\\sin\\hat C=(2c^2-1)\\sin\\hat A$ و $c\\sin\\hat C=b\\sin\\hat B$ برقرار باشد، طول ضلع $b$ کدام است؟",
+  "options": [
+   "$1$",
+   "$2$",
+   "$\\dfrac{\\sqrt2-1}{2}$",
+   "$2\\sqrt2+1$"
+  ],
+  "correct": 1,
+  "solution": "در مثلث $ABC$: $\\dfrac{a}{\\sin\\hat A}=\\dfrac{b}{\\sin\\hat B}=\\dfrac{c}{\\sin\\hat C}$، پس $a\\sin\\hat C=c\\sin\\hat A\\Rightarrow c\\sin\\hat A=(2c^2-1)\\sin\\hat A\\Rightarrow2c^2-1=c\\Rightarrow2c^2-c-1=0\\Rightarrow\\begin{cases}c=1\\\\ c=-\\dfrac12\\ \\text{غ‌ق‌ق}\\end{cases}$. از طرفی: $c\\sin\\hat C=b\\sin\\hat B\\xrightarrow[b=2R\\sin\\hat B]{c=2R\\sin\\hat C}2R\\sin^2\\hat C=2R\\sin^2\\hat B\\Rightarrow\\begin{cases}\\sin\\hat B=\\sin\\hat C\\Rightarrow\\hat B=\\hat C\\Rightarrow b=c=1\\\\ \\sin\\hat B=-\\sin\\hat C\\ \\text{غ‌ق‌ق}\\end{cases}$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 74,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 38,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۲ — سوال 38",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G2-3",
+    "title": "فصل 3: روابط طولی در مثلث",
+    "grade": 11
+   }
+  ],
+  "text": "سه دایره به مرکزهای $A$، $B$ و $C$ دوبه‌دو مماس خارجی‌اند. اگر اندازهٔ $AD$ برابر $2$ باشد، مساحت مثلث $ABC$ کدام است؟ (در شکل شعاع دایره‌های $A$ و $B$ به ترتیب $1$ و $3$ است.)",
+  "options": [
+   "$\\sqrt8$",
+   "$\\sqrt{10}$",
+   "$\\sqrt{15}$",
+   "$\\sqrt{20}$"
+  ],
+  "correct": 3,
+  "solution": "طبق قضیهٔ استوارت ابتدا $x$ را می‌یابیم: $AD^2=\\dfrac{CD\\times AB^2+BD\\times AC^2}{BC}-BD\\times DC\\Rightarrow2^2=\\dfrac{x\\times4^2+3\\times(x+1)^2}{x+3}-3x\\Rightarrow4+3x=\\dfrac{16x+3x^2+6x+3}{x+3}\\Rightarrow13x+12+3x^2=22x+3x^2+3\\Rightarrow9x=9\\Rightarrow x=1$. حال طبق قضیهٔ هرون مساحت مثلث $ABC$ را می‌یابیم: $P=\\dfrac{4+4+2}{2}=5$، $S=\\sqrt{P(P-a)(P-b)(P-c)}\\Rightarrow S=\\sqrt{5(5-4)(5-2)(5-4)}=\\sqrt{15}$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/74/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 75,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 39,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۲ — سوال 39",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G2-3",
+    "title": "فصل 3: روابط طولی در مثلث",
+    "grade": 11
+   }
+  ],
+  "text": "نیمساز زاویهٔ قائمهٔ $A$ از مثلث قائم‌الزاویهٔ $ABC$ وتر $BC$ را به دو قسمت به طول‌های $3$ و $1$ واحد تقسیم می‌کند. اندازهٔ نیمساز $AD$ برابر کدام است؟",
+  "options": [
+   "$\\sqrt{1/6}$",
+   "$\\sqrt{1/8}$",
+   "$\\sqrt{4/8}$",
+   "$\\sqrt{7/8}$"
+  ],
+  "correct": 2,
+  "solution": "طبق قضیهٔ نیمسازها $\\dfrac{AB}{AC}=\\dfrac{BD}{DC}=\\dfrac13$. حال با استفاده از قضیهٔ فیثاغورس داریم: $x^2+9x^2=16\\Rightarrow x^2=\\dfrac{16}{10}\\Rightarrow x=\\dfrac{4}{\\sqrt{10}}$. حال طبق قضیهٔ طول نیمساز داخلی داریم: $d^2=\\left(\\dfrac{4}{\\sqrt{10}}\\right)\\left(\\dfrac{12}{\\sqrt{10}}\\right)-(1)(3)\\Rightarrow d^2=\\dfrac{48}{10}-3=\\dfrac{18}{10}\\Rightarrow d=\\sqrt{1/8}$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/75/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/75/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 76,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 40,
+  "source_ref": "Ghalamchi 1403-01-07 — هندسه ۲ — سوال 40",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G2-3",
+    "title": "فصل 3: روابط طولی در مثلث",
+    "grade": 11
+   }
+  ],
+  "text": "در مثلث $ABC$ شکل زیر، اگر اندازهٔ $CM$، دو برابر اندازهٔ $BM$ باشد، اندازهٔ $BM$ کدام است؟ (در شکل: $AC=\\dfrac12$، $AB=\\dfrac{\\sqrt3}{4}$، $C\\hat AM=2\\alpha$ و $M\\hat AB=\\alpha$)",
+  "options": [
+   "$\\dfrac{\\sqrt7}{4}$",
+   "$\\dfrac{\\sqrt7}{8}$",
+   "$\\dfrac{\\sqrt7}{9}$",
+   "$\\dfrac{\\sqrt7}{12}$"
+  ],
+  "correct": 4,
+  "solution": "در دو مثلث $ACM$ و $ABM$ قضیهٔ سینوس‌ها را می‌نویسیم: $\\overset{\\triangle}{ACM}:\\ \\dfrac{2x}{\\sin2\\alpha}=\\dfrac{\\frac12}{\\sin\\hat M_1}$ و $\\overset{\\triangle}{ABM}:\\ \\dfrac{x}{\\sin\\alpha}=\\dfrac{\\frac{\\sqrt3}{4}}{\\sin\\hat M_2=\\sin\\hat M_1}$، با تقسیم: $\\dfrac{2x\\sin\\alpha}{x\\sin2\\alpha}=\\dfrac{\\frac12}{\\frac{\\sqrt3}{4}}\\Rightarrow\\dfrac{2x\\sin\\alpha}{2x\\sin\\alpha\\cos\\alpha}=\\dfrac{2}{\\sqrt3}\\Rightarrow\\dfrac{1}{\\cos\\alpha}=\\dfrac{2}{\\sqrt3}\\Rightarrow\\cos\\alpha=\\dfrac{\\sqrt3}{2}\\Rightarrow\\alpha=30^\\circ$. پس مثلث $ABC$ در رأس $A$ قائمه است. $\\overset{\\triangle}{ABC}:\\ BC^2=AC^2+AB^2\\Rightarrow(BC)^2=\\left(\\dfrac12\\right)^2+\\left(\\dfrac{\\sqrt3}{4}\\right)^2\\Rightarrow BC^2=\\dfrac14+\\dfrac{3}{16}=\\dfrac{7}{16}\\Rightarrow BC=\\dfrac{\\sqrt7}{4}\\Rightarrow BC=3BM\\Rightarrow BM=\\dfrac{\\sqrt7}{12}$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/76/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/76/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 77,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 41,
+  "source_ref": "Ghalamchi 1403-01-07 — آمار و احتمال — سوال 41",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "AP-4",
+    "title": "فصل 4: آمار استنباطی",
+    "grade": 11
+   }
+  ],
+  "text": "بازهٔ اطمینان $95$ درصد برای میانگین جامعه‌ای با انحراف معیار $1/65$ براساس یک نمونه به صورت $[4/8,5/4]$ به دست آمده است. کدام گزینه مجموع اعضای این نمونه را نشان می‌دهد؟",
+  "options": [
+   "$629/2$",
+   "$566/1$",
+   "$617/1$",
+   "$571/1$"
+  ],
+  "correct": 3,
+  "solution": "بازه اطمینان $95$ درصد برای جامعه‌ای با اندازهٔ نمونهٔ $n$، میانگین $\\bar x$ و انحراف معیار $\\sigma$ به صورت $\\left[\\bar x-\\dfrac{2\\sigma}{\\sqrt n},\\ \\bar x+\\dfrac{2\\sigma}{\\sqrt n}\\right]$ است. $\\bar x=\\dfrac{4/8+5/4}{2}=5/1$، $\\dfrac{4\\sigma}{\\sqrt n}=5/4-4/8=0/6\\Rightarrow\\dfrac{4\\times1/65}{\\sqrt n}=0/6\\Rightarrow\\sqrt n=11\\Rightarrow n=121$. مجموع اعضای نمونه برابر است با: $\\bar x=\\dfrac{x_1+x_2+\\dots+x_n}{n}\\Rightarrow5/1=\\dfrac{x_1+x_2+\\dots+x_n}{121}\\Rightarrow x_1+x_2+\\dots+x_n=5/1\\times121=617/1$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 78,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 42,
+  "source_ref": "Ghalamchi 1403-01-07 — آمار و احتمال — سوال 42",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "AP-3",
+    "title": "فصل 3: آمار توصیفی",
+    "grade": 11
+   }
+  ],
+  "text": "در نمودار جعبه‌ای داده‌های مرتب شدهٔ $1,2,2,5,6,7,8,8,12,14,x,17,18$ نسبت طول دو بخشی از جعبه که توسط میانه از هم جدا شده‌اند، برابر $\\dfrac34$ است. مقدار دادهٔ $x$ کدام است؟",
+  "options": [
+   "$14$",
+   "$14/5$",
+   "$15$",
+   "$15/5$"
+  ],
+  "correct": 1,
+  "solution": "داده‌ها عبارتند از: $1,2,\\underbrace{2,5},6,7,\\underset{\\downarrow}{8},8,12,\\underbrace{14,x},17,18$؛ $Q_1=\\dfrac{2+5}{2}=3/5$، $Q_2=8$، $Q_3=\\dfrac{14+x}{2}$. نمودار جعبه‌ای داده‌ها به صورت زیر است. نسبت طول دو بخشی از جعبه که توسط میانه از هم جدا شده‌اند را به دو صورت می‌توان نوشت: (I) $\\dfrac{\\left(\\frac{14+x}{2}\\right)-8}{8-3/5}=\\dfrac34\\Rightarrow\\left(\\dfrac{14+x}{2}\\right)-8=\\dfrac{27}{8}\\Rightarrow\\dfrac{14+x}{2}=\\dfrac{91}{8}\\Rightarrow x=8/75$ (II) $\\dfrac{8-3/5}{\\left(\\frac{14+x}{2}\\right)-8}=\\dfrac34\\Rightarrow\\left(\\dfrac{14+x}{2}\\right)-8=6\\Rightarrow\\dfrac{14+x}{2}=14\\Rightarrow x=14$. $x=8/75$ غیرقابل قبول است زیرا داده‌ها مرتب شده‌اند و مقدار $x$ باید عددی بین $14$ و $18$ باشد. بنابراین مقدار $x$ برابر $14$ است.",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/78/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 79,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 43,
+  "source_ref": "Ghalamchi 1403-01-07 — آمار و احتمال — سوال 43",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "AP-3",
+    "title": "فصل 3: آمار توصیفی",
+    "grade": 11
+   }
+  ],
+  "text": "اگر میانگین $25$ دادهٔ جدول زیر برابر $16$ باشد، آن‌گاه واریانس این داده‌ها چقدر است؟ $\\begin{array}{c|ccccc}\\text{مقدار داده}&12&13&14&15&20\\\\\\hline\\text{فراوانی}&6&x&5&3&y\\end{array}$",
+  "options": [
+   "$10/28$",
+   "$12/64$",
+   "$13/76$",
+   "$11/52$"
+  ],
+  "correct": 4,
+  "solution": "مجموع فراوانی‌ها برابر $25$ است. پس: $3+x+5+6+y=25\\Rightarrow x+y=11$. از طرفی مجموع انحراف از میانگین برابر صفر است. پس: $\\begin{array}{c|ccccc}\\text{مقدار داده}&12&13&14&15&20\\\\\\hline\\text{فراوانی}&6&x&5&3&y\\\\\\hline x_i-\\bar x&-4&-3&-2&-1&4\\end{array}\\Rightarrow-24-3x-10-3+4y=0\\Rightarrow-3x-37+4y=0\\Rightarrow\\begin{cases}x+y=11\\\\-3x+4y=37\\end{cases}\\Rightarrow\\begin{cases}x=1\\\\y=10\\end{cases}$. حال می‌توانیم واریانس داده‌ها را حساب کنیم: $\\sigma^2=\\dfrac{\\Sigma(x_i-\\bar x)^2}{n}=\\dfrac{6\\times(-4)^2+1\\times(-3)^2+5(-2)^2+3(-1)^2+10(4)^2}{25}=\\dfrac{288}{25}=11/52$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 80,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 44,
+  "source_ref": "Ghalamchi 1403-01-07 — آمار و احتمال — سوال 44",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "AP-2",
+    "title": "فصل 2: احتمال",
+    "grade": 11
+   }
+  ],
+  "text": "اگر $A$ و $B$ دو پیشامد از فضای نمونه‌ای $S$ باشند که $P(B'-A)-P(A')P(B')=0$، $P(A-B)=\\dfrac14$ و $P(A|B)=\\dfrac38$ باشند، $P(B'|A)$ کدام است؟",
+  "options": [
+   "$\\dfrac18$",
+   "$\\dfrac14$",
+   "$\\dfrac12$",
+   "$\\dfrac23$"
+  ],
+  "correct": 4,
+  "solution": "$P(B'-A)=P(B'\\cap A')$ پس طبق فرض $P(B'\\cap A')=P(B')P(A')$ است و این یعنی $A'$ و $B'$ دو پیشامد مستقل‌اند پس (1) $A$ و $B$، (2) $A'$ و $B$ و (3) $A$ و $B'$ نیز مستقل‌اند. وقتی دو پیشامد $A$ و $B$ مستقل باشند، $P(A|B)=P(A)$ است. بنابراین $P(A)=\\dfrac38$ است. $A$ و $B'$ مستقل‌اند، پس: $P(A-B)=P(A\\cap B')=P(A)P(B')\\Rightarrow\\dfrac14=\\dfrac38\\times P(B')\\Rightarrow P(B')=\\dfrac23$. با توجه به این‌که $A$ و $B'$ نیز مستقل‌اند، پس: $P(B'|A)=P(B')=\\dfrac23$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 81,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 45,
+  "source_ref": "Ghalamchi 1403-01-07 — آمار و احتمال — سوال 45",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "AP-2",
+    "title": "فصل 2: احتمال",
+    "grade": 11
+   }
+  ],
+  "text": "احتمال آن‌که علی دوچرخه بخرد $0/55$ و احتمال آن که رایانه بخرد $0/3$ و احتمال آن‌که هر دو را بخرد $0/1$ می‌باشد، اگر علی دوچرخه نخرد، احتمال آن‌که رایانه نیز نخرد چقدر است؟",
+  "options": [
+   "$\\dfrac59$",
+   "$\\dfrac57$",
+   "$\\dfrac58$",
+   "$\\dfrac{5}{14}$"
+  ],
+  "correct": 1,
+  "solution": "روش اول: (نمودار ون: $A$: دوچرخه بخرد، $B$: رایانه بخرد) $P(B'|A')=?$، $P(B'|A')=\\dfrac{P(A'\\cap B')}{P(A')}=\\dfrac{P[(A\\cup B)']}{1-P(A)}=\\dfrac{1-[P(A)+P(B)-P(A\\cap B)]}{1-P(A)}=\\dfrac{1-[0/55+0/3-0/1]}{1-0/55}=\\dfrac{1-0/75}{0/45}=\\dfrac{0/25}{0/45}=\\dfrac{25}{45}=\\dfrac59$. روش دوم: استفاده از نمودار ون: $P(\\text{می‌خواهیم رایانه نخرد}\\,|\\,\\text{می‌دانیم دوچرخه نخریده})=\\dfrac{\\text{هاشور افقی}}{\\text{هاشور مورب}}=\\dfrac{0/25}{0/2+0/25}=\\dfrac{0/25}{0/45}=\\dfrac59$",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/81/s/0/",
+   "https://qbank.setareganplus.ir/api/v1/img/81/s/1/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 82,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 46,
+  "source_ref": "Ghalamchi 1403-01-07 — آمار و احتمال — سوال 46",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "AP-2",
+    "title": "فصل 2: احتمال",
+    "grade": 11
+   }
+  ],
+  "text": "برای دو پیشامد $A$ و $B$ از فضای نمونه‌ای $S$ داریم $P(A'\\cap B')=0/35$ و $P(B\\cap A')=0/3$؛ مقدار $P(A)$ چقدر است؟",
+  "options": [
+   "$0/3$",
+   "$0/35$",
+   "$0/45$",
+   "$0/5$"
+  ],
+  "correct": 2,
+  "solution": "می‌دانیم $P(A'\\cap B')=P[(A\\cup B)']$، بنابراین: $P(A'\\cap B')=0/35\\Rightarrow P(A\\cup B)=1-0/35=0/65\\Rightarrow P(A)+P(B)-P(A\\cap B)=0/65\\Rightarrow\\underbrace{(P(B)-P(A\\cap B))}_{P(B\\cap A')=0/3}+P(A)=0/65\\Rightarrow P(A)=0/35$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 83,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 47,
+  "source_ref": "Ghalamchi 1403-01-07 — آمار و احتمال — سوال 47",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "AP-1",
+    "title": "فصل 1: آشنایی با مبانی ریاضیات",
+    "grade": 11
+   }
+  ],
+  "text": "اگر $A_n=\\{m\\in\\mathbb Z\\mid m>-n,\\ 3^m\\le3n\\}$ و $B_n=\\left\\{\\dfrac m2\\mid m\\in\\mathbb Z,\\ m>-2n,\\ 2^m\\le2n\\right\\}$ باشند، آن‌گاه $(B_3-A_3)\\times A_2$ چند عضو دارد؟",
+  "options": [
+   "$12$",
+   "$15$",
+   "$16$",
+   "$18$"
+  ],
+  "correct": 1,
+  "solution": "$B_3=\\left\\{\\dfrac m2\\mid m\\in\\mathbb Z,\\ m>-6,\\ 2^m\\le6\\right\\}=\\{-2/5,-2,-1/5,-1,-0/5,0,0/5,1\\}$، $A_3=\\{m\\in\\mathbb Z\\mid m>-3,\\ 3^m\\le9\\}=\\{-2,-1,0,1,2\\}$، $A_2=\\{m\\in\\mathbb Z\\mid m>-2,\\ 3^m\\le6\\}=\\{-1,0,1\\}$، $|(B_3-A_3)\\times A_2|=|B_3-A_3||A_2|=4\\times3=12$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 84,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 48,
+  "source_ref": "Ghalamchi 1403-01-07 — آمار و احتمال — سوال 48",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "AP-1",
+    "title": "فصل 1: آشنایی با مبانی ریاضیات",
+    "grade": 11
+   }
+  ],
+  "text": "اگر $A$ و $B$ دو مجموعهٔ دلخواه و $(A'\\cap B)\\cup[(B\\cap A)-B']=A-B$ باشد، آن‌گاه کدام یک از مجموعه‌های زیر غیرتهی است؟",
+  "options": [
+   "$B-A$",
+   "$A$",
+   "$A'\\cap B'$",
+   "$B$"
+  ],
+  "correct": 3,
+  "solution": "طبق قوانین جبر مجموعه‌ها داریم: $(A'\\cap B)\\cup[(B\\cap A)-B']=(A'\\cap B)\\cup[\\underbrace{(B\\cap A)\\cap B}_{(B\\cap A)\\subseteq B}]=(B\\cap A')\\cup(B\\cap A)=B\\cap(A'\\cup A)=B\\cap U=B$. بنابراین با توجه به فرض، تساوی $B=A-B$ برقرار است. از طرفی $B$ و $A-B$ دو مجموعهٔ جدا از هم هستند، پس تنها شرط برقراری این تساوی تهی بودن این دو مجموعه است. در این صورت مجموعه‌های $A$ و $B-A$ نیز قطعاً تهی هستند، ولی برای مجموعهٔ $A'\\cap B'$ داریم: $A'\\cap B'=(A\\cup B)'=\\varnothing'=U$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 85,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 49,
+  "source_ref": "Ghalamchi 1403-01-07 — آمار و احتمال — سوال 49",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "AP-1",
+    "title": "فصل 1: آشنایی با مبانی ریاضیات",
+    "grade": 11
+   }
+  ],
+  "text": "اگر $p$ و $q$ دو گزارهٔ دلخواه باشند، گزارهٔ $(\\sim p\\vee q)\\Rightarrow[\\sim q\\wedge(p\\Rightarrow q)]$ با کدام یک از گزاره‌های زیر هم‌ارز است؟",
+  "options": [
+   "$p$",
+   "$\\sim p$",
+   "$\\sim q$",
+   "$q$"
+  ],
+  "correct": 3,
+  "solution": "طبق قوانین گزاره‌ها داریم: $(\\sim p\\vee q)\\Rightarrow[\\sim q\\wedge(p\\Rightarrow q)]\\equiv(\\sim p\\vee q)\\Rightarrow[\\sim q\\wedge(\\sim p\\vee q)]\\equiv(\\sim p\\vee q)\\Rightarrow[(\\sim q\\wedge\\sim p)\\vee\\underbrace{(\\sim q\\wedge q)}_{F}]\\equiv(\\sim p\\vee q)\\Rightarrow(\\sim p\\wedge\\sim q)\\equiv\\sim(\\sim p\\vee q)\\vee(\\sim p\\wedge\\sim q)\\equiv(p\\wedge\\sim q)\\vee(\\sim p\\wedge\\sim q)\\equiv\\underbrace{(p\\vee\\sim p)}_{T}\\wedge\\sim q\\equiv\\sim q$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 86,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-07",
+  "number": 50,
+  "source_ref": "Ghalamchi 1403-01-07 — آمار و احتمال — سوال 50",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "AP-2",
+    "title": "فصل 2: احتمال",
+    "grade": 11
+   }
+  ],
+  "text": "تاس به گونه‌ای ساخته شده است که احتمال وقوع هر وجه آن متناسب با عکس تعداد شمارنده‌های طبیعی آن وجه می‌باشد، با کدام احتمال در پرتاب این تاس عددی زوج یا مضرب $3$ می‌آید؟",
+  "options": [
+   "$\\dfrac{21}{37}$",
+   "$\\dfrac{13}{37}$",
+   "$\\dfrac{16}{37}$",
+   "$\\dfrac{19}{37}$"
+  ],
+  "correct": 4,
+  "solution": "مطابق فرض: $P(1)=\\dfrac x1,\\ P(2)=\\dfrac x2,\\ P(3)=\\dfrac x2,\\ P(4)=\\dfrac x3,\\ P(5)=\\dfrac x2,\\ P(6)=\\dfrac x4$، $S=\\{1,2,3,4,5,6\\}\\Rightarrow P(1)+P(2)+P(3)+P(4)+P(5)+P(6)=1\\Rightarrow\\dfrac x1+\\dfrac x2+\\dfrac x2+\\dfrac x3+\\dfrac x2+\\dfrac x4=1\\Rightarrow\\dfrac{12x+6x+6x+4x+6x+3x}{12}=1\\Rightarrow37x=12\\Rightarrow x=\\dfrac{12}{37}$. $A$: پیشامد ظاهر شدن عدد زوج، $B$: پیشامد ظاهر شدن مضرب $3$. $P(A\\cup B)=P(\\{2,3,4,6\\})=\\dfrac x2+\\dfrac x2+\\dfrac x3+\\dfrac x4=\\dfrac{19x}{12}=\\dfrac{19}{37}$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 87,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 1,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 1 — حسابان ۲ - حدهای نامتناهی - حد در بی‌نهایت؛ صفحه‌های ۴۸ تا ۵۰",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-3",
+    "title": "فصل 3: حدهای نامتناهی، حد در بی‌نهایت",
+    "grade": 12
+   }
+  ],
+  "text": "حاصل $\\lim_{x\\to1^+}\\dfrac{[x-\\sqrt3]x-\\sqrt3}{x-1}$ کدام است؟ ($[\\;]$، نماد جزء صحیح است.)",
+  "options": [
+   "$-\\infty$",
+   "صفر",
+   "$1$",
+   "$+\\infty$"
+  ],
+  "correct": 1,
+  "solution": "$\\lim_{x\\to1^+}\\dfrac{[x-\\sqrt3]x-\\sqrt3}{x-1}=\\lim_{x\\to1^+}\\dfrac{-x-\\sqrt3}{x-1}=\\dfrac{-1-\\sqrt3}{0^+}=-\\infty$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 88,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 2,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 2 — حسابان ۲ - تابع؛ صفحه‌های ۱ تا ۱۲",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-1",
+    "title": "فصل 1: تابع",
+    "grade": 12
+   }
+  ],
+  "text": "نمودار تابع $f$ در شکل زیر رسم شده است و نمودار تابع $g$ از انقباض افقی و انبساط عمودی این نمودار، هر دو با ضریب $3$ به دست می‌آید. طول نقطهٔ برخورد دو نمودار کدام است؟",
+  "options": [
+   "$\\dfrac13$",
+   "$\\dfrac34$",
+   "$\\dfrac14$",
+   "$\\dfrac23$"
+  ],
+  "correct": 3,
+  "solution": "ضابطهٔ تابع $f$ به صورت $f(x)=1-x$ است و ضابطهٔ تابع $g$ از رابطهٔ $g(x)=3f(3x)$ به دست می‌آید. $\\Rightarrow g(x)=3(1-3x)=3-9x\\xrightarrow{f(x)=g(x)}1-x=3-9x\\Rightarrow8x=2\\Rightarrow x=\\dfrac14$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/88/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 89,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 3,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 3 — حسابان ۲ - تابع؛ صفحه‌های ۱ تا ۱۲",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-1",
+    "title": "فصل 1: تابع",
+    "grade": 12
+   }
+  ],
+  "text": "طول نقاط نمودار تابع $f(x)=4x^2-x+1$ را در $2$ ضرب می‌کنیم و سپس آن را $m$ واحد به چپ و $n$ واحد به پایین انتقال می‌دهیم تا نمودار تابع $g$، مطابق شکل زیر به دست آید. حاصل $\\dfrac nm$ کدام است؟",
+  "options": [
+   "$\\dfrac{15}{4}$",
+   "$-30$",
+   "$-\\dfrac{15}{8}$",
+   "$60$"
+  ],
+  "correct": 1,
+  "solution": "ضابطهٔ تابع $g$ از روی ضابطهٔ تابع $f$ از رابطهٔ $g(x)=f\\left(\\dfrac{x+m}{2}\\right)-n$ به دست می‌آید. پس داریم: $g(x)=4\\left(\\dfrac{x+m}{2}\\right)^2-\\left(\\dfrac{x+m}{2}\\right)+1-n=x^2+\\left(2m-\\dfrac12\\right)x+m^2-\\dfrac m2+1-n$ با توجه به نمودار تابع $g$، ضابطهٔ آن باید $g(x)=x^2$ باشد. پس داریم: $\\left.\\begin{matrix}2m-\\frac12=0\\Rightarrow m=\\frac14\\\\ m^2-\\frac m2+1-n=0\\xrightarrow{m=\\frac14}n=\\frac{15}{16}\\end{matrix}\\right\\}\\Rightarrow\\dfrac nm=\\dfrac{15}{4}$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/89/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 90,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 4,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 4 — حسابان ۲ - تابع؛ صفحه‌های ۱ تا ۱۲",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-1",
+    "title": "فصل 1: تابع",
+    "grade": 12
+   }
+  ],
+  "text": "نمودار تابع $y=f\\left(\\dfrac12x-1\\right)$ در شکل زیر رسم شده است. به ازای چند مقدار صحیح $a$، معادلهٔ $f(x)=\\sqrt{-x-a}$ جواب دارد؟",
+  "options": [
+   "$3$",
+   "$4$",
+   "$7$",
+   "$8$"
+  ],
+  "correct": 4,
+  "solution": "باید نمودارهای دو تابع $y=f(x)$ و $g(x)=\\sqrt{-x-a}$ نقطهٔ مشترک داشته باشند. برای رسم نمودار تابع $y=f(x)$، نمودار تابع $y=f\\left(\\dfrac12x-1\\right)$ را دو واحد به چپ می‌بریم و سپس طول نقاط آن را بر $2$ تقسیم می‌کنیم. [شکل] حال مطابق شکل بالا، برای این‌که نمودارهای دو تابع $f$ و $g$ نقطهٔ مشترک داشته باشند، دو حالت پیش می‌آید. (حالت اول) $-a>-\\dfrac12$ باشد که در آن صورت باید $g(-1)\\le2$ شود. (حالت دوم) $-a\\le-\\dfrac12$ باشد که در آن صورت باید $-a\\ge-4$ شود: $\\begin{cases}-a\\le-\\frac12\\ ,\\ -a\\ge-4\\Rightarrow\\frac12\\le a\\le4\\\\ -a>-\\frac12\\ ,\\ g(-1)=\\sqrt{1-a}\\le2\\Rightarrow1-a\\le4\\Rightarrow-3\\le a<\\frac12\\end{cases}$ پس به ازای مقادیر عضو بازهٔ $[-3,4]$ که شامل $8$ عدد صحیح است، معادلهٔ $f(x)=\\sqrt{-x-a}$ جواب حقیقی دارد.",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/90/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/90/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 91,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 5,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 5 — حسابان ۲ - تابع؛ صفحه‌های ۱۳ و ۱۴",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-1",
+    "title": "فصل 1: تابع",
+    "grade": 12
+   }
+  ],
+  "text": "در شکل زیر نمودارهای دو تابع $f(x)=ax^3$ و $g(x)=bx^2$ رسم شده است. حاصل $f(b)+g(a)$ کدام است؟",
+  "options": [
+   "$-6$",
+   "$6$",
+   "$-\\dfrac{16}{27}$",
+   "$\\dfrac{16}{27}$"
+  ],
+  "correct": 2,
+  "solution": "در همسایگی $x=0$، نمودار بالاتر مربوط به تابع $f$ است. پس داریم: $\\begin{cases}g(1)=b=-2\\\\ f\\left(\\frac23\\right)=g\\left(\\frac23\\right)\\Rightarrow\\frac{8}{27}a=-2\\left(\\frac49\\right)\\Rightarrow a=-3\\end{cases}$ پس ضابطه‌های دو تابع $f(x)=-3x^3$ و $g(x)=-2x^2$ است و داریم: $f(b)+g(a)=f(-2)+g(-3)=24-18=6$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/91/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 92,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 6,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 6 — حسابان ۲ - تابع؛ صفحه‌های ۱۵ تا ۱۸",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-1",
+    "title": "فصل 1: تابع",
+    "grade": 12
+   }
+  ],
+  "text": "تابع $f(x)=\\begin{cases}|x+1|+1 & ;\\ x\\le-2\\\\ -x^2-ax & ;\\ x>-2\\end{cases}$ روی $\\mathbb R$ اکیداً نزولی است. حدود مقادیر $a$ کدام است؟",
+  "options": [
+   "$[3,4]$",
+   "$[4,+\\infty)$",
+   "$(-\\infty,3]$",
+   "هیچ مقدار $a$"
+  ],
+  "correct": 4,
+  "solution": "تابع $y=|x+1|+1$ روی بازهٔ $(-\\infty,-2]$ اکیداً نزولی است. پس برای این‌که تابع $f$ روی $\\mathbb R$ اکیداً نزولی باشد، لازم است شرط‌های زیر برقرار باشد: الف) سهمی $y=-x^2-ax$ روی بازهٔ $(-2,+\\infty)$ اکیداً نزولی باشد، این یعنی این بازه نباید شامل طول رأس سهمی باشد: $x_S=-\\dfrac a2\\le-2\\Rightarrow a\\ge4$ ب) مقدار تابع $y=-x^2-ax$ در $x=-2$ بیشتر از مقدار تابع $y=|x+1|+1$ در این نقطه نباشد: $-4+2a\\le2\\Rightarrow a\\le3$ در نتیجه هیچ مقداری برای $a$ نمی‌توان پیدا کرد.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 93,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 7,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 7 — حسابان ۲ - تابع؛ صفحه‌های ۱۵ تا ۱۸",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-1",
+    "title": "فصل 1: تابع",
+    "grade": 12
+   }
+  ],
+  "text": "تابع $f(x)=|x-1|(x-1)-4x$ مفروض است. اگر به ازای هر مقدار $m$ عضو بازهٔ $(a,b)$، نامساوی $f\\left(\\dfrac{m+a}{2}\\right)>f\\left(\\dfrac{m+b}{2}\\right)$ برقرار باشد، بیشترین مقدار $b-a$ کدام است؟",
+  "options": [
+   "$5$",
+   "$4$",
+   "$3$",
+   "$2$"
+  ],
+  "correct": 2,
+  "solution": "$f(x)=\\begin{cases}-(x+1)^2 & ;\\ x<1\\\\ x^2-6x+1 & ;\\ x\\ge1\\end{cases}$ نمودار تابع $f$ در شکل زیر رسم شده است: [شکل] اگر $a<m<b$ باشد، نامساوی $\\dfrac{m+a}{2}<\\dfrac{m+b}{2}$ برقرار است و از آنجا که $f\\left(\\dfrac{m+a}{2}\\right)>f\\left(\\dfrac{m+b}{2}\\right)$ است، نتیجه می‌شود تابع $f$ روی بازهٔ محدود، نزولی است. حال با توجه به نمودار، تابع $f$ روی بازهٔ $(-1,3)$ اکیداً نزولی است، پس داریم: $-1<\\dfrac{m+a}{2}<\\dfrac{m+b}{2}<3\\Rightarrow m\\in(-2-a,6-b)$ بازهٔ $(a,b)$ باید زیرمجموعهٔ بازهٔ فوق باشد: $\\Rightarrow\\begin{cases}-2-a\\le a\\Rightarrow a\\ge-1\\\\ 6-b\\ge b\\Rightarrow b\\le3\\end{cases}$ پس بیشترین مقدار $b-a$ برابر $3-(-1)=4$ است.",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/93/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 94,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 8,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 8 — حسابان ۲ - تابع؛ صفحهٔ ۲۰",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-1",
+    "title": "فصل 1: تابع",
+    "grade": 12
+   }
+  ],
+  "text": "اگر $(x^3+2)p(x)=x^{30}-32^2$ باشد، مجموع ضرایب مثبت چندجمله‌ای $p(x)$ کدام است؟",
+  "options": [
+   "$256$",
+   "$341$",
+   "$512$",
+   "$682$"
+  ],
+  "correct": 2,
+  "solution": "از اتحاد زیر استفاده می‌کنیم: $a^n-b^n=(a+b)(a^{n-1}-a^{n-2}b+a^{n-3}b^2-\\dots-b^{n-1})$ ؛ $n$ زوج. و داریم: $x^{30}-32^2=x^{30}-2^{10}=(x^3)^{10}-2^{10}=(x^3+2)\\big((x^3)^9-2(x^3)^8+\\dots+2^8x^3-2^9\\big)\\Rightarrow p(x)=x^{27}-2x^{24}+2^2x^{21}-2^3x^{18}+\\dots+2^8x^3-2^9$ و مجموع ضرایب مثبت $p(x)$ برابر است با: $1+2^2+2^4+2^6+2^8=\\dfrac{(2^2)^5-1}{2^2-1}=\\dfrac{1023}{3}=341$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 95,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 9,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 9 — حسابان ۲ - مثلثات؛ صفحهٔ ۲۷",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-2",
+    "title": "فصل 2: مثلثات",
+    "grade": 12
+   }
+  ],
+  "text": "دورهٔ تناوب تابع $f(x)=\\sin^6x-\\cos^6x+\\dfrac18\\cos2x\\cos4x$ برابر $T$ و بیشترین مقدار آن برابر $M$ است. حاصل $TM$ کدام است؟",
+  "options": [
+   "$\\dfrac{7\\pi}{8}$",
+   "$\\dfrac{5\\pi}{16}$",
+   "$\\dfrac{7\\pi}{4}$",
+   "$\\dfrac{7\\pi}{12}$"
+  ],
+  "correct": 1,
+  "solution": "ابتدا باید ضابطهٔ تابع را ساده کنیم: $\\sin^6x-\\cos^6x=(\\sin^2x-\\cos^2x)(\\sin^4x+\\cos^4x+\\sin^2x\\cos^2x)=-\\cos2x\\big((\\sin^2x+\\cos^2x)^2-\\sin^2x\\cos^2x\\big)=-\\cos2x\\left(1-\\dfrac14\\sin^22x\\right)=-\\cos2x\\left(1-\\dfrac14\\left(\\dfrac{1-\\cos4x}{2}\\right)\\right)=-\\dfrac78\\cos2x-\\dfrac18\\cos2x\\cos4x$ در نتیجه ضابطهٔ تابع $f$ به صورت مقابل است: $f(x)=-\\dfrac78\\cos2x$ که یعنی $T=\\dfrac{2\\pi}{2}=\\pi$ و $M=\\dfrac78$ و در نتیجه $TM=\\dfrac{7\\pi}{8}$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 96,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 10,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 10 — حسابان ۲ - مثلثات؛ صفحهٔ ۴۲",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-2",
+    "title": "فصل 2: مثلثات",
+    "grade": 12
+   }
+  ],
+  "text": "در مربع شکل مقابل، اگر $\\tan\\alpha=\\dfrac15$ باشد، مقدار $\\tan x$ کدام است؟",
+  "options": [
+   "$\\dfrac5{17}$",
+   "$\\dfrac7{22}$",
+   "$\\dfrac7{17}$",
+   "$\\dfrac5{22}$"
+  ],
+  "correct": 3,
+  "solution": "با توجه به شکل $x+2\\alpha=45^\\circ$ است. پس برای محاسبهٔ $\\tan x$ لازم داریم که $\\tan2\\alpha$ را حساب کنیم: $\\tan2\\alpha=\\dfrac{2\\tan\\alpha}{1-\\tan^2\\alpha}=\\dfrac{\\frac25}{1-\\frac1{25}}=\\dfrac{10}{24}=\\dfrac5{12}$ حال داریم: $x=45^\\circ-2\\alpha\\Rightarrow\\tan x=\\tan(45^\\circ-2\\alpha)=\\dfrac{1-\\tan2\\alpha}{1+\\tan2\\alpha}=\\dfrac{1-\\frac5{12}}{1+\\frac5{12}}=\\dfrac7{17}$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/96/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 97,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 11,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 11 — حسابان ۲ - مثلثات؛ صفحه‌های ۲۴ تا ۲۷",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-2",
+    "title": "فصل 2: مثلثات",
+    "grade": 12
+   }
+  ],
+  "text": "تعداد جواب‌های معادلهٔ $2-3\\sin3\\pi x=0$ در بازهٔ $\\left(0,\\dfrac53\\right)$ کدام است؟",
+  "options": [
+   "$4$",
+   "$5$",
+   "$6$",
+   "$7$"
+  ],
+  "correct": 3,
+  "solution": "تعداد جواب‌های معادله، تعداد نقاط برخورد خط $y=\\dfrac23$ و تابع $f(x)=\\sin3\\pi x$ است. این دو نمودار را در یک دستگاه مختصات رسم می‌کنیم: [شکل] تعداد نقاط برخورد در بازهٔ $\\left(0,\\dfrac53\\right)$ برابر $6$ است.",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/97/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 98,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 12,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 12 — حسابان ۲ - مثلثات؛ صفحه‌های ۲۳ تا ۲۹",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-2",
+    "title": "فصل 2: مثلثات",
+    "grade": 12
+   }
+  ],
+  "text": "بخشی از نمودار تابع $f(x)=2a\\sin\\left(b\\pi x+\\dfrac\\pi4\\right)-a$ در شکل زیر رسم شده است. اگر $b>0$ باشد، حاصل $\\dfrac{a^2}{b}$ کدام است؟",
+  "options": [
+   "$4$",
+   "$\\dfrac{92}{7}$",
+   "$\\dfrac49$",
+   "$-92$"
+  ],
+  "correct": 1,
+  "solution": "ابتدا مقدار $a$ را حساب می‌کنیم: $f(0)=2a\\sin\\dfrac\\pi4-a=\\sqrt2a-a=(\\sqrt2-1)a>0\\Rightarrow a>0$، $f_{\\max}=\\sqrt2\\Rightarrow|2a|-a=2a-a=a=\\sqrt2$ پس $f(x)=2\\sqrt2\\sin\\left(b\\pi x+\\dfrac\\pi4\\right)-\\sqrt2$ است. مقدار این تابع در $x=\\dfrac{23}{6}$ برابر صفر است. $\\Rightarrow\\sin\\left(\\dfrac{23b\\pi}{6}+\\dfrac\\pi4\\right)=\\dfrac12\\Rightarrow\\begin{cases}\\frac{23\\pi b}{6}+\\frac\\pi4=2k\\pi+\\frac\\pi6\\\\ \\frac{23\\pi b}{6}+\\frac\\pi4=2k\\pi+\\frac{5\\pi}{6}\\end{cases}\\Rightarrow b=\\dfrac{24k-1}{46}$ یا $b=\\dfrac{24k+7}{46}$ ؛ $k\\in\\mathbb Z\\quad(*)$ با توجه به نمودار $\\dfrac{23}{6}$ از یک دورهٔ تناوب کمتر و از $\\dfrac34$ آن بیشتر است. $\\Rightarrow\\dfrac{3T}{4}<\\dfrac{23}{6}<T\\xrightarrow{b>0}\\dfrac34\\left(\\dfrac2b\\right)<\\dfrac{23}{6}<\\dfrac2b\\Rightarrow\\dfrac{9}{23}<b<\\dfrac{12}{23}$ حال با توجه به مقادیر به دست آمده برای $b$ داریم: $\\dfrac9{23}<\\dfrac{24k-1}{46}<\\dfrac{12}{23}\\Rightarrow\\dfrac{19}{24}<k<\\dfrac{25}{24}\\xrightarrow{k\\in\\mathbb Z}k=1\\xrightarrow{(*)}b=\\dfrac12$ ؛ $\\dfrac9{23}<\\dfrac{24k+7}{46}<\\dfrac{12}{23}\\Rightarrow\\dfrac{11}{24}<k<\\dfrac{17}{24}$: عضو صحیح ندارد. $\\Rightarrow\\dfrac{a^2}{b}=\\dfrac{2}{\\frac12}=4$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/98/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 99,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 13,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 13 — حسابان ۲ - مثلثات؛ صفحه‌های ۲۹ تا ۳۴",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-2",
+    "title": "فصل 2: مثلثات",
+    "grade": 12
+   }
+  ],
+  "text": "بخشی از نمودار تابع $f(x)=a\\tan\\left(bx-\\dfrac\\pi3\\right)$ در شکل زیر رسم شده است. طول نقطهٔ $A$ کدام است؟",
+  "options": [
+   "$\\dfrac\\pi2$",
+   "$\\dfrac{4\\pi}{9}$",
+   "$\\dfrac{7\\pi}{18}$",
+   "$\\dfrac{5\\pi}{6}$"
+  ],
+  "correct": 1,
+  "solution": "$f(0)=3\\Rightarrow a\\tan\\left(-\\dfrac\\pi3\\right)=-a\\sqrt3=3\\Rightarrow a=-\\sqrt3$ از طرفی نمودار روی هر بازه از دامنه‌اش اکیداً نزولی است، پس $ab<0$ و در نتیجه $b>0$ است. مجانب‌های قائم نمودار، نقاطی است که تابع در آن‌ها تعریف نمی‌شوند: $\\Rightarrow bx-\\dfrac\\pi3=k\\pi+\\dfrac\\pi2\\Rightarrow x=(6k+5)\\dfrac{\\pi}{6b}$ که مقادیر مثبت آن‌ها به ترتیب $\\dfrac{5\\pi}{6b}$، $\\dfrac{11\\pi}{6b}$، $\\dfrac{17\\pi}{6b}$ و ... هستند. یعنی دومین مجانب قائم $\\dfrac{11\\pi}{6b}$ است. $\\Rightarrow\\dfrac{11\\pi}{6b}=\\dfrac{11\\pi}{18}\\Rightarrow b=3$ در نتیجه $f(x)=-\\sqrt3\\tan\\left(3x-\\dfrac\\pi3\\right)$ است. در نقطهٔ $A$، $f(x)=-1$ برقرار است. $-\\sqrt3\\tan\\left(3x-\\dfrac\\pi3\\right)=-1\\Rightarrow\\tan\\left(3x-\\dfrac\\pi3\\right)=\\dfrac1{\\sqrt3}=\\tan\\left(\\dfrac\\pi6\\right)\\Rightarrow3x-\\dfrac\\pi3=k\\pi+\\dfrac\\pi6\\Rightarrow x=(2k+1)\\dfrac\\pi6$ ؛ $k\\in\\mathbb Z$ طول نقطهٔ $A$، دومین مقدار مثبت در دسته جواب بالاست. $\\xrightarrow{k=1}x_A=\\dfrac\\pi2$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/99/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 100,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 14,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 14 — حسابان ۲ - مثلثات؛ صفحه‌های ۳۵ تا ۴۴",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-2",
+    "title": "فصل 2: مثلثات",
+    "grade": 12
+   }
+  ],
+  "text": "مجموع جواب‌های معادلهٔ $\\sin x=\\tan2x$ در بازهٔ $(0,2\\pi)$ کدام است؟",
+  "options": [
+   "$2\\pi$",
+   "$\\dfrac{5\\pi}{2}$",
+   "$3\\pi$",
+   "$\\dfrac{7\\pi}{2}$"
+  ],
+  "correct": 3,
+  "solution": "$\\sin x=\\dfrac{\\sin2x}{\\cos2x}=\\dfrac{2\\sin x\\cos x}{2\\cos^2x-1}$ جواب‌های معادلهٔ بالا، اجتماع جواب‌های دو معادلهٔ زیر است: $\\sin x=0\\ ,\\ \\dfrac{2\\cos x}{2\\cos^2x-1}=1$ پس داریم: $\\sin x=0\\Rightarrow x=k\\pi\\ ;\\ k\\in\\mathbb Z$، $\\dfrac{2\\cos x}{2\\cos^2x-1}=1\\Rightarrow2\\cos^2x-2\\cos x-1=0\\Rightarrow\\cos x=\\dfrac{1-\\sqrt3}{2}\\Rightarrow x=2k\\pi+\\pi\\pm\\theta$ که $\\theta$ زاویه‌ای نامعلوم در ربع اول است که کسینوس آن برابر $\\dfrac{\\sqrt3-1}{2}$ است. در نتیجه جواب‌های بازهٔ $(0,2\\pi)$ به صورت $\\pi-\\theta$، $\\pi$ و $\\pi+\\theta$ هستند که مجموع آن‌ها برابر $3\\pi$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 101,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 15,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 15 — حسابان ۲ - مثلثات؛ صفحه‌های ۳۵ تا ۴۴",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-2",
+    "title": "فصل 2: مثلثات",
+    "grade": 12
+   }
+  ],
+  "text": "معادلهٔ $\\dfrac1{\\sin x}+\\dfrac1{\\cos x}=2\\sqrt2$ چند جواب متمایز در بازهٔ $(0,2\\pi)$ دارد؟",
+  "options": [
+   "$1$",
+   "$2$",
+   "$3$",
+   "$4$"
+  ],
+  "correct": 3,
+  "solution": "$\\dfrac1{\\sin x}+\\dfrac1{\\cos x}=2\\sqrt2\\Rightarrow\\sin x+\\cos x=2\\sqrt2\\sin x\\cos x$، $\\sqrt2\\sin\\left(x+\\dfrac\\pi4\\right)=\\sqrt2\\sin2x\\Rightarrow\\sin\\left(x+\\dfrac\\pi4\\right)=\\sin2x$ $\\begin{cases}x+\\frac\\pi4=2k\\pi+2x\\Rightarrow x=-2k\\pi+\\frac\\pi4\\ ,\\ k\\in\\mathbb Z\\\\ x+\\frac\\pi4=2k\\pi+\\pi-2x\\Rightarrow3x=2k\\pi+\\frac{3\\pi}{4}\\Rightarrow x=(8k+3)\\frac{\\pi}{12}\\ ,\\ k\\in\\mathbb Z\\end{cases}$ حال جواب‌های بازهٔ $(0,2\\pi)$ را پیدا می‌کنیم. به ازای مقادیر مختلف $k$ در دسته جواب‌های بالا، مقادیر جدول زیر در این بازه قرار می‌گیرند: $\\begin{array}{c|c|c|c}k&0&1&2\\\\\\hline -2k\\pi+\\frac\\pi4&\\frac\\pi4&&\\\\\\hline (8k+3)\\frac\\pi{12}&\\frac\\pi4&\\frac{11\\pi}{12}&\\frac{19\\pi}{12}\\end{array}$ پس تعداد جواب‌های مورد نظر برابر $3$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 102,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 16,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 16 — حسابان ۲ - تابع و حدهای نامتناهی - حد در بی‌نهایت؛ صفحه‌های ۲۰ و ۴۸ تا ۵۵",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-3",
+    "title": "فصل 3: حدهای نامتناهی، حد در بی‌نهایت",
+    "grade": 12
+   }
+  ],
+  "text": "اگر $\\lim_{x\\to1}\\dfrac{x-2}{2x^5+ax^2+b}=-\\infty$ باشد، حاصل $a-b$ کدام است؟",
+  "options": [
+   "$-6$",
+   "$-8$",
+   "$-10$",
+   "$-12$"
+  ],
+  "correct": 2,
+  "solution": "اولاً باید حد مخرج کسر در $x=1$ صفر باشد تا حد کسر نامتناهی شود. ثانیاً چون حد صورت کسر برابر $-1$ است، علامت مخرج کسر باید در دو طرف $x=1$ مثبت باشد. بنابراین داریم: $2+a+b=0\\Rightarrow b=-a-2$، $2x^5+ax^2+b=2x^5+ax^2-a-2=2(x^5-1)+a(x^2-1)=2(x-1)(x^4+x^3+x^2+x+1)+a(x-1)(x+1)=(x-1)(2x^4+2x^3+2x^2+2x+2+ax+a)=(x-1)Q(x)$ هم باید عامل $x-1$ داشته باشد، پس باید $Q(1)=0$ باشد: $\\Rightarrow2+2+2+2+2+a+a=0\\Rightarrow a=-5$ بنابراین $b=3$ و در نتیجه $a-b=-8$ است. البته به روش زیر نیز می‌توانستیم عمل کنیم. اگر $f(x)=2x^5+ax^2+b$ مفروض باشد، $x=1$ باید صفر توابع $f$ و $f'$ باشد تا $x=1$ ریشهٔ مضاعف مخرج باشد. $\\begin{cases}f(1)=2+a+b=0\\Rightarrow a+b=-2\\\\ f'(x)=10x^4+2ax\\xrightarrow{f'(1)=0}10+2a=0\\Rightarrow a=-5\\end{cases}$ پس $b=3$ و در نتیجه $a-b=-8$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 103,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 17,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 17 — حسابان ۲ - حدهای نامتناهی - حد در بی‌نهایت؛ صفحه‌های ۵۵ تا ۵۸",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-3",
+    "title": "فصل 3: حدهای نامتناهی، حد در بی‌نهایت",
+    "grade": 12
+   }
+  ],
+  "text": "فرض کنید $f(x)=\\tan\\left(\\dfrac{2\\pi}{x+1}\\right)$ و $D_f=\\left(\\dfrac13,3\\right)$ باشد. نمودار تابع $f$ چند مجانب قائم دارد؟",
+  "options": [
+   "$1$",
+   "$2$",
+   "$3$",
+   "صفر"
+  ],
+  "correct": 2,
+  "solution": "معادلهٔ مجانب‌های قائم تابع تانژانت به صورت $x=(2k+1)\\dfrac\\pi2$ است $(k\\in\\mathbb Z)$. بنابراین داریم: $\\dfrac{2\\pi}{x+1}=(2k+1)\\dfrac\\pi2\\Rightarrow x+1=\\dfrac4{2k+1}\\Rightarrow x=\\dfrac4{2k+1}-1$، $D_f=\\left(\\dfrac13,3\\right)\\Rightarrow\\dfrac13\\le\\dfrac4{2k+1}-1\\le3$، $\\dfrac43\\le\\dfrac4{2k+1}\\le4\\Rightarrow\\dfrac13\\le\\dfrac1{2k+1}\\le1\\Rightarrow1\\le2k+1\\le3$، $0\\le2k\\le2\\Rightarrow0\\le k\\le1\\ ,\\ k\\in\\mathbb Z$ در نتیجه نمودار تابع دو مجانب قائم دارد.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 104,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 18,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 18 — حسابان ۲ - حدهای نامتناهی - حد در بی‌نهایت؛ صفحه‌های ۵۵ تا ۵۸",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-3",
+    "title": "فصل 3: حدهای نامتناهی، حد در بی‌نهایت",
+    "grade": 12
+   }
+  ],
+  "text": "اگر $f\\left(-\\dfrac{x}{x+1}\\right)=\\dfrac{2x^2}{x^2+x+1}$ باشد، نمودار تابع $g(x)=\\dfrac{x-2}{f(x)-2}$ در اطراف $x=-1$ کدام است؟ (گزینه‌ها به صورت شکل‌اند؛ شکل زیر)",
+  "options": [
+   "شکل (۱)",
+   "شکل (۲)",
+   "شکل (۳)",
+   "شکل (۴)"
+  ],
+  "correct": 4,
+  "solution": "$f\\left(-1+\\dfrac1{x+1}\\right)=2-\\dfrac{2x+2}{x^2+x+1}$ پس وقتی $x\\to\\pm\\infty$، مقدار عبارت $-\\dfrac{x}{x+1}=-1+\\dfrac1{x+1}$ به $-1$ میل می‌کند و در نتیجه عبارت $\\dfrac{2x^2}{x^2+x+1}=2-\\dfrac{2x+2}{x^2+x+1}$ به $2$ میل می‌کند. به صورت دقیق‌تر داریم: $\\lim_{x\\to-\\infty}f\\left(-\\dfrac{x}{x+1}\\right)=\\lim_{x\\to-\\infty}\\dfrac{2x^2}{x^2+x+1}=2\\Rightarrow\\lim_{x\\to(-1)^-}f(x)=2$ تابع $f$ با مقادیر بیشتر از $2$ به آن نزدیک می‌شود. $\\lim_{x\\to+\\infty}f\\left(-\\dfrac{x}{x+1}\\right)=\\lim_{x\\to+\\infty}\\dfrac{2x^2}{x^2+x+1}=2\\Rightarrow\\lim_{x\\to(-1)^+}f(x)=2$ تابع $f$ با مقادیر کمتر از $2$ به آن نزدیک می‌شود. حال برای تابع $g$ می‌توانیم بنویسیم: $\\lim_{x\\to(-1)^-}g(x)=\\lim_{x\\to(-1)^-}\\dfrac{x-2}{f(x)-2}=\\dfrac{-3}{0^+}=-\\infty$، $\\lim_{x\\to(-1)^+}g(x)=\\lim_{x\\to(-1)^+}\\dfrac{x-2}{f(x)-2}=\\dfrac{-3}{0^-}=+\\infty$ نمودار گزینهٔ «۴» درست است.",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/104/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 105,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 19,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 19 — حسابان ۲ - حدهای متناهی - حد در بی‌نهایت؛ صفحه‌های ۶۳ تا ۶۶",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-3",
+    "title": "فصل 3: حدهای نامتناهی، حد در بی‌نهایت",
+    "grade": 12
+   }
+  ],
+  "text": "فرض کنید $f(x)=\\dfrac{x^3}{x^2+x+1}$ و $g(x)=\\dfrac{x^3}{x^2-2x-1}$ باشد، حاصل $\\lim_{x\\to+\\infty}(f-g)(x)$ کدام است؟",
+  "options": [
+   "صفر",
+   "$-1$",
+   "$-2$",
+   "$-3$"
+  ],
+  "correct": 4,
+  "solution": "ابتدا ضابطهٔ تابع $f-g$ را به دست می‌آوریم: $(f-g)(x)=f(x)-g(x)=\\dfrac{x^3}{x^2+x+1}-\\dfrac{x^3}{x^2-2x-1}=\\dfrac{x^5-2x^4-x^3-x^5-x^4-x^3}{(x^2+x+1)(x^2-2x-1)}=\\dfrac{-3x^4-2x^3}{(x^2+x+1)(x^2-2x-1)}$ در نتیجه داریم: $\\lim_{x\\to+\\infty}(f-g)(x)=\\lim_{x\\to+\\infty}\\dfrac{-3x^4}{x^2\\times x^2}=-3$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 106,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 20,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 20 — حسابان ۲ - حدهای نامتناهی - حد در بی‌نهایت؛ صفحه‌های ۵۵ تا ۵۸، ۶۷ و ۶۸",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-3",
+    "title": "فصل 3: حدهای نامتناهی، حد در بی‌نهایت",
+    "grade": 12
+   }
+  ],
+  "text": "اگر مساحت مثلث حاصل از وصل کردن محل تقاطع مجانب‌های نمودار تابع $f(x)=\\dfrac{x^2+ax|x|}{x^2-x+\\frac14}$ با مبدأ مختصات برابر $8$ باشد، مقدار $a$ کدام می‌تواند باشد؟",
+  "options": [
+   "$2$",
+   "$-4$",
+   "$8$",
+   "$-16$"
+  ],
+  "correct": 4,
+  "solution": "ابتدا مجانب‌های افقی و قائم نمودار تابع را پیدا می‌کنیم: $\\lim_{x\\to+\\infty}\\dfrac{x^2+ax|x|}{x^2-x+\\frac14}=\\lim_{x\\to+\\infty}\\dfrac{(1+a)x^2}{x^2}=1+a\\quad(a\\ne-1)$، $\\lim_{x\\to-\\infty}\\dfrac{x^2+ax|x|}{x^2-x+\\frac14}=\\lim_{x\\to-\\infty}\\dfrac{(1-a)x^2}{x^2}=1-a\\quad(a\\ne1)$ پس خطوط $y=1\\pm a$ مجانب‌های افقی نمودار هستند. $x=\\dfrac12$ نیز خط مجانب قائم است؛ زیرا: $\\lim_{x\\to\\frac12}\\dfrac{x^2+ax|x|}{x^2-x+\\frac14}=\\lim_{x\\to\\frac12}\\dfrac{x^2+ax|x|}{(x-\\frac12)^2}=\\infty$ بنابراین نقاط $\\left(\\dfrac12,1-a\\right)$، $\\left(\\dfrac12,1+a\\right)$ و $(0,0)$ رئوس مثلث مورد نظر هستند که مساحت آن برابر است با: $S=\\dfrac12\\left(|(1+a)-(1-a)|\\times\\dfrac12\\right)=\\dfrac{|a|}{2}=8\\Rightarrow|a|=16\\Rightarrow a=\\pm16$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 107,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 21,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 21 — حسابان ۲ - مشتق؛ صفحه‌های ۷۸ تا ۸۰",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-4",
+    "title": "فصل 4: مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "مطابق شکل، خط $d$ در نقطهٔ $x=2$ بر نمودار تابع $f$ مماس است. حاصل $\\lim_{x\\to0}\\dfrac{f(2+3x)-3}{x}$ کدام است؟",
+  "options": [
+   "$-\\dfrac13$",
+   "$-1$",
+   "$3$",
+   "$-3$"
+  ],
+  "correct": 4,
+  "solution": "با توجه به نمودار تابع $f$ داریم: $f(2)=3$ و همچنین شیب خط $d$ برابر $f'(2)$ است. بنابراین: $m_d=\\dfrac{0-3}{5-2}=-1\\Rightarrow f'(2)=-1$ می‌دانیم: $f'(a)=\\lim_{h\\to0}\\dfrac{f(a+h)-f(a)}{h}$. حال با تغییر متغیر $3x=t$ نتیجه می‌شود: $\\lim_{x\\to0}\\dfrac{f(2+3x)-3}{x}=\\lim_{t\\to0}\\dfrac{f(2+t)-f(2)}{\\frac t3}=3\\times\\lim_{t\\to0}\\dfrac{f(2+t)-f(2)}{t}=3f'(2)=3\\times(-1)=-3$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/107/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 108,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 22,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 22 — حسابان ۲ - مشتق؛ صفحه‌های ۸۶ تا ۸۹، ۹۳ و ۹۴",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-4",
+    "title": "فصل 4: مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "در تابع $f(x)=\\begin{cases}-\\dfrac1x+x & ;\\ x\\ge1\\\\ x^2+ax+b & ;\\ x<1\\end{cases}$ مقدار $f'(1)$ موجود است. مقدار $f(1-\\sqrt2)$ کدام است؟",
+  "options": [
+   "$3-\\sqrt2$",
+   "$2-\\sqrt2$",
+   "$2-2\\sqrt2$",
+   "$3-2\\sqrt2$"
+  ],
+  "correct": 3,
+  "solution": "(سراسری خارج از کشور ریاضی ۹۲) با توجه به اینکه $f'(1)$ موجود است داریم: ۱) $f'_-(1)=f'_+(1)$ ۲) تابع در $x=1$ پیوسته است یعنی: $\\lim_{x\\to1^+}f(x)=\\lim_{x\\to1^-}f(x)=f(1)$ ابتدا پیوستگی تابع را بررسی می‌کنیم: $\\left.\\begin{matrix}\\lim_{x\\to1^+}(-\\frac1x+x)=-1+1=0\\\\ \\lim_{x\\to1^-}(x^2+ax+b)=1+a+b\\end{matrix}\\right\\}\\Rightarrow a+b+1=0\\quad(1)$ و باتوجه به مشتق‌پذیری داریم: $\\left.\\begin{matrix}x\\ge1:\\ f'(x)=\\frac1{x^2}+1\\Rightarrow f'_+(1)=1+1=2\\\\ x<1:\\ f'(x)=2x+a\\Rightarrow f'_-(1)=2+a\\end{matrix}\\right\\}\\Rightarrow2+a=2\\Rightarrow a=0$ با جایگذاری $a$ در رابطه $(1)$، $b=-1$ می‌شود. بنابراین در $x<1$ ضابطهٔ تابع به‌صورت $f(x)=x^2-1$ است و داریم: $f(1-\\sqrt2)=(1-\\sqrt2)^2-1=1-2\\sqrt2+2-1=2-2\\sqrt2$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 109,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 23,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 23 — حسابان ۲ - مشتق؛ صفحه‌های ۹۵ و ۹۶",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-4",
+    "title": "فصل 4: مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "مقدار مشتق تابع $f(x)=\\cos\\left(x+\\dfrac\\pi4\\right)\\cos\\left(x-\\dfrac\\pi6\\right)-\\sin\\left(x+\\dfrac\\pi4\\right)\\sin\\left(x-\\dfrac\\pi6\\right)$ در $x=\\dfrac\\pi{12}$ کدام است؟",
+  "options": [
+   "$-\\sqrt2$",
+   "$\\sqrt2$",
+   "$-\\dfrac{\\sqrt2}{2}$",
+   "صفر"
+  ],
+  "correct": 1,
+  "solution": "ابتدا با استفاده از اتحاد کسینوس مجموع زوایا، تابع را ساده می‌کنیم: $\\cos(\\alpha+\\beta)=\\cos\\alpha\\cos\\beta-\\sin\\alpha\\sin\\beta\\Rightarrow f(x)=\\cos\\left(\\left(x+\\dfrac\\pi4\\right)+\\left(x-\\dfrac\\pi6\\right)\\right)=\\cos\\left(2x+\\dfrac\\pi{12}\\right)$ پس داریم: $f'(x)=-2\\sin\\left(2x+\\dfrac\\pi{12}\\right)\\Rightarrow f'\\left(\\dfrac\\pi{12}\\right)=-2\\sin\\left(2\\left(\\dfrac\\pi{12}\\right)+\\dfrac\\pi{12}\\right)=-2\\sin\\dfrac\\pi4=-\\sqrt2$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 110,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 24,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 24 — حسابان ۲ - مشتق؛ صفحه‌های ۹۳ تا ۹۶",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-4",
+    "title": "فصل 4: مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "اگر خط $y=3x+7$، در نقطهٔ $x=-1$ بر نمودار توابع $f$ و $g(x)=f(x+\\sqrt{f(x)})$ مماس باشد، $f'(1)$ کدام است؟",
+  "options": [
+   "$\\dfrac{12}{7}$",
+   "$\\dfrac43$",
+   "$\\dfrac34$",
+   "$\\dfrac7{12}$"
+  ],
+  "correct": 1,
+  "solution": "خط $y=3x+7$ در $x=-1$ بر دو تابع $f$ و $g$ مماس است، این یعنی $f(-1)=g(-1)=4$ و $f'(-1)=g'(-1)=3$. حال داریم: $g'(x)=\\left(1+\\dfrac{f'(x)}{2\\sqrt{f(x)}}\\right)f'\\left(x+\\sqrt{f(x)}\\right)$ $x=-1$ را جای گذاری می‌کنیم: $g'(-1)=\\left(1+\\dfrac{f'(-1)}{2\\sqrt{f(-1)}}\\right)f'\\left(-1+\\sqrt{f(-1)}\\right)=\\left(1+\\dfrac{3}{2\\times2}\\right)f'(1)=\\dfrac74f'(1)=3\\Rightarrow f'(1)=\\dfrac{12}{7}$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 111,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 25,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 25 — حسابان ۲ - مشتق؛ صفحه‌های ۱۰۲ تا ۱۰۶",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-4",
+    "title": "فصل 4: مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "نقطهٔ $A(x,y)$ بر روی منحنی به معادلهٔ $y=\\sqrt{-x^2+6x+1}$ در حرکت است. $d$ فاصلهٔ نقطهٔ $A$ از نقطهٔ $(2,0)$ است. عرض نقطهٔ $A$ کدام باشد تا آهنگ لحظه‌ای تغییر $d$ در آن نقطه برابر $\\dfrac13$ شود؟",
+  "options": [
+   "$4$",
+   "$3$",
+   "$2$",
+   "$1$"
+  ],
+  "correct": 2,
+  "solution": "فاصلهٔ نقطهٔ $A(x,y)$ از نقطهٔ $(2,0)$ به صورت $d=\\sqrt{(x-2)^2+(y-0)^2}$ است. عبارت $y=\\sqrt{-x^2+6x+1}$ را جایگزین می‌کنیم تا $d$ برحسب متغیر $x$ به‌دست آید. $d=\\sqrt{(x-2)^2+(-x^2+6x+1)}=\\sqrt{x^2-4x+4-x^2+6x+1}=\\sqrt{2x+5}$ از $d$ نسبت به $x$ مشتق می‌گیریم و برابر با $\\dfrac13$ قرار می‌دهیم. $d'(x)=\\dfrac{2}{2\\sqrt{2x+5}}=\\dfrac13\\Rightarrow\\sqrt{2x+5}=3\\Rightarrow2x+5=9\\Rightarrow x=2$ برای به‌دست آوردن عرض نقطهٔ موردنظر، $x=2$ را در ضابطهٔ منحنی قرار می‌دهیم. $y=\\sqrt{-x^2+6x+1}\\xrightarrow{x=2}y=\\sqrt{-4+12+1}=\\sqrt9=3$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 112,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 26,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 26 — حسابان ۲ - کاربردهای مشتق؛ صفحهٔ ۱۱۷",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-5",
+    "title": "فصل 5: کاربردهای مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "مجموعهٔ طول‌های نقاط بحرانی تابع $f(x)=\\sqrt[3]{x^2}(x^2-1)$ کدام است؟",
+  "options": [
+   "$\\{-\\frac12,\\frac12\\}$",
+   "$\\{-\\frac12,0,\\frac12\\}$",
+   "$\\{0,\\frac12\\}$",
+   "$\\{-\\frac12,0\\}$"
+  ],
+  "correct": 2,
+  "solution": "با ساده کردن ضابطهٔ تابع داریم: $f(x)=x^{\\frac23}(x^2-1)=x^{\\frac83}-x^{\\frac23}$، $f'(x)=\\dfrac83x^{\\frac53}-\\dfrac23x^{-\\frac13}=\\dfrac23x^{-\\frac13}(4x^2-1)=\\dfrac{2(4x^2-1)}{3\\sqrt[3]{x}}$ از $f'(x)=0$ داریم: $4x^2-1=0\\Rightarrow x=\\pm\\dfrac12$ از طرفی $f'(x)$ در $x=0$ تعریف نشده است، بنابراین مجموعهٔ طول‌های نقاط بحرانی تابع عبارت است از $\\{-\\frac12,0,\\frac12\\}$.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 113,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 27,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 27 — حسابان ۲ - کاربردهای مشتق؛ صفحه‌های ۱۱۲ تا ۱۱۶",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-5",
+    "title": "فصل 5: کاربردهای مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "اگر تابع $f(x)=\\begin{cases}x-1 & ;\\ x>2\\\\ x+a & ;\\ 1\\le x\\le2\\\\ 2x+1 & ;\\ x<1\\end{cases}$ به ازای $a\\in(m,n)$ دارای یک مینیمم نسبی و یک ماکزیمم نسبی باشد، بیش‌ترین مقدار $n-m$، کدام است؟",
+  "options": [
+   "$4$",
+   "$3$",
+   "$2$",
+   "$1$"
+  ],
+  "correct": 2,
+  "solution": "نمودار $f(x)$ را در $x>2$ و $x<1$ رسم می‌کنیم. با توجه به شکل، محدودهٔ رسم $y=x+a$ را مشخص می‌کنیم. [شکل] حال باید $f(1)<3$ و $f(2)>1$ باشد، پس: $\\left.\\begin{matrix}1+a<3\\Rightarrow a<2\\\\ 2+a>1\\Rightarrow a>-1\\end{matrix}\\right\\}\\Rightarrow a\\in(-1,2)$ بیشترین مقدار $n-m$ برابر $2-(-1)=3$ است.",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/113/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 114,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 28,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 28 — حسابان ۲ - کاربردهای مشتق؛ صفحه‌های ۱۱۲ تا ۱۱۶",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-5",
+    "title": "فصل 5: کاربردهای مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "اگر $f(x)=\\dfrac{|2x-6|}{[x-1]}$ باشد، روی بازهٔ $[2,5)$ اختلاف مقادیر ماکزیمم و مینیمم مطلق تابع کدام است؟ ($[\\;]$ نماد جزء صحیح است.)",
+  "options": [
+   "$\\dfrac12$",
+   "$1$",
+   "$\\dfrac32$",
+   "$2$"
+  ],
+  "correct": 4,
+  "solution": "$f(x)=\\begin{cases}-2x+6 & ;\\ 2\\le x<3\\\\ x-3 & ;\\ 3\\le x<4\\\\ \\dfrac{2x-6}{3} & ;\\ 4\\le x<5\\end{cases}$ [شکل] با توجه به نمودار، واضح است که مقدار ماکزیمم مطلق برابر $2$ و مقدار مینیمم مطلق برابر صفر است که اختلاف آن‌ها برابر با $2$ است.",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/114/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 115,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 29,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 29 — حسابان ۲ - کاربردهای مشتق؛ صفحه‌های ۱۱۸ و ۱۱۹",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-5",
+    "title": "فصل 5: کاربردهای مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "اختلاف بیشترین و کم‌ترین مقدار تابع $f(x)=\\sin x-3\\sqrt[3]{1+\\sin x}$ کدام است؟",
+  "options": [
+   "$\\sqrt[3]2$",
+   "$\\sqrt3$",
+   "$2$",
+   "$1$"
+  ],
+  "correct": 3,
+  "solution": "با تغییر متغیر $t=\\sqrt[3]{1+\\sin x}$ و استفاده از ضابطهٔ $f$، تابع $g$ را به صورت زیر می‌سازیم: $g(t)=t^3-1-3t=t^3-3t-1\\ ;\\ 0\\le t\\le\\sqrt[3]2$ برد تابع $g$ همان برد تابع $f$ است. پس داریم: $g(0)=-1\\ ,\\ g(\\sqrt[3]2)=1-3\\sqrt[3]2$ نقطه بحرانی بازهٔ $(0,\\sqrt[3]2)$ را نیز پیدا کنیم، برای این کار ریشه‌های $g'(t)=0$ را می‌یابیم: $g'(t)=3t^2-3\\xrightarrow[t>0]{g'(t)=0}t=1\\ ,\\ g(1)=-3$ پس نقطهٔ $(1,-3)$ دیگر نقطه بحرانی تابع $g$ است. از آنجا که $-3<1-3\\sqrt[3]2<-1$ است، برد تابع $g$ و در نتیجه تابع $f$ بازهٔ $[-3,-1]$ است، پس اختلاف بیشترین و کم‌ترین مقدار تابع $f$ برابر $-1-(-3)=2$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 116,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 30,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 30 — حسابان ۲ - کاربردهای مشتق؛ صفحه‌های ۱۱۸ و ۱۱۹",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-5",
+    "title": "فصل 5: کاربردهای مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "بیش‌ترین مساحت مستطیلی که دو ضلع آن بر روی محورهای مختصات و یک رأس آن بر روی نمودار تابع $y=\\sqrt{-x+16}$ در ناحیهٔ اول واقع شود، کدام است؟",
+  "options": [
+   "$16\\sqrt2$",
+   "$\\dfrac{128\\sqrt3}{3}$",
+   "$\\dfrac{128\\sqrt3}{9}$",
+   "$16$"
+  ],
+  "correct": 3,
+  "solution": "شکل مسئله به صورت زیر است: [شکل] مساحت مستطیل ساخته شده برابر است با: $S(x)=x\\sqrt{-x+16}$، $S'(x)=\\sqrt{-x+16}+x\\dfrac{-1}{2\\sqrt{-x+16}}=\\dfrac{-2x+32-x}{2\\sqrt{-x+16}}\\xrightarrow{S'(x)=0}-3x+32=0\\Rightarrow x=\\dfrac{32}{3}\\Rightarrow y=\\sqrt{-x+16}=\\sqrt{-\\dfrac{32}{3}+16}=\\sqrt{\\dfrac{16}{3}}=\\dfrac4{\\sqrt3}$ پس بیش‌ترین مساحت برابر می‌شود با: $S_{\\max}=\\dfrac{32}{3}\\times\\dfrac4{\\sqrt3}=\\dfrac{128}{3\\sqrt3}=\\dfrac{128\\sqrt3}{9}$",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/116/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 117,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 31,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 31 — هندسه ۳ - ماتریس و کاربردها؛ صفحه‌های ۱۷ تا ۱۹",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-1",
+    "title": "فصل 1: ماتریس و کاربردها",
+    "grade": 12
+   }
+  ],
+  "text": "اگر مجموع درایه‌های قطر اصلی ماتریس $A=\\begin{bmatrix}2&1&-5\\\\0&3&1\\\\4&-2&2\\end{bmatrix}\\begin{bmatrix}0&5&x\\\\1&1&-1\\\\2x&1&2\\end{bmatrix}\\begin{bmatrix}1&0&0\\\\0&-1&1\\\\-1&0&1\\end{bmatrix}$، برابر با صفر باشد، آن‌گاه مجموع درایه‌های قطر فرعی ماتریس $A$ کدام است؟",
+  "options": [
+   "$-7$",
+   "$-7/5$",
+   "$-8/5$",
+   "$-9$"
+  ],
+  "correct": 3,
+  "solution": "$A=\\begin{bmatrix}2&1&-5\\\\0&3&1\\\\4&-2&2\\end{bmatrix}\\begin{bmatrix}0&5&x\\\\1&1&-1\\\\2x&1&2\\end{bmatrix}\\begin{bmatrix}1&0&0\\\\0&-1&1\\\\-1&0&1\\end{bmatrix}=\\begin{bmatrix}1-10x&6&2x-11\\\\3+2x&4&-1\\\\-2+4x&20&4x+6\\end{bmatrix}\\begin{bmatrix}1&0&0\\\\0&-1&1\\\\-1&0&1\\end{bmatrix}=\\begin{bmatrix}-12x+12&-6&2x-5\\\\4+2x&-4&3\\\\-8&-20&4x+26\\end{bmatrix}$ با توجه به فرض، مجموع درایه‌های قطر اصلی ماتریس $A$ برابر صفر است، داریم: $(-12x+12)+(-4)+(4x+26)=0\\Rightarrow-8x+34=0\\Rightarrow x=\\dfrac{17}{4}$ بنابراین مجموع درایه‌های قطر فرعی این ماتریس برابر است با: $(2x-5)+(-4)+(-8)=2x-17=2\\left(\\dfrac{17}{4}\\right)-17=-8/5$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 118,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 32,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 32 — هندسه ۳ - ماتریس و کاربردها؛ صفحه‌های ۱۹ تا ۲۱",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-1",
+    "title": "فصل 1: ماتریس و کاربردها",
+    "grade": 12
+   }
+  ],
+  "text": "برای ماتریس‌های مربعی و هم‌مرتبهٔ $A$ و $B$ داریم $AB=B^2A$ و $A^3=B^3=I$؛ کدام تساوی درست نیست؟",
+  "options": [
+   "$(AB^2)^2=A^2B$",
+   "$(AB)^2=A^2$",
+   "$(BA)^2=A^2$",
+   "$(A^2B)^2=AB^2$"
+  ],
+  "correct": 1,
+  "solution": "با توجه به فرض، گزینه‌ها را بررسی می‌کنیم: گزینهٔ «۲»: $(AB)^2=(AB)(AB)=(AB)(B^2A)=AB^3A=A^2$ گزینهٔ «۳»: $(BA)^2=(BA)(BA)=B(AB)A=B(B^2A)A=B^3A^2=A^2$ همچنین از $AB=B^2A$ نتیجه می‌گیریم $BAB=B^3A=A$ و لذا $BA=BAB^3=(BAB)B^2=AB^2$، در نتیجه: گزینهٔ «۴»: $(A^2B)^2=(A^2B)(A^2B)=A^2(BA)(AB)=A^2(AB^2)AB=A^3(B^2A)B=(AB)B=AB^2$ در مورد گزینهٔ «۱» داریم: $(AB^2)^2=(AB^2)(AB^2)=A(B^2A)B^2=A(AB)B^2=A^2B^3=A^2$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 119,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 33,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 33 — هندسه ۳ - ماتریس و کاربردها؛ صفحه‌های ۲۳ و ۲۷",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-1",
+    "title": "فصل 1: ماتریس و کاربردها",
+    "grade": 12
+   }
+  ],
+  "text": "ماتریس $A+2I=\\begin{bmatrix}|A|&|A|+2\\\\|A|-1&|A|+5\\end{bmatrix}$ را در نظر بگیرید. مجموع درایه‌های وارون ماتریس $A$ کدام است؟",
+  "options": [
+   "$-\\dfrac{10}9$",
+   "$\\dfrac29$",
+   "$-\\dfrac29$",
+   "صفر"
+  ],
+  "correct": 4,
+  "solution": "$A+2I=\\begin{bmatrix}|A|&|A|+2\\\\|A|-1&|A|+5\\end{bmatrix}\\Rightarrow A=\\begin{bmatrix}|A|&|A|+2\\\\|A|-1&|A|+5\\end{bmatrix}-\\begin{bmatrix}2&0\\\\0&2\\end{bmatrix}\\Rightarrow A=\\begin{bmatrix}|A|-2&|A|+2\\\\|A|-1&|A|+3\\end{bmatrix}\\xrightarrow{\\det}$ $|A|=(|A|-2)(|A|+3)-(|A|+2)(|A|-1)\\Rightarrow|A|=|A|^2+|A|-6-|A|^2-|A|+2\\Rightarrow|A|=-4\\Rightarrow A=\\begin{bmatrix}-6&-2\\\\-5&-1\\end{bmatrix}\\Rightarrow A^{-1}=\\dfrac1{-4}\\begin{bmatrix}-1&2\\\\5&-6\\end{bmatrix}=\\begin{bmatrix}\\frac14&-\\frac12\\\\-\\frac54&\\frac32\\end{bmatrix}$ ← جمع درایه‌ها: صفر",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 120,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 34,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 34 — هندسه ۳ - ماتریس و کاربردها؛ صفحه‌های ۲۷ تا ۳۱",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-1",
+    "title": "فصل 1: ماتریس و کاربردها",
+    "grade": 12
+   }
+  ],
+  "text": "اگر $\\alpha$ و $\\beta$ ریشه‌های معادلهٔ زیر باشند، حاصل $\\dfrac1{\\alpha^2}+\\dfrac1{\\beta^2}$ به کدام عدد صحیح نزدیک‌تر است؟ $x\\begin{vmatrix}2&1&-1\\\\x&3&-1\\\\x&-1&0\\end{vmatrix}-\\begin{vmatrix}5x&-2&1\\\\2&-1&1\\\\-1&3&x\\end{vmatrix}=0$",
+  "options": [
+   "$5$",
+   "$4$",
+   "$3$",
+   "$2$"
+  ],
+  "correct": 2,
+  "solution": "به کمک روش بسط نسبت به سطر اول داریم: $x[2(-1)-1(x)-1(-4x)]-[5x(-x-3)+2(2x+1)+1(5)]=0$ $8x^2+9x-7=0\\Rightarrow\\begin{cases}\\alpha+\\beta=-\\frac ba=-\\frac98\\\\ \\alpha\\cdot\\beta=\\frac ca=-\\frac78\\end{cases}$ $\\dfrac1{\\alpha^2}+\\dfrac1{\\beta^2}=\\dfrac{\\alpha^2+\\beta^2}{\\alpha^2\\beta^2}=\\dfrac{(-\\frac98)^2-2(-\\frac78)}{(-\\frac78)^2}=\\dfrac{193}{49}\\simeq3/94$ عدد مورد نظر به عدد صحیح $4$ نزدیک است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 121,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 35,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 35 — هندسه ۳ - ماتریس و کاربردها؛ صفحه‌های ۲۳ تا ۲۸",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-1",
+    "title": "فصل 1: ماتریس و کاربردها",
+    "grade": 12
+   }
+  ],
+  "text": "ماتریس ضرایب دستگاه $\\begin{cases}2x-y=1-x\\\\ y+2=2x-1\\end{cases}$ به صورت $(A+2I)^{-1}$ می‌باشد و $B=\\begin{bmatrix}|A|&-1&|A|\\\\0&-1&2\\\\3&2&1\\end{bmatrix}$ است. حاصل $|B|$ کدام است؟",
+  "options": [
+   "$20$",
+   "$-20$",
+   "$10$",
+   "$-10$"
+  ],
+  "correct": 2,
+  "solution": "$\\begin{cases}3x-y=1\\\\ 2x-y=3\\end{cases}\\xrightarrow{\\text{ماتریس ضرایب}}\\begin{bmatrix}3&-1\\\\2&-1\\end{bmatrix}=(A+2I)^{-1}$ از دو طرف وارون می‌گیریم: $A+2I=\\begin{bmatrix}1&-1\\\\2&-3\\end{bmatrix}\\Rightarrow A=\\begin{bmatrix}1&-1\\\\2&-3\\end{bmatrix}-\\begin{bmatrix}2&0\\\\0&2\\end{bmatrix}$، $A=\\begin{bmatrix}-1&-1\\\\2&-5\\end{bmatrix}\\Rightarrow|A|=7\\Rightarrow B=\\begin{bmatrix}7&-1&7\\\\0&-1&2\\\\3&2&1\\end{bmatrix}$ دترمینان $B$ را نسبت به ستون اول بسط می‌دهیم: $|B|=7\\underbrace{\\begin{vmatrix}-1&2\\\\2&1\\end{vmatrix}}_{-5}+3\\underbrace{\\begin{vmatrix}-1&7\\\\-1&2\\end{vmatrix}}_{5}=-20$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 122,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 36,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 36 — هندسه ۳ - آشنایی با مقاطع مخروطی؛ صفحه‌های ۴۰ تا ۴۳",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-2",
+    "title": "فصل 2: آشنایی با مقاطع مخروطی",
+    "grade": 12
+   }
+  ],
+  "text": "کمترین فاصلهٔ نقاط دایره $x^2+y^2-2x+4y-11=0$ از خط $L$ برابر $1$ واحد است. از چند نقطه روی خط $L$ می‌توان مماسی به طول $3$ واحد بر این منحنی رسم کرد؟",
+  "options": [
+   "صفر",
+   "$1$",
+   "$2$",
+   "بیشمار"
+  ],
+  "correct": 2,
+  "solution": "مکان هندسی نقاطی که از آن نقاط بتوان مماس‌هایی با طول $L$ بر دایرهٔ $C(O,R)$ رسم کرد دایره‌ای است به مرکز $O$ و شعاع $R'=\\sqrt{R^2+L^2}$، در نتیجه با توجه به اطلاعات سؤال خواهیم داشت: $x^2+y^2-2x+4y-11=0\\Rightarrow R=\\dfrac12\\sqrt{4+16+44}=4\\Rightarrow R'=\\sqrt{4^2+3^2}=5$ که می‌بینیم دایرهٔ مفروض و خط داده شده در صورت سؤال یک نقطه تقاطع دارند. [شکل]",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/122/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 123,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 37,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 37 — هندسه ۳ - آشنایی با مقاطع مخروطی؛ صفحه‌های ۴۱ و ۴۴",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-2",
+    "title": "فصل 2: آشنایی با مقاطع مخروطی",
+    "grade": 12
+   }
+  ],
+  "text": "دو دایرهٔ $(x+3)^2+y^2=(2m+1)^2$ و $x^2+y^2-8y-m^2+16=0$ متقاطع‌اند. حدود تغییرات $m$ کدام است؟ $(m>0)$",
+  "options": [
+   "$1<m<\\dfrac52$",
+   "$2<m<\\dfrac{10}3$",
+   "$\\dfrac32<m<3$",
+   "$\\dfrac43<m<4$"
+  ],
+  "correct": 4,
+  "solution": "مختصات مرکز و شعاع دو دایره را به دست می‌آوریم: $\\begin{cases}O(-3,0)\\ ,\\ R=2m+1\\\\ O'(0,4)\\ ,\\ R'=m\\end{cases}\\ ,\\ OO'=5$ برای دو دایرهٔ متقاطع داریم: $|R-R'|<OO'<R+R'$ $m+1<5<3m+1\\Rightarrow\\begin{cases}3m+1>5\\Rightarrow m>\\frac43\\\\ m+1<5\\Rightarrow m<4\\end{cases}\\Rightarrow\\dfrac43<m<4$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 124,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 38,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 38 — هندسه ۳ - آشنایی با مقاطع مخروطی؛ صفحه‌های ۴۲ و ۴۳",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-2",
+    "title": "فصل 2: آشنایی با مقاطع مخروطی",
+    "grade": 12
+   }
+  ],
+  "text": "دایرهٔ $C$ از مبدأ مختصات می‌گذرد و از محورهای $Ox$ و $Oy$ به ترتیب وترهایی به نسبت $1$ به $2$ جدا می‌کند. اگر دورترین نقطهٔ این دایره نسبت به مبدأ مختصات، نقطه‌ای به طول $6$ باشد، در این صورت، این دایره روی خط $y=4$ وتری با کدام طول جدا می‌کند؟",
+  "options": [
+   "$4\\sqrt{11}$",
+   "$8$",
+   "$6\\sqrt3$",
+   "$2\\sqrt{41}$"
+  ],
+  "correct": 4,
+  "solution": "طبق فرض $OA=\\alpha$ و $OB=2\\alpha$. در نتیجه مختصات مرکز دایره $O'\\left(\\dfrac\\alpha2,\\alpha\\right)$ است. همچنین مطابق شکل و فرض، $OM$ قطر دایره است: [شکل ۱] مرکز دایره: $O':\\begin{cases}\\frac62=\\frac\\alpha2\\\\ \\frac y2=\\alpha\\end{cases}\\Rightarrow O'(3,6)$ داریم: $R=OO'=\\sqrt{3^2+6^2}=3\\sqrt5$ [شکل ۲] $\\overset{\\Delta}{O'HP}:\\ HP=\\sqrt{O'P^2-O'H^2}=\\sqrt{(3\\sqrt5)^2-2^2}=\\sqrt{41}\\Rightarrow PQ=2\\sqrt{41}$",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/124/s/0/",
+   "https://qbank.setareganplus.ir/api/v1/img/124/s/1/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 125,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 39,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 39 — هندسه ۳ - آشنایی با مقاطع مخروطی؛ صفحه‌های ۴۳ و ۴۵",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-2",
+    "title": "فصل 2: آشنایی با مقاطع مخروطی",
+    "grade": 12
+   }
+  ],
+  "text": "به ازای چه مقادیری از $k$، خط $y+3x=k$ بر دایرهٔ $x^2+y^2-3x+y=0$ مماس است؟",
+  "options": [
+   "$1$ و $9$",
+   "$-1$ و $-9$",
+   "$-1$ و $9$",
+   "$1$ و $-9$"
+  ],
+  "correct": 3,
+  "solution": "مختصات مرکز و شعاع دایرهٔ مورد نظر را می‌یابیم: $x^2+y^2-3x+y=0\\Rightarrow\\begin{cases}\\text{مرکز}:\\ W=\\left(\\frac{-(-3)}{2},-\\frac12\\right)=\\left(\\frac32,-\\frac12\\right)\\\\ \\text{شعاع}:\\ R=\\frac12\\sqrt{(-3)^2+1^2}=\\frac{\\sqrt{10}}{2}\\end{cases}$ چون خط $y+3x=k$ بر دایره مماس است، پس فاصلهٔ مرکز این دایره از خط مماس برابر شعاع دایره است: $\\dfrac{\\sqrt{10}}{2}=\\dfrac{|-\\frac12+\\frac92-k|}{\\sqrt{1+9}}\\Rightarrow\\dfrac{10}{2}=|4-k|\\Rightarrow4-k=\\pm5\\Rightarrow k=9,-1$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 126,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 40,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 40 — هندسه ۳ - آشنایی با مقاطع مخروطی؛ صفحه‌های ۴۳ تا ۴۶",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-2",
+    "title": "فصل 2: آشنایی با مقاطع مخروطی",
+    "grade": 12
+   }
+  ],
+  "text": "از نقطهٔ $M(-1,-1)$ دو مماس بر دایره به معادلهٔ $x^2+y^2-2x-4y+1=0$ رسم می‌کنیم. معادلهٔ خطی که نقاط تماس را به هم وصل می‌کند، کدام است؟",
+  "options": [
+   "$2x+3y=4$",
+   "$2x+3y=1$",
+   "$3x+2y=5$",
+   "$3x+2y=7$"
+  ],
+  "correct": 1,
+  "solution": "از نقطهٔ $M$ دو مماس $MT'=MT$ بر دایره رسم می‌کنیم. [شکل] طول مماس رسم شده از نقطهٔ $M(-1,-1)$ بر دایرهٔ داده شده برابر است با: $MT=MT'=\\sqrt{(-1)^2+(-1)^2-2(-1)-4(-1)+1}=3$ اکنون معادلهٔ دایره به مرکز $M$ و شعاع $MT=3$ را می‌نویسیم: $C':(x+1)^2+(y+1)^2=9$ واضح است که خط گذرا از دو نقطهٔ $T$ و $T'$، همان وتر مشترک دو دایره است که با کم کردن معادلهٔ دو دایره از هم، به دست می‌آید. پس معادلهٔ وتر مشترک عبارت است از: $\\begin{cases}C:x^2+y^2-2x-4y+1=0\\\\ C':x^2+y^2+2x+2y-7=0\\end{cases}\\xrightarrow{\\text{کم}}4x+6y-8=0\\xrightarrow{\\div2}2x+3y=4$",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/126/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 127,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 41,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 41 — هندسه ۳ - آشنایی با مقاطع مخروطی؛ صفحه‌های ۴۷ تا ۴۹",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-2",
+    "title": "فصل 2: آشنایی با مقاطع مخروطی",
+    "grade": 12
+   }
+  ],
+  "text": "در بیضی زیر اگر طول پاره‌خط $A'B'$ برابر نصف مجموع طول قطر بزرگ و فاصلهٔ کانونی باشد، خروج از مرکز بیضی کدام است؟",
+  "options": [
+   "$\\dfrac{\\sqrt2-1}{2}$",
+   "$\\dfrac{\\sqrt2}{2}$",
+   "$\\dfrac{\\sqrt3-1}{2}$",
+   "$\\dfrac{\\sqrt3}{2}$"
+  ],
+  "correct": 3,
+  "solution": "$\\overset{\\Delta}{OA'B'}:\\ A'B'^2=OA'^2+OB'^2=a^2+b^2\\Rightarrow A'B'=\\sqrt{a^2+b^2}$ طبق فرض سؤال داریم: $A'B'=a+c\\Rightarrow\\sqrt{a^2+b^2}=a+c\\xrightarrow{\\text{به توان }2}a^2+b^2=(a+c)^2$ $a^2+(a^2-c^2)=a^2+c^2+2ac\\Rightarrow2c^2+2ac-a^2=0\\xrightarrow{\\div a^2}2\\left(\\frac ca\\right)^2+2\\left(\\frac ca\\right)-1=0$ با حل معادله از روش $\\Delta$ داریم: $\\Delta=2^2-4(2)(-1)=12$ $\\dfrac ca=\\dfrac{-2\\pm2\\sqrt3}{4}\\Rightarrow\\begin{cases}\\frac ca=\\frac{\\sqrt3-1}{2}\\\\ \\frac ca=\\frac{-\\sqrt3-1}{2}<0\\end{cases}$ (جواب دوم منفی است و غ‌ق‌ق)",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/127/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 128,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 42,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 42 — هندسه ۳ - آشنایی با مقاطع مخروطی؛ صفحه‌های ۴۷ تا ۵۰",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-2",
+    "title": "فصل 2: آشنایی با مقاطع مخروطی",
+    "grade": 12
+   }
+  ],
+  "text": "در شکل مقابل خط $d$ در نقطهٔ $M$ بر بیضی مماس است. اگر $MF'=5+\\sqrt7$ و فاصلهٔ $M$ تا مرکز بیضی برابر $4$ باشد، خروج از مرکز بیضی کدام است؟ ($F$ و $F'$ کانون‌های بیضی هستند.)",
+  "options": [
+   "$0/5$",
+   "$0/6$",
+   "$0/75$",
+   "$0/8$"
+  ],
+  "correct": 4,
+  "solution": "از نقطهٔ $M$ به نقاط $O$ و $F'$ وصل می‌کنیم. می‌دانیم پاره‌خط‌های $MF$ و $MF'$ با خط $d$ زوایای یکسانی می‌سازند. بنابراین $\\alpha=45^\\circ$ و در نتیجه $F\\hat MF'=90^\\circ$ است. در مثلث قائم‌الزاویهٔ $FMF'$، $MO$ میانهٔ وارد بر وتر است و در نتیجه داریم: [شکل] $MO=\\frac12FF'\\Rightarrow4=\\frac12FF'\\Rightarrow FF'=8\\Rightarrow2c=8\\Rightarrow c=4$ $\\overset{\\Delta}{FMF'}:\\ MF^2+MF'^2=FF'^2\\Rightarrow MF^2=FF'^2-MF'^2=8^2-(5+\\sqrt7)^2=64-(25+7+10\\sqrt7)=32-10\\sqrt7\\Rightarrow MF^2=25+7-10\\sqrt7=(5-\\sqrt7)^2\\Rightarrow MF=5-\\sqrt7$ $M$ نقطه‌ای روی بیضی است، بنابراین داریم: $MF+MF'=2a\\Rightarrow(5-\\sqrt7)+(5+\\sqrt7)=2a\\Rightarrow2a=10\\Rightarrow a=5$ خروج از مرکز: $\\dfrac ca=\\dfrac45=0/8$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/128/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/128/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 129,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 43,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 43 — هندسه ۳ - آشنایی با مقاطع مخروطی؛ صفحه‌های ۵۲ تا ۵۵",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-2",
+    "title": "فصل 2: آشنایی با مقاطع مخروطی",
+    "grade": 12
+   }
+  ],
+  "text": "نقطهٔ $F(4,-2)$ کانون یک سهمی است. اگر این سهمی محور عرض‌ها را تنها در نقطهٔ $M(0,1)$ قطع کند، آنگاه فاصلهٔ کانونی این سهمی کدام است؟",
+  "options": [
+   "$1$ یا $3$",
+   "$2$ یا $3$",
+   "$1$ یا $4$",
+   "$2$ یا $4$"
+  ],
+  "correct": 3,
+  "solution": "چون سهمی محور عرض‌ها را فقط در یک نقطه قطع می‌کند، پس قطعاً رو به بالا یا رو به پایین باز می‌شود. حالت اول: سهمی رو به بالا باز شود. در این صورت $A(4,-2-a)$ رأس سهمی است و داریم: معادلهٔ سهمی: $(x-4)^2=4a(y+2+a)\\xrightarrow{M(0,1)}16=4a(3+a)\\Rightarrow a^2+3a-4=0\\Rightarrow a=1$ یا $a=-4$ (غ‌ق‌ق). حالت دوم: سهمی رو به پایین باز شود. در این صورت $A(4,-2+a)$ رأس سهمی است و داریم: معادلهٔ سهمی: $(x-4)^2=-4a(y+2-a)\\xrightarrow{M(0,1)}16=-4a(3-a)\\Rightarrow a^2-3a-4=0\\Rightarrow a=-1$ (غ‌ق‌ق) یا $a=4$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 130,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 44,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 44 — هندسه ۳ - آشنایی با مقاطع مخروطی؛ صفحه‌های ۵۰ تا ۵۶",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-2",
+    "title": "فصل 2: آشنایی با مقاطع مخروطی",
+    "grade": 12
+   }
+  ],
+  "text": "یک شعاع نورانی بر یک سهمی آینه‌ای به معادلهٔ $y^2+2y-4x+5=0$ تابیده است. اگر شعاع بازتابش بر روی خط $y=1$ قرار داشته باشد، معادلهٔ شعاع تابش کدام است؟",
+  "options": [
+   "$x=2$",
+   "$x=2y$",
+   "$x=-2y$",
+   "$x=-2$"
+  ],
+  "correct": 1,
+  "solution": "چون شعاع بازتابش موازی محور تقارن سهمی خارج شده است، پس شعاع تابش از کانون سهمی عبور کرده است. بنابراین معادلهٔ سهمی را به حالت متعارف تبدیل کرده و مختصات کانون سهمی را به‌دست می‌آوریم. $y^2+2y-4x+5=0\\Rightarrow y^2+2y+1=4x-4\\Rightarrow(y+1)^2=4(x-1)$ سهمی رو به راست باز می‌شود و $A(1,-1)$ رأس و $a=1$ فاصلهٔ کانونی آن است و داریم: کانون: $F(1+1,-1)=(2,-1)$ اگر $B$ نقطهٔ تلاقی پرتو تابش با سهمی باشد، آنگاه داریم: $y^2+2y-4x+5=0\\xrightarrow{y=1}-4x+8=0\\Rightarrow x=2\\Rightarrow B(2,1)$ شعاع تابش از نقاط $F(2,-1)$ و $B(2,1)$ عبور کرده است، پس معادلهٔ آن به‌صورت $x=2$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 131,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 45,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 45 — هندسه ۳ - بردارها؛ صفحه‌های ۶۷ و ۶۸",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-3",
+    "title": "فصل 3: بردارها",
+    "grade": 12
+   }
+  ],
+  "text": "در مکعب مستطیل شکل زیر، معادلهٔ خط $d$ و صفحهٔ رنگی به‌ترتیب از راست به چپ کدام است؟",
+  "options": [
+   "$\\begin{cases}x=2\\\\z=1\\end{cases}$ و $x=2$",
+   "$\\begin{cases}y=3\\\\z=1\\end{cases}$ و $y=3$",
+   "$\\begin{cases}y=3\\\\z=1\\end{cases}$ و $x=2$",
+   "$\\begin{cases}x=2\\\\z=1\\end{cases}$ و $y=3$"
+  ],
+  "correct": 2,
+  "solution": "راستای خط $d$ بر محورهای $y$ و $z$ عمود است، پس معادلهٔ آن به فرم $\\begin{cases}y=m\\\\z=n\\end{cases}$ است. در همهٔ نقاط واقع بر خط $d$، مؤلفهٔ $y$ (عرض) برابر $3$ و مؤلفهٔ $z$ (ارتفاع) برابر $1$ است، پس معادلهٔ خط $d$ به‌صورت $\\begin{cases}y=3\\\\z=1\\end{cases}$ است. از طرفی همهٔ نقاط واقع بر صفحهٔ رنگی دارای مؤلفهٔ $y$ ثابتی هستند، پس معادلهٔ آن به‌صورت $y=3$ است.",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/131/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 132,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 46,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 46 — ریاضیات گسسته - آشنایی با نظریهٔ اعداد؛ صفحه‌های ۱۰ و ۱۳",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "GS-1",
+    "title": "فصل 1: آشنایی با نظریهٔ اعداد",
+    "grade": 12
+   }
+  ],
+  "text": "برای دو عدد طبیعی $a$ و $b$، اگر $a^7\\mid b^8$، حاصل $[(2a^3,6b^5),[3a^2,6b^4]]$ کدام است؟",
+  "options": [
+   "$6b^4$",
+   "$6b^5$",
+   "$3b^4$",
+   "$3b^5$"
+  ],
+  "correct": 1,
+  "solution": "از $a^7\\mid b^8$ می‌توان نتیجه گرفت $a^3\\mid b^5$ (چرا؟). بنابراین: $a^3\\mid b^5\\xrightarrow{\\times2}2a^3\\mid2b^5\\Rightarrow2a^3\\mid(2b^5)\\times3\\Rightarrow2a^3\\mid6b^5\\Rightarrow(2a^3,6b^5)=2a^3$ به همین ترتیب از $a^7\\mid b^8$ می‌توان $a^2\\mid b^4$ را نتیجه گرفت و در نتیجه: $a^2\\mid b^4\\xrightarrow{\\times3}3a^2\\mid3b^4\\Rightarrow3a^2\\mid(3b^4)\\times2\\Rightarrow3a^2\\mid6b^4\\Rightarrow[3a^2,6b^4]=6b^4$ پس $[2a^3,6b^4]$ مورد نظر است. با توجه به این‌که از $a^7\\mid b^8$، بخش‌پذیری $a^3\\mid b^4$ نتیجه می‌شود، داریم: $a^3\\mid b^4\\Rightarrow2a^3\\mid6b^4\\Rightarrow[2a^3,6b^4]=6b^4$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 133,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 47,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 47 — ریاضیات گسسته - آشنایی با نظریهٔ اعداد؛ صفحه‌های ۱۰ تا ۱۳",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "GS-1",
+    "title": "فصل 1: آشنایی با نظریهٔ اعداد",
+    "grade": 12
+   }
+  ],
+  "text": "دو عدد $bn+5$ و $an-2$ به ازای مقادیر مختلف و طبیعی $n$ نسبت به هم اول هستند. چند زوج مرتب $(a,b)$ وجود دارد که $a,b\\in\\{-4,-3,\\dots,3,4\\}$ باشد؟",
+  "options": [
+   "$2$",
+   "$4$",
+   "$6$",
+   "$8$"
+  ],
+  "correct": 2,
+  "solution": "اگر $d=(an-2,bn+5)$ فرض شود، آن‌گاه: $\\begin{cases}d\\mid an-2\\xrightarrow{\\times(-b)}d\\mid-abn+2b\\\\ d\\mid bn+5\\xrightarrow{\\times a}d\\mid abn+5a\\end{cases}\\Rightarrow d\\mid2b+5a$ پس $2b+5a=1$ یا $2b+5a=-1$ است، تا $d=1$ گردد. اگر $a$ زوج باشد $2b+5a$ زوج می‌شود و در نتیجه $a$ باید عددی فرد باشد. به ازای هر عدد فرد $a$ از مجموعهٔ $\\{-4,-3,\\dots,3,4\\}$ از هر معادله دقیقاً یک حالت برای $b$ به دست می‌آید که طبق فرض، باید $b$ عضو این مجموعه باشد: $a=-3\\Rightarrow\\begin{cases}b=8\\ \\times\\\\ b=7\\ \\times\\end{cases}$ ، $a=-1\\Rightarrow\\begin{cases}b=3\\ \\checkmark\\\\ b=2\\ \\checkmark\\end{cases}$ ، $a=1\\Rightarrow\\begin{cases}b=-2\\ \\checkmark\\\\ b=-3\\ \\checkmark\\end{cases}$ ، $a=3\\Rightarrow\\begin{cases}b=-7\\ \\times\\\\ b=-8\\ \\times\\end{cases}$ پس چهار زوج مرتب وجود دارد.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 134,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 48,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 48 — ریاضیات گسسته - آشنایی با نظریهٔ اعداد؛ صفحه‌های ۱۴ و ۱۵",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "GS-1",
+    "title": "فصل 1: آشنایی با نظریهٔ اعداد",
+    "grade": 12
+   }
+  ],
+  "text": "در یک تقسیم، خارج قسمت از باقی‌مانده $1$ واحد بیشتر است. اگر $91$ واحد به مقسوم اضافه کنیم، خارج قسمت $4$ واحد اضافه شده و باقی‌مانده برابر $11$ می‌شود. حداکثر مقدار مقسوم‌علیه این تقسیم کدام است؟",
+  "options": [
+   "$29$",
+   "$28$",
+   "$27$",
+   "$26$"
+  ],
+  "correct": 4,
+  "solution": "طبق صورت سؤال و شرط قضیهٔ تقسیم داریم: $\\begin{cases}a=bq+r\\\\ 0\\le r<b\\end{cases}\\ ,\\ q=r+1\\Rightarrow\\begin{cases}a=bq+q-1\\\\ 1\\le q<b+1\\end{cases}$ در تقسیم جدید نیز داریم: $a+91=b(q+4)+11\\Rightarrow bq+q-1+91=bq+4b+11\\Rightarrow79=4b-q\\xrightarrow{1\\le q<b+1}3b-1<79\\le4b-1\\Rightarrow\\begin{cases}b\\ge20\\\\ b<\\frac{80}{3}\\end{cases}$ پس حداکثر مقدار $b$ (مقسوم‌علیه) برابر $26$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 135,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 49,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 49 — ریاضیات گسسته - آشنایی با نظریهٔ اعداد؛ صفحه‌های ۱۸ تا ۲۲",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "GS-1",
+    "title": "فصل 1: آشنایی با نظریهٔ اعداد",
+    "grade": 12
+   }
+  ],
+  "text": "می‌دانیم $a$ کوچک‌ترین عدد سه رقمی و مضرب $11$ است که باقی‌مانده‌اش در تقسیم بر $7$ و $12$ به ترتیب برابر $3$ و $2$ می‌شود. مجموع ارقام فرد عدد $a$ کدام است؟",
+  "options": [
+   "$8$",
+   "$14$",
+   "$6$",
+   "$10$"
+  ],
+  "correct": 4,
+  "solution": "نکته: $\\left.\\begin{matrix}a\\overset{m}{\\equiv}b\\\\ a\\overset{n}{\\equiv}b\\end{matrix}\\right\\}\\Rightarrow a\\overset{[m,n]}{\\equiv}b$ $\\left.\\begin{matrix}a\\overset{7}{\\equiv}3\\Rightarrow a\\overset{7}{\\equiv}3+5(7)\\Rightarrow a\\overset{7}{\\equiv}38\\\\ a\\overset{12}{\\equiv}2\\Rightarrow a\\overset{12}{\\equiv}2+3(12)\\Rightarrow a\\overset{12}{\\equiv}38\\end{matrix}\\right\\}\\Rightarrow a\\overset{[7,12]}{\\equiv}38\\Rightarrow a\\overset{84}{\\equiv}38\\Rightarrow a=84k+38$ به ازای $k=4$، $a$ کوچک‌ترین عدد سه رقمی مضرب $11$ است. $k=4\\Rightarrow a=(84\\times4)+38=374$ مجموع ارقام فرد: $3+7=10$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 136,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-16",
+  "number": 50,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۱۶ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 50 — ریاضیات گسسته - آشنایی با نظریهٔ اعداد",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "GS-1",
+    "title": "فصل 1: آشنایی با نظریهٔ اعداد",
+    "grade": 12
+   }
+  ],
+  "text": "اگر معادلهٔ هم‌نهشتی $(5n-2)x\\overset{3n+5}{\\equiv}65$ در مجموعه اعداد صحیح جواب داشته باشد، $n$ چند عدد طبیعی دو رقمی می‌تواند اختیار کند؟",
+  "options": [
+   "$2$",
+   "$3$",
+   "$87$",
+   "$88$"
+  ],
+  "correct": 3,
+  "solution": "$(5n-2,3n+5)=d\\Rightarrow\\begin{cases}d\\mid5n-2\\xrightarrow{\\times3}d\\mid15n-6\\\\ d\\mid3n+5\\xrightarrow{\\times5}d\\mid15n+25\\end{cases}\\Rightarrow d\\mid31\\Rightarrow d=1$ یا $31$ $5n-2\\overset{31}{\\equiv}0\\Rightarrow5n\\overset{31}{\\equiv}2+93=95\\xrightarrow{\\div5}n\\overset{31}{\\equiv}19\\Rightarrow n=31k+19\\xrightarrow{k=0,1,2}19,50,81$ در نتیجه $n$ می‌تواند $90-3=87$ عدد طبیعی دو رقمی اختیار کند.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 137,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 1,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 1 — حسابان ۱ - جبر و معادله؛ صفحه‌های ۲ تا ۶",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-1",
+    "title": "فصل 1: جبر و معادله",
+    "grade": 11
+   }
+  ],
+  "text": "مجموع $n$ جملهٔ اول یک دنبالهٔ حسابی از رابطهٔ $S_n=2n(n+3)$ به دست می‌آید. مجموع پنج جملهٔ دوم این دنباله چند برابر جملهٔ دوم آن است؟",
+  "options": [
+   "$4$",
+   "$9$",
+   "$10$",
+   "$15$"
+  ],
+  "correct": 4,
+  "solution": "مجموع $5$ جمله و $10$ جملهٔ اول را حساب می‌کنیم: $S_5=10(5+3)=80\\quad,\\quad S_{10}=20(10+3)=260\\Rightarrow$ مجموع $5$ جملهٔ دوم $=S_{10}-S_5=180$ جملهٔ دوم دنباله را نیز به روش زیر حساب می‌کنیم: $S_1=a_1=8\\quad,\\quad S_2=a_1+a_2=20\\Rightarrow S_2-S_1=a_2=12$ در نهایت داریم: $\\dfrac{S_{10}-S_5}{a_2}=\\dfrac{180}{12}=15$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 138,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 2,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 2 — حسابان ۲ - حدهای نامتناهی - حد در بی‌نهایت؛ صفحه‌های ۵۵ تا ۵۸",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-3",
+    "title": "فصل 3: حدهای نامتناهی، حد در بی‌نهایت",
+    "grade": 12
+   }
+  ],
+  "text": "نمودار تابع $y=\\dfrac{\\sin2x}{1+\\cos x}$ در همسایگی $x=\\pi$ کدام است؟ (گزینه‌ها به صورت شکل‌اند؛ شکل زیر)",
+  "options": [
+   "شکل (۱)",
+   "شکل (۲)",
+   "شکل (۳)",
+   "شکل (۴)"
+  ],
+  "correct": 1,
+  "solution": "از گزینه‌ها متوجه می‌شویم که $x=\\pi$ مجانب قائم نمودار تابع است. حال در یک همسایگی چپ آن صورت کسر منفی و در یک همسایگی راست آن مثبت است. با توجه به این‌که عبارت مخرج همواره مثبت است، تابع در یک همسایگی چپ $x=\\pi$ منفی و در یک همسایگی راست آن مثبت است.",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/138/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 139,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 3,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 3 — حسابان ۱ - تابع؛ صفحه‌های ۴۹ تا ۵۲",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-2",
+    "title": "فصل 2: تابع",
+    "grade": 11
+   }
+  ],
+  "text": "تابع $\\begin{cases}(-10,10)\\to\\mathbb R\\\\ f(x)=x(x-[x])-1\\end{cases}$ چند صفر دارد؟ ($[\\;]$، نماد جزء صحیح است.)",
+  "options": [
+   "$9$",
+   "$10$",
+   "$11$",
+   "$19$"
+  ],
+  "correct": 1,
+  "solution": "ضابطهٔ تابع را به صورت زیر بازنویسی می‌کنیم: $f(x)=x^2-[x]x-1$ فرض می‌کنیم $n\\le x<n+1$ باشد که $n\\in\\mathbb Z$، پس $[x]=n$ است و داریم: $n\\le x<n+1:f(x)=x^2-nx-1\\xrightarrow{f(x)=0}x=\\dfrac{n\\pm\\sqrt{n^2+4}}{2}$ حال باید ببینیم که کدام یک از جواب‌ها در بازهٔ $[n,n+1)$ قرار می‌گیرد. $*\\quad n\\le x=\\dfrac{n-\\sqrt{n^2+4}}{2}<n+1$ بدیهی است که $\\dfrac{n-\\sqrt{n^2+4}}{2}<n$ است، پس این ریشه امکان ندارد که در بازهٔ مذکور قرار گیرد. $*\\quad n\\le x=\\dfrac{n+\\sqrt{n^2+4}}{2}<n+1$ رابطهٔ $n\\le\\dfrac{n+\\sqrt{n^2+4}}{2}$ بدیهی است. پس سراغ رابطهٔ دوم می‌رویم: $n+1>\\dfrac{n+\\sqrt{n^2+4}}{2}\\Rightarrow n+2>\\sqrt{n^2+4}\\xrightarrow{\\text{توان }2}n^2+4n+4>n^2+4\\Rightarrow n>0\\xrightarrow{n\\in\\mathbb Z}n\\ge1$ این یعنی به ازای $x\\ge1$، تابع $f$ بین هر دو عدد صحیح متوالی یک نقطه برخورد با محور $x$ها دارد که در دامنهٔ $(-10,10)$ این تعداد برابر $9$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 140,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 4,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 4 — حسابان ۱ - جبر و معادله؛ صفحه‌های ۱۴ و ۲۰ تا ۲۲",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-1",
+    "title": "فصل 1: جبر و معادله",
+    "grade": 11
+   }
+  ],
+  "text": "مجموع عرض نقاط تلاقی نمودارهای دو تابع $y=x^2-\\dfrac73x$ و $y=2(\\sqrt{x+1}-1)$ کدام است؟",
+  "options": [
+   "$3$",
+   "$2$",
+   "$1+\\sqrt2$",
+   "$\\sqrt3-1$"
+  ],
+  "correct": 2,
+  "solution": "ابتدا باید از روش هندسی تعداد نقاط برخورد را مشخص کنیم: [شکل] با توجه به شکل، نقاط برخورد مبدأ مختصات و نقطهٔ $A$ هستند. این یعنی کافی است عرض نقطهٔ $A$ را پیدا کنیم، پس باید معادلهٔ زیر را حل کنیم: $x^2-\\dfrac73x=2\\sqrt{x+1}-2\\Rightarrow x^2-\\dfrac73x+2=2\\sqrt{x+1}$ به جای حل جبری این معادله از خود گزینه‌ها استفاده می‌کنیم. با در نظر گرفتن عدد داده شده به عنوان عرض نقطهٔ $A$ روی نمودار تابع $y=2(\\sqrt{x+1}-1)$، طول آن را حساب می‌کنیم و سپس مختصات نقطهٔ به دست آمده را در ضابطهٔ تابع $y=x^2-\\dfrac73x$ امتحان می‌کنیم: گزینهٔ «۱»: $y=3=2(\\sqrt{x+1}-1)\\Rightarrow x=\\dfrac{21}{4}$ مختصات نقطهٔ $\\left(\\dfrac{21}{4},3\\right)$ در ضابطهٔ تابع $y=x\\left(x-\\dfrac73\\right)$ صدق نمی‌کند. گزینهٔ «۲»: $y_A=2=2(\\sqrt{x_A+1}-1)\\Rightarrow x_A=3$ مختصات نقطهٔ $A(3,2)$ در ضابطهٔ تابع $y=x\\left(x-\\dfrac73\\right)$ صدق می‌کند. در نتیجه مجموع عرض نقاط تلاقی برابر همین عرض نقطهٔ $A$ یعنی $2$ است.",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/140/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 141,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 5,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 5 — حسابان ۱ - توابع نمایی و لگاریتمی؛ صفحه‌های ۷۲ تا ۷۵",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-3",
+    "title": "فصل 3: توابع نمایی و لگاریتمی",
+    "grade": 11
+   }
+  ],
+  "text": "تابع $f(x)=a\\times b^x$ مفروض است. اگر $f(2)=3$ و $f^{-1}(24)=5$ باشد، $f(6)$ کدام است؟",
+  "options": [
+   "$36$",
+   "$48$",
+   "$54$",
+   "$72$"
+  ],
+  "correct": 2,
+  "solution": "نقاط $(2,3)$ و $(5,24)$ روی نمودار تابع $f$ قرار دارند، پس مختصات آن‌ها را در ضابطهٔ تابع قرار می‌دهیم: $\\Rightarrow\\begin{cases}a\\times b^2=3\\\\ a\\times b^5=24\\end{cases}\\xrightarrow{\\text{تقسیم}}b^3=8\\Rightarrow b=2\\xrightarrow{ab^2=3}a=\\dfrac34\\Rightarrow f(x)=\\dfrac34\\times2^x=3\\times2^{x-2}\\Rightarrow f(6)=3\\times2^4=48$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 142,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 6,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 6 — حسابان ۱ - توابع نمایی و لگاریتمی؛ صفحه‌های ۸۶ تا ۹۰",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-3",
+    "title": "فصل 3: توابع نمایی و لگاریتمی",
+    "grade": 11
+   }
+  ],
+  "text": "اگر $x=\\alpha$ جواب بزرگ‌تر معادلهٔ $\\log_3(x^2+2)-1=\\log_3x$ باشد، حاصل $\\log_{5\\alpha-1}(\\alpha^2-1)$ کدام است؟",
+  "options": [
+   "صفر",
+   "$\\dfrac32$",
+   "$1$",
+   "$\\dfrac12$"
+  ],
+  "correct": 4,
+  "solution": "$\\log_3(x^2+2)-\\log_33=\\log_3x\\Rightarrow\\log_3\\dfrac{x^2+2}{3}=\\log_3x\\xrightarrow{x>0}\\dfrac{x^2+2}{3}=x\\Rightarrow x^2-3x+2=(x-1)(x-2)=0\\Rightarrow x=1,2$ پس $\\alpha=2$ است و داریم: $\\log_{5\\alpha-1}(\\alpha^2-1)=\\log_93=\\dfrac12$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 143,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 7,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 7 — حسابان ۲ - تابع؛ صفحه‌های ۱۵ تا ۱۸",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-1",
+    "title": "فصل 1: تابع",
+    "grade": 12
+   }
+  ],
+  "text": "تابع اکیداً نزولی $f$ مفروض است. اگر $g(x)=\\sqrt[3]{x}$ باشد، روی کدام بازه نمودار تابع $h(x)=(f\\circ g)(\\tan x)$ پایین‌تر از خط $y=f(1)$ است؟",
+  "options": [
+   "$\\left(\\pi,\\dfrac{5\\pi}{4}\\right)$",
+   "$\\left(0,\\dfrac\\pi4\\right)$",
+   "$\\left(\\dfrac\\pi4,\\pi\\right)$",
+   "$\\left(\\dfrac{5\\pi}{4},\\dfrac{3\\pi}{2}\\right)$"
+  ],
+  "correct": 4,
+  "solution": "باید نامعادلهٔ مقابل را حل کنیم: $f\\big(g(\\tan x)\\big)<f(1)$ حال چون $f$ اکیداً نزولی است، داریم: $g(\\tan x)>1\\xrightarrow{g(x)=\\sqrt[3]{x}}\\sqrt[3]{\\tan x}>1\\Rightarrow\\tan x>1$ و مقدار تابع تانژانت در بازه‌هایی به فرم $\\left(2k\\pi+\\dfrac\\pi4,2k\\pi+\\dfrac\\pi2\\right)$ و $\\left(2k\\pi+\\dfrac{5\\pi}{4},2k\\pi+\\dfrac{3\\pi}{2}\\right)$ بیشتر از $1$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 144,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 8,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 8 — حسابان ۲ - تابع؛ صفحه‌های ۱ تا ۱۲",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-1",
+    "title": "فصل 1: تابع",
+    "grade": 12
+   }
+  ],
+  "text": "نمودار تابع $f$ در شکل زیر رسم شده است. به ازای کدام مقدار $a$ اشتراک دامنه و برد تابع $g(x)=2f(ax+1)+a\\ ;\\ a>0$ تک عضوی است؟",
+  "options": [
+   "$2$",
+   "$6$",
+   "$3$",
+   "$1$"
+  ],
+  "correct": 2,
+  "solution": "دامنه و برد تابع $f$ به ترتیب $D_f=[-2,1]$ و $R_f=[-3,1]$ است، پس برای دامنه و برد تابع $g$ داریم: $D_g=\\left[-\\dfrac3a,0\\right]\\quad,\\quad R_g=[-6+a,2+a]$ چون $a+2>2$ است، اشتراک دو بازه تنها در حالت $a-6=0$ تک‌عضوی است. $\\Rightarrow a=6$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/144/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 145,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 9,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 9 — حسابان ۱ - تابع؛ صفحه‌های ۶۶ تا ۶۸",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-2",
+    "title": "فصل 2: تابع",
+    "grade": 11
+   }
+  ],
+  "text": "تابع $f(x)=4-\\sqrt{x-2}$ مفروض است. برد تابع $f\\circ f$ شامل چند عدد صحیح است؟",
+  "options": [
+   "$4$",
+   "$3$",
+   "$2$",
+   "$1$"
+  ],
+  "correct": 3,
+  "solution": "ابتدا دامنهٔ تابع $f\\circ f$ را حساب می‌کنیم: $D_{f\\circ f}=\\{x\\in D_f\\mid f(x)\\in D_f\\}=\\{x\\ge2\\mid4-\\sqrt{x-2}\\ge2\\}=\\{x\\ge2\\mid\\sqrt{x-2}\\le2\\}=\\{x\\ge2\\mid x\\le6\\}$ پس دامنهٔ تابع $f\\circ f$ بازهٔ $[2,6]$ است و به ازای این بازه، برد تابع $f$ بازهٔ $[2,4]$ است. حال اگر برد تابع $f$ را به ازای دامنهٔ $[2,4]$ حساب کنیم، عملاً برد تابع $f\\circ f$ را حساب کرده‌ایم: $2\\le x\\le4\\Rightarrow0\\le x-2\\le2\\Rightarrow-\\sqrt2\\le-\\sqrt{x-2}\\le0\\Rightarrow4-\\sqrt2\\le4-\\sqrt{x-2}\\le4$ پس برد تابع $f\\circ f$ بازهٔ $[4-\\sqrt2,4]$ و شامل دو عدد صحیح است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 146,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 10,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 10 — حسابان ۲ - مثلثات؛ صفحه‌های ۲۴ تا ۲۹",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-2",
+    "title": "فصل 2: مثلثات",
+    "grade": 12
+   }
+  ],
+  "text": "بخشی از نمودار تابع $f(x)=\\sqrt2(2\\sin k\\pi x+1)$ در شکل زیر رسم شده است. مقدار $f\\left(\\dfrac{38}{15}\\right)$ کدام است؟",
+  "options": [
+   "صفر",
+   "$\\sqrt2+\\sqrt6$",
+   "$\\sqrt2-\\sqrt6$",
+   "$2\\sqrt2$"
+  ],
+  "correct": 1,
+  "solution": "بیشترین مقدار تابع $3\\sqrt2$ و کمترین مقدار آن $-\\sqrt2$ است. حال در $x=1$، $\\sin k\\pi x=-\\dfrac{\\sqrt2}{2}$ است و با توجه به نمودار، این به معنی آن است که $1$ واحد به اندازهٔ $\\dfrac58$ دورهٔ تناوب نمودار تابع است (این‌گونه در نظر بگیرید که در $x=1$، $k\\pi x$ برابر $\\dfrac{5\\pi}{4}$ شده است). پس داریم: $\\dfrac58T=1\\Rightarrow T=\\dfrac85\\Rightarrow\\dfrac{2\\pi}{|k|\\pi}=\\dfrac85\\Rightarrow|k|=\\dfrac54\\xrightarrow{k>0}k=\\dfrac54$ پس $f(x)=2\\sqrt2\\sin\\left(\\dfrac{5\\pi}{4}x\\right)+\\sqrt2$ است. $\\Rightarrow f\\left(\\dfrac{38}{15}\\right)=2\\sqrt2\\sin\\dfrac{19\\pi}{6}+\\sqrt2=2\\sqrt2\\left(-\\dfrac12\\right)+\\sqrt2=0$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/146/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 147,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 11,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 11 — حسابان ۲ - مثلثات؛ صفحه‌های ۳۵ تا ۴۴",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-2",
+    "title": "فصل 2: مثلثات",
+    "grade": 12
+   }
+  ],
+  "text": "مجموع جواب‌های معادلهٔ $\\sin^22x-2\\sin^2x=\\dfrac14$ در بازهٔ $\\left[0,\\dfrac{3\\pi}{2}\\right]$ کدام است؟",
+  "options": [
+   "$\\dfrac{5\\pi}{6}$",
+   "$\\dfrac{13\\pi}{6}$",
+   "$\\dfrac{7\\pi}{3}$",
+   "$\\dfrac{2\\pi}{3}$"
+  ],
+  "correct": 2,
+  "solution": "معادله را به صورت زیر بازنویسی می‌کنیم: $4\\sin^2x\\cos^2x-2\\sin^2x=2\\sin^2x(2\\cos^2x-1)=\\dfrac14\\Rightarrow(1-\\cos2x)\\cos2x=\\dfrac14\\Rightarrow4\\cos^22x-4\\cos2x+1=(2\\cos2x-1)^2=0\\Rightarrow\\cos2x=\\dfrac12\\Rightarrow2x=2k\\pi\\pm\\dfrac\\pi3\\Rightarrow x=k\\pi\\pm\\dfrac\\pi6\\quad;\\quad k\\in\\mathbb Z$ جواب‌های بازهٔ $\\left[0,\\dfrac{3\\pi}{2}\\right]$ عبارتند از $\\dfrac\\pi6$، $\\dfrac{5\\pi}{6}$ و $\\dfrac{7\\pi}{6}$ که مجموع آن‌ها برابر $\\dfrac{13\\pi}{6}$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 148,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 12,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 12 — حسابان ۱ - حد و پیوستگی؛ صفحه‌های ۱۴۱ تا ۱۴۴",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-5",
+    "title": "فصل 5: حد و پیوستگی",
+    "grade": 11
+   }
+  ],
+  "text": "حاصل $\\lim_{x\\to0}\\dfrac{\\sqrt{x^2+1}-\\sqrt[3]{x+1}}{\\sqrt{2x+1}+\\sqrt[3]{x-1}}$ کدام است؟",
+  "options": [
+   "$\\dfrac12$",
+   "$-\\dfrac12$",
+   "$\\dfrac14$",
+   "$-\\dfrac14$"
+  ],
+  "correct": 4,
+  "solution": "از قضیهٔ هوپیتال کمک می‌گیریم: $L=\\lim_{x\\to0}\\dfrac{\\dfrac{x}{\\sqrt{x^2+1}}-\\dfrac{1}{3\\sqrt[3]{(x+1)^2}}}{\\dfrac1{\\sqrt{2x+1}}+\\dfrac1{3\\sqrt[3]{(x-1)^2}}}=\\dfrac{0-\\frac13}{1+\\frac13}=-\\dfrac14$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 149,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 13,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 13 — حسابان ۲ - مشتق؛ صفحه‌های ۸۴ تا ۸۹",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-4",
+    "title": "فصل 4: مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "تابع $f(x)=\\begin{cases}\\dfrac{ax+[2x]}{x-1} & ;\\ x<0\\\\ x^2+2x+b & ;\\ x\\ge0\\end{cases}$ در $x=0$ مشتق‌پذیر است. حاصل $ab$ کدام است؟ ($[\\;]$، نماد جزء صحیح است.)",
+  "options": [
+   "صفر",
+   "$3$",
+   "$-\\dfrac23$",
+   "$-1$"
+  ],
+  "correct": 4,
+  "solution": "در یک همسایگی $x=0$ می‌توانیم ضابطه‌های تابع $f$ را به صورت زیر بنویسیم: $f(x)=\\begin{cases}\\dfrac{ax-1}{x-1} & ;\\ x<0\\\\ x^2+2x+b & ;\\ x\\ge0\\end{cases}$ برای مشتق‌پذیری، لازم است تابع پیوسته باشد. حد چپ $=\\lim_{x\\to0^-}f(x)=\\lim_{x\\to0^-}\\dfrac{ax-1}{x-1}=1$ حد راست $=\\lim_{x\\to0^+}f(x)=\\lim_{x\\to0^+}(x^2+2x+b)=b$ مقدار تابع در $x=0$ هم که $b$ است، پس برای پیوستگی لازم است $b=1$ باشد. حال باید مشتق‌های چپ و راست تابع در $x=0$ را حساب و برابر هم قرار دهیم: $f'_-(0)=\\left(\\dfrac{ax-1}{x-1}\\right)'\\Big|_{x=0}=\\dfrac{1-a}{(x-1)^2}\\Big|_{x=0}=1-a$ ، $f'_+(0)=(x^2+2x+1)'\\Big|_{x=0}=(2x+2)\\Big|_{x=0}=2\\xrightarrow{\\text{برابری مشتق‌ها}}1-a=2\\Rightarrow a=-1\\Rightarrow ab=-1$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 150,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 14,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 14 — حسابان ۲ - مشتق؛ صفحه‌های ۹۴ و ۹۵",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-4",
+    "title": "فصل 4: مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "اگر $y+x^3-2x\\sqrt{xy}=0\\ ;\\ x\\ge0$ باشد، مقدار $y''$ به ازای $x=4$ کدام است؟",
+  "options": [
+   "$24$",
+   "$48$",
+   "$12$",
+   "$36$"
+  ],
+  "correct": 1,
+  "solution": "چون $x\\ge0$، پس $y\\ge0$ است و داریم: $y+x^3-2x\\sqrt{xy}=(\\sqrt y-x\\sqrt x)^2=0\\Rightarrow\\sqrt y=x\\sqrt x\\Rightarrow y=x^3$ پس داریم: $y'=3x^2\\Rightarrow y''=6x\\xrightarrow{x=4}y''=24$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 151,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 15,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 15 — حسابان ۲ - مشتق؛ صفحه‌های ۹۴ تا ۹۶ و ۹۸",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-4",
+    "title": "فصل 4: مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "عرض از مبدأ خط مماس بر نمودار تابع $f(x)=2x\\sin\\dfrac{\\pi x}{2}-\\dfrac12x^2$ در $x=3$ کدام است؟",
+  "options": [
+   "$\\dfrac{51}{2}$",
+   "$\\dfrac{17}{2}$",
+   "$\\dfrac92$",
+   "$-\\dfrac{21}{2}$"
+  ],
+  "correct": 3,
+  "solution": "$f(3)=-\\dfrac{21}{2}$ و برای شیب خط مماس بر نمودار تابع در $x=3$ داریم: $f'(x)=2\\sin\\dfrac{\\pi x}{2}+\\pi x\\cos\\dfrac{\\pi x}{2}-x\\Rightarrow f'(3)=-2-3=-5$ پس معادلهٔ خط مماس به صورت زیر به دست می‌آید: $y-\\left(-\\dfrac{21}{2}\\right)=-5(x-3)\\Rightarrow y=-5x+\\dfrac92$ که عرض از مبدأ آن $\\dfrac92$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 152,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 16,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 16 — حسابان ۲ - کاربردهای مشتق؛ صفحه‌های ۱۲۰ تا ۱۲۲",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-5",
+    "title": "فصل 5: کاربردهای مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "تابع $y=\\dfrac{x^3-2}{x^2+1}$ روی بازهٔ $[a,b]$ اکیداً نزولی است. بیشترین مقدار $b-a$ کدام است؟",
+  "options": [
+   "$\\dfrac12$",
+   "$\\dfrac32$",
+   "$1$",
+   "$2$"
+  ],
+  "correct": 3,
+  "solution": "مشتق باید منفی باشد. $y'=\\dfrac{x^4+3x^2+4x}{(x^2+1)^2}=\\dfrac{x(x+1)(x^2-x+4)}{(x^2+1)^2}\\xrightarrow{y'\\le0}-1\\le x\\le0$ پس بیشترین مقدار $b-a$ برابر $1$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 153,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 17,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 17 — حسابان ۲ - کاربردهای مشتق؛ صفحه‌های ۱۱۸ و ۱۱۹",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-5",
+    "title": "فصل 5: کاربردهای مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "نمودارهای دو تابع $y=\\sqrt[3]{x}$ و $y=\\sqrt{x+1}$ در شکل زیر رسم شده‌اند. طول کوتاه‌ترین پاره‌خط افقی رسم‌شده، کدام است؟",
+  "options": [
+   "$\\dfrac89$",
+   "$\\dfrac{23}{27}$",
+   "$\\dfrac{11}{12}$",
+   "$1$"
+  ],
+  "correct": 2,
+  "solution": "طول پاره‌خط‌ها فاصلهٔ افقی دو نمودار است که این خود برابر فاصلهٔ عمودی نمودارهای وارون آن‌ها است، پس باید فاصلهٔ عمودی نمودارهای دو تابع $y=x^3$ و $y=x^2-1$ را حساب کنیم: $d=x^3-(x^2-1)=x^3-x^2+1\\Rightarrow d'=3x^2-2x\\xrightarrow{d'=0}x=0\\ ,\\ x=\\dfrac23$ در $x=\\dfrac23$ کمترین مقدار $d$ که برابر $\\dfrac{23}{27}$ است، رخ می‌دهد.",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/153/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 154,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 18,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 18 — حسابان ۲ - کاربردهای مشتق؛ صفحه‌های ۱۳۱ تا ۱۳۶",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-5",
+    "title": "فصل 5: کاربردهای مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "نمودار تابع $y=x^2+\\sqrt x$ در یک همسایگی نقطهٔ عطفش کدام است؟ (گزینه‌ها به صورت شکل‌اند؛ شکل زیر)",
+  "options": [
+   "شکل (۱)",
+   "شکل (۲)",
+   "شکل (۳)",
+   "شکل (۴)"
+  ],
+  "correct": 3,
+  "solution": "ابتدا باید نقطهٔ عطف را پیدا کنیم: $y'=2x+\\dfrac1{2\\sqrt x}\\Rightarrow y''=2-\\dfrac1{4\\sqrt{x^3}}\\xrightarrow{y''=0}\\sqrt{x^3}=\\dfrac18\\Rightarrow x=\\dfrac14$ و جدول تغییرات رفتار تابع به صورت زیر داریم: $\\begin{array}{c|c|ccc}x&0&&\\frac14&\\\\\\hline y''&&-&0&+\\\\\\hline y'&&&+&\\\\\\hline y&&\\cap\\nearrow&&\\cup\\nearrow\\end{array}$ یعنی تابع همواره اکیداً صعودی است و تقعر آن قبل از $x=\\dfrac14$ رو به پایین و بعد از آن رو به بالا است.",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/154/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 155,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 19,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 19 — هندسه ۱ - قضیهٔ تالس، تشابه و کاربردهای آن؛ صفحه‌های ۳۴ تا ۴۱",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G1-2",
+    "title": "فصل 2: قضیهٔ تالس، تشابه و کاربردهای آن",
+    "grade": 10
+   }
+  ],
+  "text": "در مثلث قائم‌الزاویهٔ $ABC$، $(\\hat A=90^\\circ)$، $AC=4$ و $AB=3$، از رأس $C$ خطی عمود بر وتر $BC$ رسم می‌کنیم تا امتداد ضلع $BA$ را در نقطهٔ $E$ قطع کند. فاصلهٔ نقطهٔ همرسی عمودمنصف‌های مثلث $BCE$ تا نقطهٔ همرسی عمودمنصف‌های مثلث $ABC$ کدام است؟",
+  "options": [
+   "$\\dfrac{10}{3}$",
+   "$\\dfrac{20}{3}$",
+   "$5$",
+   "$10$"
+  ],
+  "correct": 1,
+  "solution": "مثلث‌های $ABC$ و $BCE$ به دلیل تساوی زاویه‌های $\\hat B=\\hat B$ و $\\hat A=B\\hat CE=90^\\circ$ متشابه‌اند. از طرفی بنابه قضیهٔ فیثاغورس $BC=5$ است. از تشابه دو مثلث نتیجه می‌شود: [شکل] $\\dfrac{AB}{BC}=\\dfrac{AC}{EC}\\Rightarrow\\dfrac35=\\dfrac4{EC}\\Rightarrow EC=\\dfrac{20}{3}$ از طرفی نقطهٔ همرسی عمودمنصف‌های مثلث $ABC$ وسط وتر $BC$ و نقطهٔ همرسی عمودمنصف‌های مثلث $BCE$ وسط وتر $BE$ یعنی نقطهٔ $N$ است. بنابه عکس قضیهٔ تالس داریم $MN\\parallel CE$ و در نتیجه: $MN=\\dfrac12CE=\\dfrac12\\left(\\dfrac{20}{3}\\right)=\\dfrac{10}{3}$",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/155/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 156,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 20,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 20 — هندسه ۱ - قضیهٔ تالس، تشابه و کاربردهای آن؛ صفحه‌های ۴۵ تا ۴۷",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G1-2",
+    "title": "فصل 2: قضیهٔ تالس، تشابه و کاربردهای آن",
+    "grade": 10
+   }
+  ],
+  "text": "در ذوزنقهٔ زیر، پاره‌خط $EF$ موازی قاعده‌ها رسم شده است. اگر مساحت ناحیهٔ هاشورخورده، $\\dfrac14$ مساحت کل ذوزنقه باشد، طول پاره‌خط $EF$ کدام است؟",
+  "options": [
+   "$6.5$",
+   "$7$",
+   "$7.5$",
+   "$8$"
+  ],
+  "correct": 2,
+  "solution": "طول پاره‌خط $EF$ را $k$ می‌گیریم. دو مثلث $OEF$ و $ODC$ به نسبت $\\dfrac{k}{9.5}$ با هم متشابه‌اند، پس طول ارتفاع‌های وارد بر $EF$ و $DC$ در این دو مثلث را می‌توان به صورت $kh$ و $9.5h$ در نظر گرفت. همچنین دو مثلث $OAB$ و $ODC$ نیز با هم متشابه‌اند و نسبت تشابه آن‌ها $\\dfrac{4.5}{9.5}$ است، پس ارتفاع وارد بر $AB$ در مثلث $OAB$ را نیز می‌توان $4.5h$ در نظر گرفت. داریم: [شکل] $\\begin{cases}S_{OEF}=\\dfrac12k\\times kh=\\dfrac{k^2h}{2}\\\\ S_{ABCD}=\\dfrac12(4.5+9.5)\\times(4.5h+9.5h)=\\dfrac{14^2h}{2}\\end{cases}$ طبق فرض: $S_{OEF}=\\dfrac14S_{ABCD}\\Rightarrow k^2=\\dfrac14\\times14^2=49\\Rightarrow k=7$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/156/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/156/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 157,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 21,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 21 — هندسه ۱ - قضیهٔ تالس، تشابه و کاربردهای آن؛ صفحه‌های ۳۰ تا ۳۳",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G1-2",
+    "title": "فصل 2: قضیهٔ تالس، تشابه و کاربردهای آن",
+    "grade": 10
+   }
+  ],
+  "text": "در شکل زیر مساحت هر مثلث در داخل آن نوشته شده است. اگر $BC=10$ باشد، طول ارتفاع وارد بر ضلع $BC$ در مثلث $ABC$ کدام است؟ ($CN$ و $BM$ در $O$ متقاطع‌اند.)",
+  "options": [
+   "$6.12$",
+   "$6.48$",
+   "$6.72$",
+   "$6.36$"
+  ],
+  "correct": 3,
+  "solution": "[شکل] $\\dfrac{S_{BOC}}{S_{BON}}=2\\Rightarrow\\dfrac{OC}{ON}=2\\ ,\\ \\dfrac{S_{OMC}}{S_{OMN}}=\\dfrac{OC}{ON}=2\\Rightarrow S_{OMN}=3$ ، $S_{AMN}=S$ ، $\\dfrac{S_{ABM}}{S_{BMC}}=\\dfrac{AM}{MC}\\quad,\\quad\\dfrac{S_{AMN}}{S_{NMC}}=\\dfrac{AM}{MC}\\Rightarrow\\dfrac{S_{ABM}}{S_{BMC}}=\\dfrac{S_{AMN}}{S_{NMC}}\\Rightarrow\\dfrac{7+S}{14}=\\dfrac S9\\Rightarrow S=12.6\\Rightarrow S_{ABC}=33.6$ ، $S_{ABC}=\\dfrac12AH\\times BC\\Rightarrow33.6=\\dfrac12AH\\times10\\Rightarrow AH=6.72$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/157/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/157/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 158,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 22,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 22 — هندسه ۲ - دایره؛ صفحه‌های ۲۰ تا ۲۳",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G2-1",
+    "title": "فصل 1: دایره",
+    "grade": 11
+   }
+  ],
+  "text": "دو دایره به شعاع‌های $9$ و $4$ بر هم مماس خارج هستند. $TT'$ مماس مشترک خارجی آن‌ها است. محیط دایره‌ای مطابق شکل که بر $TT'$ و این دو دایره مماس است چقدر است؟",
+  "options": [
+   "$1.28\\pi$",
+   "$1.44\\pi$",
+   "$2.56\\pi$",
+   "$2.88\\pi$"
+  ],
+  "correct": 4,
+  "solution": "شعاع دایرهٔ مورد نظر را $r$ در نظر می‌گیریم. $TT'=2\\sqrt{RR'}=2\\sqrt{36}=12\\Rightarrow TT'=TM+MT'\\Rightarrow12=2\\sqrt{9r}+2\\sqrt{4r}\\Rightarrow12=6\\sqrt r+4\\sqrt r=10\\sqrt r\\Rightarrow\\sqrt r=\\dfrac{12}{10}=\\dfrac65\\Rightarrow r=1.44\\Rightarrow$ محیط $=2\\pi r=2.88\\pi$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/158/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 159,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 23,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 23 — هندسه ۲ - تبدیل‌های هندسی و کاربردها؛ صفحهٔ ۵۵",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G2-2",
+    "title": "فصل 2: تبدیل‌های هندسی و کاربردها",
+    "grade": 11
+   }
+  ],
+  "text": "در شکل زیر می‌خواهیم از نقطهٔ $A$ به نقطه‌ای روی خط $L$ رفته و $3$ واحد روی $L$ به سمت راست حرکت کرده و سپس به نقطهٔ $B$ برسیم. طول کوتاه‌ترین مسیر چقدر است؟",
+  "options": [
+   "$24$",
+   "$29$",
+   "$32$",
+   "$35$"
+  ],
+  "correct": 3,
+  "solution": "مطابق شکل داریم: $HA'=12+9=21\\qquad HB'=23-3=20$ ، $\\overset{\\Delta}{A'B'H}:A'B'^2=HB'^2+HA'^2=20^2+21^2=841\\Rightarrow A'B'=29$ [شکل] $\\min(AMNB)=A'B'+MN=29+3=32$",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/159/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/159/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 160,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 24,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 24 — هندسه ۳ - ماتریس و کاربردها؛ صفحه‌های ۱۲ تا ۲۱",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-1",
+    "title": "فصل 1: ماتریس و کاربردها",
+    "grade": 12
+   }
+  ],
+  "text": "اگر $A=\\begin{bmatrix}1&-1&2\\\\2&-1&-2\\end{bmatrix}$ ، $B=\\begin{bmatrix}a&-a\\\\b&2\\\\-2&2b\\end{bmatrix}$ و $AB$ ماتریسی قطری باشد، مجموع درایه‌های ماتریس $BA$ کدام است؟",
+  "options": [
+   "$12$",
+   "$8$",
+   "$-8$",
+   "$-12$"
+  ],
+  "correct": 4,
+  "solution": "$AB=\\begin{bmatrix}1&-1&2\\\\2&-1&-2\\end{bmatrix}\\begin{bmatrix}a&-a\\\\b&2\\\\-2&2b\\end{bmatrix}=\\begin{bmatrix}a-b-4&-a+4b-2\\\\2a-b+4&-2a-4b-2\\end{bmatrix}$ ماتریس $AB$ قطری است، پس درایه‌های خارج قطر اصلی آن برابر صفر هستند و در نتیجه داریم: $\\begin{cases}-a+4b=2\\\\2a-b=-4\\end{cases}\\Rightarrow\\begin{cases}a=-2\\\\b=0\\end{cases}$ ، $BA=\\begin{bmatrix}-2&2\\\\0&2\\\\-2&0\\end{bmatrix}\\begin{bmatrix}1&-1&2\\\\2&-1&-2\\end{bmatrix}=\\begin{bmatrix}2&0&-8\\\\4&-2&-4\\\\-2&2&-4\\end{bmatrix}\\Rightarrow$ مجموع درایه‌ها $=-12$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 161,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 25,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 25 — هندسه ۳ - ماتریس و کاربردها؛ صفحه‌های ۲۷ تا ۳۱",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-1",
+    "title": "فصل 1: ماتریس و کاربردها",
+    "grade": 12
+   }
+  ],
+  "text": "در ماتریس زیر به کدام درایه $a$ واحد اضافه کنیم تا به مقدار دترمینان $2a$ واحد اضافه شود؟ $(a\\ne0)$ $A=\\begin{bmatrix}2&3&2\\\\6&4&5\\\\3&-1&0\\end{bmatrix}$",
+  "options": [
+   "درایه سطر اول، ستون اول",
+   "درایه سطر دوم، ستون سوم",
+   "درایه سطر سوم، ستون دوم",
+   "درایه سطر سوم، ستون سوم"
+  ],
+  "correct": 3,
+  "solution": "اگر فقط یک درایه از ماتریس تغییر کند، آن‌گاه تغییرات دترمینان از رابطهٔ زیر پیدا می‌شود: تغییرات دترمینان $=$ تغییرات درایه $\\times$ همسازه نظیر. $2a=a\\times$ همسازه $\\xrightarrow{a\\ne0}$ همسازه $=\\dfrac{2a}{a}=2$ پس باید ببینیم کدام همسازه برابر با $2$ است. گزینه‌ها را به ترتیب بررسی می‌کنیم: ۱) $A_{11}=(-1)^{1+1}\\begin{vmatrix}4&5\\\\-1&0\\end{vmatrix}=5\\ne2$ ۲) $A_{23}=(-1)^{2+3}\\begin{vmatrix}2&3\\\\3&-1\\end{vmatrix}=11\\ne2$ ۳) $A_{32}=(-1)^{3+2}\\begin{vmatrix}2&2\\\\6&5\\end{vmatrix}=(-1)\\times(-2)=2$ ۴) $A_{33}=(-1)^{3+3}\\begin{vmatrix}2&3\\\\6&4\\end{vmatrix}=-10\\ne2$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 162,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 26,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 26 — هندسه ۳ - آشنایی با مقاطع مخروطی؛ صفحه‌های ۴۰ تا ۴۶",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-2",
+    "title": "فصل 2: آشنایی با مقاطع مخروطی",
+    "grade": 12
+   }
+  ],
+  "text": "دو دایرهٔ $x^2+y^2+3x=0$ و $x^2+y^2+3y=0$ در دو نقطهٔ $A$ و $B$ متقاطع‌اند. اندازهٔ $AB$ چقدر است؟",
+  "options": [
+   "$3\\sqrt2$",
+   "$6\\sqrt2$",
+   "$\\dfrac{3\\sqrt2}{2}$",
+   "$\\dfrac{\\sqrt2}{2}$"
+  ],
+  "correct": 3,
+  "solution": "$\\begin{cases}C:x^2+y^2+3x=0\\\\ C':x^2+y^2+3y=0\\end{cases}$ معادلهٔ وتر مشترک $d:3x-3y=0\\Rightarrow d:y=x$ [شکل] $\\begin{cases}d:y=x\\\\ C:x^2+y^2+3x=0\\end{cases}\\Rightarrow2x^2+3x=0\\Rightarrow x=0,-\\dfrac32\\Rightarrow A(0,0)\\ ,\\ B\\left(-\\dfrac32,-\\dfrac32\\right)\\Rightarrow AB=\\sqrt{\\dfrac94+\\dfrac94}=\\dfrac{3\\sqrt2}{2}$",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/162/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 163,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 27,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 27 — هندسه ۳ - آشنایی با مقاطع مخروطی؛ صفحه‌های ۴۷ تا ۵۴",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-2",
+    "title": "فصل 2: آشنایی با مقاطع مخروطی",
+    "grade": 12
+   }
+  ],
+  "text": "کانون و رأس سهمی $y^2+8x=6y+15$، کانون‌های یک بیضی‌اند. اگر این بیضی بر خط هادی سهمی مماس باشد، طول قطر کوچک آن برابر کدام است؟",
+  "options": [
+   "$2\\sqrt2$",
+   "$4\\sqrt2$",
+   "$\\sqrt{10}$",
+   "$2\\sqrt{10}$"
+  ],
+  "correct": 2,
+  "solution": "$y^2-6y+9=-8x+24\\Rightarrow(y-3)^2=-8(x-3)$ دهانهٔ سهمی رو به چپ باز می‌شود و $a=2$ است. رأس سهمی $A(3,3)$، کانون سهمی $F(1,3)$ و خط هادی $x=5$ است. در این صورت برای بیضی داریم: $2c=AF=2\\Rightarrow c=1$ ، (مرکز) $O=(2,3)\\Rightarrow a=5-2=3$ ، $b^2=a^2-c^2=8\\Rightarrow b=2\\sqrt2\\Rightarrow$ طول قطر کوچک $=2b=4\\sqrt2$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 164,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 28,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 28 — هندسه ۳ - بردارها؛ صفحه‌های ۷۷ تا ۸۴",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-3",
+    "title": "فصل 3: بردارها",
+    "grade": 12
+   }
+  ],
+  "text": "دو بردار $\\vec a$ و $\\vec b$ با اندازهٔ واحد مفروض‌اند. اگر $|\\vec a\\times\\vec b|=|\\vec a+\\vec b|$ باشد، در این صورت زاویهٔ بین $\\vec a$ و $\\vec b$ کدام است؟",
+  "options": [
+   "$\\dfrac\\pi4$",
+   "$\\dfrac\\pi3$",
+   "$\\dfrac\\pi2$",
+   "$\\pi$"
+  ],
+  "correct": 4,
+  "solution": "اگر زاویهٔ بین $a$ و $b$ برابر $\\theta$ باشد، طبق فرض داریم: $|\\vec a\\times\\vec b|=|\\vec a+\\vec b|\\Rightarrow|\\vec a||\\vec b|\\sin\\theta=|\\vec a+\\vec b|\\xrightarrow{\\text{به توان }2}|\\vec a|^2|\\vec b|^2\\sin^2\\theta=|\\vec a|^2+|\\vec b|^2+2\\underbrace{\\vec a\\cdot\\vec b}_{|\\vec a||\\vec b|\\cos\\theta}\\xrightarrow{|\\vec a|=|\\vec b|=1}\\sin^2\\theta=2+2\\cos\\theta\\Rightarrow\\sin^2\\theta=2(1+\\cos\\theta)=2\\times2\\cos^2\\dfrac\\theta2\\xrightarrow{\\text{جذر}}\\sin\\theta=2\\cos\\dfrac\\theta2\\Rightarrow2\\sin\\dfrac\\theta2\\cos\\dfrac\\theta2=2\\cos\\dfrac\\theta2\\Rightarrow\\sin\\dfrac\\theta2=1\\Rightarrow\\dfrac\\theta2=\\dfrac\\pi2\\Rightarrow\\theta=\\pi$ تذکر: دقت کنید که $0\\le\\theta\\le\\pi$ و $0\\le\\dfrac\\theta2\\le\\dfrac\\pi2$، پس داریم: $\\begin{cases}\\sin\\theta\\ge0\\\\ \\cos\\dfrac\\theta2\\ge0\\end{cases}$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 165,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 29,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 29 — هندسه ۳ - بردارها؛ صفحه‌های ۷۷ تا ۸۴",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "G3-3",
+    "title": "فصل 3: بردارها",
+    "grade": 12
+   }
+  ],
+  "text": "اگر $|\\vec a|=\\dfrac{20}{3}$ ، $\\vec b=(-1,2,-2)$ و مساحت مثلثی که روی بردارهای $\\vec a-2\\vec b$ و $2\\vec a+\\vec b$ ساخته می‌شود برابر $25$ باشد، $|\\vec a\\cdot\\vec b|$ کدام است؟",
+  "options": [
+   "$5$",
+   "$10$",
+   "$5\\sqrt3$",
+   "$10\\sqrt3$"
+  ],
+  "correct": 4,
+  "solution": "$S=\\dfrac12|(\\vec a-2\\vec b)\\times(2\\vec a+\\vec b)|=\\dfrac12|\\vec a\\times\\vec b-4\\vec b\\times\\vec a|=\\dfrac52|\\vec a\\times\\vec b|=25\\Rightarrow|\\vec a\\times\\vec b|=10$ ، $|\\vec b|=\\sqrt{1+4+4}=3$ ، $|\\vec a\\times\\vec b|=|\\vec a||\\vec b|\\sin\\theta\\Rightarrow\\dfrac{20}{3}\\times3\\times\\sin\\theta=10\\Rightarrow\\sin\\theta=\\dfrac12\\Rightarrow\\cos\\theta=\\pm\\dfrac{\\sqrt3}{2}$ ، $|\\vec a\\cdot\\vec b|=|\\vec a||\\vec b||\\cos\\theta|=\\dfrac{20}{3}\\times3\\times\\dfrac{\\sqrt3}{2}=10\\sqrt3$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 166,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 30,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 30 — آمار و احتمال - آشنایی با مبانی ریاضیات؛ صفحه‌های ۶ تا ۱۱",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "AP-1",
+    "title": "فصل 1: آشنایی با مبانی ریاضیات",
+    "grade": 11
+   }
+  ],
+  "text": "گزارهٔ $\\big((p\\wedge q)\\Rightarrow r\\big)\\wedge(p\\Rightarrow r)$ با کدام گزاره هم‌ارز است؟",
+  "options": [
+   "$p\\Rightarrow(q\\wedge r)$",
+   "$(p\\vee q)\\Rightarrow r$",
+   "$p\\Rightarrow r$",
+   "$(p\\wedge q)\\Rightarrow r$"
+  ],
+  "correct": 3,
+  "solution": "$\\big((p\\wedge q)\\Rightarrow r\\big)\\wedge(p\\Rightarrow r)\\equiv(\\sim(p\\wedge q)\\vee r)\\wedge(\\sim p\\vee r)\\equiv(\\sim(p\\wedge q)\\wedge\\sim p)\\vee r\\equiv((\\sim p\\vee\\sim q)\\wedge\\sim p)\\vee r\\overset{\\text{قاعدهٔ جذب}}{\\equiv}\\sim p\\vee r\\equiv p\\Rightarrow r$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 167,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 31,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 31 — آمار و احتمال - آشنایی با مبانی ریاضیات؛ صفحه‌های ۲۶ تا ۳۴",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "AP-1",
+    "title": "فصل 1: آشنایی با مبانی ریاضیات",
+    "grade": 11
+   }
+  ],
+  "text": "اگر $A$ و $B$ دو مجموعهٔ دلخواه باشند، حاصل $\\big((A-B)-B\\big)\\cup\\big((A'-B)-A\\big)$ همواره برابر کدام است؟",
+  "options": [
+   "$A\\cup B$",
+   "$A$",
+   "$B'$",
+   "$A\\cap B$"
+  ],
+  "correct": 3,
+  "solution": "دو مجموعهٔ $A-B$ و $B$ جدا از هم هستند، پس داریم: $(A-B)-B=A-B=A\\cap B'$ ، $(A'-B)-A=(A'\\cap B')\\cap A'=A'\\cap B'$ ، حاصل $=(A\\cap B')\\cup(A'\\cap B')=\\underbrace{(A\\cup A')}_{U}\\cap B'=B'$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 168,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 32,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 32 — آمار و احتمال - احتمال؛ صفحه‌های ۶۷ تا ۷۲",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "AP-2",
+    "title": "فصل 2: احتمال",
+    "grade": 11
+   }
+  ],
+  "text": "در کارخانه‌ای دو دستگاه وجود دارد که این دستگاه‌ها مستقل از هم بوده و هر کدام با احتمال $\\dfrac14$ خراب می‌شوند. احتمال این‌که در یک سرکشی تصادفی، فقط یکی از دستگاه‌ها سالم باشد، کدام است؟",
+  "options": [
+   "$0.225$",
+   "$0.285$",
+   "$0.315$",
+   "$0.375$"
+  ],
+  "correct": 4,
+  "solution": "$A$ و $B$ را به ترتیب پیشامد سالم بودن دستگاه‌های اول و دوم در نظر می‌گیریم. طبق فرض: $P(A')=P(B')=\\dfrac14\\Rightarrow P(A)=P(B)=\\dfrac34$ این‌که فقط یکی از دستگاه‌ها سالم باشد، یعنی اولی سالم، دومی خراب و یا بالعکس؛ که با توجه به مستقل بودن دستگاه‌ها از هم، احتمال مورد نظر برابر می‌شود با: $P(\\text{فقط یکی سالم})=P(A).P(B')+P(A').P(B)=2\\times\\dfrac14\\times\\dfrac34=\\dfrac38=0.375$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 169,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 33,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 33 — آمار و احتمال - احتمال؛ صفحه‌های ۵۸ تا ۶۴",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "AP-2",
+    "title": "فصل 2: احتمال",
+    "grade": 11
+   }
+  ],
+  "text": "دو جعبه داریم که اولی شامل $6$ مهرهٔ سفید و $3$ مهرهٔ سیاه و دومی شامل $4$ مهرهٔ سفید و $5$ مهرهٔ سیاه است. از جعبهٔ اول یک مهره به تصادف خارج کرده و در جعبهٔ دوم می‌اندازیم و سپس دو مهره از جعبهٔ دوم بیرون می‌آوریم. اگر دو مهرهٔ خارج شده از جعبهٔ دوم همرنگ نباشند، با کدام احتمال مهرهٔ خارج شده از جعبهٔ اول سفید است؟",
+  "options": [
+   "$\\dfrac{25}{37}$",
+   "$\\dfrac{15}{37}$",
+   "$\\dfrac{17}{27}$",
+   "$\\dfrac{10}{27}$"
+  ],
+  "correct": 1,
+  "solution": "فرض کنید $A$ پیشامد همرنگ نبودن دو مهرهٔ خارج شده از جعبهٔ دوم و $B_1$ و $B_2$ به ترتیب سفید و سیاه بودن مهرهٔ خارج شده از جعبهٔ اول باشند. طبق نمودار درختی داریم: [شکل: اولی سفید $\\frac69$ ← ظرف دوم: ۵ سفید و ۵ سیاه ← $\\frac{\\binom51\\binom51}{\\binom{10}2}$ ؛ اولی سیاه $\\frac39$ ← ظرف دوم: ۴ سفید و ۶ سیاه ← $\\frac{\\binom41\\binom61}{\\binom{10}2}$] $P(A)=\\dfrac23\\times\\dfrac{25}{45}+\\dfrac13\\times\\dfrac{24}{45}=\\dfrac{74}{135}$ حال طبق قانون بیز داریم: $P(B_1\\mid A)=\\dfrac{\\frac23\\times\\frac{25}{45}}{\\frac{74}{135}}=\\dfrac{50}{74}=\\dfrac{25}{37}$",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/169/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 170,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 34,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 34 — آمار و احتمال - آمار توصیفی؛ صفحه‌های ۸۴ تا ۹۴",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "AP-3",
+    "title": "فصل 3: آمار توصیفی",
+    "grade": 11
+   }
+  ],
+  "text": "اگر $16,25,a-1,16,64,9$ مجذورهای انحراف از میانگین داده‌های متمایز $3,a+1,7,11,15,4$ (با همین ترتیب) باشند، واریانس داده‌ها کدام است؟",
+  "options": [
+   "$22$",
+   "$\\dfrac{71}{3}$",
+   "$\\dfrac{65}{3}$",
+   "نشدنی"
+  ],
+  "correct": 3,
+  "solution": "$\\bar x=\\dfrac{3+(a+1)+7+11+15+4}{6}=\\dfrac{a+41}{6}$ $25$ مجذور انحراف از میانگین دادهٔ $a+1$ است. پس داریم: $\\Rightarrow\\left(\\dfrac{5a-35}{6}\\right)^2=25\\Rightarrow\\begin{cases}\\dfrac{5a-35}{6}=5\\Rightarrow a=13\\\\ \\dfrac{5a-35}{6}=-5\\Rightarrow a=1\\end{cases}$ اگر $a=13$ باشد، میانگین داده‌ها برابر $\\dfrac{13+41}{6}=9$ می‌شود ولی $16\\ne(3-9)^2$. اما اگر $a=1$ باشد، میانگین داده‌ها برابر $7$ بوده و مجذور انحراف از میانگین داده‌ها، دقیقاً اعداد داده شده به دست می‌آید. (واریانس) $\\sigma^2=\\dfrac{16+25+0+16+64+9}{6}=\\dfrac{130}{6}=\\dfrac{65}{3}$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 171,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 35,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 35 — ریاضیات گسسته - آشنایی با نظریهٔ اعداد؛ صفحه‌های ۱۸ تا ۲۲",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "GS-1",
+    "title": "فصل 1: آشنایی با نظریهٔ اعداد",
+    "grade": 12
+   }
+  ],
+  "text": "باقی‌ماندهٔ تقسیم عدد $(1+2^{100})^{100}$ بر $7$ چقدر است؟",
+  "options": [
+   "$1$",
+   "$2$",
+   "$3$",
+   "$4$"
+  ],
+  "correct": 4,
+  "solution": "$2^3\\overset{7}{\\equiv}1\\Rightarrow(2^3)^{33}\\overset{7}{\\equiv}1^{33}\\Rightarrow2^{99}\\overset{7}{\\equiv}1\\xrightarrow{\\times2}2^{100}\\overset{7}{\\equiv}2\\Rightarrow(1+2^{100})^{100}\\overset{7}{\\equiv}(1+2)^{100}\\overset{7}{\\equiv}3^{100}$ از طرفی: $3^3\\overset{7}{\\equiv}-1\\Rightarrow(3^3)^{33}\\overset{7}{\\equiv}(-1)^{33}\\Rightarrow3^{99}\\overset{7}{\\equiv}-1\\xrightarrow{\\times3}3^{100}\\overset{7}{\\equiv}-3\\overset{7}{\\equiv}4$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 172,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 36,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 36 — ریاضیات گسسته - آشنایی با نظریهٔ اعداد؛ صفحه‌های ۲۶ تا ۲۹",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "GS-1",
+    "title": "فصل 1: آشنایی با نظریهٔ اعداد",
+    "grade": 12
+   }
+  ],
+  "text": "اگر $(x_0,y_0)$ یک جواب معادلهٔ سیالهٔ $7x+5y=11$ و $x_0$ بزرگ‌ترین عدد طبیعی دو رقمی ممکن باشد، باقی‌ماندهٔ تقسیم $y_0$ بر $9$ کدام است؟",
+  "options": [
+   "صفر",
+   "$1$",
+   "$2$",
+   "$3$"
+  ],
+  "correct": 1,
+  "solution": "ابتدا معادلهٔ سیاله را حل می‌کنیم تا مقادیر $x$ به دست آید. $7x+5y=11\\Rightarrow7x\\overset{5}{\\equiv}11\\Rightarrow2x\\overset{5}{\\equiv}1\\overset{5}{\\equiv}6\\xrightarrow[(2,5)=1]{\\div2}x\\overset{5}{\\equiv}3\\Rightarrow x=5k+3\\quad(k\\in\\mathbb Z)$ بزرگ‌ترین عدد طبیعی دو رقمی $x$ به ازای $k=19$ به دست می‌آید. $k=19\\Rightarrow x_0=5(19)+3=98$ ، $7(98)+5y_0=11\\Rightarrow5y_0\\overset{9}{\\equiv}11-7\\times98\\overset{9}{\\equiv}2-7(-1)\\overset{9}{\\equiv}9\\Rightarrow5y_0\\overset{9}{\\equiv}0\\xrightarrow[(5,9)=1]{\\div5}y_0\\overset{9}{\\equiv}0$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 173,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 37,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 37 — ریاضیات گسسته - گراف و مدل‌سازی؛ صفحه‌های ۴۴ تا ۴۷",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "GS-2",
+    "title": "فصل 2: گراف و مدل‌سازی",
+    "grade": 12
+   }
+  ],
+  "text": "گراف زیر چند مجموعهٔ احاطه‌گر مینیمال دارد؟",
+  "options": [
+   "$9$",
+   "$13$",
+   "$15$",
+   "$16$"
+  ],
+  "correct": 4,
+  "solution": "با کمی دقت معلوم می‌شود که $\\gamma=3$ است. دو حالت برای مجموعهٔ احاطه‌گر مینیمال $A$ در نظر می‌گیریم: ۱) $c\\in A$: از بین هر کدام از سه رأس درون منحنی‌های چپ و راست، یک رأس دیگر باید انتخاب کنیم. پس در این حالت $3\\times3=9$ مجموعهٔ احاطه‌گر مینیمال $3$ عضوی داریم. [شکل] ۲) $c\\notin A$: اگر بخواهیم مجموعهٔ احاطه‌گر $3$ عضوی باشد ما باید از یکی از مربع‌ها یک رأس و از دیگری دو رأس دیگر (غیر $c$) انتخاب کنیم (رأس تکی حتماً باید $a$ یا $f$ باشد)، پس $\\gamma-$ مجموعه‌ها عبارتند از: [شکل] $\\{a,b,f\\}\\ ,\\ \\{f,g,a\\}\\ ,\\ \\{a,d,f\\}\\ ,\\ \\{e,f,a\\}\\ ,\\ \\{b,d,f\\}\\ ,\\ \\{g,e,a\\}$ یک مجموعهٔ احاطه‌گر مینیمال $4$ عضوی نیز به صورت $\\{b,d,e,g\\}$ داریم. پس در کل $16=1+6+9$ مجموعهٔ احاطه‌گر مینیمال داریم.",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/173/q/0/",
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/173/s/0/",
+   "https://qbank.setareganplus.ir/api/v1/img/173/s/1/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 174,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 38,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 38 — ریاضیات گسسته - ترکیبیات؛ صفحه‌های ۵۹ تا ۶۱",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "GS-3",
+    "title": "فصل 3: ترکیبیات (شمارش)",
+    "grade": 12
+   }
+  ],
+  "text": "در $51$ جواب از جواب‌های صحیح و نامنفی معادلهٔ $x_1+x_2+x_3=k$ حداقل یکی از متغیرها برابر صفر است. مقدار $k$ کدام است؟",
+  "options": [
+   "$18$",
+   "$15$",
+   "$17$",
+   "$16$"
+  ],
+  "correct": 3,
+  "solution": "تعداد جواب‌های صحیح و نامنفی معادلهٔ $x_1+x_2+\\dots+x_n=k$ برابر $\\dbinom{k+n-1}{n-1}$ و تعداد جواب‌های طبیعی آن برابر $\\dbinom{k-1}{n-1}$ است. طبق فرض: $\\dbinom{k+n-1}{n-1}-\\dbinom{k-1}{n-1}=51\\xrightarrow{n=3}\\dbinom{k+3-1}{3-1}-\\dbinom{k-1}{3-1}=51\\Rightarrow\\dbinom{k+2}{2}-\\dbinom{k-1}{2}=51\\Rightarrow\\dfrac{(k+2)(k+1)}{2}-\\dfrac{(k-1)(k-2)}{2}=51\\Rightarrow\\dfrac{k^2+3k+2}{2}-\\dfrac{k^2-3k+2}{2}=51\\Rightarrow\\dfrac{k^2+3k+2-k^2+3k-2}{2}=51\\Rightarrow3k=51\\Rightarrow k=17$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 175,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 39,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 39 — ریاضیات گسسته - ترکیبیات؛ صفحه‌های ۷۳ تا ۷۶",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "GS-3",
+    "title": "فصل 3: ترکیبیات (شمارش)",
+    "grade": 12
+   }
+  ],
+  "text": "در چند زیرمجموعهٔ پنج عضوی از مجموعهٔ $\\{1,2,\\dots,8\\}$، سه عضو با مجموع $9$ وجود دارد؟",
+  "options": [
+   "$27$",
+   "$30$",
+   "$33$",
+   "$36$"
+  ],
+  "correct": 1,
+  "solution": "در بین اعداد $1$ تا $8$، در سه حالت مجموع سه عضو متمایز برابر $9$ می‌شود که عبارتند از: $\\{1,2,6\\},\\{1,3,5\\},\\{2,3,4\\}$ در بین زیرمجموعه‌های پنج عضوی $\\{1,2,\\dots,8\\}$، آن‌هایی که شامل $\\{1,2,6\\}$ هستند را $A$، آن‌هایی که شامل $\\{1,3,5\\}$ هستند را $B$ و آن‌هایی که شامل $\\{2,3,4\\}$ هستند را $C$ می‌گیریم. طبق اصل شمول و عدم شمول داریم: $n(A\\cup B\\cup C)=n(A)+n(B)+n(C)-\\big(n(A\\cap B)+n(A\\cap C)+n(B\\cap C)\\big)+n(A\\cap B\\cap C)=3\\dbinom{8-3}{5-3}-3\\times1+0=3\\times\\dbinom52-3=27$ توجه: منظور از $A\\cap B$، زیرمجموعه‌های پنج عضوی از $\\{1,2,\\dots,8\\}$ هستند که شامل $\\{1,2,6\\}$ و $\\{1,3,5\\}$ می‌باشند که تنها مجموعهٔ $\\{1,2,3,5,6\\}$ را شامل می‌شود.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 176,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-24",
+  "number": 40,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۲۴ - دوازدهم ریاضی - بخش ریاضی (سؤالات ۱ تا ۵۰) — سوال 40 — ریاضیات گسسته - ترکیبیات؛ صفحه‌های ۷۹ تا ۸۲ و گراف و مدل‌سازی؛ صفحه‌های ۳۷ و ۳۸",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "GS-3",
+    "title": "فصل 3: ترکیبیات (شمارش)",
+    "grade": 12
+   }
+  ],
+  "text": "هر یک از یال‌های مکمل گراف $P_{15}$ را با استفاده از $n$ رنگ موجود، رنگ‌آمیزی کرده‌ایم. حداکثر مقدار $n$ به گونه‌ای که مطمئن باشیم حداقل $10$ یال همرنگ در این گراف وجود دارد، کدام است؟",
+  "options": [
+   "$8$",
+   "$9$",
+   "$10$",
+   "$11$"
+  ],
+  "correct": 3,
+  "solution": "گراف $P_n$ دارای $n-1$ یال است، پس داریم: $q(P_{15})=15-1=14$ ، $q(\\overline{P}_{15})=\\dfrac{15\\times14}{2}-14=91$ طبق تعمیم اصل لانه کبوتری داریم: $k+1=10\\Rightarrow k=9$ ، $kn+1=91\\xrightarrow{k=9}9n=90\\Rightarrow n=\\left[\\dfrac{90}{9}\\right]=10$ یعنی اگر یال‌های گراف را با $10$ رنگ، رنگ‌آمیزی کنیم، حداقل $10$ یال همرنگ در این گراف وجود دارد.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 177,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-31",
+  "number": 1,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۳۱ - دوازدهم ریاضی - بخش ریاضی — سوال 1 — ریاضی ۱ - تابع؛ صفحهٔ ۱۰۳",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "R1-5",
+    "title": "فصل 5: تابع",
+    "grade": 10
+   }
+  ],
+  "text": "تابع $f$ خطی است به‌طوری که $f(2x+1)=2f(x)+1$ است. مقدار $f(-1)$ کدام است؟",
+  "options": [
+   "صفر",
+   "$-1$",
+   "$1$",
+   "نمی‌توان مشخص کرد."
+  ],
+  "correct": 2,
+  "solution": "ضابطهٔ تابع $f$ را $f(x)=ax+b$ در نظر می‌گیریم. پس داریم: $f(2x+1)=a(2x+1)+b=2ax+a+b$ و رابطهٔ داده شده را به صورت زیر می‌سازیم: $2ax+a+b=2ax+2b+1\\Rightarrow b=a-1$ پس ضابطهٔ تابع $f(x)=a(x+1)-1$ و در نتیجه $f(-1)=-1$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 178,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-31",
+  "number": 2,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۳۱ - دوازدهم ریاضی - بخش ریاضی — سوال 2 — حسابان ۲ - کاربردهای مشتق؛ صفحهٔ ۱۳۸",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-5",
+    "title": "فصل 5: کاربردهای مشتق",
+    "grade": 12
+   }
+  ],
+  "text": "نمودار تابع $f(x)=2x^2-3x+2\\sin x$ در یک همسایگی $x=0$ کدام است؟ (گزینه‌ها به صورت شکل‌اند؛ شکل زیر)",
+  "options": [
+   "شکل (۱)",
+   "شکل (۲)",
+   "شکل (۳)",
+   "شکل (۴)"
+  ],
+  "correct": 4,
+  "solution": "مشتق‌های اول و دوم تابع را در $x=0$ حساب می‌کنیم: $f'(x)=4x-3+2\\cos x\\Rightarrow f'(0)=-1$ ، $f''(x)=4-2\\sin x\\Rightarrow f''(0)=4$ پس نمودار تابع $f$ در $x=0$ نزولی و دارای تقعر رو به بالاست.",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/178/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 179,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-31",
+  "number": 3,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۳۱ - دوازدهم ریاضی - بخش ریاضی — سوال 3 — حسابان ۱ - جبر و معادله؛ صفحه‌های ۲ تا ۶",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-1",
+    "title": "فصل 1: جبر و معادله",
+    "grade": 11
+   }
+  ],
+  "text": "قدرنسبت دنبالهٔ هندسی $a_n$، سه برابر قدرنسبت دنبالهٔ هندسی $b_n$ است. اگر $a_{10}b_{10}=3^{-8}$ باشد، حاصل عبارت $a_1b_{19}+a_2b_{18}+\\dots+a_{19}b_1$ تقریباً کدام است؟",
+  "options": [
+   "$1.5$",
+   "$4.5$",
+   "$10.5$",
+   "$13.5$"
+  ],
+  "correct": 2,
+  "solution": "دنبالهٔ $b_n$ را $b_n=b_1r^{n-1}$ در نظر می‌گیریم و در نتیجه $a_n=a_1(3r)^{n-1}$ خواهد شد. حال داریم: $a_{10}b_{10}=a_1(3r)^9b_1r^9=a_1b_1r^{18}\\times3^9=3^{-8}\\Rightarrow a_1b_1r^{18}=3^{-17}\\qquad(*)$ حال عبارت داده شده را حساب می‌کنیم: $T=a_1b_{19}+a_2b_{18}+\\dots+a_{19}b_1=a_1b_1r^{18}+3(a_1b_1r^{18})+\\dots+3^{18}(a_1b_1r^{18})\\xrightarrow{(*)}T=3^{-17}(1+3+3^2+\\dots+3^{18})=3^{-17}\\times\\dfrac{3^{19}-1}{3-1}$ پس عبارت مورد نظر برابر $\\dfrac{3^2-3^{-17}}{2}$ است که تقریباً برابر $4.5$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 180,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-31",
+  "number": 4,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۳۱ - دوازدهم ریاضی - بخش ریاضی — سوال 4 — حسابان ۱ - جبر و معادله؛ صفحه‌های ۷ تا ۹",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-1",
+    "title": "فصل 1: جبر و معادله",
+    "grade": 11
+   }
+  ],
+  "text": "اگر $\\alpha$، $\\beta$ و $1$ جواب‌های متمایز معادلهٔ $2x^3-5ax^2-ax+4=0$ باشند، جواب‌های کدام معادله $\\dfrac1{\\alpha^2-2}$ و $\\dfrac1{\\beta^2-2}$ است؟",
+  "options": [
+   "$18x^2+9x-2=0$",
+   "$18x^2+9x-4=0$",
+   "$18x^2-9x-4=0$",
+   "$18x^2-9x-2=0$"
+  ],
+  "correct": 2,
+  "solution": "اگر جواب معادله‌ای $x=1$ باشد، مجموع ضرایب آن معادله برابر صفر است: $\\Rightarrow2-5a-a+4=0\\Rightarrow a=1$ و داریم: $2x^3-5x^2-x+4=(x-1)(2x^2-3x-4)=0$ این یعنی $\\alpha$ و $\\beta$ جواب‌های معادلهٔ $2x^2-3x-4=0$ هستند. $\\Rightarrow\\alpha^2-2=\\dfrac32\\alpha\\quad,\\quad\\beta^2-2=\\dfrac32\\beta$ همچنین داریم: $\\alpha+\\beta=\\dfrac32$ و $\\alpha\\beta=-2$. پس دنبال ساختن معادله‌ای هستیم که جواب‌های آن $\\alpha'=\\dfrac2{3\\alpha}$ و $\\beta'=\\dfrac2{3\\beta}$ باشند: $\\Rightarrow\\begin{cases}S'=\\alpha'+\\beta'=\\dfrac23\\left(\\dfrac1\\alpha+\\dfrac1\\beta\\right)=\\dfrac23\\cdot\\dfrac{\\alpha+\\beta}{\\alpha\\beta}=-\\dfrac12\\\\ P'=\\alpha'\\beta'=\\dfrac49\\left(\\dfrac1{\\alpha\\beta}\\right)=-\\dfrac29\\end{cases}$ پس معادلهٔ مورد نظر به صورت زیر است: $x^2+\\dfrac12x-\\dfrac29=0$ یا $18x^2+9x-4=0$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 181,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-31",
+  "number": 5,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۳۱ - دوازدهم ریاضی - بخش ریاضی — سوال 5 — حسابان ۱ - جبر و معادله، تابع؛ صفحه‌های ۱۴، ۲۴، ۴۴ و ۴۵",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-1",
+    "title": "فصل 1: جبر و معادله",
+    "grade": 11
+   }
+  ],
+  "text": "دامنهٔ تابع $f(x)=\\dfrac1{|x^2-kx|-k}$ به صورت $\\mathbb R-\\{a,b,c\\}$ است. حاصل $a+b+c$ کدام است؟",
+  "options": [
+   "$4$",
+   "$12$",
+   "$9$",
+   "$6$"
+  ],
+  "correct": 4,
+  "solution": "دامنهٔ تابع $f$ به صورت $\\mathbb R-\\{\\text{ریشه‌های مخرج}\\}$ است، پس $a$، $b$ و $c$ ریشه‌های مخرج هستند. ریشه‌های مخرج جواب‌های معادلهٔ $|x^2-kx|=k$ است و جواب‌های این معادله نیز طول نقاط برخورد خط $y=k$ و نمودار تابع $h(x)=|x^2-kx|$ هستند. پس این دو را در یک دستگاه مختصات رسم می‌کنیم. دقت کنید که باید $k>0$ و تعداد نقاط تقاطع $3$ باشد: [شکل] با توجه به نمودار، $h\\left(\\dfrac k2\\right)=k$ است: $\\Rightarrow\\left|\\dfrac{k^2}{4}-\\dfrac{k^2}{2}\\right|=k\\Rightarrow\\dfrac{k^2}{4}=k\\xrightarrow{k>0}k=4\\Rightarrow b=2$ با توجه به خاصیت تقارن در سهمی $a+c=2b=4$ است؛ در نتیجه $a+b+c=6$ است.",
+  "image": null,
+  "solution_images": [
+   "https://qbank.setareganplus.ir/api/v1/img/181/s/0/"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": 182,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-31",
+  "number": 6,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۳۱ - دوازدهم ریاضی - بخش ریاضی — سوال 6 — حسابان ۱ - جبر و معادله؛ صفحه‌های ۲۹ تا ۳۶",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-1",
+    "title": "فصل 1: جبر و معادله",
+    "grade": 11
+   }
+  ],
+  "text": "نقطهٔ $A$ روی نیمساز ناحیهٔ اول قرار دارد به‌طوری که مجموع فواصل $A$ از نقاط $B(2,1)$ و $C(-2,5)$ برابر با $12$ است. حاصل‌ضرب طول و عرض نقطهٔ $A$ کدام است؟",
+  "options": [
+   "$36$",
+   "$4$",
+   "$25$",
+   "$9$"
+  ],
+  "correct": 3,
+  "solution": "مختصات نقطهٔ $A$ را $A(\\alpha,\\alpha)$ در نظر می‌گیریم. داریم: $AB+AC=12\\Rightarrow\\sqrt{(\\alpha-2)^2+(\\alpha-1)^2}+\\sqrt{(\\alpha+2)^2+(\\alpha-5)^2}=12\\Rightarrow\\sqrt{2\\alpha^2-6\\alpha+5}+\\sqrt{2\\alpha^2-6\\alpha+29}=12$ معادلهٔ بالا را با فرض $t=2\\alpha^2-6\\alpha+5$ حل می‌کنیم: $\\sqrt t+\\sqrt{t+24}=12\\Rightarrow\\sqrt{t+24}=12-\\sqrt t\\xrightarrow{\\text{توان }2}t+24=t-24\\sqrt t+144\\Rightarrow24\\sqrt t=120\\Rightarrow\\sqrt t=5\\Rightarrow t=25$ حال مقادیر $\\alpha$ را پیدا می‌کنیم: $2\\alpha^2-6\\alpha+5=25\\Rightarrow\\alpha^2-3\\alpha-10=(\\alpha-5)(\\alpha+2)=0\\xrightarrow{\\alpha>0}\\alpha=5$ پس مختصات نقطهٔ $A$ به صورت $A(5,5)$ و حاصل‌ضرب طول و عرض آن $25$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 183,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-31",
+  "number": 7,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۳۱ - دوازدهم ریاضی - بخش ریاضی — سوال 7 — حسابان ۱ - تابع؛ صفحه‌های ۶۶ تا ۷۰",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-2",
+    "title": "فصل 2: تابع",
+    "grade": 11
+   }
+  ],
+  "text": "اگر $f(x)=\\sqrt{4-x}-2$ ، $g(x)=(f^{-1}\\circ f)(x)$ و $h(x)=(f\\circ f^{-1})(x^2)$ باشد، نمودار تابع $g+h$ کدام است؟ (گزینه‌ها به صورت شکل‌اند؛ شکل زیر)",
+  "options": [
+   "شکل (۱)",
+   "شکل (۲)",
+   "شکل (۳)",
+   "شکل (۴)"
+  ],
+  "correct": 4,
+  "solution": "دامنه و برد تابع $f$ به ترتیب بازه‌های $D_f=(-\\infty,4]$ و $R_f=[-2,+\\infty)$ است. از طرفی ضابطه‌های دو تابع $g$ و $h$ به ترتیب $g(x)=x$ و $h(x)=x^2$ است. با این شرط که در تابع $g$، $x\\in D_f$ و در تابع $h$، $x^2\\in R_f$ باشد. در نتیجه داریم: $D_g=(-\\infty,4]\\ ,\\ D_h=\\mathbb R\\Rightarrow D_{g+h}=D_g\\cap D_h=(-\\infty,4]$ ضابطهٔ تابع $g+h$ نیز $(g+h)(x)=x^2+x$ است و نمودار آن با دامنهٔ $(-\\infty,4]$ به صورت نمودار گزینهٔ «۴» است.",
+  "image": "https://qbank.setareganplus.ir/api/v1/img/183/q/0/",
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 184,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-31",
+  "number": 8,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۳۱ - دوازدهم ریاضی - بخش ریاضی — سوال 8 — حسابان ۱ - تابع؛ صفحه‌های ۴۹ تا ۵۲ و ۶۶ تا ۷۰",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-2",
+    "title": "فصل 2: تابع",
+    "grade": 11
+   }
+  ],
+  "text": "اگر $f(x)=\\left[x-\\dfrac34\\right]+\\left[x+\\dfrac14\\right]$ و $g(x)=\\sqrt{9-x^2}$ باشد، برد تابع $g\\circ f$ کدام است؟ ($[\\;]$، نماد جزء صحیح است.)",
+  "options": [
+   "$\\{0,\\sqrt8\\}$",
+   "$\\{0,\\sqrt8,2\\}$",
+   "$\\{0,2\\}$",
+   "$\\{0,1,\\sqrt2\\}$"
+  ],
+  "correct": 1,
+  "solution": "$f(x)=\\left[x-1+\\dfrac14\\right]+\\left[x+\\dfrac14\\right]=2\\left[x+\\dfrac14\\right]-1$ دامنهٔ تابع $f$ برابر $\\mathbb R$ و دامنهٔ تابع $g$ بازهٔ $[-3,3]$ است. پس برای دامنهٔ تابع $g\\circ f$ داریم: $D_{g\\circ f}=\\left\\{x\\ \\middle|\\ -3\\le2\\left[x+\\dfrac14\\right]-1\\le3\\right\\}=\\left\\{x\\ \\middle|\\ \\left[x+\\dfrac14\\right]\\in\\{-1,0,1,2\\}\\right\\}$ پس در این شرایط تابع $f$ مقادیر $\\{-3,-1,1,3\\}$ و در نتیجه $g\\circ f$ مقادیر $0$، $\\sqrt8$، $\\sqrt8$ و $0$ را تولید می‌کند. پس برد تابع $g\\circ f$ مجموعهٔ $\\{0,\\sqrt8\\}$ است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 185,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-31",
+  "number": 9,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۳۱ - دوازدهم ریاضی - بخش ریاضی — سوال 9 — حسابان ۱ - توابع نمایی و لگاریتمی؛ صفحه‌های ۸۶ تا ۸۸ و حسابان ۲ - تابع؛ صفحه‌های ۱ تا ۱۲",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H1-3",
+    "title": "فصل 3: توابع نمایی و لگاریتمی",
+    "grade": 11
+   }
+  ],
+  "text": "نمودار تابع $f(x)=2x+\\log_2|x|$ را یک واحد به چپ انتقال می‌دهیم، سپس نسبت به محور عرض‌ها قرینه می‌کنیم و در نهایت نسبت به محور طول‌ها قرینه می‌کنیم. نمودار نهایی، نمودار تابع $f$ را در نقطه‌ای با کدام عرض منفی قطع می‌کند؟",
+  "options": [
+   "$\\log_2(\\sqrt2-1)-\\sqrt2$",
+   "$\\log_2(\\sqrt2+1)-\\sqrt2$",
+   "$\\log_2\\left(\\dfrac{\\sqrt2+1}{4}\\right)$",
+   "$\\log_2\\left(\\dfrac{\\sqrt2-1}{4}\\right)$"
+  ],
+  "correct": 1,
+  "solution": "نمودار نهایی مربوط به تابع $g(x)=-f(1-x)$ است: $\\Rightarrow g(x)=2x-2-\\log_2|1-x|$ از تقاطع دو نمودار داریم: $f(x)=g(x)\\Rightarrow2x+\\log_2|x|=2x-2-\\log_2|1-x|\\Rightarrow\\log_2|x|+\\log_2|1-x|=-2\\Rightarrow\\log_2|x(1-x)|=-2\\Rightarrow|x^2-x|=\\dfrac14\\Rightarrow\\begin{cases}x^2-x=-\\dfrac14\\Rightarrow x^2-x+\\dfrac14=\\left(x-\\dfrac12\\right)^2=0\\Rightarrow x=\\dfrac12\\\\ x^2-x=\\dfrac14\\Rightarrow x^2-x-\\dfrac14=0\\Rightarrow x=\\dfrac{1\\pm\\sqrt2}{2}\\end{cases}$ فقط به ازای $x=\\dfrac{1-\\sqrt2}{2}$ عرض نقطهٔ تقاطع منفی می‌شود، در نهایت عرض این نقطه برابر است با: $f\\left(\\dfrac{1-\\sqrt2}{2}\\right)=2\\left(\\dfrac{1-\\sqrt2}{2}\\right)+\\log_2\\left(\\dfrac{\\sqrt2-1}{2}\\right)=\\log_2(\\sqrt2-1)-\\sqrt2$",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ },
+ {
+  "id": 186,
+  "grade": 12,
+  "field": "Riazi",
+  "subject": "Riazi",
+  "source": "Institute",
+  "institute": "Ghalamchi",
+  "year": 1403,
+  "round": "1403-01-31",
+  "number": 10,
+  "source_ref": "قلمچی ۱۴۰۳/۰۱/۳۱ - دوازدهم ریاضی - بخش ریاضی — سوال 10 — حسابان ۲ - تابع؛ صفحه‌های ۱۵ تا ۱۸",
+  "difficulty": 2,
+  "chapters": [
+   {
+    "code": "H2-1",
+    "title": "فصل 1: تابع",
+    "grade": 12
+   }
+  ],
+  "text": "تابع $f(x)=\\dfrac{\\left(\\sqrt[3]{\\sqrt{50}+1}\\right)^x-\\left(\\sqrt[3]{\\sqrt{50}-1}\\right)^x}{2^x}$ از نظر یکنوایی چگونه است؟",
+  "options": [
+   "روی $\\mathbb R$ اکیداً صعودی است.",
+   "روی $\\mathbb R$ اکیداً نزولی است.",
+   "روی $[0,+\\infty)$ اکیداً صعودی و روی $(-\\infty,0]$ اکیداً نزولی است.",
+   "روی $[0,+\\infty)$ اکیداً نزولی و روی $(-\\infty,0]$ اکیداً صعودی است."
+  ],
+  "correct": 1,
+  "solution": "$7<\\sqrt{50}<8\\Rightarrow\\begin{cases}\\sqrt{50}-1<8\\Rightarrow\\sqrt[3]{\\sqrt{50}-1}<2\\Rightarrow\\dfrac{\\sqrt[3]{\\sqrt{50}-1}}{2}<1\\\\ \\sqrt{50}+1>8\\Rightarrow\\sqrt[3]{\\sqrt{50}+1}>2\\Rightarrow\\dfrac{\\sqrt[3]{\\sqrt{50}+1}}{2}>1\\end{cases}$ پس تابع $g(x)=\\left(\\dfrac{\\sqrt[3]{\\sqrt{50}+1}}{2}\\right)^x$ روی $\\mathbb R$ اکیداً صعودی و تابع $h(x)=\\left(\\dfrac{\\sqrt[3]{\\sqrt{50}-1}}{2}\\right)^x$ روی $\\mathbb R$ اکیداً نزولی است. حال داریم: $f(x)=g(x)-h(x)=g(x)+(-h(x))$ تابع $f$ از مجموع دو تابع اکیداً صعودی حاصل شده است و در نتیجه روی $\\mathbb R$ اکیداً صعودی است.",
+  "image": null,
+  "solution_images": [],
+  "needs_review": false
+ }
+]

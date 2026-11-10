@@ -808,6 +808,8 @@ model ClassCourse {
   payments     ClassPayment[]
   steps        ClassPathStep[]
   certificates ClassCertificate[]
+  chapters     ClassChapter[]
+  practice     QuizAttempt[]
 
   @@index([published, kind, sortOrder])
 }
@@ -998,9 +1000,11 @@ model QuizChoice {
 model QuizAttempt {
   id        String       @id @default(cuid())
   studentId String
-  lessonId  String
+  lessonId  String?
+  courseId  String?
   student   ClassStudent @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  lesson    ClassLesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lesson    ClassLesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  course    ClassCourse? @relation(fields: [courseId], references: [id], onDelete: Cascade)
   score     Int
   total     Int
   /// { [questionId]: choiceId }
@@ -1008,6 +1012,7 @@ model QuizAttempt {
   createdAt DateTime     @default(now())
 
   @@index([studentId, lessonId])
+  @@index([studentId, courseId])
 }
 
 /// Idempotent point grant. `key` is watch:lesson, quiz:lesson or course:course.
@@ -1114,4 +1119,60 @@ model ClassReply {
   createdAt DateTime    @default(now())
 
   @@index([threadId])
+}
+
+/// A question mirrored from the institute bank. Students only see our cached image paths.
+model BankQuestion {
+  externalId    String       @id
+  grade         Int
+  /// riazi | tajrobi | ensani
+  field         String
+  difficulty    Int          @default(2)
+  chapters      String[]     @default([])
+  prompt        String       @db.Text
+  solution      String?      @db.Text
+  /// Persian label such as آزمون قلم‌چی ۱۴۰۳. Empty when there is nothing polite to show.
+  sourceLabel   String       @default("")
+  /// /media/qbank/... never a remote URL
+  imagePath     String?
+  solutionPaths String[]     @default([])
+  active        Boolean      @default(true)
+  updatedAt     DateTime     @updatedAt
+  options       BankOption[]
+
+  @@index([field, difficulty])
+  @@index([active])
+}
+
+model BankOption {
+  id         String       @id @default(cuid())
+  questionId String
+  question   BankQuestion @relation(fields: [questionId], references: [externalId], onDelete: Cascade)
+  text       String       @db.Text
+  correct    Boolean      @default(false)
+  sortOrder  Int          @default(0)
+
+  @@index([questionId, sortOrder])
+}
+
+/// Chapter code attached to a whole course (lessonId "") or one lesson.
+/// Chapter code on a course. lessonId "" means every lesson in the course.
+model ClassChapter {
+  id       String      @id @default(cuid())
+  courseId String
+  course   ClassCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessonId String      @default("")
+  code     String
+
+  @@unique([courseId, lessonId, code])
+  @@index([courseId, lessonId])
+}
+
+model BankSync {
+  id       String   @id @default("main")
+  sinceId  Int      @default(0)
+  imported Int      @default(0)
+  skipped  Int      @default(0)
+  note     String   @default("")
+  ranAt    DateTime @default(now())
 }

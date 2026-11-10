@@ -45,7 +45,7 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
     : [null, [], []];
   const prog = new Map(progress.map((p) => [p.lessonId, p]));
   const best = new Map<string, { score: number; total: number }>();
-  for (const a of attempts) if (!best.has(a.lessonId)) best.set(a.lessonId, a);
+  for (const a of attempts) if (a.lessonId && !best.has(a.lessonId)) best.set(a.lessonId, a);
   const seconds = course.lessons.reduce((s, l) => s + (l.durationSec || 0), 0);
   const fractions = course.lessons.map((l) => {
     const p = prog.get(l.id);
@@ -130,6 +130,7 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
                 <form action={checkoutAction.bind(null, course.id)}><button className="btn-gold w-full">پرداخت و ثبت‌نام</button></form>
               )}
               {student && enrolled && nextLesson && <Link href={lessonPath(course.slug, nextLesson.aparatHash)} className="btn-primary text-center">ادامهٔ تماشا</Link>}
+            <Link href={`/classes/${course.slug}/practice`} className="btn-ghost text-center">نمونه سؤال و تمرین بیشتر</Link>
             </div>
           </div>
           <Upsell slug={course.bookletSlug} consult={course.suggestConsult} topic={course.title} />

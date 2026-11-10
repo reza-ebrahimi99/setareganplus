@@ -4,14 +4,14 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { allow } from "@/lib/shop/ratelimit";
-import { chargeRials, safeNext } from "@/lib/classes/catalog";
+import { chargeRials, safeNext, canWatchLesson } from "@/lib/classes/catalog";
 import { startClassOtp, verifyClassOtp } from "@/lib/classes/otp";
 import { clearClassSession, getClassStudent } from "@/lib/classes/session";
 import { startCoursePayment } from "@/lib/classes/pay";
 import { maybeCompleteCourse, noteQuiz } from "@/lib/classes/points";
 import { markLessonSeen } from "@/lib/classes/watch";
 import { renderMath } from "@/lib/classes/math";
-import { canWatchLesson } from "@/lib/classes/catalog";
+import { readDraw } from "@/lib/classes/draw";
 
 async function ip() {
   const h = await headers();
@@ -63,33 +63,67 @@ export async function markSeenAction(lessonId: string) {
   return markLessonSeen(student.id, lessonId);
 }
 
-export async function submitQuiz(lessonId: string, answers: Record<string, string>) {
+export async function submitQuiz(token: string, answers: Record<string, string>) {
   const student = await getClassStudent();
   if (!student) return { ok: false as const, error: "برای آزمون وارد شو." };
-  if (!allow(`class:quiz:${student.id}`, 30, 10 * 60_000)) return { ok: false as const, error: "تعداد تلاش زیاد است. کمی بعد دوباره امتحان کن." };
-  const lesson = await prisma.classLesson.findUnique({
-    where: { id: lessonId },
-    include: { course: true, questions: { where: { published: true }, orderBy: { sortOrder: "asc" }, include: { choices: { orderBy: { sortOrder: "asc" } } } } },
-  });
-  if (!lesson) return { ok: false as const, error: "جلسه پیدا نشد." };
-  const enrolled = await prisma.classEnrollment.findUnique({ where: { studentId_courseId: { studentId: student.id, courseId: lesson.courseId } } });
-  if (!canWatchLesson({ published: lesson.published, coursePublished: lesson.course.published, freePreview: lesson.freePreview, loggedIn: true, enrolled: !!enrolled })) {
-    return { ok: false as const, error: "اول باید این جلسه برایت باز باشد." };
+  const sec = process.env.SESSION_SECRET;
+  if (!sec) return { ok: false as const, error: "ورود موقتاً ممکن نیست." };
+  const draw = readDraw(token, sec);
+  if (!draw) return { ok: false as const, error: "این آزمون منقضی شده. صفحه را تازه کن." };
+  if (!allow(`class:quiz:${student.id}`, 40, 10 * 60_000)) return { ok: false as const, error: "تعداد تلاش زیاد است. کمی بعد دوباره امتحان کن." };
+
+  if (draw.kind === "lesson") {
+    const lesson = await prisma.classLesson.findUnique({ where: { id: draw.ref }, include: { course: true } });
+    if (!lesson) return { ok: false as const, error: "جلسه پیدا نشد." };
+    const enrolled = await prisma.classEnrollment.findUnique({ where: { studentId_courseId: { studentId: student.id, courseId: lesson.courseId } } });
+    if (!canWatchLesson({ published: lesson.published, coursePublished: lesson.course.published, freePreview: lesson.freePreview, loggedIn: true, enrolled: !!enrolled })) {
+      return { ok: false as const, error: "اول باید این جلسه برایت باز باشد." };
+    }
+  } else {
+    const course = await prisma.classCourse.findUnique({ where: { id: draw.ref } });
+    if (!course?.published) return { ok: false as const, error: "دوره پیدا نشد." };
+    const enrolled = await prisma.classEnrollment.findUnique({ where: { studentId_courseId: { studentId: student.id, courseId: course.id } } });
+    if (!enrolled && chargeRials(course) > 0) return { ok: false as const, error: "اول در دوره ثبت‌نام کن." };
+    if (!enrolled && chargeRials(course) <= 0) return { ok: false as const, error: "اول ثبت‌نام رایگان را بزن." };
   }
-  const questions = lesson.questions.slice(0, 5);
-  if (questions.length === 0) return { ok: false as const, error: "برای این جلسه هنوز سؤالی نیست." };
+
+  const banks = await prisma.bankQuestion.findMany({ where: { externalId: { in: draw.ids }, active: true }, include: { options: true } });
+  const manuals = await prisma.quizQuestion.findMany({ where: { id: { in: draw.ids }, published: true }, include: { choices: true } });
+  const bankBy = new Map(banks.map((q) => [q.externalId, q]));
+  const manualBy = new Map(manuals.map((q) => [q.id, q]));
   let score = 0;
-  const items = questions.map((q) => {
-    const chosen = q.choices.find((c) => c.id === answers[q.id]);
-    const right = q.choices.find((c) => c.correct);
-    const correct = !!chosen && chosen.id === right?.id;
+  const items = draw.ids.map((id) => {
+    const bank = bankBy.get(id);
+    if (bank) {
+      const chosen = bank.options.find((c) => c.id === answers[id]);
+      const right = bank.options.find((c) => c.correct);
+      const correct = !!chosen && chosen.correct;
+      if (correct) score += 1;
+      return {
+        id,
+        correct,
+        explanationHtml: bank.solution ? renderMath(bank.solution) : "",
+        choiceHtml: right ? renderMath(right.text) : "",
+        images: bank.solutionPaths,
+      };
+    }
+    const manual = manualBy.get(id);
+    const chosen = manual?.choices.find((c) => c.id === answers[id]);
+    const right = manual?.choices.find((c) => c.correct);
+    const correct = !!manual && !!chosen && chosen.correct;
     if (correct) score += 1;
-    return { id: q.id, correct, explanationHtml: q.explanation ? renderMath(q.explanation) : "", choiceHtml: right ? renderMath(right.text) : "" };
+    return { id, correct, explanationHtml: manual?.explanation ? renderMath(manual.explanation) : "", choiceHtml: right ? renderMath(right.text) : "", images: [] as string[] };
   });
-  await prisma.quizAttempt.create({ data: { studentId: student.id, lessonId, score, total: questions.length, answers } });
-  const points = await noteQuiz(student.id, lessonId, score, questions.length);
-  await maybeCompleteCourse(student.id, lesson.courseId);
-  return { ok: true as const, review: { score, total: questions.length, points, items } };
+  const total = draw.ids.length;
+  if (draw.kind === "lesson") {
+    await prisma.quizAttempt.create({ data: { studentId: student.id, lessonId: draw.ref, score, total, answers } });
+    const lesson = await prisma.classLesson.findUnique({ where: { id: draw.ref }, select: { courseId: true } });
+    const points = await noteQuiz(student.id, draw.ref, score, total);
+    if (lesson) await maybeCompleteCourse(student.id, lesson.courseId);
+    return { ok: true as const, review: { score, total, points, items } };
+  }
+  await prisma.quizAttempt.create({ data: { studentId: student.id, courseId: draw.ref, score, total, answers } });
+  return { ok: true as const, review: { score, total, points: 0, items } };
 }
 
 export async function askQuestion(lessonId: string, fd: FormData) {

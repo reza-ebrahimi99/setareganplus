@@ -270,7 +270,23 @@ npm run classes:seed
 
 The command is safe to repeat: it only inserts courses, lessons and learning paths that are not there yet, so later edits in `/admin/classes` stay. Seeded courses are **free** with a struck-through list price of ۲۵۰ هزار تومان. Change that price before you advertise it.
 
-Then, as the owner: open `/admin/classes`, confirm prices, map a booklet on each course if you want the lesson upsell, and give staff the «کلاس‌های ویدیویی» permission. Question import (for qbank.setareganplus.ir later) is `/admin/classes/import`. Do not turn on any weekly parent SMS; there is none.
+Then, as the owner: open `/admin/classes`, confirm prices, map a booklet on each course if you want the lesson upsell, and give staff the «کلاس‌های ویدیویی» permission. Do not turn on any weekly parent SMS; there is none.
+
+Question bank, after the courses exist. Add these two lines to `/var/www/setareganplus-lean/.env`. Do not commit the token:
+
+```
+QBANK_API_URL=https://qbank.setareganplus.ir
+QBANK_API_TOKEN=the-token-from-the-bank
+```
+
+Then:
+
+```bash
+cd /var/www/setareganplus-lean
+npm run classes:qbank-sync
+```
+
+That command is incremental (`since_id`) and safe to repeat. It also attaches chapter codes to topic courses that do not have any yet. The same sync is the button on `/admin/classes` (2000 questions per click). Questions flagged for review are skipped. Images are stored on this server, not hotlinked.
 
 The process must exit (autorestart off). It is safe to run by hand: `npm run consult:remind -- --dry-run`. Reminders stay off until step 7’s checkbox is on. Cancel/reschedule messages still queue from the booking screen either way.
 8. **Do not** set `CONSULT_ALLOW_DEV_OTP=1` on the public server. That flag prints the SMS code on the page and is only for a local machine.

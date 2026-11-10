@@ -1,7 +1,9 @@
 /**
  * Create-only seed for video courses. Safe to re-run: existing courses, lessons and paths are left as staff edited them.
  *   npm run classes:seed
+ * Loads .env itself, because PM2 injects env into the app but not into this command.
  */
+import "dotenv/config";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { prisma } from "../lib/prisma";
@@ -86,6 +88,9 @@ async function main() {
     }
   }
   console.log(`courses +${createdCourses} (catalog ${courses.length}), lessons +${createdLessons}, paths +${createdPaths}`);
+  const { ensureDefaultChapters, readChapterCatalog } = await import("../lib/classes/bank-sync");
+  const linked = await ensureDefaultChapters(await readChapterCatalog());
+  console.log(`chapter links +${linked}`);
   console.log(`grades available for filters: ${GRADES.length}`);
 }
 

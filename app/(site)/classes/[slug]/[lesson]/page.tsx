@@ -11,6 +11,8 @@ import { canWatchLesson, formatClock, lessonPath } from "@/lib/classes/catalog";
 import { getClassStudent } from "@/lib/classes/session";
 import { touchOpen } from "@/lib/classes/watch";
 import { renderMath } from "@/lib/classes/math";
+import { drawBankQuiz } from "@/lib/classes/quiz-pool";
+import { signDraw } from "@/lib/classes/draw";
 import { Player } from "@/components/classes/Player";
 import { QuizBox } from "@/components/classes/QuizBox";
 import { Upsell } from "@/components/classes/Upsell";
@@ -100,16 +102,7 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
             </div>
           )}
           {lesson.description && <article className="cl-card p-5 leading-8"><div dangerouslySetInnerHTML={{ __html: renderMath(lesson.description) }} /></article>}
-          {can && lesson.questions.length > 0 && (
-            <QuizBox
-              lessonId={lesson.id}
-              questions={lesson.questions.slice(0, 5).map((q) => ({
-                id: q.id,
-                html: renderMath(q.prompt),
-                choices: q.choices.map((c) => ({ id: c.id, html: renderMath(c.text) })),
-              }))}
-            />
-          )}
+          {can && student && <LessonQuiz lessonId={lesson.id} courseId={lesson.courseId} field={student.field} manual={lesson.questions} />}
           {lesson.files.length > 0 && (
             <section className="cl-card p-5">
               <h2 className="font-extrabold">فایل این جلسه</h2>
@@ -148,4 +141,14 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
       </div>
     </div>
   );
+}
+
+async function LessonQuiz({ lessonId, courseId, field, manual }: { lessonId: string; courseId: string; field: string | null; manual: { id: string; prompt: string; choices: { id: string; text: string }[] }[] }) {
+  const bank = await drawBankQuiz({ courseId, lessonId, field, count: 5, kind: "lesson", ref: lessonId });
+  if (bank) return <QuizBox token={bank.token} questions={bank.questions} />;
+  const sec = process.env.SESSION_SECRET;
+  const rows = manual.slice(0, 5);
+  if (!sec || rows.length === 0) return null;
+  const token = signDraw({ kind: "lesson", ref: lessonId, ids: rows.map((q) => q.id), exp: Date.now() + 2 * 60 * 60 * 1000 }, sec);
+  return <QuizBox token={token} questions={rows.map((q) => ({ id: q.id, html: renderMath(q.prompt), choices: q.choices.map((c) => ({ id: c.id, html: renderMath(c.text) })) }))} />;
 }

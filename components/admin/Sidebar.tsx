@@ -10,6 +10,10 @@ const NAV = [
   { href: "/admin/submissions", label: "درخواست‌ها", icon: "M4 4h16v12H5.5L4 17.5zM8 9h8M8 12h5" },
   { href: "/admin/forms", label: "فرم‌ساز", icon: "M5 3h14v18H5zM8 8h8M8 12h8M8 16h5" },
   { href: "/admin/study-quiz", label: "کمپین تست مطالعه", icon: "M9 9a3 3 0 115 2c-1 1-2 1.5-2 3M12 18h.01M4 5h16v14H4z" },
+  { sep: "کلاس‌های ویدیویی" },
+  { href: "/admin/classes", label: "کلاس‌های ویدیویی", icon: "M8 5.5v13l11-6.5-11-6.5Z" },
+  { href: "/admin/classes/report", label: "گزارش تماشا", icon: "M4 19V9M9 19V5M14 19v-7M19 19V8M3 19h18" },
+  { href: "/admin/classes/threads", label: "پرسش‌های کلاس", icon: "M4 5h16v10H7l-3 3z" },
   { sep: "مشاوره" },
   { href: "/admin/consult", label: "نوبت‌های مشاوره", icon: "M4 5h16v15H4zM4 9h16M8 3v4M16 3v4" },
   { href: "/admin/consult/consultants", label: "مشاوران", icon: "M16 11a4 4 0 10-8 0M4 21a8 8 0 0116 0" },
@@ -21,10 +25,6 @@ const NAV = [
   { href: "/admin/shop/pickup", label: "تحویل حضوری", icon: "M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2M7 12h10" },
   { href: "/admin/shop/products", label: "جزوه‌ها", icon: "M4 19.5A2.5 2.5 0 016.5 17H20V3H6.5A2.5 2.5 0 004 5.5zM4 19.5A2.5 2.5 0 006.5 22H20v-5" },
   { href: "/admin/shop/settings", label: "تنظیمات فروشگاه", icon: "M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-2.7 1.1V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-2.7-1.1l-.1.1a2 2 0 11-2.8-2.8l.1-.1A1.6 1.6 0 003 13H3a2 2 0 110-4h.1a1.6 1.6 0 001.1-2.7l-.1-.1a2 2 0 112.8-2.8l.1.1A1.6 1.6 0 009 3V3a2 2 0 114 0v.1a1.6 1.6 0 002.7 1.1l.1-.1a2 2 0 112.8 2.8l-.1.1A1.6 1.6 0 0021 9h0a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 2z" },
-  { sep: "کلاس‌های ویدیویی" },
-  { href: "/admin/classes", label: "دوره‌ها", icon: "M8 5.5v13l11-6.5-11-6.5Z" },
-  { href: "/admin/classes/report", label: "گزارش تماشا", icon: "M4 19V9M9 19V5M14 19v-7M19 19V8M3 19h18" },
-  { href: "/admin/classes/threads", label: "پرسش‌های کلاس", icon: "M4 5h16v10H7l-3 3z" },
   { sep: "محتوا" },
   { href: "/admin/news", label: "اخبار و اطلاعیه‌ها", icon: "M4 4h13v16H6a2 2 0 01-2-2zM17 8h3v10a2 2 0 01-2 2M8 8h5M8 12h5M8 16h3" },
   { href: "/admin/centers", label: "مراکز", icon: "M12 2l3 7h7l-5.5 4.5 2 7.5L12 16.5 5.5 21l2-7.5L2 9h7z" },
@@ -43,8 +43,9 @@ type Item = Extract<(typeof NAV)[number], { href: string }>;
 type Entry = (typeof NAV)[number];
 
 /** Keep only links the user may open; drop section titles that end up empty. */
-function visibleNav(perms: string[]): Entry[] {
+function visibleNav(perms: string[], owner: boolean): Entry[] {
   const ok = (n: Item) => {
+    if (owner) return true;
     const p = permForPath(n.href);
     return p === null || perms.includes(p);
   };
@@ -58,7 +59,7 @@ function visibleNav(perms: string[]): Entry[] {
 
 export function Sidebar({ newCount, todoCount = 0, consultCount = 0, logout, perms, user }: { newCount: number; todoCount?: number; consultCount?: number; logout: () => Promise<void>; perms: string[]; user: { name: string; username: string; owner: boolean } }) {
   const path = usePathname();
-  const nav = visibleNav(perms);
+  const nav = visibleNav(perms, user.owner);
   // Longest matching href wins, so /admin/shop/orders does not also light up /admin/shop.
   const active = nav.filter((n): n is Item => "href" in n && (n.href === "/admin" ? path === "/admin" : path === n.href || path.startsWith(n.href + "/")))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
@@ -71,7 +72,7 @@ export function Sidebar({ newCount, todoCount = 0, consultCount = 0, logout, per
           <p className="text-xs text-white/50">{user.owner ? "پنل مدیریت" : `${user.name} · همکار`}</p>
         </div>
       </div>
-      <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-1 lg:flex-col lg:overflow-visible">
+      <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-x-hidden lg:overflow-y-auto">
         {nav.map((n, i) =>
           "sep" in n ? (
             <p key={i} className="mt-4 mb-1 hidden px-3 text-xs font-semibold text-white/35 lg:block">{n.sep}</p>

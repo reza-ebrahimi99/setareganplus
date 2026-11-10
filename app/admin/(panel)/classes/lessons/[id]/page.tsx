@@ -5,18 +5,21 @@ import { requirePerm } from "@/lib/auth";
 import { PageTitle, Panel, Field, Area, Check, Flash } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { FIELDS, GRADES } from "@/lib/classes/catalog";
-import { saveLesson, deleteLesson, addQuestion, deleteQuestion, saveFile } from "../../actions";
+import { saveLesson, deleteLesson, addQuestion, deleteQuestion, saveFile, saveChapters } from "../../actions";
 
 export default async function EditLesson({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; e?: string }> }) {
   await requirePerm("classes.manage");
   const { id } = await params;
   const sp = await searchParams;
-  const lesson = await prisma.classLesson.findUnique({
-    where: { id },
-    include: { course: true, questions: { orderBy: { sortOrder: "asc" }, include: { choices: { orderBy: { sortOrder: "asc" } } } }, files: true },
-  });
+  const [lesson, courses, lessonCodes] = await Promise.all([
+    prisma.classLesson.findUnique({
+      where: { id },
+      include: { course: true, questions: { orderBy: { sortOrder: "asc" }, include: { choices: { orderBy: { sortOrder: "asc" } } } }, files: true },
+    }),
+    prisma.classCourse.findMany({ orderBy: { sortOrder: "asc" }, select: { id: true, title: true } }),
+    prisma.classChapter.findMany({ where: { lessonId: id }, select: { code: true } }),
+  ]);
   if (!lesson) notFound();
-  const courses = await prisma.classCourse.findMany({ orderBy: { sortOrder: "asc" }, select: { id: true, title: true } });
   return (
     <>
       <PageTitle title={lesson.title} sub={lesson.course.title} action={<Link href={`/admin/classes/${lesson.courseId}`} className="text-sm font-bold">بازگشت به دوره</Link>} />
@@ -42,6 +45,12 @@ export default async function EditLesson({ params, searchParams }: { params: Pro
           </div>
           <div className="flex gap-4"><Check label="پیش‌نمایش رایگان" name="freePreview" defaultChecked={lesson.freePreview} /><Check label="منتشر" name="published" defaultChecked={lesson.published} /></div>
           <SubmitButton>ذخیره</SubmitButton>
+        </form>
+        <form action={saveChapters} className="mt-4 space-y-2">
+          <input type="hidden" name="courseId" value={lesson.courseId} />
+          <input type="hidden" name="lessonId" value={lesson.id} />
+          <Area label="فصل‌های مخصوص این جلسه" name="codes" dir="ltr" rows={3} defaultValue={lessonCodes.map((c) => c.code).join("\n")} hint="اگر خالی بماند، فصل‌های کل دوره استفاده می‌شود." />
+          <SubmitButton>ذخیرهٔ فصل‌های جلسه</SubmitButton>
         </form>
         <form action={deleteLesson} className="mt-3"><input type="hidden" name="id" value={lesson.id} /><SubmitButton className="text-sm text-gc" confirm="جلسه حذف شود؟">حذف جلسه</SubmitButton></form>
       </Panel>

@@ -5,15 +5,17 @@ import { requirePerm } from "@/lib/auth";
 import { PageTitle, Panel, Field, Area, Check, Flash } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { FIELDS, GRADES } from "@/lib/classes/catalog";
-import { saveCourse, addLesson, saveFile, manualEnroll } from "../actions";
+import { saveCourse, addLesson, saveFile, manualEnroll, saveChapters } from "../actions";
+import { readChapterCatalog } from "@/lib/classes/bank-sync";
 
 export default async function EditCourse({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; e?: string }> }) {
   await requirePerm("classes.manage");
   const { id } = await params;
   const sp = await searchParams;
-  const [course, products] = await Promise.all([
-    prisma.classCourse.findUnique({ where: { id }, include: { lessons: { orderBy: { sortOrder: "asc" } }, files: { where: { lessonId: null } } } }),
+  const [course, products, catalog] = await Promise.all([
+    prisma.classCourse.findUnique({ where: { id }, include: { lessons: { orderBy: { sortOrder: "asc" } }, files: { where: { lessonId: null } }, chapters: { where: { lessonId: "" }, orderBy: { code: "asc" } } } }),
     prisma.product.findMany({ where: { active: true }, orderBy: { title: "asc" }, select: { slug: true, title: true }, take: 200 }).catch(() => []),
+    readChapterCatalog().catch(() => [] as { code: string; title: string }[]),
   ]);
   if (!course) notFound();
   const toman = Math.round(course.priceRials / 10);
@@ -54,6 +56,17 @@ export default async function EditCourse({ params, searchParams }: { params: Pro
           <div><span className="label">کاور</span><input type="file" name="cover" accept="image/*" /></div>
           <SubmitButton>ذخیره</SubmitButton>
         </form>
+      </Panel>
+      <Panel title="فصل‌های بانک سؤال" className="mt-6">
+        <form action={saveChapters} className="space-y-3">
+          <input type="hidden" name="courseId" value={course.id} />
+          <input type="hidden" name="lessonId" value="" />
+          <Area label="کد فصل‌ها" name="codes" dir="ltr" rows={6} defaultValue={course.chapters.map((c) => c.code).join("\n")} hint="هر خط یک کد، مثلاً H2-4. خالی گذاشتن و ذخیره، پیوند این دوره را برمی‌دارد." />
+          <SubmitButton>ذخیرهٔ فصل‌ها</SubmitButton>
+        </form>
+        <ul className="mt-3 max-h-40 overflow-auto text-xs text-muted">
+          {catalog.filter((c) => course.chapters.some((x) => x.code === c.code) || course.chapters.length === 0).slice(0, 40).map((c) => <li key={c.code} dir="ltr">{c.code} — {c.title}</li>)}
+        </ul>
       </Panel>
       <Panel title="جلسه‌ها" className="mt-6">
         <ul className="divide-y divide-line">
