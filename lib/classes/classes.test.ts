@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { acceptWatchDelta, chargeRials, coursePrice, courseShowsPremium, devOtpAllowed, lessonFraction, parseAparatHash, presentPrice, publicName, quizPoints, safeNext, tehranWeekStart, PREMIUM_LIST_PRICE_RIALS, SEED_LIST_PRICE_RIALS } from "./catalog";
 import { parseCsv } from "./csv";
-import { PREMIUM_SEED_LESSONS } from "./premium-seed";
+import { mergePremiumLessons, parsePremiumLessonsJson, placeCoverFile, PREMIUM_SEED_LESSONS } from "./premium-seed";
 import { buildCatalog, toRaw } from "./map";
 import { renderMath } from "./math";
 import { parseQbank } from "./qbank";
@@ -72,8 +74,38 @@ test("price, access math, heartbeat and privacy helpers", () => {
   assert.equal(presentPrice({ isFree: true, priceRials: SEED_LIST_PRICE_RIALS }, true).priceRials, PREMIUM_LIST_PRICE_RIALS);
   assert.equal(presentPrice({ isFree: true, priceRials: 1230 }, true).priceRials, 1230);
   assert.equal(chargeRials(presentPrice({ isFree: true, priceRials: SEED_LIST_PRICE_RIALS, salePriceRials: null }, true)), 0);
-  assert.deepEqual(PREMIUM_SEED_LESSONS.map((l) => [l.aparatHash, l.durationSec, l.sortOrder]), [["orw02g2", 2923, 0], ["usq84k4", 969, 1]]);
-  assert.ok(PREMIUM_SEED_LESSONS.every((l) => l.courseSlug === "moadele" && l.grades.join() === "g9,g10,g11,g12" && l.poster.startsWith("/classes/covers/")));
+  assert.deepEqual(PREMIUM_SEED_LESSONS.map((l) => [l.courseSlug, l.aparatHash, l.durationSec, l.sortOrder]), [
+    ["moadele", "orw02g2", 2923, 0],
+    ["moadele", "usq84k4", 969, 1],
+    ["hendese", "lwrtwii", 1248, 0],
+  ]);
+  assert.equal(PREMIUM_SEED_LESSONS.find((l) => l.aparatHash === "lwrtwii")?.grades, undefined);
+  assert.equal(PREMIUM_SEED_LESSONS.find((l) => l.aparatHash === "lwrtwii")?.poster, "/classes/covers/hendese-3-premium.png");
+});
+
+test("premium json is optional and does not override the repo list", async () => {
+  const parsed = parsePremiumLessonsJson(JSON.stringify([
+    { hash: "orw02g2", courseSlug: "moadele", title: "ignored", durationSec: 10, cover: "/classes/covers/x.png" },
+    { hash: "abcd123", courseSlug: "hendese", title: "قسمت بعد", durationSec: 90, cover: "covers/abcd123.png" },
+  ]));
+  assert.deepEqual(parsed.errors, []);
+  const merged = mergePremiumLessons(PREMIUM_SEED_LESSONS, parsed.lessons);
+  const extra = merged.find((l) => l.aparatHash === "abcd123");
+  assert.equal(extra?.sortOrder, 1);
+  assert.equal(merged.filter((l) => l.aparatHash === "orw02g2").length, 1);
+  assert.equal(merged.find((l) => l.aparatHash === "orw02g2")?.title, "معادله درجه ۲ - قسمت اول");
+  const wrapped = parsePremiumLessonsJson(JSON.stringify({ lessons: [{ hash: "zzzz999", courseSlug: "tabe", title: "تابع", durationSec: 60, cover: "https://example.com/a.png", grades: ["g11"] }] }));
+  assert.equal(wrapped.lessons[0]?.sortOrder, undefined);
+  assert.deepEqual(mergePremiumLessons([], wrapped.lessons)[0]?.sortOrder, 0);
+  assert.ok(parsePremiumLessonsJson("{").errors.length > 0);
+  assert.ok(parsePremiumLessonsJson("[]").lessons.length === 0);
+  const dir = await mkdtemp(path.join(tmpdir(), "premium-cover-"));
+  const src = path.join(dir, "src.png");
+  await writeFile(src, Buffer.alloc(800, 1));
+  const poster = await placeCoverFile(src, "abcd123", path.join(dir, "public"));
+  assert.equal(poster, "/media/class-covers/abcd123.png");
+  assert.equal((await readFile(path.join(dir, "public", "class-covers", "abcd123.png"))).length, 800);
+  await rm(dir, { recursive: true, force: true });
 });
 
 test("qbank json and math escaping", () => {
