@@ -50,7 +50,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
     prisma.classCourse.findMany({
       where,
       orderBy: { sortOrder: "asc" },
-      include: { lessons: { where: { published: true }, select: { durationSec: true, isPremium: true } }, _count: { select: { enrollments: true } } },
+      include: { lessons: { where: { published: true }, select: { durationSec: true, isPremium: true, poster: true, sortOrder: true } }, _count: { select: { enrollments: true } } },
     }),
     prisma.classCourse.findMany({ where: { published: true, kind: "TOPIC" }, orderBy: { sortOrder: "asc" }, select: { slug: true, title: true } }),
     student ? prisma.classPath.findFirst({ where: { published: true, grade: student.grade, field: student.field || "" }, include: { steps: { orderBy: { sortOrder: "asc" }, include: { course: { select: { slug: true, title: true, published: true } } } } } }) : null,
@@ -118,7 +118,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
                   const seconds = c.lessons.reduce((s, l) => s + (l.durationSec || 0), 0);
                   return (
                     <Link key={c.id} href={`/classes/${c.slug}`} className="cl-premium-card cl-lift">
-                      <Cover slug={c.slug} title={c.title} teacher={c.teacher} cover={c.cover} />
+                      <Cover slug={c.slug} title={c.title} teacher={c.teacher} cover={c.cover || c.lessons.filter((l) => l.isPremium && l.poster).sort((a, b) => a.sortOrder - b.sortOrder)[0]?.poster} />
                       <div className="space-y-3 p-5">
                         <div className="flex flex-wrap items-center gap-2"><PremiumBadge /><PriceTag course={presentPrice(c, true)} light /></div>
                         <h3 className="cl-display text-2xl">{c.title}</h3>
@@ -140,7 +140,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
   );
 }
 
-function CourseGrid({ title, items, enrolled }: { title: string; items: { id: string; slug: string; title: string; teacher: string; cover: string | null; grades: string[]; fields: string[]; isFree: boolean; isPremium: boolean; priceRials: number; salePriceRials: number | null; lessons: { durationSec: number | null; isPremium: boolean }[] }[]; enrolled: Set<string> }) {
+function CourseGrid({ title, items, enrolled }: { title: string; items: { id: string; slug: string; title: string; teacher: string; cover: string | null; grades: string[]; fields: string[]; isFree: boolean; isPremium: boolean; priceRials: number; salePriceRials: number | null; lessons: { durationSec: number | null; isPremium: boolean; poster?: string | null; sortOrder?: number }[] }[]; enrolled: Set<string> }) {
   if (items.length === 0) return null;
   return (
     <section className="mt-8">

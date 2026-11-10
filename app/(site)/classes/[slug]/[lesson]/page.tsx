@@ -93,9 +93,10 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
           </div>
           {sp.e && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-800">{sp.e}</p>}
           {sp.ok === "ask" && <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">سؤالت ثبت شد و بعد از تأیید نمایش داده می‌شود.</p>}
-          {can ? <Player lessonId={lesson.id} hash={lesson.aparatHash} title={lesson.title} completed={!!progress?.completed} /> : (
+          {can ? <Player lessonId={lesson.id} hash={lesson.aparatHash} title={lesson.title} completed={!!progress?.completed} poster={lesson.poster} /> : (
             <div className="cl-card overflow-hidden">
-              <div className="relative aspect-video bg-gradient-to-br from-[#0a1a3f] to-[#2f5bea]">
+              <div className="relative aspect-video bg-[#07101f]">
+                {lesson.poster && <img src={lesson.poster} alt="" className="absolute inset-0 size-full object-cover" />}
                 <div className="absolute inset-0 grid place-items-center text-center text-white">
                   <div>
                     <p className="cl-display text-2xl">این جلسه قفل است</p>

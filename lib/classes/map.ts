@@ -8,6 +8,8 @@ export type SeedLesson = {
   grades: string[];
   fields: string[];
   sortOrder: number;
+  /** Public thumbnail path. Applied only when the lesson is first created. */
+  poster?: string | null;
 };
 
 export type SeedCourse = {

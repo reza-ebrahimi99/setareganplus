@@ -69,6 +69,9 @@ export async function readPoster(hash: string): Promise<{ body: Buffer; type: st
   await mkdir(path.dirname(file), { recursive: true });
   await writeFile(file, webp);
   const url = `/media/class-posters/${hash}.webp`;
-  if (lesson.poster !== url) await prisma.classLesson.update({ where: { id: lesson.id }, data: { poster: url } }).catch(() => undefined);
+  // A hand-set thumbnail (for example /classes/covers/…) must not be replaced by a fetched frame.
+  if (!lesson.poster || lesson.poster.startsWith("/media/class-posters/")) {
+    await prisma.classLesson.update({ where: { id: lesson.id }, data: { poster: url } }).catch(() => undefined);
+  }
   return { body: webp, type: "image/webp" };
 }

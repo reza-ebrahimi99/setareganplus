@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { playerSrc } from "@/lib/classes/catalog";
 import { markSeenAction } from "@/app/(site)/classes/actions";
 
-export function Player({ lessonId, hash, title, completed }: { lessonId: string; hash: string; title: string; completed: boolean }) {
+export function Player({ lessonId, hash, title, completed, poster }: { lessonId: string; hash: string; title: string; completed: boolean; poster?: string | null }) {
   const box = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
   const [done, setDone] = useState(completed);
@@ -53,7 +53,7 @@ export function Player({ lessonId, hash, title, completed }: { lessonId: string;
           />
         ) : (
           <button type="button" className="absolute inset-0" onClick={() => setPlaying(true)} aria-label={`پخش ${title}`}>
-            <img src={`/classes/cover/${hash}`} alt="" className="size-full object-cover" />
+            <img src={poster || `/classes/cover/${hash}`} alt="" className="size-full object-cover" />
             <span className="absolute inset-0 bg-gradient-to-t from-[#07101f]/80 to-transparent" />
             <span className="absolute inset-0 flex items-center justify-center">
               <span className="flex size-16 items-center justify-center rounded-full bg-[#f4b21b] text-[#0a1a3f] shadow-2xl transition-transform hover:scale-105">

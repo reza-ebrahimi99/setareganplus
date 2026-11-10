@@ -77,7 +77,7 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div>
           <section className="cl-hero overflow-hidden">
-            <Cover slug={course.slug} title={course.title} teacher={course.teacher} cover={course.cover} />
+            <Cover slug={course.slug} title={course.title} teacher={course.teacher} cover={course.cover || premiumLessons.find((l) => l.poster)?.poster} />
             <div className="relative space-y-3 px-6 py-6">
               <p className="text-sm font-bold text-[#f4b21b]">{course.teacher}</p>
               <div className="mb-2 flex flex-wrap items-center gap-2">{showsPremium && <PremiumBadge />}</div>

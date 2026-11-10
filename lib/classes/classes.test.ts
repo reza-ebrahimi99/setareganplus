@@ -5,6 +5,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { acceptWatchDelta, chargeRials, coursePrice, courseShowsPremium, devOtpAllowed, lessonFraction, parseAparatHash, presentPrice, publicName, quizPoints, safeNext, tehranWeekStart, PREMIUM_LIST_PRICE_RIALS, SEED_LIST_PRICE_RIALS } from "./catalog";
 import { parseCsv } from "./csv";
+import { PREMIUM_SEED_LESSONS } from "./premium-seed";
 import { buildCatalog, toRaw } from "./map";
 import { renderMath } from "./math";
 import { parseQbank } from "./qbank";
@@ -71,6 +72,8 @@ test("price, access math, heartbeat and privacy helpers", () => {
   assert.equal(presentPrice({ isFree: true, priceRials: SEED_LIST_PRICE_RIALS }, true).priceRials, PREMIUM_LIST_PRICE_RIALS);
   assert.equal(presentPrice({ isFree: true, priceRials: 1230 }, true).priceRials, 1230);
   assert.equal(chargeRials(presentPrice({ isFree: true, priceRials: SEED_LIST_PRICE_RIALS, salePriceRials: null }, true)), 0);
+  assert.deepEqual(PREMIUM_SEED_LESSONS.map((l) => [l.aparatHash, l.durationSec, l.sortOrder]), [["orw02g2", 2923, 0], ["usq84k4", 969, 1]]);
+  assert.ok(PREMIUM_SEED_LESSONS.every((l) => l.courseSlug === "moadele" && l.grades.join() === "g9,g10,g11,g12" && l.poster.startsWith("/classes/covers/")));
 });
 
 test("qbank json and math escaping", () => {
