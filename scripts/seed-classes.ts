@@ -1,6 +1,7 @@
 /**
  * Create-only seed for video courses. Safe to re-run: existing courses, lessons and paths are left as staff edited them.
- * Premium lessons are the exception: the committed list and an optional JSON file are upserted by video hash.
+ * Premium lessons are created only when that video hash is not already in the database.
+ * A lesson added or edited in the admin panel is never overwritten.
  *   npm run classes:seed
  * Loads .env itself, because PM2 injects env into the app but not into this command.
  * Extra lessons (no code push): /var/www/setareganplus-lean-data/premium-lessons.json
@@ -13,7 +14,7 @@ import { prisma } from "../lib/prisma";
 import { parseCsv } from "../lib/classes/csv";
 import { buildCatalog, toRaw } from "../lib/classes/map";
 import { FIELDS, GRADES, PATH_ORDER, fieldLabel, gradeLabel } from "../lib/classes/catalog";
-import { PREMIUM_SEED_LESSONS, loadExtraPremiumLessons, mergePremiumLessons, premiumLessonsFile, resolveCover, type PremiumSeedLesson } from "../lib/classes/premium-seed";
+import { PREMIUM_SEED_LESSONS, loadExtraPremiumLessons, mergePremiumLessons, premiumLessonsFile, resolveCover } from "../lib/classes/premium-seed";
 
 const dir = path.join(process.cwd(), "prisma/class-seed");
 const read = (name: string) => parseCsv(readFileSync(path.join(dir, name), "utf8"));
@@ -98,10 +99,10 @@ async function main() {
   console.log(`chapter links +${linked}`);
   console.log(`grades available for filters: ${GRADES.length}`);
   const premium = await upsertPremiumLessons();
-  console.log(`premium lessons upserted: ${premium}`);
+  console.log(`premium lessons: ${premium}`);
 }
 
-/** Upsert the named premium lessons by hash. Does not change other lessons or any course price. */
+/** Create premium lessons whose video hash is not already stored. Existing rows, including admin edits, stay as they are. */
 async function upsertPremiumLessons() {
   const file = premiumLessonsFile();
   const extra = await loadExtraPremiumLessons(file);
@@ -109,28 +110,21 @@ async function upsertPremiumLessons() {
   const merged = mergePremiumLessons(PREMIUM_SEED_LESSONS, extra);
   const uploadPublic = path.join(path.resolve(process.env.UPLOAD_DIR || "./storage/uploads"), "public");
   const jsonDir = path.dirname(file);
-  const ready: PremiumSeedLesson[] = [];
+  let created = 0;
+  let kept = 0;
   for (const item of merged) {
-    const poster = item.poster || (item.cover ? await resolveCover(item.cover, item.aparatHash, { uploadPublicDir: uploadPublic, jsonDir }) : "");
-    if (!poster || item.sortOrder === undefined) throw new Error(`premium lesson ${item.aparatHash} is missing a cover or order`);
-    ready.push({
-      courseSlug: item.courseSlug,
-      aparatHash: item.aparatHash,
-      title: item.title,
-      durationSec: item.durationSec,
-      sortOrder: item.sortOrder,
-      grades: item.grades,
-      poster,
-      description: item.description,
-    });
-  }
-  let n = 0;
-  for (const item of ready) {
+    const existing = await prisma.classLesson.findUnique({ where: { aparatHash: item.aparatHash }, select: { id: true } });
+    if (existing) {
+      kept++;
+      continue;
+    }
     const course = await prisma.classCourse.findUnique({ where: { slug: item.courseSlug } });
     if (!course) {
       console.warn(`course ${item.courseSlug} is missing; skipped ${item.aparatHash}`);
       continue;
     }
+    const poster = item.poster || (item.cover ? await resolveCover(item.cover, item.aparatHash, { uploadPublicDir: uploadPublic, jsonDir }) : "");
+    if (!poster || item.sortOrder === undefined) throw new Error(`premium lesson ${item.aparatHash} is missing a cover or order`);
     const grades = item.grades?.length ? item.grades : course.grades;
     if (item.grades?.length) {
       const mergedGrades = [...new Set([...course.grades, ...item.grades])];
@@ -138,27 +132,24 @@ async function upsertPremiumLessons() {
         await prisma.classCourse.update({ where: { id: course.id }, data: { grades: mergedGrades } });
       }
     }
-    const data = {
-      courseId: course.id,
-      title: item.title,
-      durationSec: item.durationSec,
-      isPremium: true,
-      sortOrder: item.sortOrder,
-      grades,
-      poster: item.poster,
-      published: true,
-    };
-    const existing = await prisma.classLesson.findUnique({ where: { aparatHash: item.aparatHash }, select: { id: true } });
-    if (!existing) {
-      await prisma.classLesson.create({
-        data: { ...data, aparatHash: item.aparatHash, fields: course.fields, description: item.description || null },
-      });
-    } else {
-      await prisma.classLesson.update({ where: { id: existing.id }, data });
-    }
-    n++;
+    await prisma.classLesson.create({
+      data: {
+        courseId: course.id,
+        aparatHash: item.aparatHash,
+        title: item.title,
+        description: item.description || null,
+        durationSec: item.durationSec,
+        isPremium: true,
+        sortOrder: item.sortOrder,
+        grades,
+        fields: course.fields,
+        poster,
+        published: true,
+      },
+    });
+    created++;
   }
-  return n;
+  return `${created} new, ${kept} already present`;
 }
 
 main()

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePerm, logAction } from "@/lib/auth";
 import { b, n, s, sn, imageField } from "@/lib/admin";
-import { FIELDS, GRADES, MAX_QUIZ_QUESTIONS, PREMIUM_LIST_PRICE_RIALS, SEED_LIST_PRICE_RIALS, isFieldId, isGrade, parseAparatHash } from "@/lib/classes/catalog";
+import { FIELDS, GRADES, MAX_QUIZ_QUESTIONS, PREMIUM_LIST_PRICE_RIALS, SEED_LIST_PRICE_RIALS, isFieldId, isGrade, parseAparatHash, parseLessonDuration, safePosterRef } from "@/lib/classes/catalog";
 import { parseQbank } from "@/lib/classes/qbank";
 import { saveClassPdf } from "@/lib/classes/files";
 import { normalizeIranMobile } from "@/lib/format";
@@ -56,39 +56,77 @@ export async function addLesson(fd: FormData) {
   const hash = parseAparatHash(s(fd, "link"));
   const course = await prisma.classCourse.findUnique({ where: { id: courseId } });
   if (!course || !hash) redirect(`/admin/classes/${courseId}?e=link`);
+  const durationSec = readDuration(fd);
+  if (durationSec === "bad") redirect(`/admin/classes/${courseId}?e=duration`);
+  const existing = await prisma.classLesson.findUnique({ where: { aparatHash: hash }, select: { poster: true } });
+  const poster = await readPoster(fd, existing?.poster ?? null, courseId);
   const title = s(fd, "title") || `جلسه ${hash}`;
   const premium = b(fd, "isPremium");
   const row = await prisma.classLesson.upsert({
     where: { aparatHash: hash },
-    create: { courseId, aparatHash: hash, title, description: sn(fd, "description"), durationSec: n(fd, "durationMin") ? n(fd, "durationMin") * 60 : null, freePreview: b(fd, "freePreview"), isPremium: premium, sortOrder: n(fd, "sortOrder"), grades: course.grades, fields: course.fields, published: true },
-    update: { courseId, title, freePreview: b(fd, "freePreview"), isPremium: premium, sortOrder: n(fd, "sortOrder"), published: true },
+    create: { courseId, aparatHash: hash, title, description: sn(fd, "description"), durationSec, poster, freePreview: b(fd, "freePreview"), isPremium: premium, sortOrder: n(fd, "sortOrder"), grades: course.grades, fields: course.fields, published: true },
+    update: { courseId, title, durationSec, poster, freePreview: b(fd, "freePreview"), isPremium: premium, sortOrder: n(fd, "sortOrder"), published: true },
   });
   if (premium) await applyPremiumPrice(course.id);
   await logAction(me, "class.lesson", title, row.id);
+  revalidatePath("/classes");
   revalidatePath(`/classes/${course.slug}`);
+  revalidatePath(`/classes/${course.slug}/${hash}`);
   redirect(`/admin/classes/lessons/${row.id}?ok=1`);
+}
+
+function readDuration(fd: FormData) {
+  const raw = s(fd, "duration");
+  if (!raw) return null;
+  const parsed = parseLessonDuration(raw);
+  return parsed == null ? "bad" as const : parsed;
+}
+
+/** Uploaded file wins, then an explicit remove, then a cover URL. An empty URL keeps the current image. */
+async function readPoster(fd: FormData, current: string | null, backTo: string) {
+  const file = fd.get("cover");
+  if (file instanceof File && file.size > 0) return imageField(fd, "cover", current, "class-covers", 1280);
+  if (b(fd, "cover_remove")) return null;
+  const urlRaw = s(fd, "coverUrl");
+  if (urlRaw) {
+    const url = safePosterRef(urlRaw);
+    if (!url) redirect(`/admin/classes/${backTo}?e=cover`);
+    return url;
+  }
+  return current;
 }
 
 export async function saveLesson(fd: FormData) {
   const me = await requirePerm("classes.manage");
   const id = s(fd, "id");
+  const current = await prisma.classLesson.findUnique({ where: { id }, select: { poster: true, courseId: true } });
+  if (!current) return;
+  const durationSec = readDuration(fd);
+  if (durationSec === "bad") redirect(`/admin/classes/lessons/${id}?e=duration`);
+  const courseId = s(fd, "courseId") || current.courseId;
+  const poster = await readPoster(fd, current.poster, `lessons/${id}`);
   const row = await prisma.classLesson.update({
     where: { id },
     data: {
       title: s(fd, "title"),
       description: sn(fd, "description"),
-      durationSec: n(fd, "durationMin") ? n(fd, "durationMin") * 60 : null,
+      durationSec,
+      poster,
       freePreview: b(fd, "freePreview"),
       sortOrder: n(fd, "sortOrder"),
       published: b(fd, "published"),
       isPremium: b(fd, "isPremium"),
-      courseId: s(fd, "courseId") || undefined,
+      courseId,
       grades: checked(fd, "grades").filter(isGrade),
       fields: checked(fd, "fields").filter(isFieldId),
     },
+    include: { course: { select: { slug: true } } },
   });
   await logAction(me, "class.lesson", row.title, row.id);
   if (row.isPremium) await applyPremiumPrice(row.courseId);
+  revalidatePath("/classes");
+  revalidatePath(`/classes/${row.course.slug}`);
+  revalidatePath(`/classes/${row.course.slug}/${row.aparatHash}`);
   redirect(`/admin/classes/lessons/${row.id}?ok=1`);
 }
 

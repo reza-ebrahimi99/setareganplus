@@ -139,12 +139,13 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
   );
 }
 
-function LessonRow({ lesson, index, enrolled, done, slug }: { lesson: { aparatHash: string; title: string; durationSec: number | null; questions: { id: string }[]; freePreview: boolean; isPremium: boolean; createdAt: Date }; index: number; enrolled: boolean; done: boolean; slug: string }) {
+function LessonRow({ lesson, index, enrolled, done, slug }: { lesson: { aparatHash: string; title: string; durationSec: number | null; poster: string | null; questions: { id: string }[]; freePreview: boolean; isPremium: boolean; createdAt: Date }; index: number; enrolled: boolean; done: boolean; slug: string }) {
   const open = lesson.freePreview || enrolled;
   return (
     <li>
       <Link href={lessonPath(slug, lesson.aparatHash)} className="cl-card cl-lift flex items-center gap-3 px-4 py-3">
         <span className="grid size-9 shrink-0 place-items-center rounded-full bg-black/5 text-sm font-extrabold">{fa(index + 1)}</span>
+        {lesson.poster && <img src={lesson.poster} alt="" className="h-14 w-24 shrink-0 rounded-xl object-cover" />}
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2 font-extrabold">{lesson.title}{lesson.isPremium && <PremiumBadge />}{isNewLesson(lesson.createdAt) && <NewChip />}</span>
           <span className="cl-muted text-xs">{lesson.durationSec ? fa(formatClock(lesson.durationSec)) : "زمان نامشخص"}{lesson.questions.length > 0 ? " · آزمون" : ""}{lesson.freePreview ? " · پیش‌نمایش" : ""}{!open ? " · قفل" : ""}</span>

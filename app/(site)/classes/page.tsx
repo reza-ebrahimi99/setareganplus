@@ -5,9 +5,9 @@ import { fa } from "@/lib/format";
 import { buildMeta } from "@/lib/seo";
 import { JsonLd } from "@/components/site/JsonLd";
 import { breadcrumbLd } from "@/lib/ld";
-import { FIELDS, GRADES, courseShowsPremium, fieldsLabel, presentPrice } from "@/lib/classes/catalog";
+import { FIELDS, GRADES, courseShowsPremium, fieldsLabel, formatClock, isNewLesson, lessonPath, presentPrice } from "@/lib/classes/catalog";
 import { getClassStudent } from "@/lib/classes/session";
-import { Cover, EmptyState, MetaLine, PremiumBadge, PriceTag } from "@/components/classes/ui";
+import { Cover, EmptyState, MetaLine, NewChip, PremiumBadge, PriceTag } from "@/components/classes/ui";
 
 type SP = { q?: string; grade?: string; field?: string; topic?: string };
 
@@ -46,7 +46,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
     ...(topic ? { slug: topic } : {}),
     ...(q ? { OR: [{ title: { contains: q, mode: "insensitive" as const } }, { summary: { contains: q, mode: "insensitive" as const } }, { lessons: { some: { published: true, title: { contains: q, mode: "insensitive" as const } } } }] } : {}),
   };
-  const [courses, topics, pathRow, mine] = await Promise.all([
+  const [courses, topics, pathRow, mine, premiumLessons] = await Promise.all([
     prisma.classCourse.findMany({
       where,
       orderBy: { sortOrder: "asc" },
@@ -55,9 +55,14 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
     prisma.classCourse.findMany({ where: { published: true, kind: "TOPIC" }, orderBy: { sortOrder: "asc" }, select: { slug: true, title: true } }),
     student ? prisma.classPath.findFirst({ where: { published: true, grade: student.grade, field: student.field || "" }, include: { steps: { orderBy: { sortOrder: "asc" }, include: { course: { select: { slug: true, title: true, published: true } } } } } }) : null,
     student ? prisma.classEnrollment.findMany({ where: { studentId: student.id }, select: { courseId: true } }) : [],
+    prisma.classLesson.findMany({
+      where: { published: true, isPremium: true, course: { published: true } },
+      orderBy: { createdAt: "desc" },
+      take: 24,
+      select: { id: true, title: true, aparatHash: true, poster: true, durationSec: true, createdAt: true, course: { select: { slug: true, title: true, teacher: true } } },
+    }),
   ]);
   const enrolled = new Set(mine.map((m) => m.courseId));
-  const premiumCourses = courses.filter((c) => courseShowsPremium(c, c.lessons));
   const topicsOnly = courses.filter((c) => c.kind === "TOPIC");
   const gradesOnly = courses.filter((c) => c.kind === "GRADE");
   const steps = (pathRow?.steps ?? []).filter((s) => s.course.published);
@@ -104,33 +109,29 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
         {topics.map((t) => <Link key={t.slug} href={keep(sp, { topic: topic === t.slug ? "" : t.slug })} className={`cl-chip ${topic === t.slug ? "is-on" : ""}`}>{t.title}</Link>)}
       </div>
 
+      {premiumLessons.length > 0 && (
+        <section className="mt-8">
+          <p className="text-sm font-extrabold text-[#b8860b]">سری تازه</p>
+          <h2 className="cl-display mt-1 text-3xl">ستارگان پلاس پریمیوم</h2>
+          <p className="cl-muted mt-2 max-w-2xl text-sm leading-7">جلسه‌های پریمیوم منتشرشده، از تازه‌ترین. جلد هر جلسه همان کاوری است که در مدیریت بارگذاری شده.</p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {premiumLessons.map((l) => (
+              <Link key={l.id} href={lessonPath(l.course.slug, l.aparatHash)} className="cl-premium-card cl-lift">
+                <Cover slug={l.course.slug} title={l.title} teacher={l.course.teacher} cover={l.poster} />
+                <div className="space-y-2 p-5">
+                  <div className="flex flex-wrap items-center gap-2"><PremiumBadge />{isNewLesson(l.createdAt) && <NewChip />}</div>
+                  <h3 className="cl-display text-2xl">{l.title}</h3>
+                  <p className="text-sm text-white/70">{l.course.title}{l.durationSec ? ` · ${fa(formatClock(l.durationSec))}` : ""}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
       {courses.length === 0 ? (
         <div className="mt-8"><EmptyState title="دوره‌ای با این فیلتر نیست" text="پایه یا رشته را عوض کن، یا جست‌وجو را پاک کن." href="/classes" action="همهٔ دوره‌ها" /></div>
       ) : (
         <>
-          {premiumCourses.length > 0 && (
-            <section className="mt-8">
-              <p className="text-sm font-extrabold text-[#b8860b]">سری تازه</p>
-              <h2 className="cl-display mt-1 text-3xl">ستارگان پلاس پریمیوم</h2>
-              <p className="cl-muted mt-2 max-w-2xl text-sm leading-7">ضبط‌های جدید روی تختهٔ هوشمند، با جلد اختصاصی و زیرنویس. همان مباحث، کیفیت بالاتر.</p>
-              <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                {premiumCourses.map((c) => {
-                  const seconds = c.lessons.reduce((s, l) => s + (l.durationSec || 0), 0);
-                  return (
-                    <Link key={c.id} href={`/classes/${c.slug}`} className="cl-premium-card cl-lift">
-                      <Cover slug={c.slug} title={c.title} teacher={c.teacher} cover={c.cover || c.lessons.filter((l) => l.isPremium && l.poster).sort((a, b) => a.sortOrder - b.sortOrder)[0]?.poster} />
-                      <div className="space-y-3 p-5">
-                        <div className="flex flex-wrap items-center gap-2"><PremiumBadge /><PriceTag course={presentPrice(c, true)} light /></div>
-                        <h3 className="cl-display text-2xl">{c.title}</h3>
-                        <p className="text-sm text-white/70">{c.teacher} · {fa(c.lessons.filter((l) => l.isPremium).length)} جلسهٔ پریمیوم</p>
-                        <MetaLine lessons={c.lessons.length} seconds={seconds} grades={c.grades} fields={c.fields} />
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </section>
-          )}
           <CourseGrid title="آرشیو کلاس‌ها" items={topicsOnly} enrolled={enrolled} />
           {gradesOnly.length > 0 && <CourseGrid title="کلاس‌ها بر اساس پایه" items={gradesOnly} enrolled={enrolled} />}
         </>

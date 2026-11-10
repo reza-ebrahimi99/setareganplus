@@ -93,6 +93,45 @@ export function parseDuration(v: string | null | undefined): number | null {
   return p[0] * 3600 + p[1] * 60 + p[2];
 }
 
+/** Admin duration: "20:48", "1:20:48", or a whole number of seconds. */
+export function parseLessonDuration(v: string | null | undefined): number | null {
+  if (!v || !v.trim()) return null;
+  const t = v.trim();
+  if (t.includes(":")) {
+    const p = t.split(":").map((x) => Number(x.trim()));
+    if (p.length < 2 || p.length > 3 || p.some((n) => !Number.isInteger(n) || n < 0)) return null;
+    const sec = p.length === 2 ? p[0] * 60 + p[1] : p[0] * 3600 + p[1] * 60 + p[2];
+    if (p.slice(1).some((n) => n > 59) || sec <= 0 || sec > 24 * 60 * 60) return null;
+    return sec;
+  }
+  if (!/^\d+$/.test(t)) return null;
+  const n = Number(t);
+  if (n <= 0 || n > 24 * 60 * 60) return null;
+  return n;
+}
+
+/** Sort value that places a new premium lesson ahead of the ones already on the course. */
+export function firstPremiumSort(orders: number[]) {
+  if (orders.length === 0) return 0;
+  return Math.min(...orders) - 1;
+}
+
+/** A poster the site may store: an http(s) URL, or a path under /media or /classes. */
+export function safePosterRef(raw: string): string | null {
+  const v = raw.trim();
+  if (!v || v.includes("..") || v.includes("\\")) return null;
+  if (v.startsWith("/media/") || v.startsWith("/classes/")) {
+    return /^\/(?:media|classes)\/[\w./-]+$/.test(v) ? v : null;
+  }
+  try {
+    const u = new URL(v);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
 export function cleanDescription(raw: string): string {
   let t = raw.replace(/\r/g, "").trim();
   const cut = t.search(/\n\s*(موسسه|مؤسسه|#)/);

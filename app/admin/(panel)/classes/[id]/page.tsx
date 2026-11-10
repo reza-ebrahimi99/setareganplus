@@ -2,9 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePerm } from "@/lib/auth";
-import { PageTitle, Panel, Field, Area, Check, Flash } from "@/components/admin/ui";
+import { PageTitle, Panel, Field, Area, Check, Flash, ImageInput } from "@/components/admin/ui";
+import { LessonDraft } from "@/components/admin/LessonDraft";
 import { SubmitButton } from "@/components/admin/SubmitButton";
-import { FIELDS, GRADES } from "@/lib/classes/catalog";
+import { FIELDS, GRADES, firstPremiumSort } from "@/lib/classes/catalog";
 import { saveCourse, addLesson, saveFile, manualEnroll, saveChapters, setLessonPremium } from "../actions";
 import { readChapterCatalog } from "@/lib/classes/bank-sync";
 
@@ -24,7 +25,7 @@ export default async function EditCourse({ params, searchParams }: { params: Pro
     <>
       <PageTitle title={course.title} action={<Link href="/admin/classes" className="text-sm font-bold text-muted">بازگشت</Link>} />
       <Flash ok={sp.ok} />
-      {sp.e && <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800">{sp.e === "link" ? "لینک یا شناسهٔ ویدیو شناخته نشد." : sp.e === "mobile" ? "موبایل نامعتبر است." : sp.e === "nostudent" ? "این شماره هنوز در کلاس‌ها ثبت‌نام نکرده." : sp.e}</p>}
+      {sp.e && <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800">{sp.e === "link" ? "لینک یا شناسهٔ ویدیو شناخته نشد." : sp.e === "duration" ? "مدت را مثل ۲۰:۴۸ یا به ثانیه بنویس." : sp.e === "cover" ? "نشانی کاور معتبر نیست." : sp.e === "mobile" ? "موبایل نامعتبر است." : sp.e === "nostudent" ? "این شماره هنوز در کلاس‌ها ثبت‌نام نکرده." : sp.e}</p>}
       <Panel title="مشخصات و قیمت">
         <form action={saveCourse} className="space-y-4">
           <input type="hidden" name="id" value={course.id} />
@@ -84,12 +85,14 @@ export default async function EditCourse({ params, searchParams }: { params: Pro
         </ul>
         <form action={addLesson} className="mt-4 grid gap-3 sm:grid-cols-2">
           <input type="hidden" name="courseId" value={course.id} />
-          <Field label="لینک یا شناسهٔ ویدیو" name="link" dir="ltr" required hint="همان لینک اشتراک‌گذاری. برای دانش‌آموز نمایش داده نمی‌شود." />
+          <LessonDraft defaultOrder={course.lessons.length} firstPremiumOrder={firstPremiumSort(course.lessons.filter((l) => l.isPremium).map((l) => l.sortOrder))} />
           <Field label="عنوان" name="title" />
-          <Field label="ترتیب" name="sortOrder" type="number" defaultValue={course.lessons.length} />
-          <Field label="مدت (دقیقه)" name="durationMin" type="number" />
+          <Field label="مدت" name="duration" dir="ltr" placeholder="20:48" hint="دقیقه:ثانیه، مثل ۲۰:۴۸، یا تعداد ثانیه." />
           <Check label="پیش‌نمایش رایگان" name="freePreview" />
-          <Check label="پریمیوم" name="isPremium" defaultChecked />
+          <div className="sm:col-span-2 space-y-3">
+            <ImageInput label="کاور جلسه" name="cover" />
+            <Field label="یا نشانی کاور" name="coverUrl" dir="ltr" placeholder="https://…" hint="اگر فایل انتخاب نکنی، این نشانی ذخیره می‌شود." />
+          </div>
           <SubmitButton>افزودن جلسه</SubmitButton>
         </form>
       </Panel>

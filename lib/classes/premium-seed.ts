@@ -1,5 +1,6 @@
 /**
- * Premium lessons the seed upserts by video hash. Other lessons are left untouched.
+ * Premium lessons the seed inserts when that video hash is not already in the database.
+ * An existing lesson — including one edited in the admin panel — is left untouched.
  *
  * The list in this file is committed. Extra lessons can be added without a code
  * push by writing JSON at PREMIUM_LESSONS_FILE (default

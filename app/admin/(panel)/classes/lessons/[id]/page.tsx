@@ -2,9 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePerm } from "@/lib/auth";
-import { PageTitle, Panel, Field, Area, Check, Flash } from "@/components/admin/ui";
+import { PageTitle, Panel, Field, Area, Check, Flash, ImageInput } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/SubmitButton";
-import { FIELDS, GRADES } from "@/lib/classes/catalog";
+import { FIELDS, GRADES, formatClock } from "@/lib/classes/catalog";
 import { saveLesson, deleteLesson, addQuestion, deleteQuestion, saveFile, saveChapters } from "../../actions";
 
 export default async function EditLesson({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; e?: string }> }) {
@@ -26,6 +26,8 @@ export default async function EditLesson({ params, searchParams }: { params: Pro
       <Flash ok={sp.ok} />
       {sp.e === "max" && <p className="mb-3 text-sm text-red-700">هر جلسه حداکثر ۵ سؤال دارد.</p>}
       {sp.e === "quiz" && <p className="mb-3 text-sm text-red-700">سؤال، حداقل دو گزینه و دقیقاً یک پاسخ درست لازم است.</p>}
+      {sp.e === "duration" && <p className="mb-3 text-sm text-red-700">مدت را مثل ۲۰:۴۸ یا به ثانیه بنویس.</p>}
+      {sp.e === "cover" && <p className="mb-3 text-sm text-red-700">نشانی کاور معتبر نیست.</p>}
       <Panel>
         <form action={saveLesson} className="space-y-4">
           <input type="hidden" name="id" value={lesson.id} />
@@ -35,7 +37,7 @@ export default async function EditLesson({ params, searchParams }: { params: Pro
             <label className="block text-sm font-semibold">دوره
               <select name="courseId" defaultValue={lesson.courseId} className="input mt-1">{courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</select>
             </label>
-            <Field label="مدت (دقیقه)" name="durationMin" type="number" defaultValue={lesson.durationSec ? Math.round(lesson.durationSec / 60) : ""} />
+            <Field label="مدت" name="duration" dir="ltr" defaultValue={lesson.durationSec ? formatClock(lesson.durationSec) : ""} hint="دقیقه:ثانیه یا ثانیه" />
             <Field label="ترتیب" name="sortOrder" type="number" defaultValue={lesson.sortOrder} />
           </div>
           <p className="text-xs text-muted" dir="ltr">id: {lesson.aparatHash}</p>
@@ -44,6 +46,8 @@ export default async function EditLesson({ params, searchParams }: { params: Pro
             {FIELDS.map((f) => <label key={f.id}><input type="checkbox" name="fields" value={f.id} defaultChecked={lesson.fields.includes(f.id)} /> {f.label}</label>)}
           </div>
           <div className="flex gap-4"><Check label="پیش‌نمایش رایگان" name="freePreview" defaultChecked={lesson.freePreview} /><Check label="پریمیوم" name="isPremium" defaultChecked={lesson.isPremium} /><Check label="منتشر" name="published" defaultChecked={lesson.published} /></div>
+          <ImageInput label="کاور جلسه" name="cover" current={lesson.poster} />
+          <Field label="یا نشانی کاور" name="coverUrl" dir="ltr" defaultValue={lesson.poster?.startsWith("http") ? lesson.poster : ""} placeholder="https://…" hint="خالی یعنی کاور فعلی بماند. فایل، بر نشانی اولویت دارد." />
           <SubmitButton>ذخیره</SubmitButton>
         </form>
         <form action={saveChapters} className="mt-4 space-y-2">
