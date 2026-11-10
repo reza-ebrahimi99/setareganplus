@@ -1,0 +1,38 @@
+{
+  "source": "sample",
+  "questions": [
+    {
+      "externalId": "sample-gvz8j6s-1",
+      "lessonHash": "gvz8j6s",
+      "prompt": "در بهینه‌سازی، برای پیدا کردن بیشینهٔ یک تابع مشتق‌پذیر معمولاً کدام نقطه را بررسی می‌کنیم؟",
+      "explanation": "نقاطی که مشتق صفر است یا وجود ندارد، نامزد اکسترمم‌اند.",
+      "choices": [
+        { "text": "نقطه‌ای که مشتق صفر شود", "correct": true },
+        { "text": "فقط انتهای بازه، حتی اگر مشتق صفر نباشد و بازه باز باشد", "correct": false },
+        { "text": "نقطه‌ای که تابع منفی است", "correct": false }
+      ]
+    },
+    {
+      "externalId": "sample-gvz8j6s-2",
+      "lessonHash": "gvz8j6s",
+      "prompt": "اگر $f(x)=x^2$، مقدار $f'(2)$ کدام است؟",
+      "explanation": "$f'(x)=2x$ پس $f'(2)=4$.",
+      "choices": [
+        { "text": "$2$", "correct": false },
+        { "text": "$4$", "correct": true },
+        { "text": "$8$", "correct": false }
+      ]
+    },
+    {
+      "externalId": "sample-gvz8j6s-3",
+      "lessonHash": "gvz8j6s",
+      "prompt": "کدام جمله دربارهٔ آزمون مشتق دوم درست است؟",
+      "explanation": "اگر مشتق دوم در نقطهٔ بحرانی مثبت باشد، تقعر رو به بالا و نقطه مینیمم موضعی است.",
+      "choices": [
+        { "text": "مشتق دوم مثبت یعنی تقعر رو به بالا", "correct": true },
+        { "text": "مشتق دوم هیچ اطلاعی از تقعر نمی‌دهد", "correct": false },
+        { "text": "مشتق دوم همیشه صفر است", "correct": false }
+      ]
+    }
+  ]
+}

@@ -257,6 +257,21 @@ pm2 start npm --name consult-reminders --cron "*/15 * * * *" --no-autorestart --
 pm2 save
 ```
 
+## 12. Video courses (after migrate)
+
+`deploy/lean/update.sh` runs `prisma migrate deploy` and does **not** seed courses. No new environment variable is required: payments use the existing `ZIBAL_MERCHANT_ID`, and the login SMS uses the existing `SMSIR_API_KEY` with verify template **607284** (the same approved `CODE` template). A one-time code is shown on screen only when `NODE_ENV` is not `production`.
+
+On the server, once:
+
+```bash
+cd /var/www/setareganplus-lean
+npm run classes:seed
+```
+
+The command is safe to repeat: it only inserts courses, lessons and learning paths that are not there yet, so later edits in `/admin/classes` stay. Seeded courses are **free** with a struck-through list price of ۲۵۰ هزار تومان. Change that price before you advertise it.
+
+Then, as the owner: open `/admin/classes`, confirm prices, map a booklet on each course if you want the lesson upsell, and give staff the «کلاس‌های ویدیویی» permission. Question import (for qbank.setareganplus.ir later) is `/admin/classes/import`. Do not turn on any weekly parent SMS; there is none.
+
 The process must exit (autorestart off). It is safe to run by hand: `npm run consult:remind -- --dry-run`. Reminders stay off until step 7’s checkbox is on. Cancel/reschedule messages still queue from the booking screen either way.
 8. **Do not** set `CONSULT_ALLOW_DEV_OTP=1` on the public server. That flag prints the SMS code on the page and is only for a local machine.
 

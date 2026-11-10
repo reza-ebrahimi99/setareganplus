@@ -41,6 +41,7 @@ export const PERM_GROUPS = [
       { key: "content.gallery", label: "گالری", hint: "آلبوم‌ها و عکس‌ها" },
       { key: "content.faq", label: "سؤالات متداول", hint: "" },
       { key: "content.news", label: "اخبار و اطلاعیه‌ها", hint: "نوشتن، انتشار و سنجاق کردن خبر و اطلاعیه" },
+      { key: "classes.manage", label: "کلاس‌های ویدیویی", hint: "دوره‌ها، جلسه‌ها، آزمون، پرسش‌ها و گزارش تماشا" },
       { key: "site.settings", label: "تنظیمات سایت", hint: "تلفن، آدرس، آمار، متن‌های صفحهٔ اصلی" },
     ],
   },
@@ -71,6 +72,7 @@ export const PRESETS: { key: string; label: string; perms: Perm[] }[] = [
   { key: "reception_quiz", label: "پذیرش + تست مطالعه", perms: ["submissions", "campaign.studyQuiz"] },
   { key: "reception", label: "پذیرش (درخواست‌ها)", perms: ["submissions"] },
   { key: "content", label: "محتوای سایت", perms: ["content.centers", "content.team", "content.achievements", "content.gallery", "content.faq", "content.news"] },
+  { key: "classes", label: "کلاس‌های ویدیویی", perms: ["classes.manage"] },
 ];
 
 /** Admin route -> required permission (longest prefix wins). Used by the sidebar and the dashboard. */
@@ -95,6 +97,7 @@ export const ROUTE_PERM: [string, Perm | null][] = [
   ["/admin/gallery", "content.gallery"],
   ["/admin/faq", "content.faq"],
   ["/admin/news", "content.news"],
+  ["/admin/classes", "classes.manage"],
   ["/admin/settings", "site.settings"],
   ["/admin/users", "users.manage"],
 ];

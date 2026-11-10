@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: "/",
         // private / transactional pages: admin, APIs, order tracking, booklet receipts, short links, payment callback
-        disallow: ["/admin", "/api", "/order", "/booklet", "/o/", "/shop/pay", "/payments", "/moshavere-vizhe"],
+        disallow: ["/admin", "/api", "/order", "/booklet", "/o/", "/shop/pay", "/payments", "/moshavere-vizhe", "/classes/me", "/classes/login", "/classes/pay", "/classes/certificate"],
       },
     ],
     sitemap: `${site}/sitemap.xml`,

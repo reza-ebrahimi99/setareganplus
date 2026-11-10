@@ -54,6 +54,7 @@ export default async function Home() {
   const honorTop = toppers(honors);
 
   const quick: { href: string; title: string; text: string; icon: IconName; tone: string }[] = [
+    { href: "/classes", title: "کلاس‌های ویدیویی", text: "دوره‌های ریاضی، جلسه به جلسه", icon: "play", tone: "from-royal to-royal-2 text-white" },
     { href: "/moshavere", title: "مشاوره رایگان", text: "۳۰ دقیقه، آنلاین یا حضوری، از دوم تا کنکور", icon: "chat", tone: "from-[#ffc83d] to-gold text-navy" },
     { href: "/test-motalee", title: "تست مطالعه", text: "الگوی درس خوندنت چیست؟ هدیه بگیر", icon: "help", tone: "from-royal to-royal-2 text-white" },
     { href: "/register", title: "پیش‌ثبت‌نام", text: "فرم کوتاه آنلاین، تماس همکاران ما", icon: "form", tone: "from-[#ffc83d] to-gold text-navy" },
@@ -148,6 +149,15 @@ export default async function Home() {
               <Icon name="arrow" className="absolute top-4 left-4 size-4 text-muted/60 transition-all group-hover:-translate-x-1 group-hover:text-royal sm:static" strokeWidth={2.2} />
             </Link>
           ))}
+        </div>
+      </section>
+
+      <section className="container-x pt-14 sm:pt-16">
+        <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-l from-navy via-navy-2 to-royal px-6 py-8 text-white sm:px-10 sm:py-10">
+          <p className="text-sm font-bold text-gold">کلاس‌های ویدیویی</p>
+          <h2 className="mt-2 max-w-2xl text-3xl font-black leading-snug">هر مبحث ریاضی، یک دوره با سرفصل و پیشرفت تماشا</h2>
+          <p className="mt-3 max-w-xl text-sm leading-7 text-white/75">تابع، مشتق، حد، مثلثات و بقیه. با مهندس رضا ابراهیمی. آزمون کوتاه هر جلسه و گواهی پایان دوره.</p>
+          <Link href="/classes" className="btn-gold mt-5 inline-flex">ورود به دوره‌ها</Link>
         </div>
       </section>
 

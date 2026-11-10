@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/ghalamchi", label: "نمایندگی قلم‌چی نسیم‌شهر" },
   { href: "/shop", label: "فروشگاه جزوه" },
   { href: "/order", label: "پیگیری سفارش جزوه" },
+  { href: "/classes", label: "کلاس‌های ویدیویی" },
   { href: "/moshavere", label: "مشاوره رایگان" },
   { href: "/register", label: "پیش‌ثبت‌نام" },
   { href: "/forms", label: "ثبت‌نام‌های آنلاین" },

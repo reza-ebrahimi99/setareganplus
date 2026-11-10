@@ -769,3 +769,349 @@ model ConsultNotice {
   @@index([consultationId, kind])
   @@index([status, createdAt])
 }
+
+// ───────────────────────── Video courses (کلاس‌های ویدیویی) ─────────────────────────
+// Additive. Booklet orders, the study quiz, consultation and news are untouched.
+
+/// A course. Topic playlists are TOPIC; leftover grade playlists are GRADE.
+model ClassCourse {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  title          String
+  summary        String?  @db.Text
+  intro          String?  @db.Text
+  /// Uploaded cover under /media. Empty = generated art.
+  cover          String?
+  teacher        String   @default("مهندس رضا ابراهیمی")
+  /// Grade ids: g2…g12, konkur
+  grades         String[] @default([])
+  /// riazi | tajrobi | ensani
+  fields         String[] @default([])
+  /// TOPIC | GRADE
+  kind           String   @default("TOPIC")
+  /// List price in rials. Struck through when the course is free or discounted.
+  priceRials     Int      @default(0)
+  /// Discounted price in rials. Null = no discount. Ignored when isFree.
+  salePriceRials Int?
+  isFree         Boolean  @default(false)
+  /// Shop product slug for the lesson upsell. Empty = no booklet card.
+  bookletSlug    String   @default("")
+  suggestConsult Boolean  @default(true)
+  published      Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  lessons      ClassLesson[]
+  files        ClassFile[]
+  enrollments  ClassEnrollment[]
+  payments     ClassPayment[]
+  steps        ClassPathStep[]
+  certificates ClassCertificate[]
+
+  @@index([published, kind, sortOrder])
+}
+
+model ClassLesson {
+  id          String      @id @default(cuid())
+  courseId    String
+  course      ClassCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  /// Host video id. Never shown as a link on the student site.
+  aparatHash  String      @unique
+  title       String
+  description String?     @db.Text
+  durationSec Int?
+  /// Cached poster under /media. Students never see an upstream image URL.
+  poster      String?
+  /// Watchable after login without buying the course.
+  freePreview Boolean     @default(false)
+  grades      String[]    @default([])
+  fields      String[]    @default([])
+  sortOrder   Int         @default(0)
+  published   Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  files     ClassFile[]
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+  progress  ClassProgress[]
+  threads   ClassThread[]
+
+  @@index([courseId, sortOrder])
+}
+
+model ClassFile {
+  id         String       @id @default(cuid())
+  title      String
+  fileName   String
+  /// Relative key under private uploads.
+  storageKey String
+  bytes      Int          @default(0)
+  mime       String       @default("application/pdf")
+  courseId   String?
+  course     ClassCourse? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessonId   String?
+  lesson     ClassLesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  published  Boolean      @default(true)
+  sortOrder  Int          @default(0)
+  createdAt  DateTime     @default(now())
+
+  @@index([courseId])
+  @@index([lessonId])
+}
+
+/// Student of the video courses. Not an EnrolledStudent (that model is the consultation access code).
+model ClassStudent {
+  id           String    @id @default(cuid())
+  firstName    String
+  lastName     String
+  mobile       String    @unique
+  /// Grade id from the consultation list (پایه دوم … کنکور).
+  grade        String
+  /// riazi | tajrobi | ensani | null
+  field        String?
+  points       Int       @default(0)
+  streak       Int       @default(0)
+  /// Tehran civil date YYYY-MM-DD of the last learning day.
+  lastActiveOn String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLoginAt  DateTime?
+
+  enrollments  ClassEnrollment[]
+  payments     ClassPayment[]
+  progress     ClassProgress[]
+  attempts     QuizAttempt[]
+  threads      ClassThread[]
+  pointRows    ClassPoint[]
+  pointLogs    ClassPointLog[]
+  badges       ClassBadge[]
+  certificates ClassCertificate[]
+
+  @@index([grade])
+}
+
+model ClassOtp {
+  id         String    @id @default(cuid())
+  mobile     String
+  codeHash   String
+  firstName  String
+  lastName   String
+  grade      String
+  field      String?
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  ip         String?
+  createdAt  DateTime  @default(now())
+
+  @@index([mobile, createdAt])
+  @@index([expiresAt])
+}
+
+model ClassEnrollment {
+  id        String       @id @default(cuid())
+  studentId String
+  courseId  String
+  student   ClassStudent @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course    ClassCourse  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  /// FREE | PAID | ADMIN
+  source    String
+  createdAt DateTime     @default(now())
+
+  @@unique([studentId, courseId])
+  @@index([courseId])
+}
+
+/// Online payment for a course. Separate from booklet Payment rows.
+model ClassPayment {
+  id          String       @id @default(cuid())
+  courseId    String
+  course      ClassCourse  @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  studentId   String
+  student     ClassStudent @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  amountRials Int
+  status      PayStatus    @default(PENDING)
+  token       String       @unique
+  trackId     String?      @unique
+  refNumber   String?
+  cardNumber  String?
+  result      Int?
+  message     String?
+  paidAt      DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([studentId, courseId])
+  @@index([status, createdAt])
+}
+
+model ClassProgress {
+  id             String       @id @default(cuid())
+  studentId      String
+  student        ClassStudent @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lessonId       String
+  lesson         ClassLesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  secondsWatched Int          @default(0)
+  completed      Boolean      @default(false)
+  opens          Int          @default(0)
+  lastBeatAt     DateTime?
+  lastOpenAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([studentId, lessonId])
+  @@index([lessonId])
+  @@index([studentId, updatedAt])
+}
+
+/// One multiple-choice question attached to a lesson. Synced from qbank by externalId.
+model QuizQuestion {
+  id          String      @id @default(cuid())
+  lessonId    String
+  lesson      ClassLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  prompt      String      @db.Text
+  explanation String?     @db.Text
+  sortOrder   Int         @default(0)
+  /// Stable id from qbank.setareganplus.ir. Null for questions typed in the panel.
+  externalId  String?     @unique
+  published   Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  choices     QuizChoice[]
+
+  @@index([lessonId, sortOrder])
+}
+
+model QuizChoice {
+  id         String       @id @default(cuid())
+  questionId String
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String       @db.Text
+  correct    Boolean      @default(false)
+  sortOrder  Int          @default(0)
+
+  @@index([questionId, sortOrder])
+}
+
+model QuizAttempt {
+  id        String       @id @default(cuid())
+  studentId String
+  lessonId  String
+  student   ClassStudent @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lesson    ClassLesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  score     Int
+  total     Int
+  /// { [questionId]: choiceId }
+  answers   Json
+  createdAt DateTime     @default(now())
+
+  @@index([studentId, lessonId])
+}
+
+/// Idempotent point grant. `key` is watch:lesson, quiz:lesson or course:course.
+model ClassPoint {
+  id        String       @id @default(cuid())
+  studentId String
+  student   ClassStudent @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  key       String
+  points    Int
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@unique([studentId, key])
+  @@index([studentId])
+}
+
+/// One delta, so the weekly board can sum points earned this week.
+model ClassPointLog {
+  id        String       @id @default(cuid())
+  studentId String
+  student   ClassStudent @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  points    Int
+  createdAt DateTime     @default(now())
+
+  @@index([createdAt])
+  @@index([studentId, createdAt])
+}
+
+model ClassBadge {
+  id        String       @id @default(cuid())
+  studentId String
+  student   ClassStudent @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  /// streak_7 | course_complete
+  kind      String
+  /// Empty string for badges that are not about one course.
+  courseId  String       @default("")
+  earnedAt  DateTime     @default(now())
+
+  @@unique([studentId, kind, courseId])
+  @@index([studentId])
+}
+
+model ClassCertificate {
+  id        String       @id @default(cuid())
+  studentId String
+  courseId  String
+  student   ClassStudent @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course    ClassCourse  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  code      String       @unique
+  issuedAt  DateTime     @default(now())
+
+  @@unique([studentId, courseId])
+}
+
+/// Suggested order of courses for one grade and field.
+model ClassPath {
+  id        String          @id @default(cuid())
+  grade     String
+  /// riazi | tajrobi | ensani | "" = any field
+  field     String          @default("")
+  title     String
+  published Boolean         @default(true)
+  steps     ClassPathStep[]
+
+  @@unique([grade, field])
+}
+
+model ClassPathStep {
+  id        String      @id @default(cuid())
+  pathId    String
+  path      ClassPath   @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    ClassCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  sortOrder Int         @default(0)
+  note      String?
+
+  @@unique([pathId, courseId])
+  @@index([pathId, sortOrder])
+}
+
+/// A student question under a lesson. Hidden until staff publish it.
+model ClassThread {
+  id        String       @id @default(cuid())
+  lessonId  String
+  lesson    ClassLesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  studentId String
+  student   ClassStudent @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  body      String       @db.Text
+  /// PENDING | PUBLISHED | HIDDEN
+  status    String       @default("PENDING")
+  createdAt DateTime     @default(now())
+  replies   ClassReply[]
+
+  @@index([lessonId, status])
+  @@index([status, createdAt])
+}
+
+model ClassReply {
+  id        String      @id @default(cuid())
+  threadId  String
+  thread    ClassThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  body      String      @db.Text
+  author    String
+  createdAt DateTime    @default(now())
+
+  @@index([threadId])
+}

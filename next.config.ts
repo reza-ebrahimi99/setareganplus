@@ -39,7 +39,6 @@ const map: [string, string][] = [
   ["/about/team", "/team"],
   ["/team/:slug", "/team"],
   ["/achievements/:slug", "/achievements"],
-  ["/classes/:path*", "/education"],
   ["/courses/:path*", "/education"],
   ["/amoozeshgah", "/education"],
   ["/konkur", "/konkur-nasimshahr"],

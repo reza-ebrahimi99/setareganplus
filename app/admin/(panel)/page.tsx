@@ -121,6 +121,7 @@ const HOME_LINKS: { href: string; label: string; desc: string }[] = [
   { href: "/admin/shop/settings", label: "تنظیمات فروشگاه", desc: "باز/بسته بودن فروش" },
   { href: "/admin/forms", label: "فرم‌ساز", desc: "ساخت و ویرایش فرم‌ها" },
   { href: "/admin/news", label: "اخبار و اطلاعیه‌ها", desc: "نوشتن و انتشار خبر و اطلاعیه" },
+  { href: "/admin/classes", label: "کلاس‌های ویدیویی", desc: "دوره‌ها، آزمون، پرسش و گزارش تماشا" },
   { href: "/admin/centers", label: "مراکز", desc: "صفحه‌های مراکز" },
   { href: "/admin/team", label: "تیم", desc: "معرفی همکاران در سایت" },
   { href: "/admin/achievements", label: "افتخارات", desc: "رتبه‌ها و قبولی‌ها" },

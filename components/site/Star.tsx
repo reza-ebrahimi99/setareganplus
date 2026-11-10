@@ -51,6 +51,7 @@ const ICONS = {
   news: <><path d="M4 9.5v5h3l7 4.5V5L7 9.5H4Z" strokeLinejoin="round" /><path d="M17.5 9a4 4 0 0 1 0 6M7 14.5 8.5 20h2.5" strokeLinecap="round" strokeLinejoin="round" /></>,
   share: <><circle cx="17" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17" cy="18.5" r="2.5" /><path d="m8.7 10.8 6.1-3.9M8.7 13.2l6.1 3.9" /></>,
   help: <><circle cx="12" cy="12" r="8.5" /><path d="M9.6 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.4M12 16.8h.01" strokeLinecap="round" /></>,
+  play: <path d="M8 5.5v13l11-6.5-11-6.5Z" strokeLinejoin="round" />,
 } as const;
 export type IconName = keyof typeof ICONS;
 

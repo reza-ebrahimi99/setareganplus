@@ -12,6 +12,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const u = (p: string) => site + encodeURI(p);
   const img = (p?: string | null) => (p ? [p.startsWith("http") ? p : u(p)] : undefined);
 
+  const classRows = await prisma.classCourse.findMany({ where: { published: true }, select: { slug: true, updatedAt: true, lessons: { where: { published: true }, select: { aparatHash: true, updatedAt: true } } } }).catch(() => []);
   const [settings, centers, products, news, forms, albums] = await Promise.all([
     prisma.setting.findMany({ select: { updatedAt: true }, orderBy: { updatedAt: "desc" }, take: 1 }),
     prisma.center.findMany({ where: { published: true }, select: { slug: true, heroImage: true, updatedAt: true } }),
@@ -32,6 +33,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: u("/rotbe-bartar-konkur"), lastModified: siteMod, changeFrequency: "monthly" as const, priority: 0.8, images: [u("/honors/1405/banner-1200.webp")] },
     { url: u("/test-motalee"), lastModified: siteMod, changeFrequency: "weekly" as const, priority: 0.85 },
     { url: u("/moshavere"), lastModified: siteMod, changeFrequency: "weekly" as const, priority: 0.8 },
+    { url: u("/classes"), lastModified: newest(classRows), changeFrequency: "weekly" as const, priority: 0.85 },
+    { url: u("/classes/leaderboard"), lastModified: siteMod, changeFrequency: "daily" as const, priority: 0.4 },
     { url: u("/rotbe-bartar-konkur?tab=ghabooli"), lastModified: siteMod, changeFrequency: "monthly" as const, priority: 0.6 },
     { url: u("/rotbe-bartar-konkur?tab=tizhooshan"), lastModified: siteMod, changeFrequency: "monthly" as const, priority: 0.6 },
     ...["/register", "/contact", "/about", "/team", "/achievements", "/gallery", "/faq"].map((p) => ({ url: u(p), lastModified: siteMod, changeFrequency: "monthly" as const, priority: 0.6 })),
@@ -44,5 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: u("/forms"), lastModified: newest(forms), changeFrequency: "weekly" as const, priority: 0.7 },
     ...forms.filter((f) => f.slug !== "pre-registration").map((f) => ({ url: u(`/f/${f.slug}`), lastModified: f.updatedAt, changeFrequency: "weekly" as const, priority: 0.6, images: img(f.coverImage) })),
     ...albums.map((a) => ({ url: u(`/gallery/${a.slug}`), changeFrequency: "monthly" as const, priority: 0.4, images: [...new Set([a.cover, ...a.photos.map((p) => p.path)].filter(Boolean) as string[])].map((p) => u(p)) })),
+    ...classRows.map((c) => ({ url: u(`/classes/${c.slug}`), lastModified: c.updatedAt, changeFrequency: "weekly" as const, priority: 0.7 })),
+    ...classRows.flatMap((c) => c.lessons.map((l) => ({ url: u(`/classes/${c.slug}/${l.aparatHash}`), lastModified: l.updatedAt, changeFrequency: "monthly" as const, priority: 0.5 }))),
   ];
 }
