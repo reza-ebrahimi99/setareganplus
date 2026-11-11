@@ -108,7 +108,12 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
               </div>
             </div>
           )}
-          {lesson.description && <article className="cl-card p-5 leading-8"><div dangerouslySetInnerHTML={{ __html: renderMath(lesson.description) }} /></article>}
+          {lesson.description?.trim() && (
+            <article className="cl-card p-5">
+              <h2 className="font-extrabold">در این قسمت</h2>
+              <div className="mt-2 leading-8" dangerouslySetInnerHTML={{ __html: renderMath(lesson.description) }} />
+            </article>
+          )}
           {can && student && <LessonQuiz lessonId={lesson.id} courseId={lesson.courseId} field={student.field} manual={lesson.questions} />}
           <CourseFileList files={[...lesson.course.files, ...lesson.files]} slug={slug} loggedIn={!!student} enrolled={!!enrolled} />
           <section className="cl-card space-y-4 p-5">
