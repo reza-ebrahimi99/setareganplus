@@ -18,7 +18,7 @@ import { NewChip, PremiumBadge } from "@/components/classes/ui";
 import { QuizBox } from "@/components/classes/QuizBox";
 import { Upsell } from "@/components/classes/Upsell";
 import { askQuestion } from "../../actions";
-import { CourseFileList } from "@/components/classes/Files";
+import { CourseFileList, MultivitaminHint, splitCourseFiles } from "@/components/classes/Files";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string; lesson: string }> }): Promise<Metadata> {
   const { slug, lesson: hash } = await params;
@@ -51,6 +51,7 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
   if (can && student) await touchOpen(student.id, lesson.id).catch(() => undefined);
   const mine = student ? await prisma.classThread.findMany({ where: { lessonId: lesson.id, studentId: student.id, status: "PENDING" }, orderBy: { createdAt: "desc" } }) : [];
   const back = lessonPath(slug, hash);
+  const sheets = splitCourseFiles(lesson.course.files);
   const iso = lesson.durationSec ? `PT${Math.floor(lesson.durationSec / 60)}M${lesson.durationSec % 60}S` : undefined;
 
   return (
@@ -114,8 +115,9 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
               <div className="mt-2 leading-8" dangerouslySetInnerHTML={{ __html: renderMath(lesson.description) }} />
             </article>
           )}
+          <MultivitaminHint slug={slug} show={sheets.vitamin.length > 0} />
           {can && student && <LessonQuiz lessonId={lesson.id} courseId={lesson.courseId} field={student.field} manual={lesson.questions} />}
-          <CourseFileList files={[...lesson.course.files, ...lesson.files]} slug={slug} loggedIn={!!student} enrolled={!!enrolled} />
+          <CourseFileList files={[...sheets.booklets, ...lesson.files]} slug={slug} loggedIn={!!student} enrolled={!!enrolled} />
           <section className="cl-card space-y-4 p-5">
             <h2 className="cl-display text-xl">پرسش و پاسخ</h2>
             {lesson.threads.length === 0 && mine.length === 0 && <p className="cl-muted text-sm">هنوز سؤال تأییدشده‌ای این‌جا نیست.</p>}

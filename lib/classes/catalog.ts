@@ -213,6 +213,12 @@ export function canDownloadClassFile(opts: { staff: boolean; hasStudent: boolean
   return !!opts.courseId && opts.hasStudent && opts.enrolled;
 }
 
+/** True when a file title is a multivitamin summary, ignoring ZWNJ and spaces. */
+export function isMultivitaminTitle(title: string) {
+  const flat = title.normalize("NFKC").replace(/\u200c/g, "").replace(/\s+/g, "");
+  return flat.includes("مولتیویتامین");
+}
+
 export function formatFileSize(bytes: number) {
   if (!Number.isFinite(bytes) || bytes <= 0) return null;
   if (bytes < 1024) return `${bytes} بایت`;

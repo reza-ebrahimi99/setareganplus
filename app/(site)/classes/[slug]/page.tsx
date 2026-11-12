@@ -11,7 +11,7 @@ import { chargeRials, classJoinPath, courseShowsPremium, formatClock, formatLeng
 import { getClassStudent } from "@/lib/classes/session";
 import { Cover, MetaLine, NewChip, PremiumBadge, PriceTag, Ring } from "@/components/classes/ui";
 import { checkoutAction } from "../actions";
-import { CourseFileList } from "@/components/classes/Files";
+import { CourseFileList, MultivitaminFiles, splitCourseFiles } from "@/components/classes/Files";
 import { lessonFraction } from "@/lib/classes/catalog";
 import { Upsell } from "@/components/classes/Upsell";
 import { renderMath } from "@/lib/classes/math";
@@ -62,6 +62,7 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
   const overall = fractions.length ? fractions.reduce((s, n) => s + n, 0) / fractions.length : 0;
   const price = chargeRials(priced);
   const nextLesson = ordered.find((l) => !prog.get(l.id)?.completed) || ordered[0];
+  const sheets = splitCourseFiles(course.files);
 
   return (
     <div className="container-x pb-16">
@@ -108,7 +109,8 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
               </>
             )}
           </section>
-          <CourseFileList files={course.files} slug={course.slug} loggedIn={!!student} enrolled={!!enrolled} />
+          <MultivitaminFiles files={sheets.vitamin} slug={course.slug} loggedIn={!!student} enrolled={!!enrolled} />
+          <CourseFileList files={sheets.booklets} slug={course.slug} loggedIn={!!student} enrolled={!!enrolled} />
         </div>
         <aside className="cl-sticky space-y-4">
           <div className="cl-card p-5">
