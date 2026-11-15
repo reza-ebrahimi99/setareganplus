@@ -6,7 +6,8 @@ import { allow } from "@/lib/shop/ratelimit";
 import { normalizeIranMobile } from "@/lib/format";
 import { SEED_QUESTIONS } from "./bank";
 import { SKILLS, isJourneyGrade, needsField, skillBySlug } from "./catalog";
-import { advance, applyAnswer, buildQueue, emptyState, isFinished, notesForStation, stationRatio, type BankQ, type RunState } from "./engine";
+import { advance, answerTargetsCurrent, applyAnswer, buildQueue, emptyState, isFinished, notesForStation, stationRatio, type BankQ, type RunState } from "./engine";
+import { twinKey } from "./math";
 
 const COOKIE = "sp_safar";
 const MAX_AGE = 60 * 60 * 24 * 30;
@@ -79,26 +80,43 @@ async function seedBank() {
     });
   }
   for (const item of SEED_QUESTIONS) {
-    const exists = await prisma.journeyQuestion.findUnique({ where: { id: item.id }, select: { id: true } });
-    if (exists) continue;
-    await prisma.journeyQuestion.create({
-      data: {
+    const sortOrder = Number(item.id.split("-")[1] ?? 0);
+    await prisma.journeyQuestion.upsert({
+      where: { id: item.id },
+      create: {
         id: item.id,
         skillSlug: item.skill,
         stem: item.stem,
         explain: item.explain,
-        sortOrder: Number(item.id.split("-")[1] ?? 0),
-        options: {
-          create: item.options.map((o, i) => ({
-            id: `${item.id}-${i}`,
-            text: o.text,
-            correct: !!o.ok,
-            misconception: o.miss ?? "",
-            sortOrder: i,
-          })),
-        },
+        sortOrder,
+      },
+      update: {
+        skillSlug: item.skill,
+        stem: item.stem,
+        explain: item.explain,
+        sortOrder,
       },
     });
+    for (let i = 0; i < item.options.length; i++) {
+      const o = item.options[i];
+      await prisma.journeyOption.upsert({
+        where: { id: `${item.id}-${i}` },
+        create: {
+          id: `${item.id}-${i}`,
+          questionId: item.id,
+          text: o.text,
+          correct: !!o.ok,
+          misconception: o.miss ?? "",
+          sortOrder: i,
+        },
+        update: {
+          text: o.text,
+          correct: !!o.ok,
+          misconception: o.miss ?? "",
+          sortOrder: i,
+        },
+      });
+    }
   }
 }
 
@@ -176,10 +194,11 @@ export async function startJourney(input: StartInput): Promise<{ ok: true; resum
   return { ok: true, resumed: false };
 }
 
-export async function submitKey(optionId: string): Promise<{ ok: true; href: string } | { ok: false; error: string }> {
+export async function submitKey(optionId: string, questionId = ""): Promise<{ ok: true; href: string } | { ok: false; error: string }> {
   const run = await getRun();
   if (!run || run.status !== "OPEN") return { ok: false, error: "سفر پیدا نشد. از اول نقشه را باز کن." };
   const state = asState(run.state);
+  if (!answerTargetsCurrent(state, questionId)) return { ok: false, error: "این معما مال نشانِ باز نیست." };
   const bankRows = await loadBank();
   const bank = new Map(bankRows.map((q) => [q.id, q]));
   const { state: next, saved } = applyAnswer(state, bank, optionId);
@@ -222,14 +241,15 @@ export async function continueJourney(): Promise<{ ok: true; href: string } | { 
   const station = state.queue[state.cursor];
   const answers = run.answers.filter((a) => station?.ids.includes(a.questionId));
   const ratio = station ? stationRatio(station, answers) : 1;
-  const next = advance(state, bySkill, ratio, run.id);
+  const twins = new Map(bankRows.map((q) => [q.id, twinKey(q.stem)]));
+  const next = advance(state, bySkill, ratio, run.id, twins);
   if (isFinished(next)) {
     await prisma.journeyRun.update({ where: { id: run.id }, data: { state: next as object, status: "DONE", finishedAt: new Date(), fresh: true } });
     await notifyFinished(run.id, run.name, run.grade, run.field, run.mobile);
-    return { ok: true, href: "/safar/power" };
+  } else {
+    await prisma.journeyRun.update({ where: { id: run.id }, data: { state: next as object } });
   }
-  await prisma.journeyRun.update({ where: { id: run.id }, data: { state: next as object } });
-  return { ok: true, href: "/safar/go" };
+  return { ok: true, href: "/safar/map" };
 }
 
 async function notifyFinished(id: string, name: string, grade: number, field: string, mobile: string) {

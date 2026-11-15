@@ -69,9 +69,17 @@ export default async function PowerPage() {
           <article key={a.id} className="sj-card sj-mt">
             <h2 style={{ fontSize: 15 }}>{skillBySlug(a.skillSlug)?.title}</h2>
             {q && <MathText text={q.stem} />}
-            <p className="sj-hint">کلیدی که برداشته شد:</p>
-            <MathText text={picked} />
-            <p className="sj-hint">{a.misconception ? `${a.misconception} ` : ""}{q?.explain}</p>
+            <div className="sj-keys">
+              <div className="sj-key was">
+                <em>کلیدی که تو برداشتی</em>
+                <MathText text={picked} />
+              </div>
+              <div className="sj-key main">
+                <em>کلید درست</em>
+                <MathText text={q?.options.find((o) => o.correct)?.text ?? ""} />
+              </div>
+            </div>
+            <p className="sj-hint sj-mt"><MathText text={`${a.misconception ? `${a.misconception} ` : ""}${q?.explain ?? ""}`} /></p>
           </article>
         );
       })}

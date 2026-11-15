@@ -27,14 +27,21 @@ export default async function GoPage({ searchParams }: { searchParams: Promise<{
           {state.reveal.notes.map((n, i) => (
             <article key={i} className="sj-card sj-mt">
               <MathText text={n.stem} />
-              <p className="sj-hint">کلیدی که برداشته شد:</p>
-              <MathText text={n.picked} />
-              <p className="sj-hint">{n.explain}</p>
+              <div className="sj-keys">
+                <div className="sj-key was">
+                  <em>کلیدی که تو برداشتی</em>
+                  <MathText text={n.picked} />
+                </div>
+                <div className="sj-key main">
+                  <em>کلید درست</em>
+                  <MathText text={n.correct ?? ""} />
+                </div>
+              </div>
+              <p className="sj-hint sj-mt"><MathText text={n.explain} /></p>
             </article>
           ))}
-          <form action={goOn} className="sj-mt"><button className="sj-btn" type="submit">برو نشان بعد</button></form>
+          <form action={goOn} className="sj-mt"><button className="sj-btn" type="submit">برگشت به نقشه</button></form>
         </section>
-        <Link className="sj-fine" href="/safar/map" style={{ display: "block" }}>بازگشت به نقشه</Link>
       </main>
     );
   }
@@ -56,6 +63,7 @@ export default async function GoPage({ searchParams }: { searchParams: Promise<{
         <p className="sj-hint">اگر کلید را دیدی بردار. اگر آشنا نبود، پایین را بزن. ستاره‌ای برای این کار کم نمی‌شود.</p>
         <div className="sj-formula"><MathText text={q.stem} /></div>
         <form action={pickKey}>
+          <input type="hidden" name="question" value={q.id} />
           {q.options.filter((o) => o.id !== "__unknown").map((o) => (
             <button key={o.id} className="sj-opt" name="option" value={o.id} type="submit"><MathText text={o.text} /></button>
           ))}

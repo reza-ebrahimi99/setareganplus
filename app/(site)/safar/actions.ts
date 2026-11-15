@@ -24,7 +24,7 @@ export async function beginJourney(formData: FormData) {
 }
 
 export async function pickKey(formData: FormData) {
-  const res = await submitKey(String(formData.get("option") ?? ""));
+  const res = await submitKey(String(formData.get("option") ?? ""), String(formData.get("question") ?? ""));
   if (!res.ok) redirect(`/safar/go?e=${encodeURIComponent(res.error)}`);
   redirect(res.href);
 }

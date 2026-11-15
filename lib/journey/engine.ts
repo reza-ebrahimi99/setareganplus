@@ -1,4 +1,5 @@
 import { DRILL_SIZE, STATION_SIZE, pathSkills, skillBySlug, statusOf, type StatusId } from "./catalog";
+import { twinKey } from "./math";
 
 export type BankQ = {
   id: string;
@@ -10,7 +11,7 @@ export type BankQ = {
 
 export type QueueItem = { skill: string; ids: string[]; drill: boolean };
 
-export type Note = { stem: string; picked: string; explain: string };
+export type Note = { stem: string; picked: string; correct: string; explain: string };
 
 export type RunState = {
   queue: QueueItem[];
@@ -39,9 +40,11 @@ function difficulty(id: string) {
   return m ? Number(m[1]) : 0;
 }
 
+type PickOpts = { skip?: (id: string) => boolean; twin?: (id: string) => string };
+
 /** Stable shuffle for one journey. The chosen puzzles are then ordered easy to hard. */
-export function pickSubset(ids: string[], n: number, seed: string): string[] {
-  const arr = [...ids];
+export function pickSubset(ids: string[], n: number, seed: string, opts?: PickOpts): string[] {
+  const arr = ids.filter((id) => !opts?.skip?.(id));
   const next = mix(seed);
   for (let i = arr.length - 1; i > 0; i--) {
     const j = next() % (i + 1);
@@ -49,18 +52,38 @@ export function pickSubset(ids: string[], n: number, seed: string): string[] {
     arr[i] = arr[j];
     arr[j] = tmp;
   }
-  return arr.slice(0, Math.min(n, arr.length)).sort((a, b) => difficulty(a) - difficulty(b) || a.localeCompare(b));
+  const chosen: string[] = [];
+  const seen = new Set<string>();
+  for (const id of arr) {
+    const twin = opts?.twin?.(id);
+    if (twin && seen.has(twin)) continue;
+    if (twin) seen.add(twin);
+    chosen.push(id);
+    if (chosen.length >= n) break;
+  }
+  return chosen.sort((a, b) => difficulty(a) - difficulty(b) || a.localeCompare(b));
 }
 
 export function buildQueue(grade: number, field: string, bank: BankQ[], seed = "journey"): QueueItem[] {
   const bySkill = new Map<string, string[]>();
+  const twins = new Map<string, string>();
   for (const item of bank) {
     const list = bySkill.get(item.skill) ?? [];
     list.push(item.id);
     bySkill.set(item.skill, list);
+    twins.set(item.id, twinKey(item.stem));
   }
+  const usedIds = new Set<string>();
+  const usedTwins = new Set<string>();
   return pathSkills(grade, field).flatMap((skill) => {
-    const ids = pickSubset(bySkill.get(skill.slug) ?? [], STATION_SIZE, `${seed}:${skill.slug}`);
+    const ids = pickSubset(bySkill.get(skill.slug) ?? [], STATION_SIZE, `${seed}:${skill.slug}`, {
+      skip: (id) => usedIds.has(id) || usedTwins.has(twins.get(id) ?? id),
+      twin: (id) => twins.get(id) ?? id,
+    });
+    for (const id of ids) {
+      usedIds.add(id);
+      usedTwins.add(twins.get(id) ?? id);
+    }
     return ids.length ? [{ skill: skill.slug, ids, drill: false }] : [];
   });
 }
@@ -127,7 +150,8 @@ export function notesForStation(station: QueueItem, bank: Map<string, BankQ>, an
     const ans = [...answers].reverse().find((a) => a.questionId === id);
     if (!q || !ans || ans.correct) continue;
     const picked = ans.unknown ? "هنوز به این نرسیدم" : q.options.find((o) => o.id === ans.optionId)?.text ?? "";
-    notes.push({ stem: q.stem, picked, explain: q.explain });
+    const correct = q.options.find((o) => o.correct)?.text ?? "";
+    notes.push({ stem: q.stem, picked, correct, explain: q.explain });
   }
   return notes;
 }
@@ -138,15 +162,34 @@ export function stationRatio(station: QueueItem, answers: { questionId: string; 
   return mine.filter((a) => a.correct).length / mine.length;
 }
 
+/** True only for the puzzle sitting at the open station cursor. Locked and finished stations are rejected. */
+export function answerTargetsCurrent(state: RunState, questionId: string) {
+  if (!questionId || state.reveal) return false;
+  const station = state.queue[state.cursor];
+  if (!station) return false;
+  return station.ids[state.qIndex] === questionId;
+}
+
 /** After a finished station, maybe insert a short prerequisite check. Returns the next state with reveal cleared and cursor advanced. */
-export function advance(state: RunState, bankBySkill: Map<string, string[]>, ratio: number, seed = "journey"): RunState {
+export function advance(state: RunState, bankBySkill: Map<string, string[]>, ratio: number, seed = "journey", twins?: Map<string, string>): RunState {
   const next = structuredClone(state) as RunState;
   const station = next.queue[next.cursor];
   next.reveal = null;
+  const usedIds = new Set<string>();
+  const usedTwins = new Set<string>();
+  for (const item of next.queue) {
+    for (const id of item.ids) {
+      usedIds.add(id);
+      usedTwins.add(twins?.get(id) ?? id);
+    }
+  }
   if (station && !station.drill && ratio < 0.5) {
     const prereq = skillBySlug(station.skill)?.prereq;
     if (prereq && !next.drilled.includes(prereq)) {
-      const ids = pickSubset(bankBySkill.get(prereq) ?? [], DRILL_SIZE, `${seed}:drill:${prereq}`);
+      const ids = pickSubset(bankBySkill.get(prereq) ?? [], DRILL_SIZE, `${seed}:drill:${prereq}`, {
+        skip: (id) => usedIds.has(id) || usedTwins.has(twins?.get(id) ?? id),
+        twin: (id) => twins?.get(id) ?? id,
+      });
       if (ids.length) {
         next.drilled.push(prereq);
         next.queue.splice(next.cursor + 1, 0, { skill: prereq, ids, drill: true });

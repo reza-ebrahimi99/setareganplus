@@ -110,31 +110,47 @@ export const COURSE_TITLE: Record<string, string> = {
 export const STATION_SIZE = 3;
 export const DRILL_SIZE = 2;
 
-/** Trail on the antique map, as percentages of the image. */
+/** Dotted trail on the antique map, as percentages of the image. One marker is placed per station along this line. */
 export const TRAIL: [number, number][] = [
-  [55.6, 15.6],
-  [51.1, 22.8],
-  [48.1, 28.9],
-  [52.5, 38.1],
-  [50.3, 42.7],
-  [55.0, 49.2],
-  [45.0, 55.2],
-  [54.2, 64.0],
-  [55.0, 70.3],
-  [48.6, 78.0],
-  [46.1, 86.4],
+  [53.06, 16.25],
+  [50.0, 20.31],
+  [48.33, 24.22],
+  [48.61, 28.59],
+  [48.61, 32.81],
+  [48.61, 37.34],
+  [49.72, 41.41],
+  [50.83, 44.38],
+  [54.44, 47.66],
+  [55.56, 50.78],
+  [52.5, 53.91],
+  [48.33, 57.03],
+  [50.0, 60.16],
+  [54.17, 64.06],
+  [55.56, 67.97],
+  [51.39, 71.09],
+  [48.33, 75.0],
+  [46.67, 79.69],
+  [46.11, 84.53],
 ];
 
 export function stationPoints(n: number): { x: number; y: number }[] {
-  const path = n <= 6 ? TRAIL.slice(0, 6) : TRAIL;
+  const path = TRAIL;
   if (n <= 1) return [{ x: path[0][0], y: path[0][1] }];
+  const seg = [0];
+  for (let i = 1; i < path.length; i++) {
+    const dx = path[i][0] - path[i - 1][0];
+    const dy = path[i][1] - path[i - 1][1];
+    seg.push(seg[i - 1] + Math.hypot(dx, dy));
+  }
+  const total = seg[seg.length - 1] || 1;
   return Array.from({ length: n }, (_, i) => {
-    const f = (i / (n - 1)) * (path.length - 1);
-    const i0 = Math.floor(f);
-    const i1 = Math.min(path.length - 1, i0 + 1);
-    const u = f - i0;
-    const a = path[i0];
-    const b = path[i1];
+    const dist = (i / (n - 1)) * total;
+    let k = 1;
+    while (k < seg.length - 1 && seg[k] < dist) k += 1;
+    const span = seg[k] - seg[k - 1] || 1;
+    const u = Math.min(1, Math.max(0, (dist - seg[k - 1]) / span));
+    const a = path[k - 1];
+    const b = path[k];
     return { x: a[0] + (b[0] - a[0]) * u, y: a[1] + (b[1] - a[1]) * u };
   });
 }

@@ -53,12 +53,27 @@ export default async function MapPage() {
         <aside className="sj-card" style={{ display: "none" }} />
       </div>
       <div className="sj-list">
-        {stations.map((s) => (
-          <div key={s.slug} className="sj-row">
-            <span>{s.title}</span>
-            <i>{s.state === "now" ? "اینجا" : s.state === "passed" ? "★".repeat(s.stars) : "بسته"} · کتاب {s.book}</i>
-          </div>
-        ))}
+        {stations.map((s) => {
+          const meta = s.state === "now" ? "اینجا" : s.state === "passed" ? "★".repeat(s.stars) : "بسته";
+          const body = (
+            <>
+              <span>{s.title}</span>
+              <i>{meta} · کتاب {s.book}</i>
+            </>
+          );
+          if (s.state === "now") {
+            return (
+              <Link key={s.slug} className="sj-row now" href="/safar/go">
+                {body}
+              </Link>
+            );
+          }
+          return (
+            <div key={s.slug} className={`sj-row ${s.state}`} aria-disabled={s.state === "locked"}>
+              {body}
+            </div>
+          );
+        })}
       </div>
     </main>
   );
