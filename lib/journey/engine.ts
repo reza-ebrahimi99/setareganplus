@@ -25,7 +25,34 @@ export type PublicQuestion = { id: string; stem: string; skill: string; drill: b
 
 const UNKNOWN = "__unknown";
 
-export function buildQueue(grade: number, field: string, bank: BankQ[]): QueueItem[] {
+function mix(seed: string) {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
+  return () => {
+    h = Math.imul(h ^ (h >>> 16), 2246822507) >>> 0;
+    return h;
+  };
+}
+
+function difficulty(id: string) {
+  const m = /-(\d+)$/.exec(id);
+  return m ? Number(m[1]) : 0;
+}
+
+/** Stable shuffle for one journey. The chosen puzzles are then ordered easy to hard. */
+export function pickSubset(ids: string[], n: number, seed: string): string[] {
+  const arr = [...ids];
+  const next = mix(seed);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = next() % (i + 1);
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+  return arr.slice(0, Math.min(n, arr.length)).sort((a, b) => difficulty(a) - difficulty(b) || a.localeCompare(b));
+}
+
+export function buildQueue(grade: number, field: string, bank: BankQ[], seed = "journey"): QueueItem[] {
   const bySkill = new Map<string, string[]>();
   for (const item of bank) {
     const list = bySkill.get(item.skill) ?? [];
@@ -33,7 +60,7 @@ export function buildQueue(grade: number, field: string, bank: BankQ[]): QueueIt
     bySkill.set(item.skill, list);
   }
   return pathSkills(grade, field).flatMap((skill) => {
-    const ids = (bySkill.get(skill.slug) ?? []).slice(0, STATION_SIZE);
+    const ids = pickSubset(bySkill.get(skill.slug) ?? [], STATION_SIZE, `${seed}:${skill.slug}`);
     return ids.length ? [{ skill: skill.slug, ids, drill: false }] : [];
   });
 }
@@ -112,14 +139,14 @@ export function stationRatio(station: QueueItem, answers: { questionId: string; 
 }
 
 /** After a finished station, maybe insert a short prerequisite check. Returns the next state with reveal cleared and cursor advanced. */
-export function advance(state: RunState, bankBySkill: Map<string, string[]>, ratio: number): RunState {
+export function advance(state: RunState, bankBySkill: Map<string, string[]>, ratio: number, seed = "journey"): RunState {
   const next = structuredClone(state) as RunState;
   const station = next.queue[next.cursor];
   next.reveal = null;
   if (station && !station.drill && ratio < 0.5) {
     const prereq = skillBySlug(station.skill)?.prereq;
     if (prereq && !next.drilled.includes(prereq)) {
-      const ids = (bankBySkill.get(prereq) ?? []).slice(0, DRILL_SIZE);
+      const ids = pickSubset(bankBySkill.get(prereq) ?? [], DRILL_SIZE, `${seed}:drill:${prereq}`);
       if (ids.length) {
         next.drilled.push(prereq);
         next.queue.splice(next.cursor + 1, 0, { skill: prereq, ids, drill: true });

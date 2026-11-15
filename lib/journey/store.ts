@@ -1,5 +1,5 @@
 import "server-only";
-import { createHmac } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { allow } from "@/lib/shop/ratelimit";
@@ -10,6 +10,10 @@ import { advance, applyAnswer, buildQueue, emptyState, isFinished, notesForStati
 
 const COOKIE = "sp_safar";
 const MAX_AGE = 60 * 60 * 24 * 30;
+
+function randomSeed() {
+  return randomBytes(8).toString("hex");
+}
 
 function secret() {
   const s = process.env.SESSION_SECRET;
@@ -154,7 +158,7 @@ export async function startJourney(input: StartInput): Promise<{ ok: true; resum
   const finished = await prisma.journeyRun.count({ where: { mobile, status: "DONE", finishedAt: { gte: week } } });
   if (finished >= 3) return { ok: false, error: "این شماره این هفته سه سفر را تمام کرده. سفر قبلی‌ات در نقشهٔ قدرت‌ها مانده است." };
   const bank = await loadBank();
-  const queue = buildQueue(input.grade, needsField(input.grade) ? field : "", bank);
+  const queue = buildQueue(input.grade, needsField(input.grade) ? field : "", bank, randomSeed());
   if (!queue.length) return { ok: false, error: "برای این پایه هنوز نشانه‌ای چیده نشده." };
   const run = await prisma.journeyRun.create({
     data: {
@@ -218,7 +222,7 @@ export async function continueJourney(): Promise<{ ok: true; href: string } | { 
   const station = state.queue[state.cursor];
   const answers = run.answers.filter((a) => station?.ids.includes(a.questionId));
   const ratio = station ? stationRatio(station, answers) : 1;
-  const next = advance(state, bySkill, ratio);
+  const next = advance(state, bySkill, ratio, run.id);
   if (isFinished(next)) {
     await prisma.journeyRun.update({ where: { id: run.id }, data: { state: next as object, status: "DONE", finishedAt: new Date(), fresh: true } });
     await notifyFinished(run.id, run.name, run.grade, run.field, run.mobile);

@@ -1,5 +1,7 @@
 /** Seed bank. Correct option is marked ok. Wrong options carry the misconception they reveal. */
 
+import { EXTRA_QUESTIONS } from "./bank-extra";
+
 export type SeedOption = { text: string; ok?: boolean; miss?: string };
 export type SeedQuestion = { id: string; skill: string; stem: string; explain: string; options: SeedOption[] };
 
@@ -347,6 +349,7 @@ export const SEED_QUESTIONS: SeedQuestion[] = [
     { text: "$1$", miss: "فقط نقطهٔ حد مانده است." },
     { text: "تعریف‌نشده", miss: "مخرج صفر، پیش از ساده کردن، حد را نابود کرده است." },
   ]),
+  ...EXTRA_QUESTIONS,
 ];
 
 export function seedIsConsistent() {
