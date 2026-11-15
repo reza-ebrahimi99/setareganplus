@@ -5,7 +5,7 @@ import { MathText } from "@/components/journey/MathText";
 import { goOn, pickKey } from "@/app/(site)/safar/actions";
 import { skillBySlug } from "@/lib/journey/catalog";
 import { currentQuestion, type RunState } from "@/lib/journey/engine";
-import { getRun, loadBank } from "@/lib/journey/store";
+import { getRun, loadBank, notePuzzleShown } from "@/lib/journey/store";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "معمای سفر" };
@@ -45,6 +45,7 @@ export default async function GoPage({ searchParams }: { searchParams: Promise<{
       </main>
     );
   }
+  await notePuzzleShown();
   const bank = new Map((await loadBank()).map((q) => [q.id, q]));
   const q = currentQuestion(state, bank);
   if (!q) redirect("/safar/map");

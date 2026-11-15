@@ -4,6 +4,7 @@ import { requirePerm } from "@/lib/auth";
 import { fa, jalaliDateTime } from "@/lib/format";
 import { FIELD_LABEL, FOLLOW, GRADE_LABEL, SKILLS, skillBySlug } from "@/lib/journey/catalog";
 import { statusOf } from "@/lib/journey/catalog";
+import { journeyHighlights } from "@/lib/journey/report";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +55,7 @@ export default async function JourneyAdmin({ searchParams }: { searchParams: Pro
     <>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-navy">سفر تشخیصی</h1>
+          <h1 className="text-2xl font-extrabold text-navy">سفر ستاره‌ها</h1>
           <p className="mt-1 text-sm text-muted">{fa(fresh)} نتیجهٔ تازه · {fa(total)} سفر تمام‌شده</p>
         </div>
         <div className="flex gap-2">
@@ -87,9 +88,18 @@ export default async function JourneyAdmin({ searchParams }: { searchParams: Pro
           <tbody className="divide-y divide-line">
             {filtered.map((r) => {
               const weakSlug = weakestSkill(r.answers);
+              const badge = journeyHighlights(r.grade, r.field, r.answers);
               return (
                 <tr key={r.id}>
-                  <td className="p-3"><Link href={`/admin/journey/${r.id}`} className="font-bold text-navy">{r.name}</Link>{r.fresh && <span className="mr-2 rounded-full bg-gold px-2 text-xs font-bold text-navy">جدید</span>}<p className="text-xs text-muted" dir="ltr">{r.mobile}</p></td>
+                  <td className="p-3">
+                    <Link href={`/admin/journey/${r.id}`} className="font-bold text-navy">{r.name}</Link>
+                    {r.fresh && <span className="mr-2 rounded-full bg-gold px-2 text-xs font-bold text-navy">جدید</span>}
+                    <p className="text-xs text-muted" dir="ltr">{r.mobile}</p>
+                    <p className="mt-1 flex flex-wrap gap-1">
+                      {badge.rootTitle && <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-900">ریشه: {badge.rootTitle}</span>}
+                      {badge.topMisconception && <span className="max-w-56 truncate rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-950">سرنخ: {badge.topMisconception}</span>}
+                    </p>
+                  </td>
                   <td className="p-3">{GRADE_LABEL[r.grade]}{r.field ? ` · ${FIELD_LABEL[r.field]}` : ""}</td>
                   <td className="p-3">{r.finishedAt ? jalaliDateTime(r.finishedAt) : ""}</td>
                   <td className="p-3">{skillBySlug(weakSlug)?.title ?? "—"}</td>

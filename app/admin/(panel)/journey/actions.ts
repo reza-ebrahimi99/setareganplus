@@ -15,6 +15,15 @@ export async function setFollowUp(formData: FormData) {
   redirect(`/admin/journey/${id}?ok=1`);
 }
 
+export async function saveJourneyNote(formData: FormData) {
+  await requirePerm("journey.manage");
+  const id = String(formData.get("id") ?? "");
+  const adminNote = String(formData.get("adminNote") ?? "").trim().slice(0, 4000);
+  await prisma.journeyRun.update({ where: { id }, data: { adminNote } });
+  revalidatePath(`/admin/journey/${id}`);
+  redirect(`/admin/journey/${id}?ok=note`);
+}
+
 export async function saveQuestion(formData: FormData) {
   await requirePerm("journey.manage");
   const id = String(formData.get("id") ?? "").trim();

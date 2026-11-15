@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MapBoard, type MapStation } from "@/components/journey/MapBoard";
+import { mapCheer, stationCheer } from "@/lib/journey/cheers";
 import { ceilingBlurb, skillBySlug } from "@/lib/journey/catalog";
 import { getRun } from "@/lib/journey/store";
 import type { RunState } from "@/lib/journey/engine";
@@ -29,6 +30,7 @@ export default async function MapPage() {
     return { slug, title: skill?.title ?? slug, book: BOOK[skill?.taughtGrade ?? 0] ?? "", state: mark, stars: mark === "passed" ? Math.max(1, stars) : stars };
   });
   const here = stations.find((s) => s.state === "now");
+  const passed = stations.filter((s) => s.state === "passed").length;
   return (
     <main className="sj-wrap">
       <div className="sj-desk">
@@ -38,6 +40,7 @@ export default async function MapPage() {
             {now?.drill ? " یک پیچ کوتاه به نشان قبلی برگشته‌ایم تا ریشه پیدا شود." : ""}
           </div>
           <p className="sj-rule">{ceilingBlurb(run.grade, run.field)}</p>
+          {passed > 0 && <p className="sj-boost">{mapCheer(passed)}</p>}
           <MapBoard stations={stations} />
           <div className="sj-legend">
             <span><b style={{ background: "#8e342c" }} /> مُهر فتح‌شده</span>
@@ -53,11 +56,14 @@ export default async function MapPage() {
         <aside className="sj-card" style={{ display: "none" }} />
       </div>
       <div className="sj-list">
-        {stations.map((s) => {
+        {stations.map((s, i) => {
           const meta = s.state === "now" ? "اینجا" : s.state === "passed" ? "★".repeat(s.stars) : "بسته";
           const body = (
             <>
-              <span>{s.title}</span>
+              <span>
+                {s.title}
+                {s.state === "passed" && <small className="sj-boost">{stationCheer(i)}</small>}
+              </span>
               <i>{meta} · کتاب {s.book}</i>
             </>
           );

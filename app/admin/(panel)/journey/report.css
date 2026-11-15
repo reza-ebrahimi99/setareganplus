@@ -1,0 +1,24 @@
+.jr-bar { height: 8px; border-radius: 99px; background: #f3e6cc; overflow: hidden; }
+.jr-bar i { display: block; height: 100%; border-radius: inherit; }
+.jr-strong i { background: #1f7a4d; }
+.jr-mid i { background: #c9963e; }
+.jr-grow i { background: #8e342c; }
+.jr-none i { background: #d9d0c4; }
+.jr-chain { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.jr-pill { border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 800; background: #e7f4f2; color: #1f5c58; }
+.jr-pill.grow { background: #f8e8e4; color: #8e342c; }
+.jr-pill.mid { background: #fff6df; color: #8a6230; }
+.jr-pill.none { background: #f4efe6; color: #7a6248; }
+.jr-arrow { color: #a08a6a; font-size: 12px; }
+.jr-print-note { display: none; }
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+  aside, nav, .no-print { display: none !important; }
+  .min-h-dvh > div { margin-right: 0 !important; }
+  body { background: #fff !important; }
+  .jr-sheet { box-shadow: none !important; border-color: #ddd !important; }
+  .jr-break { break-before: page; }
+  .jr-bar, .jr-pill, .jr-strong i, .jr-mid i, .jr-grow i { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .jr-print-note { display: block; }
+}

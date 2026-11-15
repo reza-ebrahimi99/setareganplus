@@ -19,7 +19,19 @@ export type RunState = {
   qIndex: number;
   drilled: string[];
   reveal: null | { skill: string; drill: boolean; notes: Note[] };
+  /** When the current puzzle was first shown. Null while the review card is up, or on older saves. */
+  shownAt?: number | null;
 };
+
+const MAX_PUZZLE_MS = 30 * 60_000;
+
+/** Time spent on the open puzzle. Missing clocks and abandoned tabs stay honest. */
+export function puzzleDuration(shownAt: number | null | undefined, now = Date.now()): number | null {
+  if (typeof shownAt !== "number" || !Number.isFinite(shownAt)) return null;
+  const ms = now - shownAt;
+  if (ms < 0) return 0;
+  return Math.min(Math.round(ms), MAX_PUZZLE_MS);
+}
 
 export type PublicOption = { id: string; text: string };
 export type PublicQuestion = { id: string; stem: string; skill: string; drill: boolean; index: number; total: number; options: PublicOption[] };

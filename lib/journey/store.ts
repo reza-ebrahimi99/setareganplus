@@ -6,7 +6,7 @@ import { allow } from "@/lib/shop/ratelimit";
 import { normalizeIranMobile } from "@/lib/format";
 import { SEED_QUESTIONS } from "./bank";
 import { SKILLS, isJourneyGrade, needsField, skillBySlug } from "./catalog";
-import { advance, answerTargetsCurrent, applyAnswer, buildQueue, emptyState, isFinished, notesForStation, stationRatio, type BankQ, type RunState } from "./engine";
+import { advance, answerTargetsCurrent, applyAnswer, buildQueue, emptyState, isFinished, notesForStation, puzzleDuration, stationRatio, type BankQ, type RunState } from "./engine";
 import { twinKey } from "./math";
 
 const COOKIE = "sp_safar";
@@ -139,7 +139,7 @@ export async function loadBank(): Promise<BankQ[]> {
 function asState(value: unknown): RunState {
   const v = value as RunState;
   if (!v || !Array.isArray(v.queue)) return emptyState([]);
-  return { queue: v.queue, cursor: v.cursor ?? 0, qIndex: v.qIndex ?? 0, drilled: v.drilled ?? [], reveal: v.reveal ?? null };
+  return { queue: v.queue, cursor: v.cursor ?? 0, qIndex: v.qIndex ?? 0, drilled: v.drilled ?? [], reveal: v.reveal ?? null, shownAt: typeof v.shownAt === "number" ? v.shownAt : null };
 }
 
 export async function getRun() {
@@ -201,8 +201,10 @@ export async function submitKey(optionId: string, questionId = ""): Promise<{ ok
   if (!answerTargetsCurrent(state, questionId)) return { ok: false, error: "این معما مال نشانِ باز نیست." };
   const bankRows = await loadBank();
   const bank = new Map(bankRows.map((q) => [q.id, q]));
+  const durationMs = puzzleDuration(state.shownAt);
   const { state: next, saved } = applyAnswer(state, bank, optionId);
   if (!saved) return { ok: false, error: "این کلید با این معما جور نیست." };
+  next.shownAt = null;
   const dup = run.answers.some((a) => a.questionId === saved.questionId && a.drill === saved.drill);
   if (dup) return { ok: true, href: "/safar/go" };
   await prisma.journeyAnswer.create({
@@ -215,6 +217,7 @@ export async function submitKey(optionId: string, questionId = ""): Promise<{ ok
       unknown: saved.unknown,
       misconception: saved.misconception,
       drill: saved.drill,
+      durationMs,
     },
   });
   if (next.reveal) {
@@ -243,6 +246,7 @@ export async function continueJourney(): Promise<{ ok: true; href: string } | { 
   const ratio = station ? stationRatio(station, answers) : 1;
   const twins = new Map(bankRows.map((q) => [q.id, twinKey(q.stem)]));
   const next = advance(state, bySkill, ratio, run.id, twins);
+  next.shownAt = null;
   if (isFinished(next)) {
     await prisma.journeyRun.update({ where: { id: run.id }, data: { state: next as object, status: "DONE", finishedAt: new Date(), fresh: true } });
     await notifyFinished(run.id, run.name, run.grade, run.field, run.mobile);
@@ -264,5 +268,15 @@ async function notifyFinished(id: string, name: string, grade: number, field: st
 
 export function skillTitle(slug: string) {
   return skillBySlug(slug)?.title ?? slug;
+}
+
+/** Start the clock the first time this puzzle is shown. A refresh does not reset it. */
+export async function notePuzzleShown() {
+  const run = await getRun();
+  if (!run || run.status !== "OPEN") return;
+  const state = asState(run.state);
+  if (state.reveal || state.shownAt || !state.queue[state.cursor]) return;
+  state.shownAt = Date.now();
+  await prisma.journeyRun.update({ where: { id: run.id }, data: { state: state as object } });
 }
 

@@ -1233,6 +1233,8 @@ model JourneyRun {
   status       String          @default("OPEN")
   /// NEW | CALLED | BOOKED | ENROLLED
   followUp     String          @default("NEW")
+  /// Consultant notes for the one-on-one session. Empty on older rows.
+  adminNote    String          @default("")
   state        Json
   fresh        Boolean         @default(true)
   ip           String          @default("")
@@ -1257,6 +1259,8 @@ model JourneyAnswer {
   unknown       Boolean    @default(false)
   misconception String     @default("")
   drill         Boolean    @default(false)
+  /// Milliseconds on this puzzle. Null for journeys finished before timing existed.
+  durationMs    Int?
   createdAt     DateTime   @default(now())
 
   @@index([runId])

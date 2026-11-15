@@ -29,7 +29,7 @@ export default async function PowerPage() {
   return (
     <main className="sj-wrap">
       <section className="sj-hero">
-        <div className="sj-kicker">سفر تا پایان کتاب پایهٔ قبل تمام شد</div>
+        <div className="sj-kicker">سفر تمام شد و نقشهٔ قدرت‌هایت اینجاست</div>
         <h1 className="sj-h1">{run.name.split(" ")[0]}، این‌ها مال توست</h1>
         <p className="sj-hint">اول قدرت‌ها. بعد جاهایی که یک قدم آنجا، ساحل را روشن‌تر می‌کند.</p>
         {root && <p className="sj-note">ریشهٔ یکی از نشان‌ها در «{root.title}» است. همان‌جا را محکم کن.</p>}
