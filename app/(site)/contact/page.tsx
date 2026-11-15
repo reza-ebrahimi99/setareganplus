@@ -5,6 +5,7 @@ import { getSettings } from "@/lib/settings";
 import { prettyPhone, telHref } from "@/lib/format";
 import { Icon, PageHero, SectionHead, Star } from "@/components/site/Star";
 import { BranchList } from "@/components/site/BranchList";
+import { SocialLinks } from "@/components/site/SocialLinks";
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMeta("contact");
@@ -45,10 +46,8 @@ export default async function Contact() {
             <div className="reveal card p-7">
               <p className="flex items-center gap-2 text-lg font-black text-navy"><Star className="size-4 text-gold" />ما را دنبال کنید</p>
               <p className="mt-1 text-sm text-muted">اخبار، برنامه‌ها و اطلاعیه‌ها در شبکه‌های اجتماعی</p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                {contact.social.map((s) => (
-                  <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" className="btn-ghost px-5 py-2 text-sm">{s.label}</a>
-                ))}
+              <div className="mt-5">
+                <SocialLinks items={contact.social} tone="light" />
               </div>
             </div>
           )}

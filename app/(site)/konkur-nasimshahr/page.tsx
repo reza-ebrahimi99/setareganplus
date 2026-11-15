@@ -7,7 +7,7 @@ import { listProducts } from "@/lib/shop/catalog";
 import { AchievementCard } from "@/components/site/cards";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { NewsCard } from "@/components/site/news";
-import { Block, FaqBlock, FeatureGrid, LandingHero, RelatedGuides, Steps, WhereBlock, branchesSentence, phonesSentence } from "@/components/site/Landing";
+import { Block, FaqBlock, FeatureGrid, LandingHero, LocalFacts, RelatedGuides, Steps, WhereBlock, branchesSentence, phonesSentence } from "@/components/site/Landing";
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMeta("konkur");
@@ -34,7 +34,7 @@ export default async function KonkurNasimshahr() {
   ].filter(Boolean) as { title: string; text?: string; href: string; icon: "cap" }[];
 
   const faq = [
-    contact.branches.length > 0 && { q: "آموزشگاه کنکور ستارگان کجای نسیم‌شهر است؟", a: `مؤسسه علمی ستارگان در نسیم‌شهر شعبه‌های جداگانه دارد — ${branchesSentence(contact)}.` },
+    contact.branches.length > 0 && { q: "کنکور نسیم شهر کجا برگزار می‌شود؟", a: `کلاس، آزمون و مشاورهٔ کنکور در مؤسسه علمی ستارگان است: ${branchesSentence(contact)}.` },
     { q: "برای ثبت‌نام در کلاس‌ها و خدمات کنکور چه باید کرد؟", a: `فرم پیش‌ثبت‌نام آنلاین را در همین سایت پر کنید و بخش موردنظر را انتخاب کنید؛ همکاران ما برای ادامهٔ مراحل با شما تماس می‌گیرند.${phone ? ` همچنین می‌توانید با ${phonesSentence(contact)} تماس بگیرید.` : ""}` },
     (findHl(edu, "مشاوره") || findHl(edu, "انتخاب رشته")) && { q: "آیا مشاوره تحصیلی و انتخاب رشته هم دارید؟", a: `بله؛ ${[findHl(edu, "مشاوره")?.title, findHl(edu, "انتخاب رشته")?.title].filter(Boolean).join(" و ")} از خدمات آموزشگاه تقویتی و کنکور ستارگان است.` },
     gc.length > 0 && { q: "در نسیم‌شهر کجا می‌توان در آزمون‌های قلم‌چی شرکت کرد؟", a: "در نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) نسیم‌شهر که زیرمجموعهٔ مؤسسه علمی ستارگان است. روند ثبت‌نام در صفحهٔ «آزمون‌های قلم‌چی در نسیم‌شهر» آمده است." },
@@ -45,7 +45,10 @@ export default async function KonkurNasimshahr() {
 
   return (
     <>
-      <LandingHero k="konkur" title="آموزشگاه کنکور در نسیم شهر؛ کلاس کنکور، آزمون، مشاوره و جزوه" intro={t.intro} phone={phone} />
+      <LandingHero k="konkur" title="کنکور نسیم شهر" intro={t.intro} phone={phone} />
+      <LocalFacts contact={contact}>
+        <p>کنکور نسیم شهر برای داوطلبانی است که کلاس، آزمون، مشاوره و جزوه را در همین شهر می‌خواهند. این‌ها خدمات مؤسسه علمی ستارگان است: آموزشگاه تقویتی و کنکور، و نمایندگی قلم‌چی.</p>
+      </LocalFacts>
       {services.length > 0 && (
         <Block eyebrow="آمادگی کنکور" title="کلاس کنکور و مشاوره کنکور، نزدیک خانه" text="خدماتی که مؤسسه علمی ستارگان برای داوطلبان کنکور در نسیم‌شهر ارائه می‌دهد:">
           <FeatureGrid items={services} />

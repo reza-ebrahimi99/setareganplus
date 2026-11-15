@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { publicBaleSocialUrl } from "@/lib/bale";
+import { withPublicMap } from "@/lib/maps";
+import { withAparatSocial } from "@/lib/social";
 
 export type Branch = { name: string; address: string; mapUrl?: string };
 export type ContactSettings = {
@@ -75,6 +77,20 @@ export const EMPTY_SETTINGS: Settings = {
   },
 };
 
+/** Bale invite rewrite, the girls-branch map fix, and the official Aparat profile. */
+export function normalizeContact(v: Partial<ContactSettings> | null | undefined): ContactSettings {
+  const social = (v?.social ?? [])
+    .map((s) => (s && typeof s.url === "string" ? { ...s, url: publicBaleSocialUrl(s.url) } : s))
+    .filter((s): s is { label: string; url: string } => !!s && typeof s.url === "string");
+  return {
+    phones: v?.phones ?? [],
+    hours: v?.hours ?? [],
+    branches: (v?.branches ?? []).map((b) => withPublicMap(b)),
+    social: withAparatSocial(social),
+    enamadUrl: v?.enamadUrl,
+  };
+}
+
 export async function getSettings(): Promise<Settings> {
   const rows = await prisma.setting.findMany();
   const out = structuredClone(EMPTY_SETTINGS) as Record<string, unknown>;
@@ -83,10 +99,7 @@ export async function getSettings(): Promise<Settings> {
   const h = { ...DEFAULT_HIGHLIGHT, ...((out.highlight as Partial<HighlightSettings>) ?? {}) };
   if (!h.image) h.image = DEFAULT_HIGHLIGHT_IMAGE;
   out.highlight = h;
-  const contact = out.contact as ContactSettings;
-  if (Array.isArray(contact?.social)) {
-    contact.social = contact.social.map((s) => (s && typeof s.url === "string" ? { ...s, url: publicBaleSocialUrl(s.url) } : s));
-  }
+  out.contact = normalizeContact(out.contact as Partial<ContactSettings>);
   return out as Settings;
 }
 

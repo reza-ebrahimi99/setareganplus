@@ -7,7 +7,7 @@ import { fa } from "@/lib/format";
 import { landingBase, latestNews } from "@/lib/landing";
 import { AchievementCard, StatsBand } from "@/components/site/cards";
 import { NewsCard } from "@/components/site/news";
-import { Block, FaqBlock, FeatureGrid, LandingHero, RelatedGuides, WhereBlock, branchesSentence, phonesSentence } from "@/components/site/Landing";
+import { Block, FaqBlock, FeatureGrid, LandingHero, LocalFacts, RelatedGuides, WhereBlock, branchesSentence, phonesSentence } from "@/components/site/Landing";
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMeta("amoozeshgah");
@@ -26,7 +26,7 @@ export default async function Amoozeshgah() {
   const body = (edu?.body ?? "").split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 
   const faq = [
-    contact.branches.length > 0 && { q: "آموزشگاه تقویتی ستارگان کجای نسیم‌شهر است؟", a: `${branchesSentence(contact)}.` },
+    contact.branches.length > 0 && { q: "آموزشگاه نسیم شهر کجاست؟", a: `آموزشگاه تقویتی و کنکور ستارگان در نسیم‌شهر است: ${branchesSentence(contact)}.` },
     services.length > 0 && { q: "آموزشگاه تقویتی ستارگان چه کلاس‌ها و خدماتی دارد؟", a: `${services.map((s) => s.title).join("، ")}.` },
     since && { q: "آموزشگاه از چه سالی فعالیت می‌کند؟", a: `آموزشگاه تقویتی و کنکور ستارگان فعالیت خود را از سال ${since} آغاز کرده است.` },
     { q: "چطور در کلاس‌های تقویتی ثبت‌نام کنم؟", a: `فرم پیش‌ثبت‌نام آنلاین را پر کنید و بخش موردنظر را انتخاب کنید؛ همکاران ما برای ادامهٔ مراحل با شما تماس می‌گیرند.${phone ? ` شماره‌های تماس: ${phonesSentence(contact)}.` : ""}` },
@@ -36,7 +36,10 @@ export default async function Amoozeshgah() {
 
   return (
     <>
-      <LandingHero k="amoozeshgah" title="آموزشگاه تقویتی و کنکور ستارگان در نسیم شهر" intro={t.intro} phone={phone} accent="edu" />
+      <LandingHero k="amoozeshgah" title="آموزشگاه نسیم شهر" intro={t.intro} phone={phone} accent="edu" />
+      <LocalFacts contact={contact}>
+        <p>آموزشگاه نسیم شهر نامی است که خانواده‌ها برای آموزشگاه تقویتی و کنکور ستارگان به کار می‌برند.{since ? ` فعالیت آموزشی مجموعه از سال ${since} آغاز شده است.` : " تمرکز مجموعه بر تقویت پایه و آمادگی کنکور است."}</p>
+      </LocalFacts>
       {(edu?.intro || body.length > 0) && (
         <section className="container-x py-14 sm:py-20">
           <div className="prose-fa max-w-3xl">

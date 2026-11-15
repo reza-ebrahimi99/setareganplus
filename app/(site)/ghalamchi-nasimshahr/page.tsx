@@ -5,7 +5,8 @@ import { landingBase, latestNews } from "@/lib/landing";
 import { listProducts } from "@/lib/shop/catalog";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { NewsCard } from "@/components/site/news";
-import { Block, FaqBlock, FeatureGrid, LandingHero, RelatedGuides, Steps, WhereBlock, branchesSentence, phonesSentence } from "@/components/site/Landing";
+import { withPublicMap } from "@/lib/maps";
+import { Block, FaqBlock, FeatureGrid, LandingHero, LocalFacts, RelatedGuides, Steps, WhereBlock, branchesSentence, phonesSentence } from "@/components/site/Landing";
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMeta("ghalamchiGuide");
@@ -24,14 +25,15 @@ export default async function GhalamchiGuide() {
   const { t, contact, seo, center, hl, phone, formLive } = await landingBase("ghalamchiGuide");
   const gc = center("ghalamchi");
   const services = hl("ghalamchi");
-  const branches = ((gc?.branches ?? []) as { name: string; address: string; mapUrl?: string }[]).length ? { ...contact, branches: gc!.branches as typeof contact.branches } : contact;
+  const gcBranches = ((gc?.branches ?? []) as { name: string; address: string; mapUrl?: string }[]).map((b) => withPublicMap(b));
+  const branches = gcBranches.length ? { ...contact, branches: gcBranches } : contact;
   const regHref = formLive("ghalamchi-exam") ? "/f/ghalamchi-exam" : "/ghalamchi#register";
   const [news, books] = await Promise.all([latestNews(["EXAM"], 6), listProducts({ center: "ghalamchi" }, 4).catch(() => [])]);
   const cal = calendar(seo.examCalendar);
   const since = gc?.body?.match(/از سال ([۰-۹0-9]{4})/)?.[1];
 
   const faq = [
-    { q: "نمایندگی قلم‌چی نسیم‌شهر کجاست؟", a: branches.branches.length ? `${branchesSentence(branches)}.` : "نشانی شعبه‌ها در صفحهٔ تماس با ما آمده است." },
+    { q: "نمایندگی قلم چی نسیم شهر کجاست؟", a: branches.branches.length ? `${branchesSentence(branches)}.` : "نشانی شعبه‌ها در صفحهٔ تماس با ما آمده است." },
     { q: "چطور در آزمون‌های قلم‌چی ثبت‌نام کنم؟", a: `فرم «ثبت‌نام آزمون‌های قلم‌چی» را در همین سایت تکمیل کنید؛ پس از بررسی، همکاران ما برای تکمیل ثبت‌نام تماس می‌گیرند.${phone ? ` برای پرسش‌ها: ${phonesSentence(contact)}.` : ""}` },
     { q: "«قلم‌چی» همان «کانون فرهنگی آموزش» است؟", a: "بله؛ «کانون فرهنگی آموزش» نام رسمی مجموعه‌ای است که بیشتر با نام «قلم چی» (یا «قلمچی») شناخته می‌شود. نمایندگی ستارگان در نسیم شهر، نمایندگی رسمی همین کانون است." },
     { q: "کارنامه و نتایج آزمون‌ها را کجا ببینم؟", a: "کارنامه و نتایج از طریق سامانه‌های رسمی کانون فرهنگی آموزش ارائه می‌شود. ستارگان پلاس سایت اختصاصی مؤسسه است و اتصال فنی به سامانه‌های کانون ندارد." },
@@ -42,7 +44,10 @@ export default async function GhalamchiGuide() {
 
   return (
     <>
-      <LandingHero k="ghalamchiGuide" title="نمایندگی قلم‌چی نسیم شهر و آزمون‌های کانون" intro={t.intro} phone={phone} accent="gc" cta={{ href: regHref, label: "ثبت‌نام آزمون‌های قلم‌چی" }} />
+      <LandingHero k="ghalamchiGuide" title="نمایندگی قلم چی نسیم شهر" intro={t.intro} phone={phone} accent="gc" cta={{ href: regHref, label: "ثبت‌نام آزمون‌های قلم‌چی" }} />
+      <LocalFacts contact={contact}>
+        <p>نمایندگی قلم چی نسیم شهر، نمایندگی رسمی کانون فرهنگی آموزش در نسیم‌شهر و بخشی از مؤسسه علمی ستارگان است. ثبت‌نام آزمون از همین سایت انجام می‌شود و جزئیات هر آزمون در اطلاعیه‌ها می‌آید.</p>
+      </LocalFacts>
       <Block eyebrow="روند کار" title="ثبت‌نام آزمون در سه قدم">
         <Steps
           steps={[

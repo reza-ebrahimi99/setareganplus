@@ -3,6 +3,7 @@ import Image from "next/image";
 import type { ContactSettings } from "@/lib/settings";
 import { prettyPhone, telHref } from "@/lib/format";
 import { Icon, Star } from "./Star";
+import { SocialLinks } from "./SocialLinks";
 
 const LINKS = [
   { href: "/education", label: "آموزشگاه تقویتی و کنکور ستارگان" },
@@ -16,11 +17,14 @@ const LINKS = [
 ];
 // local guide pages (real content from site data; see lib/seo.ts LANDINGS)
 const GUIDES = [
-  { href: "/konkur-nasimshahr", label: "کنکور در نسیم‌شهر" },
-  { href: "/amoozeshgah-taghviati-nasimshahr", label: "آموزشگاه تقویتی نسیم‌شهر" },
-  { href: "/kelas-taghviati", label: "کلاس تقویتی به تفکیک پایه" },
-  { href: "/ghalamchi-nasimshahr", label: "آزمون‌های قلم‌چی نسیم‌شهر" },
-  { href: "/jozve-konkur", label: "جزوه کنکور" },
+  { href: "/konkur-nasimshahr", label: "کنکور نسیم شهر" },
+  { href: "/amoozeshgah-taghviati-nasimshahr", label: "آموزشگاه نسیم شهر" },
+  { href: "/kelas-taghviati", label: "کلاس تقویتی نسیم شهر" },
+  { href: "/kelas-riazi-nasimshahr", label: "کلاس ریاضی نسیم شهر" },
+  { href: "/ghalamchi-nasimshahr", label: "نمایندگی قلم چی نسیم شهر" },
+  { href: "/jozve-konkur", label: "خرید جزوه کنکور نسیم شهر" },
+  { href: "/kanoon-zaban-nasimshahr", label: "کانون زبان ایران نسیم شهر" },
+  { href: "/dabestan-setaregan-ayandeh", label: "دبستان ستارگان آینده" },
 ];
 const MORE = [
   { href: "/news", label: "اخبار و اطلاعیه‌ها" },
@@ -67,12 +71,8 @@ export function Footer({ contact }: { contact: ContactSettings; shopOpen?: boole
               آموزشگاه تقویتی و کنکور ستارگان و نمایندگی رسمی قلم‌چی نسیم‌شهر؛ دو مرکز در کنار دانش‌آموزان و خانواده‌ها.
             </p>
             {contact.social.length > 0 && (
-              <div className="mt-6 flex flex-wrap gap-2">
-                {contact.social.map((s) => (
-                  <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" className="glass rounded-full px-4 py-1.5 text-sm font-semibold text-white/85 transition-colors hover:bg-white/15 hover:text-white">
-                    {s.label}
-                  </a>
-                ))}
+              <div className="mt-6">
+                <SocialLinks items={contact.social} />
               </div>
             )}
           </div>

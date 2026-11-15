@@ -420,7 +420,11 @@ export default async function Home() {
             { href: "/konkur-nasimshahr", title: "کلاس کنکور و مشاوره کنکور", text: "کلاس‌های کنکور، برنامه‌ریزی درسی و مشاورهٔ کنکور برای داوطلبان نسیم‌شهر." },
             { href: "/ghalamchi-nasimshahr", title: "نمایندگی قلم چی نسیم شهر", text: "نمایندگی رسمی کانون فرهنگی آموزش؛ ثبت‌نام و برگزاری آزمون‌های قلم‌چی." },
             { href: "/amoozeshgah-taghviati-nasimshahr", title: "آموزشگاه تقویتی و کلاس تقویتی", text: "کلاس‌های تقویتی دروس مدرسه به تفکیک پایه، از تقویت پایه تا کنکور." },
-            { href: "/jozve-konkur", title: "جزوه کنکور", text: "خرید آنلاین جزوه کنکور و جزوه‌های درسی، تحویل حضوری در شعبه." },
+            { href: "/jozve-konkur", title: "خرید جزوه کنکور نسیم شهر", text: "خرید آنلاین جزوه کنکور و جزوه‌های درسی، تحویل حضوری در شعبه." },
+            { href: "/kelas-riazi-nasimshahr", title: "کلاس ریاضی نسیم شهر", text: "کلاس ریاضی با تدریس مهندس رضا ابراهیمی، مدرس و مؤلف ریاضیات مجموعه." },
+            { href: "/kelas-taghviati", title: "کلاس تقویتی نسیم شهر", text: "کلاس تقویتی به تفکیک پایه، از متوسطه تا کنکور." },
+            { href: "/kanoon-zaban-nasimshahr", title: "کانون زبان ایران نسیم شهر", text: "نمایندگی کانون زبان ایران در نسیم‌شهر؛ ثبت‌نام از راه پیش‌ثبت‌نام و تماس." },
+            { href: "/dabestan-setaregan-ayandeh", title: "دبستان غیردولتی ستارگان آینده", text: "دبستان مجموعهٔ مؤسسه علمی ستارگان؛ معرفی همان‌طور که در دربارهٔ ما آمده است." },
           ].map((x) => (
             <Link key={x.href} href={x.href} className="card card-hover block p-6">
               <h3 className="text-lg font-extrabold text-navy">{x.title}</h3>

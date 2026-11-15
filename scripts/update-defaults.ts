@@ -14,6 +14,8 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Prisma, PrismaClient } from "../generated/prisma/client";
 import { BALE_CHANNEL_URL, isLegacyBaleJoin } from "../lib/bale";
 import { DEFAULT_HOURS, LEGACY_DEFAULT_HOURS } from "../lib/hours";
+import { isLegacyGirlsMap, googleMapsSearchUrl, GIRLS_BRANCH_ADDRESS } from "../lib/maps";
+import { APARAT_SOCIAL, isAparatProfile } from "../lib/social";
 
 const DRY = process.argv.includes("--dry-run");
 const log = (...a: unknown[]) => console.log("[defaults]", ...a);
@@ -52,8 +54,49 @@ async function main() {
       log(DRY ? "would point the بله social link at the public channel" : "بله social link now points at the public channel", BALE_CHANNEL_URL);
     } else log("bale social link already up to date or customized");
 
+    const branches = Array.isArray(value.branches) ? value.branches : null;
+    if (branches?.some((item) => item && typeof item === "object" && typeof (item as { mapUrl?: unknown }).mapUrl === "string" && isLegacyGirlsMap((item as { mapUrl: string }).mapUrl))) {
+      next.branches = branches.map((item) => {
+        if (!item || typeof item !== "object" || typeof (item as { mapUrl?: unknown }).mapUrl !== "string") return item;
+        const mapUrl = (item as { mapUrl: string }).mapUrl;
+        if (!isLegacyGirlsMap(mapUrl)) return item;
+        const address = typeof (item as { address?: unknown }).address === "string" && (item as { address: string }).address.trim()
+          ? (item as { address: string }).address.trim()
+          : GIRLS_BRANCH_ADDRESS;
+        return { ...item, mapUrl: googleMapsSearchUrl(address) };
+      });
+      changed = true;
+      log(DRY ? "would replace the girls-branch map link with an address search" : "girls-branch map link now searches the address on the site");
+    } else log("girls-branch map link already up to date or not the old short link");
+
+    const socialNow = Array.isArray(next.social) ? next.social : social;
+    if (socialNow && !socialNow.some((item) => item && typeof item === "object" && typeof (item as { url?: unknown }).url === "string" && isAparatProfile((item as { url: string }).url))) {
+      next.social = [...socialNow, APARAT_SOCIAL];
+      changed = true;
+      log(DRY ? "would add the Aparat profile" : "Aparat profile added to social links", APARAT_SOCIAL.url);
+    } else log("aparat social link already present or social list missing");
+
     if (changed && !DRY) {
       await prisma.setting.update({ where: { key: "contact" }, data: { value: next as Prisma.InputJsonValue } });
+    }
+
+    const centers = await prisma.center.findMany({ select: { id: true, slug: true, branches: true } });
+    for (const center of centers) {
+      if (!Array.isArray(center.branches)) continue;
+      let centerChanged = false;
+      const fixed = center.branches.map((item) => {
+        if (!item || typeof item !== "object" || typeof (item as { mapUrl?: unknown }).mapUrl !== "string") return item;
+        const mapUrl = (item as { mapUrl: string }).mapUrl;
+        if (!isLegacyGirlsMap(mapUrl)) return item;
+        centerChanged = true;
+        const address = typeof (item as { address?: unknown }).address === "string" && (item as { address: string }).address.trim()
+          ? (item as { address: string }).address.trim()
+          : GIRLS_BRANCH_ADDRESS;
+        return { ...item, mapUrl: googleMapsSearchUrl(address) };
+      });
+      if (!centerChanged) continue;
+      log(DRY ? `would fix the girls-branch map link on center ${center.slug}` : `girls-branch map link fixed on center ${center.slug}`);
+      if (!DRY) await prisma.center.update({ where: { id: center.id }, data: { branches: fixed as Prisma.InputJsonValue } });
     }
   } finally {
     await prisma.$disconnect();

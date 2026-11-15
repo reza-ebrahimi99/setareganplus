@@ -8,7 +8,7 @@ import { AchievementCard } from "@/components/site/cards";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { NewsCard } from "@/components/site/news";
 import { Icon } from "@/components/site/Star";
-import { Block, FaqBlock, LandingHero, RelatedGuides, WhereBlock, phonesSentence } from "@/components/site/Landing";
+import { Block, FaqBlock, LandingHero, LocalFacts, RelatedGuides, WhereBlock, phonesSentence } from "@/components/site/Landing";
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMeta("classes");
@@ -41,7 +41,7 @@ export default async function KelasTaghviati() {
   const news = await latestNews(["CLASSES"]);
 
   const faq = [
-    levels.length > 0 && { q: "کلاس تقویتی برای چه پایه‌هایی برگزار می‌شود؟", a: `آموزشگاه ستارگان در این بخش‌ها فعال است: ${levels.map((l) => l.h!.title).join("، ")}.` },
+    levels.length > 0 && { q: "کلاس تقویتی نسیم شهر برای چه پایه‌هایی برگزار می‌شود؟", a: `آموزشگاه ستارگان در این بخش‌ها فعال است: ${levels.map((l) => l.h!.title).join("، ")}.` },
     { q: "برنامه و زمان کلاس‌ها را از کجا بدانم؟", a: `برنامهٔ هر دوره در بخش «اخبار و اطلاعیه‌ها» (دستهٔ کلاس‌ها) منتشر می‌شود.${phone ? ` برای اطلاع دقیق می‌توانید با ${phonesSentence(contact)} تماس بگیرید.` : ""}` },
     { q: "چطور ثبت‌نام کنم؟", a: "فرم پیش‌ثبت‌نام آنلاین را پر کنید و پایه و بخش موردنظر را انتخاب کنید؛ همکاران ما برای ادامهٔ مراحل با شما تماس می‌گیرند." },
     ...t.faq,
@@ -49,7 +49,10 @@ export default async function KelasTaghviati() {
 
   return (
     <>
-      <LandingHero k="classes" title="کلاس تقویتی و کنکور در نسیم شهر به تفکیک پایه" intro={t.intro} phone={phone} accent="edu" />
+      <LandingHero k="classes" title="کلاس تقویتی نسیم شهر" intro={t.intro} phone={phone} accent="edu" />
+      <LocalFacts contact={contact}>
+        <p>کلاس تقویتی نسیم شهر در آموزشگاه ستارگان، کنار درس مدرسه و به تفکیک پایه برگزار می‌شود. مؤسسه علمی ستارگان (ستارگان پلاس) آموزشگاه تقویتی و کنکور و نمایندگی قلم‌چی نسیم‌شهر است.</p>
+      </LocalFacts>
       {levels.length > 1 && (
         <nav aria-label="پایه‌ها" className="container-x mt-8 flex flex-wrap gap-2">
           {levels.map((l) => <a key={l.id} href={`#${l.id}`} className="chip bg-paper px-4 py-2 text-sm text-navy ring-1 ring-line hover:ring-navy/30">{l.h!.title}</a>)}

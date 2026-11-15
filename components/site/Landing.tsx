@@ -126,6 +126,30 @@ export function RelatedGuides({ current }: { current: PageKey }) {
   );
 }
 
+/** Who we are, both branches, and the paths that already exist on the site. */
+export function LocalFacts({ contact, children, math = "link" }: { contact: ContactSettings; children: ReactNode; math?: "link" | "here" }) {
+  return (
+    <section className="container-x py-12 sm:py-16">
+      <div className="prose-fa max-w-3xl text-[1.05rem]">
+        {children}
+        {contact.branches.length > 0 && <p>مؤسسه علمی ستارگان در نسیم‌شهر دو شعبه دارد: {branchesSentence(contact)}.</p>}
+        {math === "link" ? (
+          <p>
+            کلاس ریاضی را <Link href="/kelas-riazi-nasimshahr" className="font-bold text-royal">مهندس رضا ابراهیمی</Link>، مدرس و مؤلف ریاضیات مجموعه، برگزار می‌کند.
+            از همین سایت می‌توانید <Link href="/classes" className="font-bold text-royal">کلاس‌های ویدیویی</Link> را ببینید، از <Link href="/shop" className="font-bold text-royal">فروشگاه جزوه</Link> خرید کنید، <Link href="/moshavere" className="font-bold text-royal">وقت مشاوره</Link> بگیرید یا <Link href="/register" className="font-bold text-royal">پیش‌ثبت‌نام</Link> کنید.
+          </p>
+        ) : (
+          <p>
+            <Link href="/classes" className="font-bold text-royal">کلاس‌های ویدیویی</Link> ریاضی در صفحهٔ کلاس‌هاست.
+            جزوه را از <Link href="/shop" className="font-bold text-royal">فروشگاه جزوه</Link> سفارش دهید، برای گفت‌وگو <Link href="/moshavere" className="font-bold text-royal">مشاوره</Link> بگیرید و ثبت‌نام را با <Link href="/register" className="font-bold text-royal">پیش‌ثبت‌نام</Link> شروع کنید.
+            معرفی مدرس در <Link href="/about#founder" className="font-bold text-royal">صفحهٔ دربارهٔ ما</Link> آمده است.
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /** Data-backed answer helpers. */
 export function branchesSentence(c: ContactSettings) {
   return c.branches.map((b) => `${b.name}: ${b.address}`).join(" — ");

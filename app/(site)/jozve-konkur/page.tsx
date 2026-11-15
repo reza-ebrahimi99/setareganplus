@@ -9,7 +9,7 @@ import { getShopSettings } from "@/lib/shop/settings";
 import { fa } from "@/lib/format";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { NewsCard } from "@/components/site/news";
-import { Block, FaqBlock, LandingHero, RelatedGuides, Steps, WhereBlock } from "@/components/site/Landing";
+import { Block, FaqBlock, LandingHero, LocalFacts, RelatedGuides, Steps, WhereBlock } from "@/components/site/Landing";
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMeta("jozve");
@@ -28,6 +28,7 @@ export default async function JozveKonkur() {
   const grades = byGrade.map((x) => x.g);
 
   const faq = [
+    { q: "خرید جزوه کنکور نسیم شهر چطور انجام می‌شود؟", a: "جزوه را در فروشگاه آنلاین انتخاب و پرداخت می‌کنید. نسخهٔ چاپ‌شده در شعبهٔ انتخابی تحویل داده می‌شود و ارسال پستی نداریم." },
     { q: "جزوه را چطور تحویل بگیرم؟", a: `جزوه‌ها چاپ و در شعبهٔ انتخابی شما به‌صورت حضوری تحویل داده می‌شوند و ارسال پستی نداریم. پس از آماده شدن پیامک دریافت می‌کنید. ساعت تحویل: ${PICKUP_HOURS.join("، ")}.` },
     { q: "پرداخت چطور انجام می‌شود؟", a: "پرداخت آنلاین و از درگاه امن بانکی انجام می‌شود؛ پس از پرداخت، رسید و کد تحویل برایتان پیامک می‌شود." },
     { q: "وضعیت سفارشم را کجا ببینم؟", a: "در صفحهٔ «پیگیری سفارش جزوه»، کد تحویل (در پیامک) یا شماره سفارش را همراه با شماره موبایل خرید وارد کنید تا وضعیت سفارش را ببینید." },
@@ -38,7 +39,10 @@ export default async function JozveKonkur() {
 
   return (
     <>
-      <LandingHero k="jozve" title="جزوه کنکور و جزوه‌های درسی ستارگان در نسیم شهر" intro={t.intro} phone={phone} accent="edu" cta={{ href: "/shop", label: "ورود به فروشگاه جزوه" }} />
+      <LandingHero k="jozve" title="خرید جزوه کنکور نسیم شهر" intro={t.intro} phone={phone} accent="edu" cta={{ href: "/shop", label: "ورود به فروشگاه جزوه" }} />
+      <LocalFacts contact={contact}>
+        <p>خرید جزوه کنکور نسیم شهر از فروشگاه آنلاین مؤسسه علمی ستارگان است. جزوه‌های مدرسان ستارگان و نمایندگی قلم‌چی را سفارش می‌دهید و در شعبه تحویل می‌گیرید.</p>
+      </LocalFacts>
       {shop.notice && <div className="container-x mt-8"><p className="rounded-2xl bg-sky/70 p-4 text-sm leading-7 font-semibold text-navy">{shop.notice}</p></div>}
       <Block eyebrow="روند خرید" title="سفارش آنلاین، تحویل حضوری">
         <Steps

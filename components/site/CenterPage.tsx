@@ -4,6 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSettings, type Branch } from "@/lib/settings";
+import { withPublicMap } from "@/lib/maps";
+import { FaqBlock } from "./Landing";
 import { getPublicForm } from "@/lib/forms/public";
 import { fa, prettyPhone, telHref } from "@/lib/format";
 import { FormRenderer } from "@/components/forms/FormRenderer";
@@ -39,7 +41,7 @@ export async function CenterPage({ slug }: { slug: "education" | "ghalamchi" }) 
     }),
   ]);
   const highlights = center.highlights as { title: string; text?: string }[];
-  const branches = center.branches as Branch[];
+  const branches = (center.branches as Branch[]).map((b) => withPublicMap(b));
   const paragraphs = (center.body ?? "").split(/\n\s*\n/).filter((p) => p.trim());
 
   const phone = settings.contact.phones[0];
@@ -67,7 +69,7 @@ export async function CenterPage({ slug }: { slug: "education" | "ghalamchi" }) 
               )}
               <Eyebrow tone="light">{isGc ? "نمایندگی رسمی کانون فرهنگی آموزش · نسیم‌شهر" : "آموزشگاه تقویتی و کنکور · نسیم‌شهر"}</Eyebrow>
             </div>
-            <h1 className="rise rise-1 mt-6 text-[2rem] leading-[1.35] font-black tracking-tight sm:text-[3.1rem] sm:leading-[1.25]">{center.name}</h1>
+            <h1 className="rise rise-1 mt-6 text-[2rem] leading-[1.35] font-black tracking-tight sm:text-[3.1rem] sm:leading-[1.25]">{isGc ? "نمایندگی قلم چی نسیم شهر" : center.name}</h1>
             {center.tagline && <p className="rise rise-2 mt-4 text-lg font-bold text-gold">{center.tagline}</p>}
             {center.intro && <p className="rise rise-2 mt-4 max-w-xl text-[1.02rem] leading-9 text-white/75">{center.intro}</p>}
             <div className="rise rise-3 mt-8 flex flex-wrap gap-3">
@@ -154,6 +156,32 @@ export async function CenterPage({ slug }: { slug: "education" | "ghalamchi" }) 
           <SectionHead eyebrow="مدرسان و مشاوران" title="همراهان آموزشی شما" tone={a.tone} action={<Link href="/team" className="btn-ghost text-sm">همه اعضای تیم <Icon name="arrow" className="size-4" /></Link>} />
           <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{team.map((m) => <TeamCard key={m.id} m={m} />)}</div>
         </section>
+      )}
+
+      {isGc && (
+        <section className="container-x pb-4">
+          <div className="prose-fa max-w-3xl">
+            <p>نمایندگی قلم چی نسیم شهر زیرمجموعهٔ مؤسسه علمی ستارگان و نمایندگی رسمی کانون فرهنگی آموزش در نسیم‌شهر است. دو شعبهٔ دختران و پسران جدا هستند.</p>
+            <p>
+              کلاس ریاضی را <Link href="/kelas-riazi-nasimshahr" className="font-bold text-royal">مهندس رضا ابراهیمی</Link> تدریس می‌کند.
+              <Link href="/classes" className="font-bold text-royal"> کلاس‌های ویدیویی</Link>،
+              <Link href="/shop" className="font-bold text-royal"> فروشگاه جزوه</Link>،
+              <Link href="/moshavere" className="font-bold text-royal"> مشاوره</Link> و
+              <Link href="/register" className="font-bold text-royal"> پیش‌ثبت‌نام</Link> از همین سایت است.
+              روند آزمون را در <Link href="/ghalamchi-nasimshahr" className="font-bold text-royal">راهنمای نمایندگی قلم چی نسیم شهر</Link> ببینید.
+            </p>
+          </div>
+        </section>
+      )}
+      {isGc && (
+        <FaqBlock
+          title="پرسش‌های رایج دربارهٔ نمایندگی قلم چی نسیم شهر"
+          items={[
+            { q: "نمایندگی قلم چی نسیم شهر کجاست؟", a: branches.length ? branches.map((b) => `${b.name}: ${b.address}`).join(" — ") + "." : "نشانی شعبه‌ها در صفحهٔ تماس با ما آمده است." },
+            { q: "چطور در آزمون قلم‌چی ثبت‌نام کنم؟", a: "فرم ثبت‌نام همین صفحه را پر کنید. اگر فرم باز نباشد، از پیش‌ثبت‌نام یا تماس با مؤسسه استفاده کنید." },
+            { q: "آیا این سایت به سامانهٔ کانون قلم‌چی وصل است؟", a: "خیر. ستارگان پلاس سایت مؤسسه علمی ستارگان است و اتصال فنی به سامانه‌های کانون ندارد." },
+          ]}
+        />
       )}
 
       {albums.map((al) => (

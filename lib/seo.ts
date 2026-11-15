@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { siteUrl } from "@/lib/shop/config";
 import { toEn } from "@/lib/format";
-import { publicBaleSocialUrl } from "@/lib/bale";
-import type { ContactSettings } from "@/lib/settings";
+import { normalizeContact } from "@/lib/settings";
+import { sameAsUrls } from "@/lib/social";
 
 /* ------------------------------------------------------------------ */
 /* Admin-editable SEO settings (Setting key "seo"; no schema change)   */
@@ -33,14 +33,12 @@ export const getSeo = cache(async (): Promise<SeoSettings> => {
   }
 });
 
-export const getContact = cache(async (): Promise<ContactSettings> => {
+export const getContact = cache(async () => {
   try {
     const row = await prisma.setting.findUnique({ where: { key: "contact" } });
-    const v = (row?.value ?? {}) as Partial<ContactSettings>;
-    const social = (v.social ?? []).map((s) => (s && typeof s.url === "string" ? { ...s, url: publicBaleSocialUrl(s.url) } : s));
-    return { phones: v.phones ?? [], hours: v.hours ?? [], branches: v.branches ?? [], social, enamadUrl: v.enamadUrl };
+    return normalizeContact((row?.value ?? {}) as Parameters<typeof normalizeContact>[0]);
   } catch {
-    return { phones: [], hours: [], branches: [], social: [] };
+    return normalizeContact({});
   }
 });
 
@@ -64,8 +62,8 @@ export const PAGES = {
   },
   ghalamchi: {
     label: "نمایندگی قلم‌چی", path: "/ghalamchi",
-    title: "نمایندگی قلم‌چی نسیم‌شهر",
-    description: "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) در نسیم‌شهر با شعبهٔ دختران و شعبهٔ پسران؛ برنامهٔ آموزشی، آزمون‌های منظم و مشاوره.",
+    title: "نمایندگی قلم چی نسیم شهر",
+    description: "نمایندگی قلم چی نسیم شهر؛ نمایندگی رسمی کانون فرهنگی آموزش با شعبهٔ دختران و پسران، آزمون، برنامهٔ آموزشی و مشاوره.",
   },
   shop: {
     label: "فروشگاه جزوه", path: "/shop",
@@ -132,38 +130,56 @@ export const PAGES = {
   },
   // ---- local guide pages ----
   konkur: {
-    label: "راهنما: کنکور در نسیم‌شهر", path: "/konkur-nasimshahr",
-    title: "کنکور در نسیم‌شهر | کلاس، مشاوره، آزمون و جزوه",
-    description: "هر آنچه برای آمادگی کنکور در نسیم‌شهر لازم است: آموزشگاه کنکور ستارگان، آزمون‌های قلم‌چی، مشاوره تحصیلی، جزوه و نشانی شعبه‌ها.",
-    intro: "برای آمادگی کنکور در نسیم‌شهر لازم نیست راه دوری بروید. در این صفحه دوره‌ها، آزمون‌ها، جزوه‌ها و راه‌های ارتباط با مؤسسه علمی ستارگان را یک‌جا آورده‌ایم.",
+    label: "راهنما: کنکور نسیم شهر", path: "/konkur-nasimshahr",
+    title: "کنکور نسیم شهر",
+    description: "کنکور نسیم شهر در مؤسسه علمی ستارگان: کلاس کنکور، مشاوره، آزمون قلم‌چی و خرید جزوه، با دو شعبهٔ دختران و پسران.",
+    intro: "کنکور نسیم شهر را می‌توانید در مؤسسه علمی ستارگان پیگیری کنید: کلاس، آزمون قلم‌چی، مشاوره و جزوه، بدون آنکه از شهر خارج شوید.",
   },
   amoozeshgah: {
-    label: "راهنما: آموزشگاه تقویتی", path: "/amoozeshgah-taghviati-nasimshahr",
-    title: "آموزشگاه تقویتی نسیم‌شهر | ستارگان",
-    description: "آموزشگاه تقویتی و کنکور ستارگان در نسیم‌شهر: تقویت پایه، تیزهوشان و نمونه دولتی، کنکور، مشاوره و پانسیون مطالعاتی؛ با نشانی و راه‌های ثبت‌نام.",
-    intro: "آموزشگاه تقویتی و کنکور ستارگان در نسیم‌شهر کنار دانش‌آموزان متوسطه اول و دوم است؛ از تقویت پایه تا آمادگی آزمون‌های تیزهوشان، نمونه دولتی و کنکور.",
+    label: "راهنما: آموزشگاه نسیم شهر", path: "/amoozeshgah-taghviati-nasimshahr",
+    title: "آموزشگاه نسیم شهر",
+    description: "آموزشگاه نسیم شهر؛ آموزشگاه تقویتی و کنکور ستارگان برای تقویت پایه، تیزهوشان، نمونه دولتی و کنکور، با نشانی شعبه‌ها و پیش‌ثبت‌نام.",
+    intro: "آموزشگاه نسیم شهر همان آموزشگاه تقویتی و کنکور ستارگان است؛ از تقویت پایه تا آمادگی آزمون‌های تیزهوشان، نمونه دولتی و کنکور.",
   },
   ghalamchiGuide: {
-    label: "راهنما: آزمون‌های قلم‌چی", path: "/ghalamchi-nasimshahr",
-    title: "آزمون‌های قلم‌چی در نسیم‌شهر | تقویم و ثبت‌نام",
-    description: "نمایندگی قلم‌چی نسیم‌شهر: تقویم آزمون‌ها، روش ثبت‌نام آنلاین، شعبهٔ دختران و پسران و پاسخ پرسش‌های رایج.",
-    intro: "نمایندگی رسمی کانون فرهنگی آموزش (قلم‌چی) در نسیم‌شهر با دو شعبهٔ جداگانه برای دختران و پسران فعالیت می‌کند. در این صفحه روند ثبت‌نام و تقویم آزمون‌ها آمده است.",
+    label: "راهنما: نمایندگی قلم چی نسیم شهر", path: "/ghalamchi-nasimshahr",
+    title: "نمایندگی قلم چی نسیم شهر و آزمون کانون",
+    description: "نمایندگی قلم چی نسیم شهر: تقویم آزمون‌های کانون فرهنگی آموزش، ثبت‌نام آنلاین و نشانی شعبهٔ دختران و پسران.",
+    intro: "نمایندگی قلم چی نسیم شهر، نمایندگی رسمی کانون فرهنگی آموزش است و با دو شعبهٔ جداگانه برای دختران و پسران فعالیت می‌کند. روند ثبت‌نام و تقویم آزمون‌ها در همین صفحه است.",
   },
   jozve: {
-    label: "راهنما: جزوه کنکور", path: "/jozve-konkur",
-    title: "جزوه کنکور و جزوه درسی | خرید آنلاین در نسیم‌شهر",
-    description: "خرید آنلاین جزوه کنکور و جزوه‌های درسی مدرسان ستارگان و قلم‌چی نسیم‌شهر به تفکیک پایه؛ پرداخت امن و تحویل حضوری در شعبه.",
-    intro: "جزوه‌های مدرسان ستارگان و نمایندگی قلم‌چی نسیم‌شهر را آنلاین سفارش دهید و پس از آماده شدن، در شعبهٔ انتخابی تحویل بگیرید.",
+    label: "راهنما: خرید جزوه کنکور نسیم شهر", path: "/jozve-konkur",
+    title: "خرید جزوه کنکور نسیم شهر",
+    description: "خرید جزوه کنکور نسیم شهر؛ سفارش آنلاین جزوه‌های مدرسان ستارگان و قلم‌چی و تحویل حضوری در شعبه.",
+    intro: "خرید جزوه کنکور نسیم شهر از فروشگاه ستارگان انجام می‌شود. جزوه را آنلاین سفارش دهید و پس از آماده شدن، در شعبهٔ انتخابی تحویل بگیرید.",
   },
   classes: {
-    label: "راهنما: کلاس تقویتی به تفکیک پایه", path: "/kelas-taghviati",
-    title: "کلاس تقویتی در نسیم‌شهر به تفکیک پایه",
-    description: "کلاس‌های تقویتی متوسطه اول و دوم، تیزهوشان و نمونه دولتی و کنکور در آموزشگاه ستارگان نسیم‌شهر؛ همراه با جزوه‌ها و افتخارات هر پایه.",
-    intro: "کلاس تقویتی مناسب هر پایه متفاوت است. اینجا خدمات آموزشگاه ستارگان را به تفکیک مقطع، همراه با جزوه‌ها و نتایج هر بخش می‌بینید.",
+    label: "راهنما: کلاس تقویتی نسیم شهر", path: "/kelas-taghviati",
+    title: "کلاس تقویتی نسیم شهر",
+    description: "کلاس تقویتی نسیم شهر در آموزشگاه ستارگان، به تفکیک پایه از متوسطه تا کنکور؛ دو شعبه و پیش‌ثبت‌نام آنلاین.",
+    intro: "کلاس تقویتی نسیم شهر در آموزشگاه ستارگان به تفکیک پایه برگزار می‌شود. خدمات هر مقطع، همراه با جزوه‌ها و نتایج همان بخش، اینجاست.",
+  },
+  riyazi: {
+    label: "راهنما: کلاس ریاضی نسیم شهر", path: "/kelas-riazi-nasimshahr",
+    title: "کلاس ریاضی نسیم شهر",
+    description: "کلاس ریاضی نسیم شهر در مؤسسه علمی ستارگان با تدریس مهندس رضا ابراهیمی، مدرس و مؤلف ریاضیات مجموعه؛ دو شعبه، کلاس ویدیویی و پیش‌ثبت‌نام.",
+    intro: "کلاس ریاضی نسیم شهر در آموزشگاه ستارگان برگزار می‌شود. مدرس ریاضی مجموعه مهندس رضا ابراهیمی است. برنامه و شهریه در این صفحه نیست؛ ثبت‌نام از فرم پیش‌ثبت‌نام شروع می‌شود.",
+  },
+  kanoonZaban: {
+    label: "راهنما: کانون زبان ایران نسیم شهر", path: "/kanoon-zaban-nasimshahr",
+    title: "کانون زبان ایران نسیم شهر",
+    description: "نمایندگی کانون زبان ایران در نسیم‌شهر، در مجموعه مؤسسه علمی ستارگان. برای ثبت‌نام و پرسش‌ها پیش‌ثبت‌نام کنید یا تماس بگیرید.",
+    intro: "کانون زبان در نسیم‌شهر، نمایندگی کانون زبان ایران در مجموعه مؤسسه علمی ستارگان است. زمان کلاس و شهریه اینجا اعلام نشده؛ از پیش‌ثبت‌نام یا تماس با مؤسسه بپرسید.",
+  },
+  dabestan: {
+    label: "راهنما: دبستان ستارگان آینده", path: "/dabestan-setaregan-ayandeh",
+    title: "دبستان غیردولتی ستارگان آینده",
+    description: "دبستان غیردولتی ستارگان آینده در مجموعه مؤسسه علمی ستارگان نسیم‌شهر. برای آشنایی بیشتر صفحهٔ دربارهٔ ما را ببینید یا پیش‌ثبت‌نام کنید.",
+    intro: "دبستان غیردولتی ستارگان آینده بخشی از مؤسسه علمی ستارگان در نسیم‌شهر است. آنچه دربارهٔ آن در سایت آمده، همان متن صفحهٔ دربارهٔ ماست.",
   },
 } satisfies Record<string, { label: string; path: string; title: string; description: string; intro?: string }>;
 
-export const LANDINGS: PageKey[] = ["konkur", "amoozeshgah", "ghalamchiGuide", "jozve", "classes"];
+export const LANDINGS: PageKey[] = ["konkur", "amoozeshgah", "ghalamchiGuide", "jozve", "classes", "riyazi", "kanoonZaban", "dabestan"];
 
 export async function pageText(key: PageKey) {
   const seo = await getSeo();
@@ -285,8 +301,9 @@ export function parseOpeningHours(text = "") {
 /**
  * Fallback coordinates when the admin "seo.geo" field is empty, keyed by the branch's own
  * Google Maps link. Branch 1 (boys): the owner's link opens the Google Maps place
- * «آموزشگاه علمی ستارگان نسیم شهر», plus code H54C+56C. (The girls' branch link points at a
- * neighbouring business, so no coordinates are guessed for it.)
+ * «آموزشگاه علمی ستارگان نسیم شهر», plus code H54C+56C. The girls branch has no reliable
+ * pin: its old short link opened another business, and the replacement is only a search
+ * for the street address, so no coordinates are guessed for it.
  */
 const KNOWN_GEO: Record<string, { lat: string; lng: string }> = {
   "https://maps.app.goo.gl/jKQLs65S6Jv8MfKv8": { lat: "35.55544", lng: "51.17052" },
@@ -398,7 +415,7 @@ export async function organizationLd() {
   const hours = parsed.length ? parsed : parsePersianHours(contact.hours);
   const b0 = contact.branches[0];
   const geo0 = branchGeo(seo.geo?.[0], b0?.mapUrl);
-  const sameAs = contact.social.map((s) => s.url).filter((u) => /^https?:\/\//.test(u));
+  const sameAs = sameAsUrls(contact.social);
   return {
     "@context": "https://schema.org",
     "@type": ["EducationalOrganization", "LocalBusiness"],

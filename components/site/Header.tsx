@@ -16,6 +16,8 @@ export const NAV: { href: string; label: string; icon: IconName; wide?: 1 | 2 }[
   { href: "/team", label: "تیم ما", icon: "users", wide: 2 },
   { href: "/gallery", label: "گالری", icon: "image", wide: 2 },
   { href: "/about", label: "درباره ما", icon: "info", wide: 1 },
+  { href: "/kanoon-zaban-nasimshahr", label: "کانون زبان", icon: "book", wide: 2 },
+  { href: "/dabestan-setaregan-ayandeh", label: "دبستان ستارگان", icon: "cap", wide: 2 },
   { href: "/moshavere", label: "مشاوره رایگان", icon: "chat", wide: 1 },
   { href: "/contact", label: "تماس", icon: "phone" },
 ];
