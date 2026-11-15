@@ -20,6 +20,7 @@ export const PERM_GROUPS = [
       { key: "submissions", label: "درخواست‌های ثبت‌شده", hint: "دیدن، تغییر وضعیت، خروجی اکسل و فایل‌های پیوست" },
       { key: "forms.payments", label: "پرداخت‌های فرم‌ها", hint: "مبلغ، کد پیگیری زیبال، جمع درآمد هر فرم و ستون‌های پرداخت در خروجی" },
       { key: "campaign.studyQuiz", label: "کمپین تست مطالعه", hint: "لیدها، خروجی اکسل و تنظیمات تست الگوی مطالعه" },
+      { key: "journey.manage", label: "سفر ستاره‌ها", hint: "شرکت‌کنندگان، پیگیری، خروجی اکسل و معماها" },
     ],
   },
   {
@@ -81,6 +82,7 @@ export const ROUTE_PERM: [string, Perm | null][] = [
   ["/admin/submissions", "submissions"],
   ["/admin/forms", "forms.builder"],
   ["/admin/study-quiz", "campaign.studyQuiz"],
+  ["/admin/journey", "journey.manage"],
   ["/admin/consult/settings", "consult.settings"],
   ["/admin/consult/students", "consult.students"],
   ["/admin/consult/consultants", "consult.consultants"],

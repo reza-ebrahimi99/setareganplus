@@ -1180,3 +1180,85 @@ model BankSync {
   note     String   @default("")
   ranAt    DateTime @default(now())
 }
+
+/// A skill on the math journey. taughtGrade is the Iranian textbook grade that introduces it.
+model JourneySkill {
+  slug        String             @id
+  title       String
+  taughtGrade Int
+  sortOrder   Int
+  prereqSlug  String?
+  courseSlug  String?
+  /// all, or a comma list such as riazi,tajrobi
+  fields      String             @default("all")
+  active      Boolean            @default(true)
+  questions   JourneyQuestion[]
+}
+
+model JourneyQuestion {
+  id        String          @id
+  skillSlug String
+  skill     JourneySkill    @relation(fields: [skillSlug], references: [slug], onDelete: Cascade)
+  stem      String          @db.Text
+  explain   String          @db.Text
+  sortOrder Int             @default(0)
+  active    Boolean         @default(true)
+  options   JourneyOption[]
+
+  @@index([skillSlug, sortOrder])
+}
+
+model JourneyOption {
+  id            String          @id
+  questionId    String
+  question      JourneyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text          String          @db.Text
+  correct       Boolean         @default(false)
+  misconception String          @default("")
+  sortOrder     Int             @default(0)
+
+  @@index([questionId, sortOrder])
+}
+
+/// One student's saved journey. Answer keys never leave the server.
+model JourneyRun {
+  id           String          @id @default(cuid())
+  name         String
+  mobile       String
+  parentMobile String          @default("")
+  grade        Int
+  field        String          @default("")
+  school       String          @default("")
+  /// OPEN | DONE
+  status       String          @default("OPEN")
+  /// NEW | CALLED | BOOKED | ENROLLED
+  followUp     String          @default("NEW")
+  state        Json
+  fresh        Boolean         @default(true)
+  ip           String          @default("")
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  finishedAt   DateTime?
+  answers      JourneyAnswer[]
+
+  @@index([mobile, status])
+  @@index([status, followUp, fresh])
+  @@index([finishedAt])
+}
+
+model JourneyAnswer {
+  id            String     @id @default(cuid())
+  runId         String
+  run           JourneyRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  questionId    String
+  skillSlug     String
+  optionId      String     @default("")
+  correct       Boolean
+  unknown       Boolean    @default(false)
+  misconception String     @default("")
+  drill         Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+
+  @@index([runId])
+  @@index([skillSlug, correct])
+}

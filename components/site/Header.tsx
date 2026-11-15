@@ -12,6 +12,7 @@ export const NAV: { href: string; label: string; icon: IconName; wide?: 1 | 2 }[
   { href: "/rotbe-bartar-konkur", label: "رتبه‌های برتر", icon: "trophy" },
   { href: "/achievements", label: "افتخارات", icon: "cap", wide: 1 },
   { href: "/classes", label: "کلاس‌های ویدیویی", icon: "play", wide: 1 },
+  { href: "/safar", label: "سفر ستاره‌ها", icon: "pin", wide: 1 },
   { href: "/news", label: "اخبار", icon: "news" },
   { href: "/team", label: "تیم ما", icon: "users", wide: 2 },
   { href: "/gallery", label: "گالری", icon: "image", wide: 2 },

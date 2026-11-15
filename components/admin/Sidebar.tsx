@@ -10,6 +10,7 @@ const NAV = [
   { href: "/admin/submissions", label: "درخواست‌ها", icon: "M4 4h16v12H5.5L4 17.5zM8 9h8M8 12h5" },
   { href: "/admin/forms", label: "فرم‌ساز", icon: "M5 3h14v18H5zM8 8h8M8 12h8M8 16h5" },
   { href: "/admin/study-quiz", label: "کمپین تست مطالعه", icon: "M9 9a3 3 0 115 2c-1 1-2 1.5-2 3M12 18h.01M4 5h16v14H4z" },
+  { href: "/admin/journey", label: "سفر ستاره‌ها", icon: "M12 3l2.2 4.6L19 8.2l-3.5 3.4.8 4.9L12 14.8 7.7 16.5l.8-4.9L5 8.2l4.8-.6z" },
   { sep: "کلاس‌های ویدیویی" },
   { href: "/admin/classes", label: "کلاس‌های ویدیویی", icon: "M8 5.5v13l11-6.5-11-6.5Z" },
   { href: "/admin/classes/report", label: "گزارش تماشا", icon: "M4 19V9M9 19V5M14 19v-7M19 19V8M3 19h18" },
@@ -57,7 +58,7 @@ function visibleNav(perms: string[], owner: boolean): Entry[] {
   return out.filter((n, i) => !("sep" in n) || (out[i + 1] && !("sep" in out[i + 1])));
 }
 
-export function Sidebar({ newCount, todoCount = 0, consultCount = 0, logout, perms, user }: { newCount: number; todoCount?: number; consultCount?: number; logout: () => Promise<void>; perms: string[]; user: { name: string; username: string; owner: boolean } }) {
+export function Sidebar({ newCount, todoCount = 0, consultCount = 0, journeyCount = 0, logout, perms, user }: { newCount: number; todoCount?: number; consultCount?: number; journeyCount?: number; logout: () => Promise<void>; perms: string[]; user: { name: string; username: string; owner: boolean } }) {
   const path = usePathname();
   const nav = visibleNav(perms, user.owner);
   // Longest matching href wins, so /admin/shop/orders does not also light up /admin/shop.
@@ -89,6 +90,7 @@ export function Sidebar({ newCount, todoCount = 0, consultCount = 0, logout, per
               {n.href === "/admin/shop/orders" && todoCount > 0 && <span className="mr-auto rounded-full bg-gold px-2 text-xs font-bold text-navy">{todoCount.toLocaleString("fa-IR")}</span>}
               {n.href === "/admin/submissions" && newCount > 0 && <span className="mr-auto rounded-full bg-gold px-2 text-xs font-bold text-navy">{newCount.toLocaleString("fa-IR")}</span>}
               {n.href === "/admin/consult" && consultCount > 0 && <span className="mr-auto rounded-full bg-gold px-2 text-xs font-bold text-navy">{consultCount.toLocaleString("fa-IR")}</span>}
+              {n.href === "/admin/journey" && journeyCount > 0 && <span className="mr-auto rounded-full bg-gold px-2 text-xs font-bold text-navy">{journeyCount.toLocaleString("fa-IR")}</span>}
             </Link>
           ),
         )}

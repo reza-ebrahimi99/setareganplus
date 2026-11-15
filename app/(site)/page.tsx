@@ -20,6 +20,7 @@ import { listedForms } from "@/lib/forms/public";
 import { HomeHonors } from "@/components/site/honors";
 import { latestHonors, toppers } from "@/lib/honors";
 import { HomeQuizBanner } from "@/components/quiz/HomeQuizBanner";
+import { HomeJourneyBanner } from "@/components/journey/HomeJourneyBanner";
 import { getQuizSettings, quizIsOpen } from "@/lib/quiz/settings";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -69,6 +70,7 @@ export default async function Home() {
       {/* ───────── Highlight (first thing visitors see; toggle in admin settings) ───────── */}
       <HomeHighlight h={highlight} />
       {quizIsOpen(quiz).open && quiz.homeBanner && <HomeQuizBanner title={quiz.title} intro={quiz.intro} />}
+      <HomeJourneyBanner />
       {/* ───────── Hero ───────── */}
       <section className="bg-hero relative overflow-hidden text-white">
         <div className="bg-dots pointer-events-none absolute inset-0 [mask-image:radial-gradient(60%_70%_at_75%_30%,black,transparent)]" />
