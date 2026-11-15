@@ -3,7 +3,7 @@ import test from "node:test";
 import katex from "katex";
 import { SEED_QUESTIONS, seedIsConsistent } from "./bank";
 import { SKILLS, pathSkills, stationPoints } from "./catalog";
-import { advance, answerTargetsCurrent, applyAnswer, buildQueue, currentQuestion, emptyState, isFinished, notesForStation, type BankQ } from "./engine";
+import { advance, answerTargetsCurrent, applyAnswer, buildQueue, currentQuestion, emptyState, isFinished, notesForStation, stationMarks, type BankQ } from "./engine";
 import { bareMathIssues, mathSegments, twinKey } from "./math";
 
 function asBank(): BankQ[] {
@@ -177,6 +177,25 @@ test("map markers are one point per station along the downward trail", () => {
       if (i) assert.ok(pts[i].y >= pts[i - 1].y - 0.01);
     }
   }
+});
+
+test("a prerequisite drill does not send the map pin back to the first station", () => {
+  const skills = ["add", "times", "mul", "frac", "word", "dec"];
+  let state = emptyState(skills.map((skill) => ({ skill, ids: [`${skill}-1`], drill: false })));
+  const bank = new Map(skills.map((skill) => [skill, [`${skill}-1`, `${skill}-8`, `${skill}-9`]]));
+  for (let i = 0; i < 4; i++) state = advance(state, bank, 1, "resume");
+  state = advance(state, bank, 0, "resume");
+  assert.equal(state.queue[state.cursor]?.drill, true);
+  assert.equal(state.queue[state.cursor]?.skill, "add");
+  const marks = stationMarks(state.queue, state.cursor, false);
+  assert.deepEqual(marks.map((mark) => [mark.slug, mark.state]), [
+    ["add", "passed"],
+    ["times", "passed"],
+    ["mul", "passed"],
+    ["frac", "passed"],
+    ["word", "passed"],
+    ["dec", "now"],
+  ]);
 });
 
 test("the public puzzle does not carry the key", () => {

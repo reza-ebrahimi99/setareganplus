@@ -78,7 +78,7 @@ export default async function NewsPage({ params }: P) {
       <PageHero
         title={n.title}
         crumbs={NEWS_CAT_LABEL[n.category] ?? "خبر"}
-        trail={[{ name: "اخبار و اطلاعیه‌ها", href: "/news" }]}
+        trail={[{ name: "اخبار و مقالات", href: "/news" }]}
       >
         <div className="mt-5"><NewsMeta n={n} light /></div>
       </PageHero>
@@ -119,7 +119,7 @@ export default async function NewsPage({ params }: P) {
           <div className="container-x">
             <div className="flex items-end justify-between gap-4">
               <h2 className="text-2xl font-black text-navy">مطالب دیگر</h2>
-              <Link href="/news" className="text-sm font-bold text-royal">همهٔ اخبار ←</Link>
+              <Link href="/news" className="text-sm font-bold text-royal">همهٔ اخبار و مقالات ←</Link>
             </div>
             <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {related.map((r) => <NewsCard key={r.id} n={r} />)}

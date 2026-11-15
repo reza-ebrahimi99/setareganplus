@@ -102,7 +102,7 @@ const EXTRA = [
   { href: "/education", label: "آموزشگاه تقویتی و کنکور ستارگان" },
   { href: "/ghalamchi", label: "نمایندگی قلم‌چی نسیم‌شهر" },
   { href: "/shop", label: "فروشگاه جزوه" },
-  { href: "/news", label: "اخبار و اطلاعیه‌ها" },
+  { href: "/news", label: "اخبار و مقالات" },
   { href: "/register", label: "پیش‌ثبت‌نام آنلاین" },
   { href: "/contact", label: "تماس با ما" },
 ];

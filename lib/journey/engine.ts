@@ -217,6 +217,33 @@ export function isFinished(state: RunState) {
   return !state.reveal && state.cursor >= state.queue.length;
 }
 
+export type StationMark = { slug: string; state: "passed" | "now" | "locked" };
+
+/** Main-path marks. A prerequisite drill must not move the pin back onto an earlier station. */
+export function stationMarks(queue: { skill: string; drill: boolean }[], cursor: number, done = false): StationMark[] {
+  const mains: { skill: string; index: number }[] = [];
+  const seen = new Set<string>();
+  queue.forEach((item, index) => {
+    if (item.drill || seen.has(item.skill)) return;
+    seen.add(item.skill);
+    mains.push({ skill: item.skill, index });
+  });
+  let active = -1;
+  if (!done) {
+    for (let i = Math.max(0, cursor); i < queue.length; i++) {
+      if (!queue[i].drill) {
+        active = i;
+        break;
+      }
+    }
+  }
+  return mains.map((station) => {
+    if (done || station.index < cursor) return { slug: station.skill, state: "passed" };
+    if (station.index === active) return { slug: station.skill, state: "now" };
+    return { slug: station.skill, state: "locked" };
+  });
+}
+
 export type SkillScore = { slug: string; title: string; ratio: number; status: StatusId; drillRatio: number | null; courseSlug?: string };
 
 export function scoreSkills(grade: number, field: string, answers: { skillSlug: string; correct: boolean; drill: boolean }[]): SkillScore[] {

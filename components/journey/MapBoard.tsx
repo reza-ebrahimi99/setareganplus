@@ -9,7 +9,7 @@ export type MapStation = {
   stars: number;
 };
 
-function Seal({ state, stars }: { state: MapStation["state"]; stars: number }) {
+function Seal({ state }: { state: MapStation["state"] }) {
   if (state === "locked") {
     return (
       <span className="sj-seal" aria-hidden="true">
@@ -20,11 +20,7 @@ function Seal({ state, stars }: { state: MapStation["state"]; stars: number }) {
       </span>
     );
   }
-  return (
-    <span className="sj-seal" aria-hidden="true">
-      ★{state === "passed" && stars > 1 ? <i className="sj-count">{stars}</i> : null}
-    </span>
-  );
+  return <span className="sj-seal" aria-hidden="true">★</span>;
 }
 
 export function MapBoard({ stations }: { stations: MapStation[] }) {
@@ -42,7 +38,7 @@ export function MapBoard({ stations }: { stations: MapStation[] }) {
                 <path d="M9 13h6l1.4 9h-2.1L15 36h-2.3l-.7-9h-1.2L10 36H7.7L8.3 22H6.4z" fill="#3f2d1c" />
               </svg>
             )}
-            <Seal state={s.state} stars={s.stars} />
+            <Seal state={s.state} />
             {s.state === "now" && (
               <span className="sj-tag">
                 <b>{s.title}</b>

@@ -168,10 +168,10 @@ export default async function Home() {
         <section aria-labelledby="home-news" className="container-x pt-16 sm:pt-20">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <Eyebrow>اخبار و اطلاعیه‌ها</Eyebrow>
+              <Eyebrow>اخبار و مقالات</Eyebrow>
               <h2 id="home-news" className="h-section mt-3">تازه‌های <span className="text-gradient-blue">ستارگان</span></h2>
             </div>
-            <Link href="/news" className="btn-ghost px-5 py-2.5 text-sm">همهٔ اخبار و اطلاعیه‌ها <Icon name="arrow" className="size-4" /></Link>
+            <Link href="/news" className="btn-ghost px-5 py-2.5 text-sm">همهٔ اخبار و مقالات <Icon name="arrow" className="size-4" /></Link>
           </div>
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {news.slice(0, 3).map((n) => <NewsCard key={n.id} n={n} />)}
@@ -425,8 +425,6 @@ export default async function Home() {
             { href: "/jozve-konkur", title: "خرید جزوه کنکور نسیم شهر", text: "خرید آنلاین جزوه کنکور و جزوه‌های درسی، تحویل حضوری در شعبه." },
             { href: "/kelas-riazi-nasimshahr", title: "کلاس ریاضی نسیم شهر", text: "کلاس ریاضی با تدریس مهندس رضا ابراهیمی، مدرس و مؤلف ریاضیات مجموعه." },
             { href: "/kelas-taghviati", title: "کلاس تقویتی نسیم شهر", text: "کلاس تقویتی به تفکیک پایه، از متوسطه تا کنکور." },
-            { href: "/kanoon-zaban-nasimshahr", title: "کانون زبان ایران نسیم شهر", text: "نمایندگی کانون زبان ایران در نسیم‌شهر؛ ثبت‌نام از راه پیش‌ثبت‌نام و تماس." },
-            { href: "/dabestan-setaregan-ayandeh", title: "دبستان غیردولتی ستارگان آینده", text: "دبستان مجموعهٔ مؤسسه علمی ستارگان؛ معرفی همان‌طور که در دربارهٔ ما آمده است." },
           ].map((x) => (
             <Link key={x.href} href={x.href} className="card card-hover block p-6">
               <h3 className="text-lg font-extrabold text-navy">{x.title}</h3>

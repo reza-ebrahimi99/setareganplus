@@ -5,7 +5,7 @@ import { MapBoard, type MapStation } from "@/components/journey/MapBoard";
 import { mapCheer, stationCheer } from "@/lib/journey/cheers";
 import { ceilingBlurb, skillBySlug } from "@/lib/journey/catalog";
 import { getRun } from "@/lib/journey/store";
-import type { RunState } from "@/lib/journey/engine";
+import { stationMarks, type RunState } from "@/lib/journey/engine";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "نقشهٔ سفر" };
@@ -18,16 +18,18 @@ export default async function MapPage() {
   const state = run.state as RunState;
   const cursor = state.cursor ?? 0;
   const now = state.queue?.[cursor];
-  const slugs = [...new Set((state.queue ?? []).filter((q) => !q.drill).map((q) => q.skill))];
-  const stations: MapStation[] = slugs.map((slug) => {
-    const skill = skillBySlug(slug);
-    const main = (state.queue ?? []).findIndex((q) => q.skill === slug && !q.drill);
-    const answers = run.answers.filter((a) => a.skillSlug === slug && !a.drill);
+  const marks = stationMarks(state.queue ?? [], cursor, run.status === "DONE");
+  const stations: MapStation[] = marks.map((mark) => {
+    const skill = skillBySlug(mark.slug);
+    const answers = run.answers.filter((a) => a.skillSlug === mark.slug && !a.drill);
     const stars = Math.min(3, answers.filter((a) => a.correct).length);
-    let mark: MapStation["state"] = "locked";
-    if (now?.skill === slug) mark = "now";
-    else if (run.status === "DONE" || (main >= 0 && main < cursor)) mark = "passed";
-    return { slug, title: skill?.title ?? slug, book: BOOK[skill?.taughtGrade ?? 0] ?? "", state: mark, stars: mark === "passed" ? Math.max(1, stars) : stars };
+    return {
+      slug: mark.slug,
+      title: skill?.title ?? mark.slug,
+      book: BOOK[skill?.taughtGrade ?? 0] ?? "",
+      state: mark.state,
+      stars: mark.state === "passed" ? Math.max(1, stars) : stars,
+    };
   });
   const here = stations.find((s) => s.state === "now");
   const passed = stations.filter((s) => s.state === "passed").length;
@@ -37,7 +39,7 @@ export default async function MapPage() {
         <div>
           <div className="sj-cheer">
             {run.name.split(" ")[0]}، {here ? <>نشان <em>{here.title}</em> جای توست.</> : run.status === "DONE" ? "این سفر تمام شده." : "نقشه آماده‌ست."}
-            {now?.drill ? " یک پیچ کوتاه به نشان قبلی برگشته‌ایم تا ریشه پیدا شود." : ""}
+            {now?.drill ? " یک پیچ کوتاه برای محکم کردن یک نشان قدیمی؛ بعد همین راه ادامه دارد." : ""}
           </div>
           <p className="sj-rule">{ceilingBlurb(run.grade, run.field)}</p>
           {passed > 0 && <p className="sj-boost">{mapCheer(passed)}</p>}

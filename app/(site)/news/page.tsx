@@ -33,7 +33,7 @@ export default async function NewsIndex({ searchParams }: { searchParams: Promis
   const { items, total, pages } = await listNews({ category: cat?.key, page });
   return (
     <>
-      <PageHero eyebrow="اخبار و اطلاعیه‌ها" title={cat ? `${cat.label}‌ها` : "تازه‌ترین خبرها و اطلاعیه‌ها"} text={t.intro} crumbs={cat ? cat.label : "اخبار و اطلاعیه‌ها"} trail={cat ? [{ name: "اخبار و اطلاعیه‌ها", href: "/news" }] : []} />
+      <PageHero eyebrow="مطالب ستارگان" title={cat ? `${cat.label}‌ها` : "اخبار و مقالات"} text={t.intro} crumbs={cat ? cat.label : "اخبار و مقالات"} trail={cat ? [{ name: "اخبار و مقالات", href: "/news" }] : []} />
       <section className="container-x py-12 sm:py-16">
         <nav aria-label="دسته‌بندی خبرها" className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-2">
           <Link href="/news" className={`chip shrink-0 px-4 py-2 text-sm ${!cat ? "bg-navy text-white" : "bg-paper text-ink/75 ring-1 ring-line hover:text-navy"}`}>همه</Link>
