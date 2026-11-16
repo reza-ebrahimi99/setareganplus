@@ -47,7 +47,7 @@ export default async function GoPage({ searchParams }: { searchParams: Promise<{
   }
   await notePuzzleShown();
   const bank = new Map((await loadBank()).map((q) => [q.id, q]));
-  const q = currentQuestion(state, bank);
+  const q = currentQuestion(state, bank, run.id);
   if (!q) redirect("/safar/map");
   const title = skillBySlug(q.skill)?.title ?? "";
   const width = Math.round((q.index / q.total) * 100);

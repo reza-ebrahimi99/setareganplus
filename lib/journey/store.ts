@@ -6,7 +6,7 @@ import { allow } from "@/lib/shop/ratelimit";
 import { normalizeIranMobile } from "@/lib/format";
 import { SEED_QUESTIONS } from "./bank";
 import { SKILLS, isJourneyGrade, needsField, skillBySlug } from "./catalog";
-import { advance, answerTargetsCurrent, applyAnswer, buildQueue, emptyState, isFinished, notesForStation, puzzleDuration, stationRatio, type BankQ, type RunState } from "./engine";
+import { advance, answerTargetsCurrent, applyAnswer, buildQueue, emptyState, isFinished, notesForStation, orderedOptionIds, puzzleDuration, stationRatio, type BankQ, type RunState } from "./engine";
 import { twinKey } from "./math";
 
 const COOKIE = "sp_safar";
@@ -139,7 +139,8 @@ export async function loadBank(): Promise<BankQ[]> {
 function asState(value: unknown): RunState {
   const v = value as RunState;
   if (!v || !Array.isArray(v.queue)) return emptyState([]);
-  return { queue: v.queue, cursor: v.cursor ?? 0, qIndex: v.qIndex ?? 0, drilled: v.drilled ?? [], reveal: v.reveal ?? null, shownAt: typeof v.shownAt === "number" ? v.shownAt : null };
+  const optionOrder = v.optionOrder && typeof v.optionOrder === "object" ? v.optionOrder : {};
+  return { queue: v.queue, cursor: v.cursor ?? 0, qIndex: v.qIndex ?? 0, drilled: v.drilled ?? [], reveal: v.reveal ?? null, shownAt: typeof v.shownAt === "number" ? v.shownAt : null, optionOrder };
 }
 
 export async function getRun() {
@@ -270,13 +271,27 @@ export function skillTitle(slug: string) {
   return skillBySlug(slug)?.title ?? slug;
 }
 
-/** Start the clock the first time this puzzle is shown. A refresh does not reset it. */
+/** Start the clock the first time this puzzle is shown, and remember the shuffled choice order. */
 export async function notePuzzleShown() {
   const run = await getRun();
   if (!run || run.status !== "OPEN") return;
   const state = asState(run.state);
-  if (state.reveal || state.shownAt || !state.queue[state.cursor]) return;
-  state.shownAt = Date.now();
-  await prisma.journeyRun.update({ where: { id: run.id }, data: { state: state as object } });
+  const station = state.queue[state.cursor];
+  if (state.reveal || !station) return;
+  const qid = station.ids[state.qIndex];
+  let dirty = false;
+  if (!state.shownAt) {
+    state.shownAt = Date.now();
+    dirty = true;
+  }
+  if (qid && !state.optionOrder?.[qid]) {
+    const bank = await loadBank();
+    const q = bank.find((item) => item.id === qid);
+    if (q) {
+      state.optionOrder = { ...(state.optionOrder ?? {}), [qid]: orderedOptionIds(q.options.map((o) => o.id), `${run.id}:${qid}`) };
+      dirty = true;
+    }
+  }
+  if (dirty) await prisma.journeyRun.update({ where: { id: run.id }, data: { state: state as object } });
 }
 

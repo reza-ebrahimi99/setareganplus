@@ -21,6 +21,8 @@ export type RunState = {
   reveal: null | { skill: string; drill: boolean; notes: Note[] };
   /** When the current puzzle was first shown. Null while the review card is up, or on older saves. */
   shownAt?: number | null;
+  /** Shown choice order, keyed by puzzle id. Missing keys are filled from the journey seed. */
+  optionOrder?: Record<string, string[]>;
 };
 
 const MAX_PUZZLE_MS = 30 * 60_000;
@@ -104,13 +106,30 @@ export function emptyState(queue: QueueItem[]): RunState {
   return { queue, cursor: 0, qIndex: 0, drilled: [], reveal: null };
 }
 
-export function currentQuestion(state: RunState, bank: Map<string, BankQ>): PublicQuestion | null {
+/** Stable order for one puzzle in one journey. The same seed always resumes the same row. */
+export function orderedOptionIds(ids: string[], seed: string): string[] {
+  const arr = [...ids];
+  const next = mix(`${seed}:opts`);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = next() % (i + 1);
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+  return arr;
+}
+
+export function currentQuestion(state: RunState, bank: Map<string, BankQ>, journeyId = "journey"): PublicQuestion | null {
   if (state.reveal) return null;
   const station = state.queue[state.cursor];
   if (!station) return null;
   const id = station.ids[state.qIndex];
   const q = id ? bank.get(id) : undefined;
   if (!q) return null;
+  const byId = new Map(q.options.map((o) => [o.id, o]));
+  const stored = state.optionOrder?.[q.id];
+  const storedOk = !!stored && stored.length === q.options.length && stored.every((oid) => byId.has(oid));
+  const order = storedOk ? stored! : orderedOptionIds(q.options.map((o) => o.id), `${journeyId}:${q.id}`);
   return {
     id: q.id,
     stem: q.stem,
@@ -119,7 +138,7 @@ export function currentQuestion(state: RunState, bank: Map<string, BankQ>): Publ
     index: state.qIndex + 1,
     total: station.ids.length,
     options: [
-      ...q.options.map((o) => ({ id: o.id, text: o.text })),
+      ...order.map((oid) => ({ id: oid, text: byId.get(oid)!.text })),
       { id: UNKNOWN, text: "هنوز به این نرسیدم" },
     ],
   };

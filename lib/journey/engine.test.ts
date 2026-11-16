@@ -3,7 +3,7 @@ import test from "node:test";
 import katex from "katex";
 import { SEED_QUESTIONS, seedIsConsistent } from "./bank";
 import { SKILLS, pathSkills, stationPoints } from "./catalog";
-import { advance, answerTargetsCurrent, applyAnswer, buildQueue, currentQuestion, emptyState, isFinished, notesForStation, stationMarks, type BankQ } from "./engine";
+import { advance, answerTargetsCurrent, applyAnswer, buildQueue, currentQuestion, emptyState, isFinished, notesForStation, orderedOptionIds, stationMarks, type BankQ } from "./engine";
 import { bareMathIssues, mathSegments, twinKey } from "./math";
 
 function asBank(): BankQ[] {
@@ -196,6 +196,49 @@ test("a prerequisite drill does not send the map pin back to the first station",
     ["word", "passed"],
     ["dec", "now"],
   ]);
+});
+
+test("the correct choice moves around and grading still follows the option id", () => {
+  const bank = asBank().filter((q) => q.options.length === 4);
+  const parked = bank.filter((q) => q.options.findIndex((o) => o.correct) === 1).length;
+  assert.ok(parked / bank.length > 0.9);
+  const counts = [0, 0, 0, 0];
+  let samples = 0;
+  for (let j = 0; j < 24; j++) {
+    const journey = `journey-${j}`;
+    for (const q of bank) {
+      const ids = q.options.map((o) => o.id);
+      const order = orderedOptionIds(ids, `${journey}:${q.id}`);
+      assert.deepEqual(order, orderedOptionIds(ids, `${journey}:${q.id}`));
+      assert.equal(new Set(order).size, 4);
+      const at = order.findIndex((id) => q.options.find((o) => o.id === id)?.correct);
+      counts[at] += 1;
+      samples += 1;
+    }
+  }
+  for (const [i, n] of counts.entries()) {
+    const share = n / samples;
+    assert.ok(share > 0.18 && share < 0.32, `slot ${i} held the key ${share.toFixed(3)} of the time`);
+  }
+  const q = bank.find((item) => item.id === "add-2")!;
+  const order = orderedOptionIds(q.options.map((o) => o.id), "old-run:add-2");
+  const correct = q.options.find((o) => o.correct)!;
+  const wrongId = order.find((id) => id !== correct.id)!;
+  const state = { queue: [{ skill: "add", ids: ["add-2"], drill: false }], cursor: 0, qIndex: 0, drilled: [] as string[], reveal: null, optionOrder: { "add-2": order } };
+  const map = new Map([[q.id, q]]);
+  const pub = currentQuestion(state, map, "different-seed-must-not-override-stored-order");
+  assert.deepEqual(pub!.options.slice(0, 4).map((o) => o.id), order);
+  assert.equal(JSON.stringify(pub).includes("correct"), false);
+  assert.equal(JSON.stringify(pub).includes("misconception"), false);
+  assert.equal(applyAnswer(state, map, correct.id).saved?.correct, true);
+  assert.equal(applyAnswer(state, map, wrongId).saved?.correct, false);
+  const legacy = { queue: state.queue, cursor: 0, qIndex: 0, drilled: [] as string[], reveal: null };
+  assert.equal(applyAnswer(legacy, map, correct.id).saved?.correct, true);
+  assert.equal(applyAnswer(legacy, map, wrongId).saved?.correct, false);
+  assert.deepEqual(currentQuestion(legacy, map, "old-run")!.options.slice(0, 4).map((o) => o.id), order);
+  const notes = notesForStation(state.queue[0], map, [{ questionId: "add-2", optionId: wrongId, unknown: false, correct: false }]);
+  assert.equal(notes[0].picked, q.options.find((o) => o.id === wrongId)!.text);
+  assert.equal(notes[0].correct, correct.text);
 });
 
 test("the public puzzle does not carry the key", () => {
