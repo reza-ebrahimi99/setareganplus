@@ -6,6 +6,7 @@ import Link from "next/link";
 import { book, loadCatalog, sendCode } from "@/app/(site)/moshavere/actions";
 import { GRADES, MODE_LABEL, PUBLIC_PATH, SPECIAL_PATH, WEEKDAYS, isGradeId, type Audience, type ConsultMode } from "@/lib/consult/constants";
 import type { Catalog } from "@/lib/consult/catalog";
+import { cleanGiftCode } from "@/lib/consult/validate";
 import { fa } from "@/lib/format";
 import { J_MONTHS } from "@/lib/jalali";
 
@@ -18,11 +19,13 @@ export function BookWizard({
   student,
   initialMonth,
   slotMinutes,
+  initialGiftCode = "",
 }: {
   audience: Audience;
   student?: StudentHint | null;
   initialMonth: { jy: number; jm: number };
   slotMinutes: number;
+  initialGiftCode?: string;
 }) {
   const trusted = audience === "SPECIAL" && !!student?.hasPhone;
   const lockedGrade = student?.grade && isGradeId(student.grade) ? student.grade : "";
@@ -33,6 +36,7 @@ export function BookWizard({
   const [studentName, setStudentName] = useState(student?.fullName ?? "");
   const [grade, setGrade] = useState(lockedGrade);
   const [note, setNote] = useState("");
+  const [giftCode, setGiftCode] = useState(() => cleanGiftCode(initialGiftCode) ?? "");
   const [cursor, setCursor] = useState(initialMonth);
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [loadError, setLoadError] = useState("");
@@ -106,6 +110,7 @@ export function BookWizard({
         studentName,
         grade,
         note,
+        giftCode,
         startsAt,
         consultantId,
       };
@@ -199,6 +204,10 @@ export function BookWizard({
               <label className="block sm:col-span-2">
                 <span className="label">اگر خواستید، یک جمله از دغدغه‌تان (اختیاری)</span>
                 <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={500} className="input leading-7" />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="label">کد هدیه اینستاگرام <span className="font-normal text-muted">(اختیاری)</span></span>
+                <input value={giftCode} onChange={(e) => setGiftCode(e.target.value)} maxLength={20} dir="ltr" autoComplete="off" placeholder="اگر کد هدیه داری، اینجا بنویس" className="input text-left" />
               </label>
             </div>
           </fieldset>

@@ -1,3 +1,4 @@
+import { toEn } from "../format";
 import { isGradeId, type Audience, type BookerRole, type ConsultMode } from "./constants";
 
 export type DraftInput = {
@@ -8,6 +9,7 @@ export type DraftInput = {
   studentName?: unknown;
   grade?: unknown;
   note?: unknown;
+  giftCode?: unknown;
   startsAt?: unknown;
   consultantId?: unknown;
 };
@@ -20,6 +22,7 @@ export type CleanDraft = {
   studentName: string;
   grade: string;
   note: string | null;
+  giftCode: string | null;
   startsAt: Date;
   consultantId: string;
   fastest: boolean;
@@ -28,6 +31,13 @@ export type CleanDraft = {
 function text(v: unknown, max: number): string {
   if (typeof v !== "string") return "";
   return v.replace(/[\u0000-\u001f]/g, "").trim().replace(/\s+/g, " ").slice(0, max);
+}
+
+/** Optional gift code: trimmed, Persian digits folded, uppercased, at most 20 characters. Blank stays empty. */
+export function cleanGiftCode(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const code = toEn(v).replace(/[\u0000-\u001f]/g, "").replace(/\s+/g, "").toUpperCase().slice(0, 20);
+  return code || null;
 }
 
 export function validateDraft(input: DraftInput): { ok: true; value: CleanDraft } | { ok: false; error: string } {
@@ -44,6 +54,7 @@ export function validateDraft(input: DraftInput): { ok: true; value: CleanDraft 
   const grade = typeof input.grade === "string" ? input.grade : "";
   if (!isGradeId(grade)) return { ok: false, error: "پایه را از دوم تا کنکور انتخاب کنید." };
   const noteRaw = text(input.note, 500);
+  const giftCode = cleanGiftCode(input.giftCode);
   const starts = typeof input.startsAt === "string" ? new Date(input.startsAt) : null;
   if (!starts || Number.isNaN(starts.getTime())) return { ok: false, error: "روز و ساعت را انتخاب کنید." };
   const consultantRaw = typeof input.consultantId === "string" ? input.consultantId.trim() : "";
@@ -61,6 +72,7 @@ export function validateDraft(input: DraftInput): { ok: true; value: CleanDraft 
       studentName,
       grade,
       note: noteRaw || null,
+      giftCode,
       startsAt: starts,
       consultantId: fastest ? "fastest" : consultantRaw,
       fastest,

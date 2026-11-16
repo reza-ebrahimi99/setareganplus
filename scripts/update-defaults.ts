@@ -15,7 +15,7 @@ import { Prisma, PrismaClient } from "../generated/prisma/client";
 import { BALE_CHANNEL_URL, isLegacyBaleJoin } from "../lib/bale";
 import { DEFAULT_HOURS, LEGACY_DEFAULT_HOURS } from "../lib/hours";
 import { isLegacyGirlsMap, googleMapsSearchUrl, GIRLS_BRANCH_ADDRESS } from "../lib/maps";
-import { APARAT_SOCIAL, isAparatProfile } from "../lib/social";
+import { APARAT_SOCIAL, GHALAMCHI_INSTAGRAM_URL, isAparatProfile, isLegacyGhalamchiInstagram } from "../lib/social";
 
 const DRY = process.argv.includes("--dry-run");
 const log = (...a: unknown[]) => console.log("[defaults]", ...a);
@@ -53,6 +53,17 @@ async function main() {
       changed = true;
       log(DRY ? "would point the بله social link at the public channel" : "بله social link now points at the public channel", BALE_CHANNEL_URL);
     } else log("bale social link already up to date or customized");
+
+    const socialForIg = Array.isArray(next.social) ? next.social : social;
+    if (socialForIg?.some((item) => item && typeof item === "object" && typeof (item as { url?: unknown }).url === "string" && isLegacyGhalamchiInstagram((item as { url: string }).url))) {
+      next.social = socialForIg.map((item) => {
+        if (!item || typeof item !== "object" || typeof (item as { url?: unknown }).url !== "string") return item;
+        const url = (item as { url: string }).url;
+        return isLegacyGhalamchiInstagram(url) ? { ...item, url: GHALAMCHI_INSTAGRAM_URL } : item;
+      });
+      changed = true;
+      log(DRY ? "would point Instagram at ghalamchi_nasimshahr" : "Instagram now points at ghalamchi_nasimshahr", GHALAMCHI_INSTAGRAM_URL);
+    } else log("ghalamchi instagram already up to date or customized");
 
     const branches = Array.isArray(value.branches) ? value.branches : null;
     if (branches?.some((item) => item && typeof item === "object" && typeof (item as { mapUrl?: unknown }).mapUrl === "string" && isLegacyGirlsMap((item as { mapUrl: string }).mapUrl))) {

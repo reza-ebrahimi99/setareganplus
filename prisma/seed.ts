@@ -11,7 +11,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 import { DEFAULT_HOURS } from "../lib/hours";
 import { GIRLS_BRANCH_ADDRESS, GIRLS_MAP_URL } from "../lib/maps";
-import { APARAT_SOCIAL } from "../lib/social";
+import { APARAT_SOCIAL, GHALAMCHI_INSTAGRAM_URL } from "../lib/social";
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
 const ASSETS = path.join(__dirname, "seed-assets");
@@ -60,7 +60,7 @@ async function main() {
         },
       ],
       social: [
-        { label: "اینستاگرام", url: "https://www.instagram.com/Ghalamchinasimshahr" },
+        { label: "اینستاگرام", url: GHALAMCHI_INSTAGRAM_URL },
         { label: "بله", url: "https://ble.ir/ghalamchi1404" },
         { label: "تلگرام", url: "https://t.me/setareganinstitute1" },
         APARAT_SOCIAL,

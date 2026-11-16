@@ -8,6 +8,17 @@ function host(url: string) {
   }
 }
 
+export function InstagramGlyph({ className = "size-4" }: { className?: string }) {
+  const stroke = { fill: "none" as const, stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.2" cy="6.8" r="0.8" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 function SocialIcon({ url, className = "size-4" }: { url: string; className?: string }) {
   if (isAparatProfile(url)) {
     return (
@@ -19,15 +30,7 @@ function SocialIcon({ url, className = "size-4" }: { url: string; className?: st
   }
   const h = host(url);
   const stroke = { fill: "none" as const, stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-  if (h === "instagram.com") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
-        <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
-        <circle cx="12" cy="12" r="4" />
-        <circle cx="17.2" cy="6.8" r="0.8" fill="currentColor" stroke="none" />
-      </svg>
-    );
-  }
+  if (h === "instagram.com") return <InstagramGlyph className={className} />;
   if (h === "t.me" || h.endsWith("telegram.org") || h.endsWith("telegram.me")) {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>

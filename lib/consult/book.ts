@@ -141,6 +141,7 @@ export async function createConsultation(input: { draft: DraftInput; mobile?: st
             mobile,
             phoneProof: proof,
             note: value.note,
+            giftCode: value.giftCode,
             studentId,
             source: attr.source,
             medium: attr.medium,

@@ -2,11 +2,36 @@
 export const APARAT_URL = "https://www.aparat.com/setareganplus";
 export const APARAT_SOCIAL = { label: "آپارات", url: APARAT_URL };
 
+/** Ghalamchi Nasimshahr Instagram. Replaces the old Ghalamchinasimshahr handle. */
+export const GHALAMCHI_INSTAGRAM_URL = "https://www.instagram.com/ghalamchi_nasimshahr/";
+
 /**
  * Institute Instagram, in addition to the Ghalamchi account already in the social row.
  * sameAs only: a second «اینستاگرام» button would look like a duplicate.
  */
 export const INSTITUTE_INSTAGRAM_URL = "https://www.instagram.com/setaregan.institutee";
+
+function instagramHandle(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, "").toLowerCase();
+    if (host !== "instagram.com") return null;
+    const handle = decodeURIComponent(u.pathname).replace(/^\/+|\/+$/g, "").split("/")[0]?.toLowerCase() ?? "";
+    return handle || null;
+  } catch {
+    return null;
+  }
+}
+
+/** True only for the retired Ghalamchi handle. The institute account is not this. */
+export function isLegacyGhalamchiInstagram(url: string): boolean {
+  return instagramHandle(url) === "ghalamchinasimshahr";
+}
+
+/** Point the old Ghalamchi Instagram at the current account. Every other URL stays. */
+export function publicInstagramUrl(url: string): string {
+  return isLegacyGhalamchiInstagram(url) ? GHALAMCHI_INSTAGRAM_URL : url;
+}
 
 function canon(url: string): string {
   try {
@@ -31,7 +56,7 @@ export function withAparatSocial<T extends { label: string; url: string }>(socia
 
 /** Social profile URLs for schema.org sameAs, plus the institute Instagram when it is not already listed. */
 export function sameAsUrls(social: { url: string }[]): string[] {
-  const urls = social.map((s) => s.url).filter((u) => /^https?:\/\//.test(u));
+  const urls = social.map((s) => publicInstagramUrl(s.url)).filter((u) => /^https?:\/\//.test(u));
   if (!urls.some((u) => canon(u) === canon(INSTITUTE_INSTAGRAM_URL))) urls.push(INSTITUTE_INSTAGRAM_URL);
   return [...new Set(urls)];
 }

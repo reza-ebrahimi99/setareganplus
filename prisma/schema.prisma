@@ -670,6 +670,8 @@ model Consultation {
   /// SMS | ACCESS_CODE
   phoneProof      String
   note            String?    @db.Text
+  /// Optional Instagram gift code. Empty when the family left it blank. Not checked against a list.
+  giftCode        String?
   studentId       String?
   student         EnrolledStudent? @relation(fields: [studentId], references: [id], onDelete: SetNull)
   source          String     @default("")

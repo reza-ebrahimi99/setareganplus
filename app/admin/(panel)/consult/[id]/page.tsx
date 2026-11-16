@@ -29,6 +29,7 @@ export default async function ConsultDetail({ params, searchParams }: { params: 
   return (
     <>
       <PageTitle title={row.studentName} sub={row.code} action={<Link href="/admin/consult" className="text-sm font-bold text-edu">بازگشت به فهرست</Link>} />
+      {row.giftCode && <p className="mb-4"><span className="chip bg-gold/20 text-gold-ink">کد هدیه: {row.giftCode}</span></p>}
       {sp.ok && <p className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">انجام شد.</p>}
       {sp.e && <p className="mb-4 rounded-xl bg-gc-soft px-4 py-3 text-sm font-semibold text-gc">{sp.e}</p>}
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">

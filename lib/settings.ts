@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { publicBaleSocialUrl } from "@/lib/bale";
 import { withPublicMap } from "@/lib/maps";
-import { withAparatSocial } from "@/lib/social";
+import { publicInstagramUrl, withAparatSocial } from "@/lib/social";
 
 export type Branch = { name: string; address: string; mapUrl?: string };
 export type ContactSettings = {
@@ -80,7 +80,7 @@ export const EMPTY_SETTINGS: Settings = {
 /** Bale invite rewrite, the girls-branch map fix, and the official Aparat profile. */
 export function normalizeContact(v: Partial<ContactSettings> | null | undefined): ContactSettings {
   const social = (v?.social ?? [])
-    .map((s) => (s && typeof s.url === "string" ? { ...s, url: publicBaleSocialUrl(s.url) } : s))
+    .map((s) => (s && typeof s.url === "string" ? { ...s, url: publicInstagramUrl(publicBaleSocialUrl(s.url)) } : s))
     .filter((s): s is { label: string; url: string } => !!s && typeof s.url === "string");
   return {
     phones: v?.phones ?? [],

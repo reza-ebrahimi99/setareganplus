@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BookWizard } from "@/components/consult/BookWizard";
+import { InstagramGlyph } from "@/components/site/SocialLinks";
 import { PageHero } from "@/components/site/Star";
+import { GHALAMCHI_INSTAGRAM_URL } from "@/lib/social";
 import { monthOf } from "@/lib/consult/availability";
 import { SPECIAL_PATH } from "@/lib/consult/constants";
 import { getConsultSettings } from "@/lib/consult/settings";
@@ -15,9 +17,11 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function ConsultPage() {
+export default async function ConsultPage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
+  const sp = await searchParams;
   const settings = await getConsultSettings();
   const month = monthOf();
+  const giftCode = typeof sp.code === "string" ? sp.code : "";
   return (
     <>
       <PageHero
@@ -32,8 +36,14 @@ export default async function ConsultPage() {
             <li key={t} className="rounded-2xl bg-paper/95 px-3 py-3 shadow-[var(--shadow-soft)] ring-1 ring-white">{t}</li>
           ))}
         </ul>
+        <p className="mb-4 text-center">
+          <a href={GHALAMCHI_INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-paper/95 px-4 py-2 text-sm font-bold text-navy shadow-[var(--shadow-soft)] ring-1 ring-white">
+            <InstagramGlyph className="size-5 text-royal" />
+            ما را در اینستاگرام دنبال کنید
+          </a>
+        </p>
         {settings.publicOpen ? (
-          <BookWizard audience="PUBLIC" initialMonth={month} slotMinutes={settings.slotMinutes} />
+          <BookWizard audience="PUBLIC" initialMonth={month} slotMinutes={settings.slotMinutes} initialGiftCode={giftCode} />
         ) : (
           <div className="card px-6 py-12 text-center">
             <h2 className="text-xl font-black text-navy">رزرو آنلاین موقتاً بسته است</h2>

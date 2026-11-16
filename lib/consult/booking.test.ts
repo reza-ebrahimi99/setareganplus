@@ -51,7 +51,30 @@ describe("booking draft and reminder", () => {
     if (good.ok) {
       assert.equal(good.value.bookerName, "نگار رضایی");
       assert.equal(good.value.note, "سلام");
+      assert.equal(good.value.giftCode, null);
       assert.equal(good.value.fastest, true);
+    }
+  });
+
+  it("stores an optional instagram gift code without checking a list", () => {
+    const base = { audience: "PUBLIC", mode: "ONLINE", bookerRole: "PARENT", bookerName: "مریم رضایی", studentName: "نگار رضایی", grade: "g5", startsAt: "2026-11-07T12:30:00.000Z", consultantId: "fastest" };
+    const missing = validateDraft(base);
+    assert.equal(missing.ok, true);
+    if (missing.ok) assert.equal(missing.value.giftCode, null);
+    const blank = validateDraft({ ...base, giftCode: "   " });
+    assert.equal(blank.ok, true);
+    if (blank.ok) assert.equal(blank.value.giftCode, null);
+    const coded = validateDraft({ ...base, giftCode: "  gh۳۰  " });
+    assert.equal(coded.ok, true);
+    if (coded.ok) assert.equal(coded.value.giftCode, "GH30");
+    const unknown = validateDraft({ ...base, giftCode: "nope-99" });
+    assert.equal(unknown.ok, true);
+    if (unknown.ok) assert.equal(unknown.value.giftCode, "NOPE-99");
+    const long = validateDraft({ ...base, giftCode: `gh${"x".repeat(40)}` });
+    assert.equal(long.ok, true);
+    if (long.ok) {
+      assert.equal(long.value.giftCode, `GH${"X".repeat(40)}`.slice(0, 20));
+      assert.equal(long.value.giftCode?.length, 20);
     }
   });
 

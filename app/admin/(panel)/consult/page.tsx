@@ -79,6 +79,7 @@ export default async function ConsultList({ searchParams }: { searchParams: Prom
                   <td className="p-3">
                     <p className="font-semibold">{r.studentName}</p>
                     <p className="text-xs text-muted" dir="ltr">{prettyPhone(r.mobile)}</p>
+                    {r.giftCode && <p className="mt-1"><span className="chip bg-gold/20 text-gold-ink">کد هدیه: {r.giftCode}</span></p>}
                   </td>
                   <td className="p-3">{r.consultant.name}</td>
                   <td className="p-3 text-xs">{PROOF_LABEL[r.phoneProof as keyof typeof PROOF_LABEL] ?? r.phoneProof}{r.student ? ` · ${r.student.fullName}` : ""}</td>
