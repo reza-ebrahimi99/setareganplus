@@ -131,6 +131,7 @@ export default async function ProductEdit({ params, searchParams }: { params: Pr
                     <div className="flex justify-between gap-3"><dt>جمع برگه‌ها</dt><dd>{formatToman(unit.sheetToman * 10)}</dd></div>
                     <div className="flex justify-between gap-3"><dt>سیمی</dt><dd>{formatToman(unit.spiralToman * 10)}</dd></div>
                     <div className="flex justify-between gap-3"><dt>صفحه اول</dt><dd>{formatToman(unit.coverToman * 10)}</dd></div>
+                    <div className="flex justify-between gap-3"><dt>حمل از چاپخانه</dt><dd>{formatToman(unit.shippingToman * 10)}</dd></div>
                   </dl>
                 )}
                 <Field label="قیمت (تومان) *" name="price" defaultValue={p ? toman(p.priceRials) : ""} required dir="ltr" hint={owner ? "اگر نرخ چاپ و تعداد صفحه هر دو پر باشد، فروش از فرمول حساب می‌شود و این مبلغ ذخیرهٔ پشتیبان است." : "به تومان وارد کنید."} />

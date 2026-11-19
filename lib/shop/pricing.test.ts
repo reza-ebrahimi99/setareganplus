@@ -23,38 +23,42 @@ test("45 pages print as 23 double-sided sheets", () => {
   assert.equal(unit.unitToman, 23000);
 });
 
-test("the formula adds spiral and the matching first-page price", () => {
+test("the formula adds spiral, the first page, and print-shop delivery on every booklet", () => {
   const color = bookletUnit({ pageCount: 45, isSpiral: true, firstPageType: "color", priceRials: 1 }, RATES);
   assert.equal(color.sheetToman, 23000);
   assert.equal(color.spiralToman, 5000);
   assert.equal(color.coverToman, 2000);
-  assert.equal(color.unitToman, 30000);
+  assert.equal(color.shippingToman, 3000);
+  assert.equal(color.unitToman, 33000);
   const plain = bookletUnit({ pageCount: 45, isSpiral: false, firstPageType: "bw", priceRials: 1 }, RATES);
   assert.equal(plain.spiralToman, 0);
   assert.equal(plain.coverToman, 700);
-  assert.equal(plain.unitToman, 23700);
+  assert.equal(plain.shippingToman, 3000);
+  assert.equal(plain.unitToman, 26700);
 });
 
 test("a blank rate card or a booklet without pages keeps the stored price", () => {
   const stored = bookletUnit({ pageCount: 45, isSpiral: true, firstPageType: "color", priceRials: 480000 }, { ...RATES, sheetToman: 0, spiralToman: 0, colorFirstToman: 0, bwFirstToman: 0 });
   assert.equal(stored.auto, false);
   assert.equal(stored.unitRials, 480000);
+  assert.equal(stored.shippingToman, 0);
   const noPages = bookletUnit({ pageCount: null, isSpiral: true, firstPageType: "color", priceRials: 480000 }, RATES);
   assert.equal(noPages.auto, false);
   assert.equal(noPages.unitRials, 480000);
 });
 
-test("checkout charges the computed price, with shipping once and VAT rounded to a toman", () => {
+test("checkout charges each booklet with its own delivery cost, then VAT on that total", () => {
+  const one = chargeFor({ pageCount: 45, isSpiral: true, firstPageType: "color", priceRials: 1 }, RATES, 1);
   const sale = chargeFor({ pageCount: 45, isSpiral: true, firstPageType: "color", priceRials: 1 }, RATES, 3);
-  assert.equal(sale.quote.unitRials, 300000);
-  assert.equal(sale.quote.bookletsRials, 900000);
-  assert.equal(sale.quote.shippingRials, 30000);
-  assert.equal(sale.quote.shippingRials, orderQuote(sale.quote.unitRials, 1, RATES).shippingRials);
+  assert.equal(one.unit.unitToman, 33000);
+  assert.equal(sale.quote.unitRials, 330000);
+  assert.equal(sale.quote.bookletsRials, one.quote.unitRials * 3);
+  assert.equal(sale.quote.shippingRials, 0);
   assert.equal(sale.quote.vatPercent, 10);
-  assert.equal(sale.quote.totalRials, 1023000);
+  assert.equal(sale.quote.totalRials, 1089000);
   assert.equal(sale.publicCheckout.payableRials, sale.quote.totalRials);
   assert.equal(sale.publicPrice.priceRials, sale.quote.unitRials);
-  const noVat = orderQuote(10000, 2, { shippingToman: 0, vatPercent: 0 });
+  const noVat = orderQuote(10000, 2, { vatPercent: 0 });
   assert.equal(noVat.vatRials, 0);
   assert.equal(noVat.shippingRials, 0);
   assert.equal(noVat.totalRials, 20000);

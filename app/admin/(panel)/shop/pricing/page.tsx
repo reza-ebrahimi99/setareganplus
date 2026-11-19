@@ -52,12 +52,12 @@ export default async function BookletPricingPage({ searchParams }: { searchParam
             <Field label="هزینه سیمی (تومان)" name="spiralToman" defaultValue={rates.spiralToman || ""} dir="ltr" hint="فقط برای جزوه‌ای که سیمی باشد، یک بار." />
             <Field label="قیمت صفحه اول رنگی (تومان)" name="colorFirstToman" defaultValue={rates.colorFirstToman || ""} dir="ltr" />
             <Field label="قیمت صفحه اول سیاه‌وسفید (تومان)" name="bwFirstToman" defaultValue={rates.bwFirstToman || ""} dir="ltr" />
+            <Field label="هزینه حمل از چاپخانه (هر جزوه)" name="shippingToman" defaultValue={rates.shippingToman || ""} dir="ltr" hint="روی قیمت هر جزوه اضافه می‌شود" />
           </div>
         </Panel>
         <Panel title="سفارش">
           <div className="grid gap-5 md:grid-cols-2">
-            <Field label="هزینه حمل و نقل (تومان)" name="shippingToman" defaultValue={rates.shippingToman || ""} dir="ltr" hint="یک بار برای هر سفارش. صفر یعنی مثل قبل، بدون هزینهٔ اضافه." />
-            <Field label="درصد مالیات بر ارزش افزوده" name="vatPercent" defaultValue={rates.vatPercent} dir="ltr" hint="از ۰ تا ۱۰۰. روی جمع جزوه و حمل حساب می‌شود. صفر یعنی بدون مالیات." />
+            <Field label="درصد مالیات بر ارزش افزوده" name="vatPercent" defaultValue={rates.vatPercent} dir="ltr" hint="از ۰ تا ۱۰۰. روی مبلغ سفارش حساب می‌شود و جدا نشان داده نمی‌شود. صفر یعنی بدون مالیات." />
           </div>
           <p className="mt-4 text-xs leading-6 text-muted">تا وقتی هر چهار نرخ چاپ صفر باشد، یا جزوه تعداد صفحه نداشته باشد، همان قیمت ذخیره‌شدهٔ جزوه می‌ماند. سفارش‌های قبلی عوض نمی‌شوند. خریدار و همکار فقط مبلغ نهایی را می‌بینند.</p>
         </Panel>

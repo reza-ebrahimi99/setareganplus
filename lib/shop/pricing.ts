@@ -33,6 +33,8 @@ export type UnitQuote = {
   sheetToman: number;
   spiralToman: number;
   coverToman: number;
+  /** Print-shop delivery, included in each booklet. Zero when the stored price is used. */
+  shippingToman: number;
   unitToman: number;
   unitRials: number;
 };
@@ -72,7 +74,7 @@ export function clampRates(input: BookletRates): BookletRates {
   };
 }
 
-/** The four print rates, not shipping or VAT. Automatic booklet price stays off until one of these is set. */
+/** Automatic booklet price stays off until a print rate is set. Shipping alone does not replace a stored price. */
 export function printRatesOn(rates: BookletRates): boolean {
   return rates.sheetToman > 0 || rates.spiralToman > 0 || rates.colorFirstToman > 0 || rates.bwFirstToman > 0;
 }
@@ -88,26 +90,26 @@ export function bookletUnit(product: BookletFacts, rates: BookletRates): UnitQuo
   const fallback = Math.max(0, Math.round(product.priceRials / 10));
   const pages = product.pageCount ?? 0;
   if (!printRatesOn(safe) || pages < 1) {
-    return { auto: false, sheets: null, sheetToman: 0, spiralToman: 0, coverToman: 0, unitToman: fallback, unitRials: fallback * 10 };
+    return { auto: false, sheets: null, sheetToman: 0, spiralToman: 0, coverToman: 0, shippingToman: 0, unitToman: fallback, unitRials: fallback * 10 };
   }
   const sheets = sheetsFor(pages);
   const sheetToman = sheets * safe.sheetToman;
   const spiralToman = product.isSpiral ? safe.spiralToman : 0;
   const coverToman = product.firstPageType === "color" ? safe.colorFirstToman : safe.bwFirstToman;
-  const unitToman = sheetToman + spiralToman + coverToman;
+  const shippingToman = safe.shippingToman;
+  const unitToman = sheetToman + spiralToman + coverToman + shippingToman;
   if (unitToman <= 0) {
-    return { auto: false, sheets, sheetToman, spiralToman, coverToman, unitToman: fallback, unitRials: fallback * 10 };
+    return { auto: false, sheets, sheetToman, spiralToman, coverToman, shippingToman, unitToman: fallback, unitRials: fallback * 10 };
   }
-  return { auto: true, sheets, sheetToman, spiralToman, coverToman, unitToman, unitRials: unitToman * 10 };
+  return { auto: true, sheets, sheetToman, spiralToman, coverToman, shippingToman, unitToman, unitRials: unitToman * 10 };
 }
 
-/** Shipping is added once. VAT is a percent of booklets plus shipping, and the payable total is whole Toman. */
-export function orderQuote(unitRials: number, qty: number, rates: Pick<BookletRates, "shippingToman" | "vatPercent">): OrderQuote {
+/** VAT is a percent of the booklet total. Print-shop delivery is already inside each booklet, so the order adds no second shipping fee. */
+export function orderQuote(unitRials: number, qty: number, rates: Pick<BookletRates, "vatPercent">): OrderQuote {
   const q = Math.max(1, Math.min(10, Math.floor(qty) || 1));
   const unit = Math.max(0, Math.round(unitRials));
   const bookletsRials = unit * q;
-  const shippingRials = clampToman(rates.shippingToman) * 10;
-  const subtotalToman = (bookletsRials + shippingRials) / 10;
+  const subtotalToman = bookletsRials / 10;
   const percent = clampPercent(rates.vatPercent);
   const totalToman = percent > 0 ? Math.round(subtotalToman * (1 + percent / 100)) : subtotalToman;
   const vatToman = totalToman - subtotalToman;
@@ -115,7 +117,7 @@ export function orderQuote(unitRials: number, qty: number, rates: Pick<BookletRa
     qty: q,
     unitRials: unit,
     bookletsRials,
-    shippingRials,
+    shippingRials: 0,
     vatPercent: percent,
     vatRials: vatToman * 10,
     totalRials: totalToman * 10,

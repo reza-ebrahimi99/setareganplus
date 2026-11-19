@@ -255,9 +255,9 @@ model BookletPricing {
   spiralToman     Int      @default(0)
   colorFirstToman Int      @default(0)
   bwFirstToman    Int      @default(0)
-  /// Added once per order, not per booklet.
+  /// Print-shop delivery, added to each booklet when automatic pricing is on.
   shippingToman   Int      @default(0)
-  /// 0–100. Applied to booklet subtotal plus shipping. 0 leaves the old total unchanged.
+  /// 0–100. Applied to the order total. 0 leaves that total unchanged.
   vatPercent      Decimal  @default(10) @db.Decimal(5, 2)
   updatedAt       DateTime @updatedAt
 }
@@ -344,7 +344,7 @@ model Order {
   /// Staff-only note
   adminNote      String?      @db.Text
   subtotalRials  Int
-  /// One delivery fee for the whole order, in Rials. 0 on orders from before the fee existed.
+  /// Older orders may still store a one-time delivery fee. New orders keep this at 0; print-shop delivery is inside the booklet price.
   shippingRials  Int          @default(0)
   /// VAT amount in Rials, already rounded into the total. 0 on older orders.
   vatRials       Int          @default(0)
