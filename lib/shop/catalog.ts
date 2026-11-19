@@ -1,6 +1,8 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
+import { getBookletPricing } from "./pricing-db";
+import { bookletUnit } from "./pricing";
 
 export type CatalogFilter = { q?: string; grade?: string; major?: string; center?: string };
 
@@ -27,11 +29,16 @@ export async function listProducts(f: CatalogFilter = {}, take?: number) {
       { OR: [{ title: { contains: q, mode: "insensitive" } }, { author: { contains: q, mode: "insensitive" } }, { subject: { contains: q, mode: "insensitive" } }, { summary: { contains: q, mode: "insensitive" } }] },
     ];
   }
-  const [items, best] = await Promise.all([
+  const [items, best, rates] = await Promise.all([
     prisma.product.findMany({ where, orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }], take }),
     bestsellerIds(),
+    getBookletPricing(),
   ]);
-  return items.map((p) => ({ ...p, badges: badgesFor(p, best) }));
+  return items.map((p) => {
+    const priceRials = bookletUnit(p, rates).unitRials;
+    const shown = { ...p, priceRials };
+    return { ...shown, badges: badgesFor(shown, best) };
+  });
 }
 
 export type Badge = "new" | "best" | "out" | "sale";

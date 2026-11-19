@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { permForPath } from "@/lib/perms";
+import { canSeeBookletRates } from "@/lib/shop/pricing-access";
 
 const NAV = [
   { href: "/admin", label: "داشبورد", icon: "M3 12l9-8 9 8M5 10v10h14V10" },
@@ -25,6 +26,7 @@ const NAV = [
   { href: "/admin/shop/orders", label: "سفارش‌ها", icon: "M6 2l-2 4v14a2 2 0 002 2h12a2 2 0 002-2V6l-2-4zM4 6h16M16 10a4 4 0 01-8 0" },
   { href: "/admin/shop/pickup", label: "تحویل حضوری", icon: "M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2M7 12h10" },
   { href: "/admin/shop/products", label: "جزوه‌ها", icon: "M4 19.5A2.5 2.5 0 016.5 17H20V3H6.5A2.5 2.5 0 004 5.5zM4 19.5A2.5 2.5 0 006.5 22H20v-5" },
+  { href: "/admin/shop/pricing", label: "قیمت‌گذاری جزوه", icon: "M4 7h16M4 12h10M4 17h6M16 15l4 4M18 13a3 3 0 110-6 3 3 0 010 6z" },
   { href: "/admin/shop/settings", label: "تنظیمات فروشگاه", icon: "M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-2.7 1.1V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-2.7-1.1l-.1.1a2 2 0 11-2.8-2.8l.1-.1A1.6 1.6 0 003 13H3a2 2 0 110-4h.1a1.6 1.6 0 001.1-2.7l-.1-.1a2 2 0 112.8-2.8l.1.1A1.6 1.6 0 009 3V3a2 2 0 114 0v.1a1.6 1.6 0 002.7 1.1l.1-.1a2 2 0 112.8 2.8l-.1.1A1.6 1.6 0 0021 9h0a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 2z" },
   { sep: "محتوا" },
   { href: "/admin/news", label: "اخبار و اطلاعیه‌ها", icon: "M4 4h13v16H6a2 2 0 01-2-2zM17 8h3v10a2 2 0 01-2 2M8 8h5M8 12h5M8 16h3" },
@@ -46,6 +48,7 @@ type Entry = (typeof NAV)[number];
 /** Keep only links the user may open; drop section titles that end up empty. */
 function visibleNav(perms: string[], owner: boolean): Entry[] {
   const ok = (n: Item) => {
+    if (n.href === "/admin/shop/pricing") return canSeeBookletRates({ owner });
     if (owner) return true;
     const p = permForPath(n.href);
     return p === null || perms.includes(p);

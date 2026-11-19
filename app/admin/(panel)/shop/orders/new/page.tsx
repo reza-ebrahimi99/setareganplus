@@ -5,6 +5,8 @@ import { s, sn } from "@/lib/admin";
 import { PageTitle, Panel, SaveBar } from "@/components/admin/ui";
 import { GRADES, MAJORS, BRANCHES, PAY_METHOD, formatToman, isValidNationalCode } from "@/lib/shop/config";
 import { createOrder, setStage, ShopError } from "@/lib/shop/orders";
+import { bookletUnit } from "@/lib/shop/pricing";
+import { getBookletPricing } from "@/lib/shop/pricing-db";
 import { normalizeIranMobile, toEn } from "@/lib/format";
 
 export const metadata = { title: "سفارش دستی" };
@@ -12,7 +14,10 @@ export const metadata = { title: "سفارش دستی" };
 export default async function NewOrder({ searchParams }: { searchParams: Promise<{ e?: string }> }) {
   await requirePerm("shop.orders.edit");
   const { e } = await searchParams;
-  const products = await prisma.product.findMany({ where: { active: true }, orderBy: [{ sortOrder: "asc" }, { title: "asc" }] });
+  const [products, rates] = await Promise.all([
+    prisma.product.findMany({ where: { active: true }, orderBy: [{ sortOrder: "asc" }, { title: "asc" }] }),
+    getBookletPricing(),
+  ]);
 
   async function create(fd: FormData) {
     "use server";
@@ -50,7 +55,7 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
         <Panel>
           <div className="grid gap-5 md:grid-cols-2">
             <label className="block md:col-span-2"><span className="label">جزوه *</span>
-              <select name="product" required className="input">{products.map((p) => <option key={p.id} value={p.id}>{p.title} — {formatToman(p.priceRials)}{p.stock !== null ? ` (موجودی ${p.stock})` : ""}</option>)}</select>
+              <select name="product" required className="input">{products.map((p) => <option key={p.id} value={p.id}>{p.title} — {formatToman(bookletUnit(p, rates).unitRials)}{p.stock !== null ? ` (موجودی ${p.stock})` : ""}</option>)}</select>
             </label>
             <label className="block"><span className="label">تعداد</span><input name="qty" type="number" min={1} max={10} defaultValue={1} className="input" /></label>
             <label className="block"><span className="label">پرداخت</span>

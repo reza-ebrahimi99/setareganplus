@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { badgesFor, bestsellerIds, listProducts } from "@/lib/shop/catalog";
 import { CENTERS, formatToman, PICKUP_HOURS } from "@/lib/shop/config";
 import { getShopSettings } from "@/lib/shop/settings";
+import { getBookletPricing } from "@/lib/shop/pricing-db";
+import { chargeFor } from "@/lib/shop/pricing";
 import { zibalConfigured } from "@/lib/shop/zibal";
 import { fa } from "@/lib/format";
 import { Badges, Cover, Price, ProductCard } from "@/components/shop/ProductCard";
@@ -35,8 +37,11 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
 export default async function ProductPage({ params }: P) {
   const p = await load((await params).slug);
   if (!p || !p.active) notFound();
-  const [best, settings, related] = await Promise.all([bestsellerIds(), getShopSettings(), listProducts({ grade: p.grade ?? undefined }, 5)]);
-  const badges = badgesFor(p, best);
+  const [best, settings, related, rates] = await Promise.all([bestsellerIds(), getShopSettings(), listProducts({ grade: p.grade ?? undefined }, 5), getBookletPricing()]);
+  const sale = chargeFor(p, rates, 1);
+  const priceRials = sale.publicPrice.priceRials;
+  const payable = sale.publicCheckout.payableRials;
+  const badges = badgesFor({ ...p, priceRials }, best);
   const out = p.stock === 0;
   const disabled = out ? "ناموجود" : !settings.open ? "ثبت سفارش موقتاً بسته است" : !zibalConfigured() ? "پرداخت آنلاین به‌زودی فعال می‌شود" : null;
   const specs = [
@@ -68,7 +73,7 @@ export default async function ProductPage({ params }: P) {
               "@type": "Offer",
               url: abs(`/shop/${p.slug}`),
               priceCurrency: "IRR",
-              price: p.priceRials,
+              price: priceRials,
               availability: out ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
               itemCondition: "https://schema.org/NewCondition",
               seller: { "@type": "Organization", "@id": abs("/#organization"), name: "مؤسسه علمی ستارگان" },
@@ -92,7 +97,7 @@ export default async function ProductPage({ params }: P) {
           {p.author && <p className="mt-2 font-semibold text-edu">{p.author}</p>}
           {p.summary && <p className="mt-3 leading-8 text-ink/85">{p.summary}</p>}
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            <Price rials={p.priceRials} compareAt={p.compareAtRials} size="lg" />
+            <Price rials={priceRials} compareAt={p.compareAtRials} size="lg" />
             {p.stock !== null && p.stock > 0 && p.stock <= 5 && <span className="chip bg-gc-soft text-gc">فقط {fa(p.stock)} عدد باقی مانده</span>}
           </div>
           {specs.length > 0 && (
@@ -107,7 +112,7 @@ export default async function ProductPage({ params }: P) {
           <div id="buy" className="card mt-8 scroll-mt-24 p-5 sm:p-6">
             <h2 className="mb-1 text-lg font-extrabold text-navy">ثبت سفارش و پرداخت</h2>
             <p className="mb-5 text-sm text-muted">اطلاعات دانش‌آموز را وارد کنید؛ پس از پرداخت، رسید و کد تحویل برایتان پیامک می‌شود.</p>
-            <CheckoutForm productId={p.id} action={checkout} priceLabel={formatToman(p.priceRials)} disabled={disabled} defaultGrade={p.grade} />
+            <CheckoutForm productId={p.id} action={checkout} priceLabel={formatToman(payable)} disabled={disabled} defaultGrade={p.grade} />
           </div>
           <ul className="mt-5 space-y-1.5 text-sm text-muted">
             <li className="flex gap-2"><Star className="mt-1.5 size-3 shrink-0 text-gold" />ارسال پستی نداریم؛ تحویل فقط حضوری در شعبهٔ انتخابی.</li>
@@ -118,7 +123,7 @@ export default async function ProductPage({ params }: P) {
       {!out && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper/95 p-3 backdrop-blur lg:hidden">
           <div className="container-x flex items-center justify-between gap-3 px-0">
-            <Price rials={p.priceRials} compareAt={p.compareAtRials} />
+            <Price rials={priceRials} compareAt={p.compareAtRials} />
             <a href="#buy" className="btn-gold px-6 py-2.5 text-sm">خرید جزوه</a>
           </div>
         </div>

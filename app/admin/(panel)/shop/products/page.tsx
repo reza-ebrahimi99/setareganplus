@@ -5,6 +5,8 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { PageTitle, Flash, Empty } from "@/components/admin/ui";
 import { formatToman, formatNum, CENTERS } from "@/lib/shop/config";
+import { bookletUnit } from "@/lib/shop/pricing";
+import { getBookletPricing } from "@/lib/shop/pricing-db";
 import { fa } from "@/lib/format";
 
 export const metadata: Metadata = { title: "جزوه‌ها" };
@@ -12,9 +14,10 @@ export const metadata: Metadata = { title: "جزوه‌ها" };
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
   await requirePerm("shop.products");
   const { ok } = await searchParams;
-  const [items, sold] = await Promise.all([
+  const [items, sold, rates] = await Promise.all([
     prisma.product.findMany({ orderBy: [{ active: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }] }),
     prisma.orderItem.groupBy({ by: ["productId"], where: { order: { payStatus: "PAID", stage: { not: "CANCELLED" } } }, _sum: { qty: true } }),
+    getBookletPricing(),
   ]);
   const soldMap = new Map(sold.map((s) => [s.productId, s._sum.qty ?? 0]));
   return (
@@ -39,7 +42,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                 </div>
               </div>
               <div className="shrink-0 text-left">
-                <p className="font-extrabold text-navy">{formatToman(p.priceRials)}</p>
+                <p className="font-extrabold text-navy">{formatToman(bookletUnit(p, rates).unitRials)}</p>
                 {p.compareAtRials && <p className="text-xs text-muted line-through">{formatToman(p.compareAtRials)}</p>}
               </div>
             </Link>

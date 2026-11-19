@@ -247,6 +247,21 @@ model Submission {
 
 // ───────────────────────── Booklet shop (فروشگاه جزوه) ─────────────────────────
 
+/// Owner-only print rates. One row. Students and other staff never receive these numbers.
+model BookletPricing {
+  id              String   @id @default("default")
+  /// Toman per double-sided A4 sheet.
+  sheetToman      Int      @default(0)
+  spiralToman     Int      @default(0)
+  colorFirstToman Int      @default(0)
+  bwFirstToman    Int      @default(0)
+  /// Added once per order, not per booklet.
+  shippingToman   Int      @default(0)
+  /// 0–100. Applied to booklet subtotal plus shipping. 0 leaves the old total unchanged.
+  vatPercent      Decimal  @default(10) @db.Decimal(5, 2)
+  updatedAt       DateTime @updatedAt
+}
+
 /// A printed booklet. Prices are stored in Rials (Zibal works in Rials); the site shows Toman.
 model Product {
   id             String      @id @default(cuid())
@@ -268,6 +283,10 @@ model Product {
   /// "ghalamchi" | "education" | null (both)
   center         String?
   pageCount      Int?
+  /// Spiral binding. Used only when automatic pricing is on.
+  isSpiral       Boolean     @default(false)
+  /// color | bw. The first printed sheet, priced from the owner-only rate card.
+  firstPageType  String      @default("bw")
   /// Free "key: value" lines (print, binding, size, …)
   specs          String?     @db.Text
   /// null = unlimited
@@ -325,6 +344,12 @@ model Order {
   /// Staff-only note
   adminNote      String?      @db.Text
   subtotalRials  Int
+  /// One delivery fee for the whole order, in Rials. 0 on orders from before the fee existed.
+  shippingRials  Int          @default(0)
+  /// VAT amount in Rials, already rounded into the total. 0 on older orders.
+  vatRials       Int          @default(0)
+  /// Percent snapshotted at checkout. 0 on older orders, so their total stays historical.
+  vatPercent     Decimal      @default(0) @db.Decimal(5, 2)
   totalRials     Int
   paidAt         DateTime?
   inProductionAt DateTime?

@@ -77,6 +77,10 @@ export function CheckoutForm({ productId, action, priceLabel, disabled, defaultG
       </label>
 
       {state.error && <p className="rounded-xl bg-gc-soft px-4 py-3 text-sm text-gc">{state.error}</p>}
+      <div className="flex items-center justify-between rounded-2xl bg-ivory px-4 py-3">
+        <span className="text-sm font-bold text-navy">مبلغ قابل پرداخت</span>
+        <span className="text-base font-extrabold text-navy">{priceLabel}</span>
+      </div>
       <button type="submit" disabled={pending || !!disabled} className="btn-gold w-full py-3.5 text-base">
         {disabled ? disabled : pending ? "در حال انتقال به درگاه…" : `پرداخت ${priceLabel} و ثبت سفارش`}
       </button>

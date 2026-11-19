@@ -2,11 +2,14 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePerm, logAction } from "@/lib/auth";
+import { canSeeBookletRates } from "@/lib/shop/pricing-access";
+import { bookletUnit } from "@/lib/shop/pricing";
+import { getBookletPricing } from "@/lib/shop/pricing-db";
 import { s, sn, b, n, imageField } from "@/lib/admin";
 import { PageTitle, Panel, Field, Area, Check, ImageInput, SaveBar } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/SubmitButton";
-import { GRADES, MAJORS, CENTERS, toman } from "@/lib/shop/config";
-import { slugify, toEn } from "@/lib/format";
+import { GRADES, MAJORS, CENTERS, toman, formatToman } from "@/lib/shop/config";
+import { fa, slugify, toEn } from "@/lib/format";
 import { pingIndexNow } from "@/lib/indexnow";
 
 const rials = (fd: FormData, k: string) => {
@@ -15,7 +18,8 @@ const rials = (fd: FormData, k: string) => {
 };
 
 export default async function ProductEdit({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ e?: string; ok?: string }> }) {
-  await requirePerm("shop.products");
+  const me = await requirePerm("shop.products");
+  const owner = canSeeBookletRates(me);
   const { id } = await params;
   const { e, ok } = await searchParams;
   const isNew = id === "new";
@@ -45,7 +49,13 @@ export default async function ProductEdit({ params, searchParams }: { params: Pr
       grade: sn(fd, "grade"),
       majors: fd.getAll("majors").map(String).filter((m) => (MAJORS as readonly string[]).includes(m)),
       center: sn(fd, "center"),
-      pageCount: n(fd, "pageCount") || null,
+      pageCount: (() => {
+        const raw = toEn(s(fd, "pageCount")).replace(/[^\d]/g, "");
+        const pages = raw ? Number.parseInt(raw, 10) : 0;
+        return pages > 0 ? pages : null;
+      })(),
+      isSpiral: b(fd, "isSpiral"),
+      firstPageType: s(fd, "firstPageType") === "color" ? "color" : "bw",
       specs: sn(fd, "specs"),
       stock: stockRaw === "" ? null : Math.max(0, Number.parseInt(stockRaw, 10) || 0),
       active: b(fd, "active"),
@@ -75,6 +85,8 @@ export default async function ProductEdit({ params, searchParams }: { params: Pr
     redirect("/admin/shop/products?ok=1");
   }
 
+  const rates = await getBookletPricing();
+  const unit = p ? bookletUnit(p, rates) : null;
   return (
     <>
       <PageTitle
@@ -95,13 +107,33 @@ export default async function ProductEdit({ params, searchParams }: { params: Pr
               <div className="md:col-span-2"><Area label="توضیحات کامل" name="description" defaultValue={p?.description} rows={6} /></div>
               <div className="md:col-span-2"><Area label="مشخصات (هر خط «عنوان: مقدار»)" name="specs" defaultValue={p?.specs} rows={4} hint="مثلاً: نوع چاپ: سیاه‌وسفید — صحافی: فنری — قطع: A4" /></div>
               <Field label="تعداد صفحات" name="pageCount" type="number" defaultValue={p?.pageCount} />
+              <div className="md:col-span-2 space-y-3">
+                <Check label="سیمی هست؟" name="isSpiral" defaultChecked={p?.isSpiral ?? false} />
+                <fieldset>
+                  <legend className="label">صفحه اول</legend>
+                  <div className="flex flex-wrap gap-4 text-sm font-semibold">
+                    <label className="inline-flex items-center gap-2"><input type="radio" name="firstPageType" value="bw" defaultChecked={(p?.firstPageType ?? "bw") !== "color"} className="accent-navy" />سیاه‌وسفید</label>
+                    <label className="inline-flex items-center gap-2"><input type="radio" name="firstPageType" value="color" defaultChecked={p?.firstPageType === "color"} className="accent-navy" />رنگی</label>
+                  </div>
+                </fieldset>
+              </div>
               <Field label="نشانی در سایت (اختیاری)" name="slug" defaultValue={p?.slug} dir="ltr" hint="اگر خالی بماند از عنوان ساخته می‌شود." />
             </div>
           </Panel>
           <div className="space-y-6">
             <Panel title="قیمت و موجودی">
               <div className="space-y-4">
-                <Field label="قیمت (تومان) *" name="price" defaultValue={p ? toman(p.priceRials) : ""} required dir="ltr" hint="به تومان وارد کنید؛ در درگاه به ریال پرداخت می‌شود." />
+                {unit && <p className="rounded-xl bg-ivory px-4 py-3 text-sm font-extrabold text-navy">قیمت فروش: {formatToman(unit.unitRials)}</p>}
+                {owner && unit?.auto && unit.sheets && (
+                  <dl className="space-y-1 rounded-xl border border-line px-4 py-3 text-sm">
+                    <div className="flex justify-between gap-3"><dt>برگه‌ها</dt><dd>{fa(unit.sheets)}</dd></div>
+                    <div className="flex justify-between gap-3"><dt>هر برگه A4</dt><dd>{formatToman((unit.sheetToman / unit.sheets) * 10)}</dd></div>
+                    <div className="flex justify-between gap-3"><dt>جمع برگه‌ها</dt><dd>{formatToman(unit.sheetToman * 10)}</dd></div>
+                    <div className="flex justify-between gap-3"><dt>سیمی</dt><dd>{formatToman(unit.spiralToman * 10)}</dd></div>
+                    <div className="flex justify-between gap-3"><dt>صفحه اول</dt><dd>{formatToman(unit.coverToman * 10)}</dd></div>
+                  </dl>
+                )}
+                <Field label="قیمت (تومان) *" name="price" defaultValue={p ? toman(p.priceRials) : ""} required dir="ltr" hint={owner ? "اگر نرخ چاپ و تعداد صفحه هر دو پر باشد، فروش از فرمول حساب می‌شود و این مبلغ ذخیرهٔ پشتیبان است." : "به تومان وارد کنید."} />
                 <Field label="قیمت قبل از تخفیف (تومان)" name="compareAt" defaultValue={p?.compareAtRials ? toman(p.compareAtRials) : ""} dir="ltr" hint="اختیاری؛ خط‌خورده نمایش داده می‌شود." />
                 <Field label="موجودی" name="stock" defaultValue={p?.stock ?? ""} dir="ltr" hint="خالی = نامحدود · ۰ = ناموجود" />
               </div>

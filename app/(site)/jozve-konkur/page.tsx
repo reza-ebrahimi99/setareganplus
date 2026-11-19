@@ -33,7 +33,7 @@ export default async function JozveKonkur() {
     { q: "پرداخت چطور انجام می‌شود؟", a: "پرداخت آنلاین و از درگاه امن بانکی انجام می‌شود؛ پس از پرداخت، رسید و کد تحویل برایتان پیامک می‌شود." },
     { q: "وضعیت سفارشم را کجا ببینم؟", a: "در صفحهٔ «پیگیری سفارش جزوه»، کد تحویل (در پیامک) یا شماره سفارش را همراه با شماره موبایل خرید وارد کنید تا وضعیت سفارش را ببینید." },
     grades.length > 0 && { q: "جزوه برای چه پایه‌هایی موجود است؟", a: `در حال حاضر جزوه برای پایه‌های ${grades.join("، ")} در فروشگاه موجود است.` },
-    agg._count > 0 && agg._min.priceRials != null && { q: "قیمت جزوه‌ها چقدر است؟", a: `قیمت جزوه‌های فعلی از ${formatToman(agg._min.priceRials)} تا ${formatToman(agg._max.priceRials!)} است و قیمت هر جزوه در صفحهٔ خودش آمده است.` },
+    (all.length > 0 || (agg._count > 0 && agg._min.priceRials != null)) && { q: "قیمت جزوه‌ها چقدر است؟", a: `قیمت جزوه‌های فعلی از ${formatToman(all.length ? Math.min(...all.map((p) => p.priceRials)) : agg._min.priceRials!)} تا ${formatToman(all.length ? Math.max(...all.map((p) => p.priceRials)) : agg._max.priceRials!)} است و قیمت هر جزوه در صفحهٔ خودش آمده است.` },
     ...t.faq,
   ].filter(Boolean) as { q: string; a: string }[];
 

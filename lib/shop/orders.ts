@@ -7,6 +7,7 @@ import { zibalRequest, zibalVerify, startUrl } from "./zibal";
 import { sendSms } from "./sms";
 import { getShopSettings } from "./settings";
 import { formatToman, siteUrl, STAGE } from "./config";
+import { chargeFor, type BookletRates, EMPTY_RATES } from "./pricing";
 
 const SHORT_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const newShortCode = () => Array.from({ length: 6 }, () => SHORT_ALPHABET[randomInt(SHORT_ALPHABET.length)]).join("");
@@ -46,7 +47,8 @@ export async function createOrder(productId: string, buyer: BuyerInput, opts: { 
         const p = await tx.product.findUnique({ where: { id: productId } });
         if (!p || !p.active) throw new ShopError("این جزوه در حال حاضر قابل سفارش نیست.");
         if (p.stock !== null && p.stock < qty) throw new ShopError("موجودی این جزوه تمام شده است.");
-        const total = p.priceRials * qty;
+        const rates = await readRates(tx);
+        const { quote } = chargeFor(p, rates, qty);
         return tx.order.create({
           data: {
             number: await nextOrderNumber(tx),
@@ -54,9 +56,12 @@ export async function createOrder(productId: string, buyer: BuyerInput, opts: { 
             qrToken: newToken(),
             ...buyer,
             source: opts.source ?? "web",
-            subtotalRials: total,
-            totalRials: total,
-            items: { create: { productId: p.id, title: p.title, unitRials: p.priceRials, qty, totalRials: total } },
+            subtotalRials: quote.bookletsRials,
+            shippingRials: quote.shippingRials,
+            vatRials: quote.vatRials,
+            vatPercent: quote.vatPercent,
+            totalRials: quote.totalRials,
+            items: { create: { productId: p.id, title: p.title, unitRials: quote.unitRials, qty, totalRials: quote.bookletsRials } },
             events: { create: { type: "STAGE", stage: "REGISTERED", text: "سفارش ثبت شد" } },
           },
           include: { items: true },
@@ -72,6 +77,23 @@ export async function createOrder(productId: string, buyer: BuyerInput, opts: { 
 }
 
 export class ShopError extends Error {}
+
+async function readRates(tx: Prisma.TransactionClient): Promise<BookletRates> {
+  try {
+    const row = await tx.bookletPricing.findUnique({ where: { id: "default" } });
+    if (!row) return { ...EMPTY_RATES, vatPercent: 10 };
+    return {
+      sheetToman: row.sheetToman,
+      spiralToman: row.spiralToman,
+      colorFirstToman: row.colorFirstToman,
+      bwFirstToman: row.bwFirstToman,
+      shippingToman: row.shippingToman,
+      vatPercent: Number(row.vatPercent),
+    };
+  } catch {
+    return { ...EMPTY_RATES };
+  }
+}
 
 export const callbackUrl = (token: string) => `${siteUrl()}/shop/pay/callback?token=${encodeURIComponent(token)}`;
 

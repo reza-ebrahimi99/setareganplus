@@ -10,6 +10,8 @@ import { Markdown, mdToText } from "@/lib/markdown";
 import { abs, buildMeta, BRAND, ORG_NAME } from "@/lib/seo";
 import { siteUrl } from "@/lib/shop/config";
 import { formatToman } from "@/lib/shop/config";
+import { bookletUnit } from "@/lib/shop/pricing";
+import { getBookletPricing } from "@/lib/shop/pricing-db";
 import { Icon, PageHero } from "@/components/site/Star";
 import { JsonLd } from "@/components/site/JsonLd";
 import { NewsCard, NewsMeta } from "@/components/site/news";
@@ -50,11 +52,13 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
 export default async function NewsPage({ params }: P) {
   const n = await load((await params).slug);
   if (!n) notFound();
-  const [form, product, related] = await Promise.all([
+  const [form, row, related, rates] = await Promise.all([
     n.formSlug ? prisma.form.findFirst({ where: { slug: n.formSlug, status: "PUBLISHED" }, select: { slug: true, title: true } }) : null,
-    n.productSlug ? prisma.product.findFirst({ where: { slug: n.productSlug, active: true }, select: { slug: true, title: true, priceRials: true } }) : null,
+    n.productSlug ? prisma.product.findFirst({ where: { slug: n.productSlug, active: true }, select: { slug: true, title: true, priceRials: true, pageCount: true, isSpiral: true, firstPageType: true } }) : null,
     prisma.news.findMany({ where: liveWhere({ NOT: { id: n.id } }), orderBy: { publishedAt: "desc" }, take: 3 }),
+    getBookletPricing(),
   ]);
+  const product = row ? { slug: row.slug, title: row.title, priceRials: bookletUnit(row, rates).unitRials } : null;
   const url = `${siteUrl()}/news/${encodeURI(n.slug)}`;
   const ld = {
     "@context": "https://schema.org",

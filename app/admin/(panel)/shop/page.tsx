@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "فروش جزوه" };
 const paidSince = (d: Date) => ({ payStatus: "PAID" as const, stage: { not: "CANCELLED" as const }, paidAt: { gte: d } });
 
 export default async function ShopDashboard() {
-  await requirePerm("shop.dashboard");
+  const me = await requirePerm("shop.dashboard");
   const [t0, w0, m0, d14] = [tehranDayStart(0), tehranDayStart(6), tehranDayStart(29), tehranDayStart(13)];
   const sum = (d: Date) => prisma.order.aggregate({ where: paidSince(d), _sum: { totalRials: true }, _count: true });
   const [today, week, month, stageCounts, top, daily, recent, settings] = await Promise.all([
@@ -54,6 +54,7 @@ export default async function ShopDashboard() {
           <div className="flex flex-wrap gap-2">
             <Link href="/admin/shop/pickup" className="btn-ghost px-4 py-2 text-sm">تحویل حضوری</Link>
             <Link href="/admin/shop/orders/new" className="btn-ghost px-4 py-2 text-sm">+ سفارش دستی</Link>
+            {me.owner && <Link href="/admin/shop/pricing" className="btn-ghost px-4 py-2 text-sm">قیمت‌گذاری جزوه</Link>}
             <Link href="/admin/shop/orders" className="btn-gold px-5 py-2 text-sm">سفارش‌ها</Link>
           </div>
         }

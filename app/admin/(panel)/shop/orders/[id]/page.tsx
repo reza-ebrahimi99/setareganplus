@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePerm, logAction, actorName, can } from "@/lib/auth";
+import { canSeeBookletRates } from "@/lib/shop/pricing-access";
 import { s, sn } from "@/lib/admin";
 import { PageTitle, Panel } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/SubmitButton";
@@ -108,10 +109,17 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
               {o.items.map((i) => (
                 <li key={i.id} className="flex justify-between gap-4 py-2.5 text-sm">
                   <span>{i.product ? <Link href={`/shop/${i.product.slug}`} target="_blank" className="font-semibold text-navy hover:underline">{i.title}</Link> : <span className="font-semibold">{i.title}</span>}{i.qty > 1 && <span className="text-muted"> × {fa(i.qty)}</span>}</span>
-                  <span className="font-semibold">{formatToman(i.totalRials)}</span>
+                  {canSeeBookletRates(viewer) && <span className="font-semibold">{formatToman(i.totalRials)}</span>}
                 </li>
               ))}
-              <li className="flex justify-between py-2.5 font-extrabold text-navy"><span>جمع</span><span>{formatToman(o.totalRials)}</span></li>
+              {canSeeBookletRates(viewer) && (o.shippingRials > 0 || Number(o.vatPercent) > 0) && (
+                <>
+                  <li className="flex justify-between py-2 text-sm"><span>جمع جزوه‌ها</span><span>{formatToman(o.subtotalRials)}</span></li>
+                  {o.shippingRials > 0 && <li className="flex justify-between py-2 text-sm"><span>هزینه حمل و نقل</span><span>{formatToman(o.shippingRials)}</span></li>}
+                  {Number(o.vatPercent) > 0 && <li className="flex justify-between py-2 text-sm"><span>مالیات بر ارزش افزوده ({fa(String(Number(o.vatPercent))).replace(".", "٫")}٪)</span><span>{formatToman(o.vatRials)}</span></li>}
+                </>
+              )}
+              <li className="flex justify-between py-2.5 font-extrabold text-navy"><span>مبلغ قابل پرداخت</span><span>{formatToman(o.totalRials)}</span></li>
             </ul>
             {o.customerNote && <p className="mt-3 rounded-xl bg-ivory p-3 text-sm"><b>توضیح خریدار:</b> {o.customerNote}</p>}
           </Panel>
