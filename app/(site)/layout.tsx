@@ -6,7 +6,8 @@ import { getSettings } from "@/lib/settings";
 import { getShopSettings } from "@/lib/shop/settings";
 import { prettyPhone, telHref } from "@/lib/format";
 
-export const dynamic = "force-dynamic";
+// Public pages can be cached briefly. Auth and booking routes keep their own force-dynamic.
+export const revalidate = 60;
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   const [s, shop] = await Promise.all([getSettings(), getShopSettings().catch(() => ({ open: true }))]);

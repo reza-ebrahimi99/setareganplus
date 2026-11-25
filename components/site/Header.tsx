@@ -108,7 +108,7 @@ export function Header({ shopOpen = true, phone }: { shopOpen?: boolean; phone?:
         <div className="container-x flex h-16 flex-nowrap items-center justify-between gap-2 sm:h-[4.5rem] lg:gap-3">
           <Link href="/" className="flex shrink-0 items-center gap-2.5" title="صفحه اصلی">
             <span className="flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-sky to-white ring-1 ring-line">
-              <Image src="/brand/logo.png" alt="" width={44} height={37} priority className="h-7 w-auto" />
+              <Image src="/brand/logo.png" alt="" width={44} height={37} sizes="40px" priority className="h-7 w-auto" />
             </span>
             <span className="leading-tight">
               <span className="block text-[1.05rem] font-black text-navy">ستارگان پلاس</span>

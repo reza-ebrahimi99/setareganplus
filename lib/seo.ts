@@ -137,9 +137,9 @@ export const PAGES = {
   },
   amoozeshgah: {
     label: "راهنما: آموزشگاه نسیم شهر", path: "/amoozeshgah-taghviati-nasimshahr",
-    title: "آموزشگاه نسیم شهر",
-    description: "آموزشگاه نسیم شهر؛ آموزشگاه تقویتی و کنکور ستارگان برای تقویت پایه، تیزهوشان، نمونه دولتی و کنکور، با نشانی شعبه‌ها و پیش‌ثبت‌نام.",
-    intro: "آموزشگاه نسیم شهر همان آموزشگاه تقویتی و کنکور ستارگان است؛ از تقویت پایه تا آمادگی آزمون‌های تیزهوشان، نمونه دولتی و کنکور.",
+    title: "آموزشگاه نسیم شهر | نشانی شعبه‌ها و راهنمای انتخاب",
+    description: "اگر در نسیم‌شهر دنبال آموزشگاه تقویتی می‌گردید: نشانی دو شعبهٔ دختران و پسران ستارگان، مسیر روی نقشه، ساعات کار و راه پیش‌ثبت‌نام.",
+    intro: "این صفحه راهنمای محلی خانواده‌هایی است که در نسیم‌شهر آموزشگاه تقویتی می‌جویند. برنامه و معرفی کامل آموزشگاه در صفحهٔ آموزشگاه تقویتی و کنکور ستارگان آمده است.",
   },
   ghalamchiGuide: {
     label: "راهنما: نمایندگی قلم چی نسیم شهر", path: "/ghalamchi-nasimshahr",
@@ -155,9 +155,9 @@ export const PAGES = {
   },
   classes: {
     label: "راهنما: کلاس تقویتی نسیم شهر", path: "/kelas-taghviati",
-    title: "کلاس تقویتی نسیم شهر",
-    description: "کلاس تقویتی نسیم شهر در آموزشگاه ستارگان، به تفکیک پایه از متوسطه تا کنکور؛ دو شعبه و پیش‌ثبت‌نام آنلاین.",
-    intro: "کلاس تقویتی نسیم شهر در آموزشگاه ستارگان به تفکیک پایه برگزار می‌شود. خدمات هر مقطع، همراه با جزوه‌ها و نتایج همان بخش، اینجاست.",
+    title: "کلاس تقویتی نسیم شهر به تفکیک پایه",
+    description: "کلاس تقویتی در نسیم‌شهر به تفکیک متوسطه اول، تیزهوشان، متوسطه دوم و کنکور؛ جزوه و نتایج هر مقطع، با پیش‌ثبت‌نام آنلاین.",
+    intro: "اگر می‌خواهید ببینید کلاس تقویتی برای پایهٔ فرزندتان چه شکلی است، این صفحه را ببینید. معرفی کلی آموزشگاه در صفحهٔ آموزشگاه تقویتی است؛ اینجا هر مقطع جدا آمده است.",
   },
   riyazi: {
     label: "راهنما: کلاس ریاضی نسیم شهر", path: "/kelas-riazi-nasimshahr",
@@ -449,7 +449,7 @@ export async function organizationLd() {
             address: postal(b.address),
             ...(branchGeo(seo.geo?.[i], b.mapUrl) ? { geo: branchGeo(seo.geo?.[i], b.mapUrl) } : {}),
             ...(b.mapUrl ? { hasMap: b.mapUrl } : {}),
-            ...(contact.phones.length ? { telephone: intlPhone(contact.phones[0]) } : {}),
+            ...((b.phone || contact.phones[i] || contact.phones[0]) ? { telephone: intlPhone(b.phone || contact.phones[i] || contact.phones[0]) } : {}),
             ...(hours.length ? { openingHoursSpecification: hours } : {}),
             areaServed: AREA_SERVED,
             parentOrganization: { "@id": `${site}/#organization` },

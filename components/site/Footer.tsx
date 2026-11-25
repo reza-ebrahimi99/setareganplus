@@ -60,7 +60,7 @@ export function Footer({ contact }: { contact: ContactSettings; shopOpen?: boole
           <div>
             <div className="flex items-center gap-3">
               <span className="flex size-12 items-center justify-center rounded-2xl bg-white shadow-lg shadow-black/20">
-                <Image src="/brand/logo.png" alt="" width={36} height={30} />
+                <Image src="/brand/logo.png" alt="" width={36} height={30} sizes="36px" />
               </span>
               <div>
                 <p className="text-lg font-black text-white">مؤسسه علمی ستارگان</p>

@@ -28,6 +28,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: `${lesson.title} | ${lesson.course.title}`,
     description: (lesson.description || lesson.course.intro || lesson.title).slice(0, 180),
     path: lessonPath(slug, hash),
+    noindex: true,
   });
 }
 

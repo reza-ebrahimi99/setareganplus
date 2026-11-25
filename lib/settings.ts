@@ -1,9 +1,10 @@
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { publicBaleSocialUrl } from "@/lib/bale";
 import { withPublicMap } from "@/lib/maps";
 import { publicInstagramUrl, withAparatSocial } from "@/lib/social";
 
-export type Branch = { name: string; address: string; mapUrl?: string };
+export type Branch = { name: string; address: string; mapUrl?: string; phone?: string };
 export type ContactSettings = {
   phones: string[];
   hours: string[];
@@ -91,7 +92,7 @@ export function normalizeContact(v: Partial<ContactSettings> | null | undefined)
   };
 }
 
-export async function getSettings(): Promise<Settings> {
+async function loadSettings(): Promise<Settings> {
   const rows = await prisma.setting.findMany();
   const out = structuredClone(EMPTY_SETTINGS) as Record<string, unknown>;
   for (const r of rows) out[r.key] = r.value;
@@ -103,10 +104,17 @@ export async function getSettings(): Promise<Settings> {
   return out as Settings;
 }
 
+export const getSettings = unstable_cache(loadSettings, ["site-settings"], {
+  revalidate: 60,
+  tags: ["site-settings"],
+});
+
 export async function saveSetting<K extends keyof Settings>(key: K, value: Settings[K]) {
   await prisma.setting.upsert({
     where: { key },
     create: { key, value: value as object },
     update: { value: value as object },
   });
+  revalidateTag("site-settings", "max");
+  revalidatePath("/", "layout");
 }

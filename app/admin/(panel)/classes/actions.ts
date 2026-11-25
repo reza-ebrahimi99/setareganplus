@@ -1,6 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath as revalidatePathBase, revalidateTag } from "next/cache";
+
+function revalidatePath(path: string, type?: "layout" | "page") {
+  if (path === "/classes" || path.startsWith("/classes/")) revalidateTag("classes-catalog", "max");
+  return type ? revalidatePathBase(path, type) : revalidatePathBase(path);
+}
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePerm, logAction } from "@/lib/auth";

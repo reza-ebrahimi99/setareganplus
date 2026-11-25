@@ -51,7 +51,7 @@ export default async function KelasTaghviati() {
     <>
       <LandingHero k="classes" title="کلاس تقویتی نسیم شهر" intro={t.intro} phone={phone} accent="edu" />
       <LocalFacts contact={contact}>
-        <p>کلاس تقویتی نسیم شهر در آموزشگاه ستارگان، کنار درس مدرسه و به تفکیک پایه برگزار می‌شود. مؤسسه علمی ستارگان (ستارگان پلاس) آموزشگاه تقویتی و کنکور و نمایندگی قلم‌چی نسیم‌شهر است.</p>
+        <p>این صفحه کلاس تقویتی را به تفکیک پایه نشان می‌دهد: متوسطه اول، تیزهوشان، متوسطه دوم و کنکور، با جزوه و نتایج همان مقطع. معرفی کلی آموزشگاه را در <Link href="/education" className="font-bold text-navy underline decoration-gold/60 underline-offset-4">صفحهٔ آموزشگاه تقویتی و کنکور</Link> ببینید.</p>
       </LocalFacts>
       {levels.length > 1 && (
         <nav aria-label="پایه‌ها" className="container-x mt-8 flex flex-wrap gap-2">

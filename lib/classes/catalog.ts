@@ -157,8 +157,9 @@ export function presentPrice<T extends { isFree: boolean; priceRials: number }>(
   return course;
 }
 
-export function isNewLesson(createdAt: Date, now = Date.now()) {
-  return now - createdAt.getTime() < NEW_LESSON_DAYS * 24 * 60 * 60 * 1000;
+export function isNewLesson(createdAt: Date | string, now = Date.now()) {
+  const t = createdAt instanceof Date ? createdAt.getTime() : new Date(createdAt).getTime();
+  return Number.isFinite(t) && now - t < NEW_LESSON_DAYS * 24 * 60 * 60 * 1000;
 }
 
 export function orderLessons<T extends { isPremium?: boolean; sortOrder: number }>(lessons: T[]) {

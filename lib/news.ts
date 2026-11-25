@@ -23,20 +23,15 @@ export const PAGE_SIZE = 9;
 export async function listNews({ category, page = 1 }: { category?: string; page?: number }) {
   const where = liveWhere(category ? { category } : {});
   const [items, total] = await Promise.all([
-    prisma.news.findMany({ where, orderBy: [{ pinned: "desc" }, { publishedAt: "desc" }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
+    prisma.news.findMany({ where, orderBy: { publishedAt: "desc" }, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
     prisma.news.count({ where }),
   ]);
   return { items, total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
 }
 
-/** Home strip: every pinned item + the latest 3 (deduped, pinned first). */
+/** Home strip: the newest published items. Pinned items keep their badge, but no longer jump the queue. */
 export async function homeNews() {
-  const [pinned, latest] = await Promise.all([
-    prisma.news.findMany({ where: liveWhere({ pinned: true }), orderBy: { publishedAt: "desc" }, take: 3 }),
-    prisma.news.findMany({ where: liveWhere(), orderBy: { publishedAt: "desc" }, take: 3 }),
-  ]);
-  const seen = new Set<string>();
-  return [...pinned, ...latest].filter((n) => (seen.has(n.id) ? false : (seen.add(n.id), true))).slice(0, 6);
+  return prisma.news.findMany({ where: liveWhere(), orderBy: { publishedAt: "desc" }, take: 5 });
 }
 
 export function newsSlug(title: string): string {

@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/moshavere" },
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function ConsultPage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
   const sp = await searchParams;

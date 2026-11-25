@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { pageMeta } from "@/lib/seo";
 import { fa } from "@/lib/format";
 import { landingBase, latestNews } from "@/lib/landing";
-import { AchievementCard, StatsBand } from "@/components/site/cards";
+import { StatsBand } from "@/components/site/cards";
 import { NewsCard } from "@/components/site/news";
 import { Block, FaqBlock, FeatureGrid, LandingHero, LocalFacts, RelatedGuides, WhereBlock, branchesSentence, phonesSentence } from "@/components/site/Landing";
 
@@ -17,17 +16,16 @@ export default async function Amoozeshgah() {
   const { t, contact, center, hl, phone } = await landingBase("amoozeshgah");
   const edu = center("education");
   const services = hl("education");
-  const [{ stats }, ach, news] = await Promise.all([
+  const [{ stats }, news] = await Promise.all([
     getSettings(),
-    prisma.achievement.findMany({ where: { published: true }, orderBy: [{ featured: "desc" }, { sortOrder: "asc" }], take: 6 }),
     latestNews(["CLASSES", "ANNOUNCE"]),
   ]);
   const since = edu?.intro?.match(/از سال ([۰-۹0-9]{4})/)?.[1];
-  const body = (edu?.body ?? "").split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 
   const faq = [
-    contact.branches.length > 0 && { q: "آموزشگاه نسیم شهر کجاست؟", a: `آموزشگاه تقویتی و کنکور ستارگان در نسیم‌شهر است: ${branchesSentence(contact)}.` },
-    services.length > 0 && { q: "آموزشگاه تقویتی ستارگان چه کلاس‌ها و خدماتی دارد؟", a: `${services.map((s) => s.title).join("، ")}.` },
+    contact.branches.length > 0 && { q: "آموزشگاه نسیم شهر کجاست؟", a: `دو شعبهٔ آموزشگاه علمی ستارگان در نسیم‌شهر فعال است: ${branchesSentence(contact)}.` },
+    { q: "تفاوت این صفحه با صفحهٔ آموزشگاه تقویتی چیست؟", a: "این صفحه راهنمای پیدا کردن شعبه‌ها در نسیم‌شهر است. معرفی کامل برنامه، مدرسان و خدمات در صفحهٔ آموزشگاه تقویتی و کنکور ستارگان آمده است." },
+    services.length > 0 && { q: "آموزشگاه تقویتی ستارگان چه کلاس‌ها و خدماتی دارد؟", a: `${services.map((s) => s.title).join("، ")}. جزئیات هر پایه در صفحهٔ کلاس تقویتی است.` },
     since && { q: "آموزشگاه از چه سالی فعالیت می‌کند؟", a: `آموزشگاه تقویتی و کنکور ستارگان فعالیت خود را از سال ${since} آغاز کرده است.` },
     { q: "چطور در کلاس‌های تقویتی ثبت‌نام کنم؟", a: `فرم پیش‌ثبت‌نام آنلاین را پر کنید و بخش موردنظر را انتخاب کنید؛ همکاران ما برای ادامهٔ مراحل با شما تماس می‌گیرند.${phone ? ` شماره‌های تماس: ${phonesSentence(contact)}.` : ""}` },
     contact.hours.length > 0 && { q: "ساعات کاری آموزشگاه چیست؟", a: contact.hours.join("؛ ") + "." },
@@ -38,35 +36,30 @@ export default async function Amoozeshgah() {
     <>
       <LandingHero k="amoozeshgah" title="آموزشگاه نسیم شهر" intro={t.intro} phone={phone} accent="edu" />
       <LocalFacts contact={contact}>
-        <p>آموزشگاه نسیم شهر نامی است که خانواده‌ها برای آموزشگاه تقویتی و کنکور ستارگان به کار می‌برند.{since ? ` فعالیت آموزشی مجموعه از سال ${since} آغاز شده است.` : " تمرکز مجموعه بر تقویت پایه و آمادگی کنکور است."}</p>
+        <p>اگر در نسیم‌شهر دنبال آموزشگاه تقویتی می‌گردید، این صفحه جای پیدا کردن شعبه‌ها، مسیر و شمارهٔ تماس است. معرفی کامل آموزشگاه را در <Link href="/education" className="font-bold text-navy underline decoration-gold/60 underline-offset-4">صفحهٔ آموزشگاه تقویتی و کنکور ستارگان</Link> بخوانید.{since ? ` فعالیت آموزشی مجموعه از سال ${since} آغاز شده است.` : ""}</p>
       </LocalFacts>
-      {(edu?.intro || body.length > 0) && (
-        <section className="container-x py-14 sm:py-20">
-          <div className="prose-fa max-w-3xl">
-            {edu?.intro && <p className="text-lg">{edu.intro}</p>}
-            {body.map((p, i) => <p key={i}>{p}</p>)}
-          </div>
-        </section>
-      )}
+      <section className="container-x py-14 sm:py-20">
+        <div className="prose-fa max-w-3xl">
+          <p className="text-lg">آموزشگاه علمی ستارگان دو شعبهٔ جدا برای پسران و دختران در نسیم‌شهر دارد. نشانی دقیق هر شعبه، نقشه و ساعات کار همین پایین آمده است تا خانواده بتواند نزدیک‌ترین شعبه را انتخاب کند.</p>
+          <p>شعبهٔ دختران در طبقهٔ دوم ساختمان است؛ هنگام مراجعه به پلاک ۱۸۸ کوچهٔ پاییزان، به طبقهٔ دوم بروید. اگر دربارهٔ برنامهٔ درسی، نتایج یا انتخاب پایه سؤال دارید، از صفحهٔ آموزشگاه تقویتی یا فرم پیش‌ثبت‌نام استفاده کنید.</p>
+          <p>
+            <Link href="/education" className="btn-gold mt-2 inline-flex px-5 py-2.5 text-sm">معرفی کامل آموزشگاه</Link>
+          </p>
+        </div>
+      </section>
       {services.length > 0 && (
         <Block eyebrow="کلاس‌ها و خدمات" title="از تقویت پایه تا کنکور" tone="paper" text={`${fa(services.length)} بخش آموزشی و مشاوره‌ای؛ برای جزئیات هر پایه، صفحهٔ کلاس تقویتی به تفکیک پایه را ببینید.`}>
           <FeatureGrid items={services.map((s) => ({ title: s.title, text: s.text || undefined, href: "/kelas-taghviati", icon: "cap" as const }))} />
         </Block>
       )}
       {stats.length > 0 && <div className="container-x py-14"><StatsBand stats={stats} /></div>}
-      {ach.length > 0 && (
-        <Block eyebrow="افتخارات" title="دانش‌آموزانی که به هدفشان رسیدند">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{ach.map((a) => <AchievementCard key={a.id} a={a} />)}</div>
-          <Link href="/achievements" className="btn-ghost mt-6 inline-flex px-5 py-2.5 text-sm">همهٔ افتخارات</Link>
-        </Block>
-      )}
       {news.length > 0 && (
         <Block eyebrow="اطلاعیه‌ها" title="اطلاعیه‌های کلاس‌ها">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{news.map((n) => <NewsCard key={n.id} n={n} />)}</div>
         </Block>
       )}
       <WhereBlock contact={contact} />
-      <FaqBlock items={faq} title="پرسش‌های رایج دربارهٔ آموزشگاه تقویتی ستارگان" />
+      <FaqBlock items={faq} title="پرسش‌های رایج دربارهٔ پیدا کردن آموزشگاه در نسیم‌شهر" />
       <RelatedGuides current="amoozeshgah" />
     </>
   );

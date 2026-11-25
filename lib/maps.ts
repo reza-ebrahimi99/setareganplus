@@ -12,7 +12,7 @@
  */
 
 /** Exact girls-branch address from the site copy / contact seed. */
-export const GIRLS_BRANCH_ADDRESS = "نسیم‌شهر، خیابان امام خمینی، نرسیده به خیابان سوم، کوچه پاییزان، پلاک ۱۸۸";
+export const GIRLS_BRANCH_ADDRESS = "نسیم‌شهر، خیابان امام خمینی، نرسیده به خیابان سوم، کوچه پاییزان، پلاک ۱۸۸، طبقه دوم";
 
 const LEGACY_GIRLS_MAP_ID = "b8b8v3bMTGksEUhMA";
 

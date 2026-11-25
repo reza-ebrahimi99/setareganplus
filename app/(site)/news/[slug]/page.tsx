@@ -73,7 +73,14 @@ export default async function NewsPage({ params }: P) {
     url,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
     isPartOf: { "@type": "WebSite", "@id": `${siteUrl()}/#website`, name: BRAND, url: `${siteUrl()}/` },
-    author: { "@type": "Organization", name: ORG_NAME, url: `${siteUrl()}/` },
+    author: {
+      "@type": "Person",
+      name: "مهندس رضا ابراهیمی",
+      url: `${siteUrl()}/about`,
+      jobTitle: "مسئول نمایندگی قلم‌چی نسیم‌شهر و مؤسس مؤسسه علمی ستارگان",
+      worksFor: { "@id": `${siteUrl()}/#organization` },
+      sameAs: ["https://www.instagram.com/ghalamchi_nasimshahr/"],
+    },
     publisher: { "@type": "Organization", "@id": `${siteUrl()}/#organization`, name: ORG_NAME, alternateName: BRAND, logo: { "@type": "ImageObject", url: abs("/brand/logo.png") } },
   };
   return (

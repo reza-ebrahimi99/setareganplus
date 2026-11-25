@@ -6,6 +6,7 @@ import { buildMeta } from "@/lib/seo";
 import { JsonLd } from "@/components/site/JsonLd";
 import { breadcrumbLd } from "@/lib/ld";
 import { FIELDS, GRADES, courseShowsPremium, fieldsLabel, formatClock, isNewLesson, lessonPath, presentPrice } from "@/lib/classes/catalog";
+import { getPublishedClassCatalog } from "@/lib/classes/catalog-cache";
 import { getClassStudent } from "@/lib/classes/session";
 import { Cover, EmptyState, MetaLine, NewChip, PremiumBadge, PriceTag } from "@/components/classes/ui";
 
@@ -46,22 +47,22 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
     ...(topic ? { slug: topic } : {}),
     ...(q ? { OR: [{ title: { contains: q, mode: "insensitive" as const } }, { summary: { contains: q, mode: "insensitive" as const } }, { lessons: { some: { published: true, title: { contains: q, mode: "insensitive" as const } } } }] } : {}),
   };
-  const [courses, topics, pathRow, mine, premiumLessons] = await Promise.all([
-    prisma.classCourse.findMany({
-      where,
-      orderBy: { sortOrder: "asc" },
-      include: { lessons: { where: { published: true }, select: { durationSec: true, isPremium: true, poster: true, sortOrder: true } }, files: { where: { published: true, lessonId: null }, select: { id: true } }, _count: { select: { enrollments: true } } },
-    }),
-    prisma.classCourse.findMany({ where: { published: true, kind: "TOPIC" }, orderBy: { sortOrder: "asc" }, select: { slug: true, title: true } }),
+  const hasFilter = Boolean(q || grade || field || topic);
+  const [catalog, filteredCourses, pathRow, mine] = await Promise.all([
+    getPublishedClassCatalog(),
+    hasFilter
+      ? prisma.classCourse.findMany({
+          where,
+          orderBy: { sortOrder: "asc" },
+          include: { lessons: { where: { published: true }, select: { durationSec: true, isPremium: true, poster: true, sortOrder: true } }, files: { where: { published: true, lessonId: null }, select: { id: true } }, _count: { select: { enrollments: true } } },
+        })
+      : Promise.resolve(null),
     student ? prisma.classPath.findFirst({ where: { published: true, grade: student.grade, field: student.field || "" }, include: { steps: { orderBy: { sortOrder: "asc" }, include: { course: { select: { slug: true, title: true, published: true } } } } } }) : null,
     student ? prisma.classEnrollment.findMany({ where: { studentId: student.id }, select: { courseId: true } }) : [],
-    prisma.classLesson.findMany({
-      where: { published: true, isPremium: true, course: { published: true } },
-      orderBy: { createdAt: "desc" },
-      take: 24,
-      select: { id: true, title: true, aparatHash: true, poster: true, durationSec: true, createdAt: true, course: { select: { slug: true, title: true, teacher: true } } },
-    }),
   ]);
+  const courses = filteredCourses ?? catalog.courses;
+  const topics = catalog.topics;
+  const premiumLessons = catalog.premiumLessons;
   const enrolled = new Set(mine.map((m) => m.courseId));
   const topicsOnly = courses.filter((c) => c.kind === "TOPIC");
   const gradesOnly = courses.filter((c) => c.kind === "GRADE");

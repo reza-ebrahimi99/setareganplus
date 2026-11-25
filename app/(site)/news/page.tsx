@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { catBySlug, listNews, NEWS_CATEGORIES } from "@/lib/news";
 import { buildMeta, pageText } from "@/lib/seo";
 import { fa } from "@/lib/format";
@@ -31,6 +32,7 @@ export default async function NewsIndex({ searchParams }: { searchParams: Promis
   const cat = catBySlug(sp.cat);
   const page = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
   const { items, total, pages } = await listNews({ category: cat?.key, page });
+  if (page > 1 && page > pages) notFound();
   return (
     <>
       <PageHero eyebrow="مطالب ستارگان" title={cat ? `${cat.label}‌ها` : "اخبار و مقالات"} text={t.intro} crumbs={cat ? cat.label : "اخبار و مقالات"} trail={cat ? [{ name: "اخبار و مقالات", href: "/news" }] : []} />
