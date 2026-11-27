@@ -18,6 +18,7 @@ import { HomeHighlight } from "@/components/site/HomeHighlight";
 import { FormCard } from "@/components/forms/FormCard";
 import { listedForms } from "@/lib/forms/public";
 import { HomeHonors } from "@/components/site/honors";
+import { HomeEftekharStrip } from "@/components/site/EftekharSection";
 import { latestHonors, toppers } from "@/lib/honors";
 import { HomeQuizBanner } from "@/components/quiz/HomeQuizBanner";
 import { HomeJourneyBanner } from "@/components/journey/HomeJourneyBanner";
@@ -267,6 +268,9 @@ export default async function Home() {
       {honorTop.length > 0 && (
         <HomeHonors year={honors.year} top={honorTop} total={honors.students.length} others={honors.students.filter((s) => !honorTop.includes(s))} />
       )}
+
+      {/* ───────── افتخارآفرینان ۱۴۰۵ teaser (static data: lib/eftekhar.ts) ───────── */}
+      <HomeEftekharStrip />
 
       {/* ───────── Achievements ───────── */}
       {achievements.length > 0 && (

@@ -9,6 +9,8 @@ import { FIELDS, FIELD_ORDER, HONOR_TABS, byField, faText, honorTab, honorTabHre
 import { PageHero, Icon, Star, Sparkle } from "@/components/site/Star";
 import { JsonLd } from "@/components/site/JsonLd";
 import { PhotoLightbox } from "@/components/site/PhotoLightbox";
+import { EftekharSection } from "@/components/site/EftekharSection";
+import { EFTEKHAR, EFTEKHAR_ANCHOR, EFTEKHAR_YEAR, eftekharCaption, eftekharPhoto } from "@/lib/eftekhar";
 import { AchievementTile, FieldHead, FieldIcon, HonorTabs, RankRow, TopperRow, FIELD_STYLE, type HonorAchievement } from "@/components/site/honors";
 
 type SP = Promise<{ tab?: string | string[] }>;
@@ -104,7 +106,7 @@ export default async function TopRanks({ searchParams }: { searchParams: SP }) {
     "@type": "ItemList",
     name: tt ? tt.seoTitle : `رتبه‌های برتر کنکور ${fa(y.year)} ${y.center}`,
     url: abs(honorTabHref(tab)),
-    numberOfItems: tt ? items.length : y.students.length,
+    numberOfItems: tt ? items.length : y.students.length + EFTEKHAR.length,
     itemListElement: tt
       ? items.map((a, i) => ({
           "@type": "ListItem",
@@ -127,7 +129,19 @@ export default async function TopRanks({ searchParams }: { searchParams: SP }) {
             award: `رتبهٔ ${fa(s.rank)} کنکور ${fa(y.year)} گروه ${FIELDS[s.field].label}`,
             affiliation: { "@type": "EducationalOrganization", name: "مؤسسه علمی ستارگان نسیم‌شهر" },
           },
-        })),
+        })).concat(
+          EFTEKHAR.map((s, i) => ({
+            "@type": "ListItem",
+            position: y.students.length + i + 1,
+            item: {
+              "@type": "Person",
+              name: s.name,
+              image: abs(eftekharPhoto(s)),
+              award: `قبولی ${eftekharCaption(s)} در کنکور ${fa(EFTEKHAR_YEAR)}`,
+              affiliation: { "@type": "EducationalOrganization", name: "مؤسسه علمی ستارگان نسیم‌شهر" },
+            },
+          })),
+        ),
   };
 
   // Computed from the data; a stat is hidden when its count is zero.
@@ -181,6 +195,9 @@ export default async function TopRanks({ searchParams }: { searchParams: SP }) {
                 <FieldIcon field={f} className="size-4" /> {FIELDS[f].label}
               </a>
             ))}
+            <a href={`#${EFTEKHAR_ANCHOR}`} className="inline-flex items-center gap-1.5 rounded-full bg-gold px-3.5 py-1.5 text-sm font-black text-navy shadow-lg">
+              <Icon name="cap" className="size-4" /> افتخارآفرینان {fa(EFTEKHAR_YEAR)} ({fa(EFTEKHAR.length)} قبولی)
+            </a>
           </nav>
         )}
       </PageHero>
@@ -228,6 +245,9 @@ export default async function TopRanks({ searchParams }: { searchParams: SP }) {
             </div>
             <TopperRow top={top} year={y.year} />
           </section>
+
+          {/* ───────── افتخارآفرینان ۱۴۰۵: every admitted student, one card each (lib/eftekhar.ts) ───────── */}
+          <EftekharSection />
 
           {/* ───────── All ranks by field ───────── */}
           <section aria-label="رتبه‌ها به تفکیک گروه آزمایشی" className="container-x pt-16 sm:pt-24">
